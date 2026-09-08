@@ -1,0 +1,10 @@
+---
+deployment:
+  tasks:
+    - export APPPATH=/home/darkftga/nefis-laravel
+    - export WEBROOT=/home/darkftga/public_html/nefis.az
+    - /bin/mkdir -p $APPPATH
+    - /bin/cp -R * $APPPATH
+    - /bin/rm -rf $APPPATH/public
+    - /bin/cp -R public/* $WEBROOT/
+    - /bin/cp -R public/.htaccess $WEBROOT/ 2>/dev/null || true
