@@ -7,4 +7,5 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/one-time-setup/{secret}', [OneTimeSetupController::class, 'run']);
+Route::get('/one-time-setup/{secret}', [OneTimeSetupController::class, 'run'])
+    ->withoutMiddleware([\Illuminate\Session\Middleware\StartSession::class]);
