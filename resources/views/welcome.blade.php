@@ -26,7 +26,7 @@
     --paper:#FFFDF9;
     --cocoa:#3A2617;
     --cocoa-2:#6B4630;
-    --cocoa-soft:rgba(58,38,23,.62);
+    --cocoa-soft:rgba(58,38,23,.72);
     --cocoa-faint:rgba(58,38,23,.38);
     --gold:#C08A3E;
     --gold-deep:#9C6C2A;
@@ -71,7 +71,19 @@
   .lede{ font-size:1.125rem; color:var(--cocoa-soft); max-width:34rem; }
 
   /* ---------- decorative blobs ---------- */
-  .blob{ position:absolute; border-radius:50%; filter:blur(60px); opacity:.5; pointer-events:none; z-index:0; }
+  .blob{ position:absolute; border-radius:50%; filter:blur(60px); opacity:.5; pointer-events:none; z-index:0; animation:drift 16s ease-in-out infinite; }
+  .blob.b2{ animation-duration:20s; animation-direction:reverse; }
+  @keyframes drift{
+    0%,100%{ transform:translate(0,0) scale(1); }
+    50%{ transform:translate(1.5rem,-1.25rem) scale(1.06); }
+  }
+  @keyframes float-y{
+    0%,100%{ transform:translateY(0); }
+    50%{ transform:translateY(-.6rem); }
+  }
+  @media (prefers-reduced-motion:reduce){
+    .blob{ animation:none; }
+  }
 
   /* ---------- reveal ---------- */
   .reveal{ opacity:0; transform:translateY(24px); transition:opacity .9s var(--ease), transform .9s var(--ease); }
@@ -119,7 +131,7 @@
   .menu-btn span::before{ top:-6px; } .menu-btn span::after{ top:6px; }
 
   .mobile-nav{
-    position:fixed; inset:0; z-index:60; background:var(--cream);
+    position:fixed; inset:0; z-index:80; background:var(--cream);
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2rem;
     opacity:0; visibility:hidden; transform:translateY(-12px); transition:opacity .35s var(--ease), transform .35s var(--ease), visibility .35s;
   }
@@ -136,6 +148,12 @@
   .hero .lede{ margin-top:1.5rem; }
   .hero-ctas{ display:flex; flex-wrap:wrap; gap:1rem; margin-top:2.25rem; }
   .hero-badges{ display:flex; flex-wrap:wrap; gap:1.5rem; margin-top:2.75rem; }
+
+  @keyframes fade-up{ from{ opacity:0; transform:translateY(18px); } to{ opacity:1; transform:none; } }
+  .hero-in{ opacity:0; animation:fade-up .8s var(--ease) forwards; }
+  .hero-in.d1{ animation-delay:.05s; } .hero-in.d2{ animation-delay:.15s; }
+  .hero-in.d3{ animation-delay:.28s; } .hero-in.d4{ animation-delay:.4s; } .hero-in.d5{ animation-delay:.52s; }
+  @media (prefers-reduced-motion:reduce){ .hero-in{ opacity:1; animation:none; } }
   .hero-badge{ display:flex; align-items:center; gap:.6rem; font-size:.875rem; color:var(--cocoa-soft); font-weight:500; }
   .hero-badge .dot{ width:.5rem; height:.5rem; border-radius:50%; background:var(--gold); flex:none; }
 
@@ -156,7 +174,9 @@
   .hero-visual .ph .ring{
     width:5.5rem; height:5.5rem; margin:0 auto 1.25rem; border-radius:50%;
     border:1.5px dashed rgba(58,38,23,.35); display:flex; align-items:center; justify-content:center; font-size:1.75rem;
+    animation:float-y 4.5s ease-in-out infinite;
   }
+  @media (prefers-reduced-motion:reduce){ .hero-visual .ph .ring{ animation:none; } }
   .hero-visual .ph p{ font-family:var(--serif); font-style:italic; color:var(--cocoa-2); font-size:1.0625rem; }
   .hero-ribbon{
     position:absolute; top:1.5rem; right:-2.75rem; background:var(--terracotta); color:#fff;
@@ -178,7 +198,7 @@
   .feature-card p{ font-size:.875rem; color:var(--cocoa-soft); margin-top:.4rem; }
 
   /* ---------- section shell ---------- */
-  section{ position:relative; padding:5rem 0; }
+  section{ position:relative; padding:5rem 0; scroll-margin-top:5.5rem; }
   .section-head{ max-width:38rem; margin-bottom:3rem; }
   .section-head.center{ margin-inline:auto; text-align:center; }
   .section-head h2{ margin-top:1rem; }
@@ -272,6 +292,20 @@
   .footer-bottom{ display:flex; flex-direction:column; gap:.75rem; padding-top:1.75rem; font-size:.8125rem; }
   @media (min-width:600px){ .footer-bottom{ flex-direction:row; justify-content:space-between; } }
 
+  /* ---------- floating contact ---------- */
+  .float-cta{
+    position:fixed; right:1.25rem; bottom:1.25rem; z-index:70;
+    display:flex; align-items:center; gap:.6rem; padding:.9rem 1.1rem; border-radius:999px;
+    background:var(--cocoa); color:var(--cream); font-weight:600; font-size:.875rem;
+    box-shadow:0 12px 28px -10px rgba(58,38,23,.55);
+    transition:transform .3s var(--ease), box-shadow .3s var(--ease);
+    opacity:0; transform:translateY(12px) scale(.96); pointer-events:none;
+  }
+  .float-cta.show{ opacity:1; transform:none; pointer-events:auto; }
+  .float-cta:hover{ transform:translateY(-3px); box-shadow:0 16px 34px -10px rgba(58,38,23,.65); }
+  .float-cta .ico{ font-size:1.125rem; line-height:1; }
+  @media (min-width:900px){ .float-cta span.txt{ display:inline; } }
+
   .sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
   .skip-link{ position:fixed; top:-3rem; left:1rem; background:var(--cocoa); color:var(--cream); padding:.6rem 1.1rem; border-radius:.5rem; z-index:200; transition:top .25s; }
   .skip-link:focus{ top:1rem; }
@@ -281,8 +315,12 @@
 
 <a href="#main" class="skip-link">Əsas məzmuna keç</a>
 
+<a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="float-cta" id="float-cta">
+  <span class="ico">📷</span><span class="txt">Instagramda Yaz</span>
+</a>
+
 <div class="blob" style="width:26rem;height:26rem;background:var(--gold);top:-8rem;right:-6rem;"></div>
-<div class="blob" style="width:20rem;height:20rem;background:var(--terracotta);top:20rem;left:-8rem;opacity:.28;"></div>
+<div class="blob b2" style="width:20rem;height:20rem;background:var(--terracotta);top:20rem;left:-8rem;opacity:.28;"></div>
 
 <header id="site-header">
   <div class="wrap">
@@ -315,23 +353,23 @@
   <section class="hero">
     <div class="wrap">
       <div>
-        <span class="eyebrow">Nefis Şokolad Evi</span>
-        <h1>Hər Hədiyyə<br>Bir Xatirəyə Dönsün.</h1>
-        <p class="lede">Öz şəklinizi, öz sözünüzü seçin — biz onu sevdiklərinizə hədiyyə edəcəyiniz ən nəfis şokolad qutusuna çeviririk.</p>
-        <div class="hero-ctas">
+        <span class="eyebrow hero-in d1">Nefis Şokolad Evi</span>
+        <h1 class="hero-in d2">Hər Hədiyyə<br>Bir Xatirəyə Dönsün.</h1>
+        <p class="lede hero-in d3">Öz şəklinizi, öz sözünüzü seçin — biz onu sevdiklərinizə hədiyyə edəcəyiniz ən nəfis şokolad qutusuna çeviririk.</p>
+        <div class="hero-ctas hero-in d4">
           <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="btn btn-primary">
             İndi Sifariş Ver
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg>
           </a>
           <a href="#collections" class="btn btn-ghost">Dizaynlara Bax</a>
         </div>
-        <div class="hero-badges">
+        <div class="hero-badges hero-in d5">
           <div class="hero-badge"><span class="dot"></span> Premium Şokolad</div>
           <div class="hero-badge"><span class="dot"></span> 100% Fərdi Dizayn</div>
           <div class="hero-badge"><span class="dot"></span> Sürətli Çatdırılma</div>
         </div>
       </div>
-      <div class="hero-visual reveal">
+      <div class="hero-visual hero-in d3">
         <div class="hero-ribbon">Fərdi Hədiyyə</div>
         <div class="ph">
           <div class="ring">🎁</div>
@@ -539,9 +577,12 @@
 
   /* header shrink on scroll */
   var header = document.getElementById("site-header");
+  var floatCta = document.getElementById("float-cta");
   var onScroll = function(){
     if (window.scrollY > 24) header.classList.add("scrolled");
     else header.classList.remove("scrolled");
+    if (window.scrollY > window.innerHeight * 0.6) floatCta.classList.add("show");
+    else floatCta.classList.remove("show");
   };
   document.addEventListener("scroll", onScroll, { passive:true });
   onScroll();
