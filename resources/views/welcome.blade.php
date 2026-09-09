@@ -4,732 +4,570 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Nefis Şokolad Evi — Fərdi Şokolad Qutuları</title>
-<meta name="description" content="Öz şəklinizlə fərdi şokolad qutusu. Premium keyfiyyət, özəl günləriniz üçün unudulmaz hədiyyə.">
+<meta name="description" content="Öz şəklinizlə, öz sözünüzlə fərdi şokolad qutusu. Premium keyfiyyət, sevdiklərinizə unudulmaz hədiyyə.">
+<link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --surface:#000000;
-    --lattice:#0d0d0d;
-    --content:#ffffff;
-    --content-muted:rgb(255 255 255 / .4);
-    --content-faint:rgb(255 255 255 / .25);
-    --rule:rgb(255 255 255 / .25);
-    --accent:#d98a2b;
-
-    --caption: max(.75rem, 12px);
-    --body: max(1.125rem, 12px);
-    --lede: 1.25rem;
-    --fine: max(.8125rem, 12px);
-    --chip: max(.875rem, 12px);
-    --title: 1.625rem;
-    --display: 4.375rem;
-
-    --pitch: .625rem;
-    --gap: .125rem;
-    --offset: calc(var(--gap) / -2);
-    --reach: 12rem;
-
-    --dur-fast: 150ms;
-    --dur-normal: 250ms;
-    --ease-entrance: cubic-bezier(.2,0,0,1);
+    --cream:#FBF4EA;
+    --cream-2:#F3E4D0;
+    --paper:#FFFDF9;
+    --cocoa:#3A2617;
+    --cocoa-2:#6B4630;
+    --cocoa-soft:rgba(58,38,23,.62);
+    --cocoa-faint:rgba(58,38,23,.38);
+    --gold:#C08A3E;
+    --gold-deep:#9C6C2A;
+    --terracotta:#B5533F;
+    --line:rgba(58,38,23,.14);
+    --shadow: 0 20px 50px -20px rgba(58,38,23,.25);
+    --shadow-sm: 0 8px 24px -12px rgba(58,38,23,.25);
+    --radius: 1.5rem;
+    --radius-sm: .9rem;
+    --serif: "Playfair Display", Georgia, serif;
+    --sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --dur: 500ms;
+    --ease: cubic-bezier(.16,1,.3,1);
   }
-  @supports (width: round(1px,1px)){
-    :root{
-      --pitch: round(.625rem,1px);
-      --gap: round(.125rem,1px);
-      --offset: round(calc(var(--gap) / -2),1px);
-    }
-  }
-  @media (min-width:1024px) and (min-aspect-ratio:1/1){
-    html{ font-size:min(1.111111vw,2lvh); }
-  }
-  @media (max-width:1023.98px), (max-aspect-ratio:0.9999/1){
-    html{ font-size:16px; }
-    :root{ --display:2.5rem; }
-  }
-  @media (min-width:640px) and (max-width:1023.98px){
-    :root{ --display:3.125rem; }
-  }
-
   *,*::before,*::after{ box-sizing:border-box; }
-  html{ background:#000; scroll-behavior:auto; }
+  html{ scroll-behavior:smooth; }
   body{
-    margin:0; position:relative; min-height:100lvh; overflow-x:clip;
-    background:var(--surface); color:var(--content);
-    font-family:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size:var(--body); line-height:1.1; -webkit-font-smoothing:antialiased;
+    margin:0; background:var(--cream); color:var(--cocoa);
+    font-family:var(--sans); font-size:1rem; line-height:1.6; -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
   }
-  a{ color:inherit; text-decoration:none; }
-  button{ font:inherit; color:inherit; background:none; border:0; cursor:pointer; }
-  input{ font:inherit; color:inherit; background:none; }
-  ul,ol,dl,dd,dt,h1,h2,h3,p{ margin:0; padding:0; list-style:none; }
   img{ max-width:100%; display:block; }
+  a{ color:inherit; text-decoration:none; }
+  ul,ol{ margin:0; padding:0; list-style:none; }
+  h1,h2,h3,p{ margin:0; }
+  button{ font:inherit; cursor:pointer; }
 
-  /* ---------- lattice ---------- */
-  .lattice-shell{ position:relative; background-color:var(--lattice); }
-  .lattice-beam{
-    position:fixed; inset:0; pointer-events:none; z-index:1;
-    --px:-100vw; --py:-100vh;
-    background-image:
-      radial-gradient(circle var(--reach) at var(--px) var(--py),
-        rgb(255 255 255 / .07) 0%, rgb(255 255 255 / .055) 26%,
-        rgb(255 255 255 / .034) 52%, rgb(255 255 255 / .016) 74%,
-        rgb(255 255 255 / .005) 89%, transparent 100%),
-      radial-gradient(circle calc(var(--reach) * 1.75) at var(--px) var(--py),
-        rgb(255 255 255 / .017) 0%, rgb(255 255 255 / .009) 48%, transparent 100%);
-  }
-  @media (hover:none) and (pointer:coarse){ .lattice-beam{ display:none; } }
-  .lattice-bars{
-    position:absolute; inset:0; pointer-events:none; z-index:2;
-    background-image:
-      repeating-linear-gradient(to right, #000 0 var(--gap), transparent var(--gap) var(--pitch)),
-      repeating-linear-gradient(to bottom, #000 0 var(--gap), transparent var(--gap) var(--pitch));
-    background-position: var(--offset) var(--offset);
-  }
-  .lattice-panel{
-    position:relative; background-color:var(--lattice);
-    background-image:
-      repeating-linear-gradient(to right, #000 0 var(--gap), transparent var(--gap) var(--pitch)),
-      repeating-linear-gradient(to bottom, #000 0 var(--gap), transparent var(--gap) var(--pitch));
-    background-position: var(--offset) var(--offset);
-    border:1px solid var(--rule);
-  }
+  .wrap{ max-width:76rem; margin:0 auto; padding-inline:1.5rem; }
+  @media (min-width:768px){ .wrap{ padding-inline:2.5rem; } }
 
-  main{ position:relative; z-index:3; }
-
-  /* ---------- scramble ---------- */
-  .scramble .visually-hidden{
-    position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:.5rem;
+    font-family:var(--sans); font-weight:600; font-size:.75rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--gold-deep);
   }
+  .eyebrow::before{ content:""; width:1.5rem; height:1px; background:var(--gold); }
+
+  h1,h2,h3{ font-family:var(--serif); font-weight:600; letter-spacing:-.01em; color:var(--cocoa); }
+  h1{ font-size:clamp(2.25rem, 5vw, 3.75rem); line-height:1.08; }
+  h2{ font-size:clamp(1.875rem, 3.4vw, 2.75rem); line-height:1.15; }
+  h3{ font-size:1.375rem; line-height:1.3; }
+  .lede{ font-size:1.125rem; color:var(--cocoa-soft); max-width:34rem; }
+
+  /* ---------- decorative blobs ---------- */
+  .blob{ position:absolute; border-radius:50%; filter:blur(60px); opacity:.5; pointer-events:none; z-index:0; }
 
   /* ---------- reveal ---------- */
-  .reveal{ opacity:0; transform:translateY(14px); transition:opacity .6s var(--ease-entrance), transform .6s var(--ease-entrance); }
+  .reveal{ opacity:0; transform:translateY(24px); transition:opacity .9s var(--ease), transform .9s var(--ease); }
   .reveal.is-visible{ opacity:1; transform:none; }
-  @media (prefers-reduced-motion:reduce){
-    .reveal{ opacity:1; transform:none; transition:none; }
-  }
-
-  /* ---------- header ---------- */
-  header.site{
-    position:sticky; top:0; z-index:50;
-  }
-  .header-inner{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:1.25rem 1.5rem; gap:1rem;
-  }
-  .logo{ font-weight:700; font-size:1.25rem; letter-spacing:.02em; display:flex; align-items:center; gap:.5rem; }
-  .logo span.mark{ color:var(--accent); }
-  nav.primary{ display:none; }
-  .cart-badge{ font-size:var(--body); color:var(--content-muted); }
-  @media (min-width:1024px) and (min-aspect-ratio:1/1){
-    header.site{ height:0; overflow:visible; }
-    .header-inner{ position:absolute; inset-inline:0; top:1.5rem; padding:0 2.5rem; }
-    nav.primary{ display:flex; gap:4rem; position:absolute; left:50%; transform:translateX(-50%); }
-    .logo{ position:absolute; left:0; }
-    .cart-badge{ position:absolute; right:0; }
-  }
-  nav.primary a{ opacity:.6; transition:opacity var(--dur-fast); }
-  nav.primary a:hover, nav.primary a:focus-visible{ opacity:1; }
-  .submenu-wrap{ position:relative; padding:.75rem 0; }
-  .submenu{
-    position:absolute; top:100%; left:0; margin-top:0; min-width:14rem; padding:1rem;
-    visibility:hidden; opacity:0; transform:translateY(-4px);
-    transition:opacity var(--dur-normal), transform var(--dur-normal), visibility var(--dur-normal);
-  }
-  .submenu-wrap:hover .submenu, .submenu-wrap:focus-within .submenu{
-    visibility:visible; opacity:1; transform:none;
-  }
-  .submenu a{ display:block; padding:.375rem 0; font-size:var(--chip); }
-
-  .hamburger{ display:block; }
-  @media (min-width:1024px) and (min-aspect-ratio:1/1){ .hamburger{ display:none; } }
-  .mobile-panel{
-    position:fixed; inset:0; z-index:60; background:#000;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2rem;
-    transform:translateY(-100%); transition:transform var(--dur-normal) var(--ease-entrance);
-  }
-  .mobile-panel.open{ transform:translateY(0); }
-  .mobile-panel a{ font-size:1.5rem; }
-  .mobile-panel .close-x{ position:absolute; top:1.5rem; right:1.5rem; font-size:1.5rem; }
+  @media (prefers-reduced-motion:reduce){ .reveal{ opacity:1; transform:none; transition:none; } }
 
   /* ---------- buttons ---------- */
   .btn{
-    position:relative; display:inline-flex; align-items:center; gap:2rem;
-    height:2.875rem; padding-inline:1.25rem; font-size:var(--lede);
-    border:1px solid var(--content); background-color:var(--lattice);
-    background-image:
-      repeating-linear-gradient(to right, #000 0 var(--gap), transparent var(--gap) var(--pitch)),
-      repeating-linear-gradient(to bottom, #000 0 var(--gap), transparent var(--gap) var(--pitch));
-    background-position: var(--offset) var(--offset);
+    display:inline-flex; align-items:center; justify-content:center; gap:.6rem;
+    padding:1rem 1.75rem; border-radius:999px; font-weight:600; font-size:.9375rem;
+    border:1px solid transparent; transition:transform .35s var(--ease), box-shadow .35s var(--ease), background .35s;
+    white-space:nowrap;
   }
-  .btn .arrow{ transition:transform var(--dur-normal); }
-  .btn:hover .arrow, .btn:focus-visible .arrow{ transform:translateX(4px); }
-  .btn::before{
-    content:""; position:absolute; inset:-.75rem; pointer-events:none;
-    background:
-      linear-gradient(to right, var(--content) 0 2px, transparent 0) top left / .625rem .625rem no-repeat,
-      linear-gradient(to bottom, var(--content) 0 2px, transparent 0) top left / .625rem .625rem no-repeat,
-      linear-gradient(to left, var(--content) 0 2px, transparent 0) top right / .625rem .625rem no-repeat,
-      linear-gradient(to bottom, var(--content) 0 2px, transparent 0) top right / .625rem .625rem no-repeat,
-      linear-gradient(to right, var(--content) 0 2px, transparent 0) bottom left / .625rem .625rem no-repeat,
-      linear-gradient(to top, var(--content) 0 2px, transparent 0) bottom left / .625rem .625rem no-repeat,
-      linear-gradient(to left, var(--content) 0 2px, transparent 0) bottom right / .625rem .625rem no-repeat,
-      linear-gradient(to top, var(--content) 0 2px, transparent 0) bottom right / .625rem .625rem no-repeat;
-    opacity:0; transform:translate(0,0) scale(.92); transition:opacity var(--dur-normal), transform var(--dur-normal);
-  }
-  .btn:hover::before, .btn:focus-visible::before{ opacity:1; transform:none; outline:none; }
-  .btn:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+  .btn-primary{ background:var(--cocoa); color:var(--cream); box-shadow:var(--shadow-sm); }
+  .btn-primary:hover{ transform:translateY(-3px); box-shadow:0 16px 32px -12px rgba(58,38,23,.45); }
+  .btn-ghost{ background:transparent; color:var(--cocoa); border-color:var(--line); }
+  .btn-ghost:hover{ background:var(--paper); border-color:var(--cocoa-2); transform:translateY(-2px); }
+  .btn svg{ width:1rem; height:1rem; transition:transform .3s var(--ease); }
+  .btn:hover svg{ transform:translate(3px,-3px); }
 
-  /* ---------- sections shell ---------- */
-  section{ position:relative; padding:5rem 1.5rem; }
-  @media (min-width:1024px) and (min-aspect-ratio:1/1){
-    section{ min-height:50rem; padding:0; }
-    .frame-box{ position:relative; max-width:90rem; margin:0 auto; padding:0 2.5rem; }
+  /* ---------- header ---------- */
+  header{
+    position:sticky; top:0; z-index:50; padding:1.25rem 0;
+    transition:background .4s, box-shadow .4s, padding .4s, backdrop-filter .4s;
   }
-  .headline{
-    font-size:var(--display); line-height:.9; letter-spacing:-.02em; font-weight:700;
+  header.scrolled{
+    background:rgba(251,244,234,.85); backdrop-filter:blur(12px); box-shadow:0 1px 0 var(--line); padding:.85rem 0;
   }
-  .standfirst{ color:var(--content-muted); font-size:var(--lede); text-transform:uppercase; max-width:32rem; margin-top:1.25rem; }
+  header .wrap{ display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+  .brand{ display:flex; align-items:center; gap:.6rem; font-family:var(--serif); font-weight:700; font-size:1.375rem; color:var(--cocoa); }
+  .brand .mark{
+    width:2.25rem; height:2.25rem; border-radius:50%; background:linear-gradient(145deg,var(--gold),var(--terracotta));
+    display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.125rem; flex:none;
+  }
+  nav.primary{ display:none; gap:2.25rem; font-weight:500; font-size:.9375rem; color:var(--cocoa-soft); }
+  nav.primary a{ transition:color .25s; position:relative; }
+  nav.primary a:hover{ color:var(--cocoa); }
+  @media (min-width:900px){ nav.primary{ display:flex; } }
+  .header-cta{ display:none; }
+  @media (min-width:900px){ .header-cta{ display:inline-flex; } }
+  .menu-btn{ display:flex; width:2.75rem; height:2.75rem; align-items:center; justify-content:center; border-radius:50%; border:1px solid var(--line); background:var(--paper); }
+  @media (min-width:900px){ .menu-btn{ display:none; } }
+  .menu-btn span{ display:block; width:1.1rem; height:2px; background:var(--cocoa); position:relative; }
+  .menu-btn span::before,.menu-btn span::after{ content:""; position:absolute; left:0; width:100%; height:2px; background:var(--cocoa); }
+  .menu-btn span::before{ top:-6px; } .menu-btn span::after{ top:6px; }
+
+  .mobile-nav{
+    position:fixed; inset:0; z-index:60; background:var(--cream);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2rem;
+    opacity:0; visibility:hidden; transform:translateY(-12px); transition:opacity .35s var(--ease), transform .35s var(--ease), visibility .35s;
+  }
+  .mobile-nav.open{ opacity:1; visibility:visible; transform:none; }
+  .mobile-nav a{ font-family:var(--serif); font-size:1.75rem; }
+  .mobile-nav .close-btn{ position:absolute; top:1.5rem; right:1.5rem; width:2.75rem; height:2.75rem; border-radius:50%; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; }
 
   /* ---------- hero ---------- */
-  .hero{ display:flex; flex-direction:column; min-height:100lvh; }
-  @media (min-width:1024px) and (min-aspect-ratio:1/1){
-    .hero{ display:block; height:100lvh; min-height:50rem; }
-  }
-  .hero-product{
-    position:relative; margin:2rem auto; width:min(92vw, 26rem); aspect-ratio:4/3;
-    display:flex; align-items:center; justify-content:center; text-align:center;
-    color:var(--content-faint); font-size:var(--caption); letter-spacing:.05em;
-    border:1px dashed var(--rule);
-  }
-  @media (min-width:1024px) and (min-aspect-ratio:1/1){
-    .hero-product{ position:absolute; inset:0; margin:0; width:auto; aspect-ratio:auto; border:0; }
-  }
-  .hero-markers{ display:flex; justify-content:space-between; gap:1rem; font-size:var(--body); line-height:1.1; color:var(--content-muted); text-transform:uppercase; }
-  @media (min-width:1024px) and (min-aspect-ratio:1/1){
-    .hero-markers{ position:absolute; top:50%; transform:translateY(-50%); display:contents; }
-    .marker{ position:absolute; top:0; transform:translateY(-50%); width:11.5rem; }
-    .marker.left{ left:2.5rem; text-align:left; }
-    .marker.right{ right:2.5rem; text-align:right; }
-  }
-  .hero-claim{ text-align:center; font-size:var(--lede); line-height:.9; margin-top:2.5rem; font-weight:700; }
-  @media (min-width:1024px) and (min-aspect-ratio:1/1){
-    .hero-claim{ position:absolute; bottom:7.375rem; left:0; right:0; margin:0; }
-  }
-  .hero-cta{ display:flex; justify-content:center; margin-top:2rem; }
-  @media (min-width:1024px) and (min-aspect-ratio:1/1){
-    .hero-cta{ position:absolute; bottom:2.5rem; left:0; right:0; margin:0; }
-  }
-  .corner-cards{ display:grid; gap:1rem; margin-top:2.5rem; }
-  @media (min-width:1024px) and (min-aspect-ratio:1/1){
-    .corner-cards{ display:contents; }
-    .corner-card{ position:absolute; bottom:2.5rem; display:flex; align-items:center; gap:1rem; height:max(4.25rem,68px); padding:0 1rem; }
-    .corner-card.left{ left:2.5rem; }
-    .corner-card.right{ right:2.5rem; }
-  }
-  .corner-card{ display:flex; align-items:center; gap:1rem; padding:1rem; }
-  .corner-card .icon{ width:1.5rem; height:1.5rem; flex:none; color:var(--accent); }
-  .corner-card .cap{ font-size:var(--caption); color:var(--content-faint); }
-  .corner-card .txt{ font-size:var(--fine); color:var(--content-muted); line-height:1.3; }
-  .rule-v{ width:1px; align-self:stretch; background:var(--rule); }
+  .hero{ position:relative; padding:3rem 0 5rem; overflow:hidden; }
+  @media (min-width:900px){ .hero{ padding:4rem 0 7rem; } }
+  .hero .wrap{ position:relative; z-index:1; display:grid; gap:3rem; align-items:center; }
+  @media (min-width:960px){ .hero .wrap{ grid-template-columns:1.05fr .95fr; gap:2rem; } }
+  .hero h1{ margin-top:1.25rem; }
+  .hero .lede{ margin-top:1.5rem; }
+  .hero-ctas{ display:flex; flex-wrap:wrap; gap:1rem; margin-top:2.25rem; }
+  .hero-badges{ display:flex; flex-wrap:wrap; gap:1.5rem; margin-top:2.75rem; }
+  .hero-badge{ display:flex; align-items:center; gap:.6rem; font-size:.875rem; color:var(--cocoa-soft); font-weight:500; }
+  .hero-badge .dot{ width:.5rem; height:.5rem; border-radius:50%; background:var(--gold); flex:none; }
 
-  /* ---------- details ---------- */
-  .details-grid{ display:grid; gap:2.5rem; }
-  @media (min-width:1024px) and (min-aspect-ratio:1/1){
-    .details-grid{ grid-template-columns:1fr 1fr; align-items:start; padding-top:7.625rem; }
+  .hero-visual{
+    position:relative; aspect-ratio:1/1.05; border-radius:2rem;
+    background:
+      radial-gradient(120% 100% at 30% 20%, rgba(255,255,255,.55), transparent 60%),
+      linear-gradient(155deg, var(--cream-2), #E7C9A0 60%, var(--gold) 130%);
+    box-shadow: var(--shadow);
+    display:flex; align-items:center; justify-content:center; text-align:center; overflow:hidden;
   }
-  .spec-rows{ display:flex; flex-direction:column; gap:.75rem; margin-top:2rem; }
-  .spec-row{ display:flex; gap:1rem; padding:1rem; }
-  .spec-row .num{ font-size:var(--body); color:var(--content-faint); flex:none; width:2rem; }
-  .spec-row h3{ font-size:var(--body); font-weight:700; margin-bottom:.375rem; }
-  .spec-row p{ font-size:var(--fine); color:var(--content-muted); line-height:1.4; }
+  .hero-visual::before{
+    content:""; position:absolute; inset:0;
+    background-image: radial-gradient(rgba(58,38,23,.10) 1.5px, transparent 1.5px);
+    background-size:18px 18px; opacity:.5;
+  }
+  .hero-visual .ph{ position:relative; z-index:1; padding:2rem; }
+  .hero-visual .ph .ring{
+    width:5.5rem; height:5.5rem; margin:0 auto 1.25rem; border-radius:50%;
+    border:1.5px dashed rgba(58,38,23,.35); display:flex; align-items:center; justify-content:center; font-size:1.75rem;
+  }
+  .hero-visual .ph p{ font-family:var(--serif); font-style:italic; color:var(--cocoa-2); font-size:1.0625rem; }
+  .hero-ribbon{
+    position:absolute; top:1.5rem; right:-2.75rem; background:var(--terracotta); color:#fff;
+    padding:.5rem 3rem; font-size:.75rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    transform:rotate(35deg); box-shadow:0 6px 16px rgba(0,0,0,.18);
+  }
+
+  /* ---------- features strip ---------- */
+  .features{ padding:1rem 0 4rem; position:relative; z-index:1; }
+  .features-grid{ display:grid; gap:1rem; grid-template-columns:repeat(2,1fr); }
+  @media (min-width:800px){ .features-grid{ grid-template-columns:repeat(4,1fr); } }
+  .feature-card{
+    background:var(--paper); border:1px solid var(--line); border-radius:var(--radius-sm);
+    padding:1.5rem 1.25rem; transition:transform .4s var(--ease), box-shadow .4s var(--ease);
+  }
+  .feature-card:hover{ transform:translateY(-6px); box-shadow:var(--shadow-sm); }
+  .feature-card .ico{ font-size:1.5rem; margin-bottom:.9rem; }
+  .feature-card h3{ font-size:1rem; font-family:var(--sans); font-weight:700; }
+  .feature-card p{ font-size:.875rem; color:var(--cocoa-soft); margin-top:.4rem; }
+
+  /* ---------- section shell ---------- */
+  section{ position:relative; padding:5rem 0; }
+  .section-head{ max-width:38rem; margin-bottom:3rem; }
+  .section-head.center{ margin-inline:auto; text-align:center; }
+  .section-head h2{ margin-top:1rem; }
+  .section-head .lede{ margin-top:1rem; }
+  .tinted{ background:var(--paper); }
+
+  /* ---------- how it works ---------- */
+  .steps{ display:grid; gap:2rem; counter-reset:step; position:relative; }
+  @media (min-width:800px){ .steps{ grid-template-columns:repeat(3,1fr); } }
+  .step{ position:relative; text-align:center; padding:0 1rem; }
+  .step .num{
+    width:3.5rem; height:3.5rem; border-radius:50%; background:var(--cocoa); color:var(--cream);
+    font-family:var(--serif); font-size:1.375rem; display:flex; align-items:center; justify-content:center; margin:0 auto 1.25rem;
+  }
+  .step h3{ font-size:1.1875rem; }
+  .step p{ font-size:.9375rem; color:var(--cocoa-soft); margin-top:.5rem; max-width:18rem; margin-inline:auto; }
+  .step-line{ position:absolute; top:1.75rem; left:calc(50% + 2.5rem); right:calc(-50% + 2.5rem); height:1px; background:repeating-linear-gradient(to right, var(--line) 0 6px, transparent 6px 12px); }
+  .step:last-child .step-line{ display:none; }
+  @media (max-width:799px){ .step-line{ display:none; } }
 
   /* ---------- collections ---------- */
-  .cards-row{ display:grid; gap:1rem; grid-template-columns:1fr; margin-top:2.5rem; }
-  @media (min-width:640px){ .cards-row{ grid-template-columns:1fr 1fr; } }
-  @media (min-width:1024px) and (min-aspect-ratio:1/1){ .cards-row{ grid-template-columns:repeat(4,1fr); } }
-  .p-card{ perspective:60rem; }
-  .p-card-surface{
-    padding:1rem; display:flex; flex-direction:column; justify-content:space-between; height:100%; min-height:24rem;
-    transition:transform .12s ease-out;
-    transform-style:preserve-3d;
+  .cards-grid{ display:grid; gap:1.5rem; grid-template-columns:1fr; }
+  @media (min-width:640px){ .cards-grid{ grid-template-columns:repeat(2,1fr); } }
+  @media (min-width:1100px){ .cards-grid{ grid-template-columns:repeat(4,1fr); } }
+  .p-card{
+    background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
+    transition:transform .45s var(--ease), box-shadow .45s var(--ease);
+    display:flex; flex-direction:column;
   }
-  .p-card-photo{
-    flex:1; margin:1rem 0; display:flex; align-items:center; justify-content:center;
-    color:var(--content-faint); font-size:var(--caption); text-align:center; letter-spacing:.05em;
-    border:1px dashed var(--rule);
+  .p-card:hover{ transform:translateY(-8px); box-shadow:var(--shadow); }
+  .p-card-media{
+    aspect-ratio:4/3; position:relative; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(155deg,var(--cream-2), #EAD2AE);
+    color:var(--cocoa-faint); font-size:.8125rem; letter-spacing:.04em;
   }
-  .p-card-title{ font-size:var(--title); font-weight:700; }
-  .p-card-price{ font-size:var(--fine); color:var(--content-muted); margin-top:.25rem; }
-  .p-card-foot{ position:relative; height:2.3125rem; margin-top:.5rem; }
-  .p-card-chips{ display:flex; gap:.5rem; flex-wrap:wrap; position:absolute; inset:0; align-items:center; transition:opacity var(--dur-normal); }
-  .chip{ border:1px solid var(--content-muted); padding:.25rem .875rem; font-size:var(--chip); white-space:nowrap; }
-  .p-card-link{ position:absolute; inset:0; display:flex; align-items:center; gap:.5rem; opacity:0; pointer-events:none; transition:opacity var(--dur-normal); border:1px solid #fff; padding:0 .875rem; width:fit-content; }
-  .p-card:hover .p-card-chips, .p-card:focus-within .p-card-chips{ opacity:0; }
-  .p-card:hover .p-card-link, .p-card:focus-within .p-card-link{ opacity:1; pointer-events:auto; }
-  @media (hover:none){
-    .p-card-chips{ display:none; }
-    .p-card-link{ opacity:1; pointer-events:auto; }
+  .p-card-media span.tag{
+    position:absolute; top:.9rem; left:.9rem; background:rgba(255,253,249,.9); color:var(--cocoa);
+    font-size:.6875rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:.3rem .7rem; border-radius:999px;
   }
+  .p-card-body{ padding:1.25rem 1.25rem 1.5rem; display:flex; flex-direction:column; gap:.6rem; flex:1; }
+  .p-card-body h3{ font-size:1.1875rem; }
+  .p-card-body p{ font-size:.875rem; color:var(--cocoa-soft); flex:1; }
+  .p-card-foot{ display:flex; align-items:center; justify-content:space-between; margin-top:.25rem; }
+  .p-card-price{ font-weight:700; font-size:.9375rem; color:var(--gold-deep); }
+  .p-card-link{ font-size:.8125rem; font-weight:600; display:inline-flex; align-items:center; gap:.3rem; }
+  .p-card-link svg{ width:.875rem; height:.875rem; transition:transform .3s var(--ease); }
+  .p-card:hover .p-card-link svg{ transform:translateX(3px); }
 
-  /* ---------- process ---------- */
-  .process-list{ display:flex; flex-direction:column; gap:.75rem; margin-top:2.5rem; }
-  .process-row{ display:flex; gap:1.5rem; align-items:flex-start; padding:1.25rem 1rem; }
-  .process-row .num{ font-size:var(--display-compact,2rem); font-size:2rem; color:var(--content-faint); flex:none; width:3rem; }
-  .process-row h3{ font-size:var(--body); font-weight:700; margin-bottom:.375rem; }
-  .process-row p{ font-size:var(--fine); color:var(--content-muted); line-height:1.4; max-width:34rem; }
+  /* ---------- instagram cta ---------- */
+  .insta-band{
+    border-radius:2rem; background:linear-gradient(145deg,var(--cocoa),#241408);
+    color:var(--cream); padding:3.5rem 2rem; text-align:center; position:relative; overflow:hidden;
+  }
+  .insta-band h2{ color:var(--cream); }
+  .insta-band p{ color:rgba(251,244,234,.7); max-width:30rem; margin:1rem auto 2rem; }
+  .insta-band .btn-primary{ background:var(--cream); color:var(--cocoa); }
+  .insta-band .btn-primary:hover{ box-shadow:0 16px 32px -12px rgba(0,0,0,.5); }
 
   /* ---------- faq ---------- */
-  dl.faq{ display:flex; flex-direction:column; gap:.75rem; margin-top:2.5rem; }
-  .faq-row{ padding:1.25rem 1rem; }
-  .faq-row dt{ font-weight:700; font-size:var(--body); display:flex; justify-content:space-between; gap:1rem; }
-  .faq-row dt .idx{ color:var(--content-faint); font-weight:400; }
-  .faq-row dd{ margin-top:.75rem; padding-top:.75rem; border-top:1px solid var(--rule); font-size:var(--fine); color:var(--content-muted); text-transform:uppercase; line-height:1.5; }
+  .faq-list{ display:flex; flex-direction:column; gap:.75rem; max-width:44rem; margin-inline:auto; }
+  .faq-item{ background:var(--paper); border:1px solid var(--line); border-radius:var(--radius-sm); overflow:hidden; }
+  .faq-item summary{
+    list-style:none; cursor:pointer; padding:1.25rem 1.5rem; display:flex; align-items:center; justify-content:space-between; gap:1rem;
+    font-weight:600; font-size:1rem;
+  }
+  .faq-item summary::-webkit-details-marker{ display:none; }
+  .faq-item summary .plus{ flex:none; width:1.5rem; height:1.5rem; position:relative; }
+  .faq-item summary .plus::before,.faq-item summary .plus::after{
+    content:""; position:absolute; background:var(--cocoa); border-radius:2px;
+  }
+  .faq-item summary .plus::before{ left:0; top:50%; width:100%; height:2px; transform:translateY(-50%); }
+  .faq-item summary .plus::after{ top:0; left:50%; width:2px; height:100%; transform:translateX(-50%); transition:transform .3s var(--ease); }
+  .faq-item[open] summary .plus::after{ transform:translateX(-50%) rotate(90deg); opacity:0; }
+  .faq-item .faq-a{ padding:0 1.5rem 1.5rem; font-size:.9375rem; color:var(--cocoa-soft); }
 
   /* ---------- footer ---------- */
-  footer{ padding:3rem 1.5rem 2rem; }
-  .footer-top{ display:flex; flex-direction:column; gap:2.5rem; }
-  @media (min-width:768px){ .footer-top{ flex-direction:row; justify-content:space-between; } }
-  .footer-cols{ display:flex; flex-wrap:wrap; gap:2.5rem; }
-  .footer-col h4{ font-size:var(--chip); margin-bottom:1rem; }
-  .footer-col a{ display:block; padding:.25rem 0; font-size:var(--chip); color:var(--content-muted); transition:color var(--dur-fast); }
-  .footer-col a:hover{ color:var(--content); }
-  .newsletter{ max-width:20rem; }
-  .newsletter label{ display:block; font-size:var(--chip); margin-bottom:.75rem; }
-  .newsletter-field{ display:flex; border:1px solid #fff; }
-  .newsletter-field input{ flex:1; padding:.875rem 1rem; }
-  .newsletter-field button{ padding:0 1rem; }
-  .consent{ display:flex; align-items:center; gap:.5rem; margin-top:.75rem; }
-  .consent input[type=checkbox]{ appearance:none; -webkit-appearance:none; width:.625rem; height:.625rem; border:1px solid var(--rule); }
-  .consent input[type=checkbox]:checked{ background:#fff; }
-  .consent span{ font-size:var(--fine); color:var(--content-faint); text-transform:uppercase; }
-  .footer-rule{ height:1px; background:var(--rule); margin:2.5rem 0 1.5rem; }
-  .footer-bottom{ display:flex; flex-direction:column; gap:.5rem; font-size:var(--fine); color:var(--content-faint); }
-  @media (min-width:768px){ .footer-bottom{ flex-direction:row; justify-content:space-between; } }
+  footer{ background:var(--cocoa); color:rgba(251,244,234,.7); padding:4rem 0 2rem; }
+  .footer-top{ display:grid; gap:2.5rem; padding-bottom:2.5rem; border-bottom:1px solid rgba(251,244,234,.12); }
+  @media (min-width:800px){ .footer-top{ grid-template-columns:1.4fr repeat(2,1fr); } }
+  .footer-brand .brand{ color:var(--cream); }
+  .footer-brand p{ margin-top:1rem; max-width:22rem; font-size:.9375rem; }
+  .footer-social{ display:flex; gap:.75rem; margin-top:1.5rem; }
+  .footer-social a{ width:2.5rem; height:2.5rem; border-radius:50%; border:1px solid rgba(251,244,234,.25); display:flex; align-items:center; justify-content:center; transition:background .25s, transform .25s; }
+  .footer-social a:hover{ background:rgba(251,244,234,.12); transform:translateY(-2px); }
+  .footer-col h4{ color:var(--cream); font-size:.8125rem; letter-spacing:.06em; text-transform:uppercase; margin-bottom:1rem; font-weight:700; }
+  .footer-col a{ display:block; padding:.3rem 0; font-size:.9375rem; transition:color .25s; }
+  .footer-col a:hover{ color:var(--cream); }
+  .footer-bottom{ display:flex; flex-direction:column; gap:.75rem; padding-top:1.75rem; font-size:.8125rem; }
+  @media (min-width:600px){ .footer-bottom{ flex-direction:row; justify-content:space-between; } }
 
-  /* ---------- preloader ---------- */
-  #preloader{
-    position:fixed; inset:0; z-index:100; background:var(--lattice); display:grid; place-items:center;
-    transition:opacity .5s;
-  }
-  #preloader .box{ width:16rem; text-align:center; }
-  #preloader .mark{ font-weight:700; font-size:1.5rem; margin-bottom:1.5rem; }
-  #preloader .track{ height:1px; background:var(--rule); position:relative; margin-bottom:.75rem; }
-  #preloader .fill{ position:absolute; inset:0; background:#fff; transform-origin:left; transform:scaleX(0); }
-  #preloader .count{ font-size:var(--caption); color:var(--content-faint); }
-  #preloader.done{ opacity:0; pointer-events:none; }
+  .sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  .skip-link{ position:fixed; top:-3rem; left:1rem; background:var(--cocoa); color:var(--cream); padding:.6rem 1.1rem; border-radius:.5rem; z-index:200; transition:top .25s; }
+  .skip-link:focus{ top:1rem; }
 </style>
 </head>
 <body>
 
-<noscript><style>#preloader{display:none!important}</style></noscript>
-<div id="preloader">
-  <div class="box">
-    <div class="mark">NEFİS</div>
-    <div class="track"><div class="fill" id="preloader-fill"></div></div>
-    <div class="count" id="preloader-count">YÜKLƏNİR 000</div>
+<a href="#main" class="skip-link">Əsas məzmuna keç</a>
+
+<div class="blob" style="width:26rem;height:26rem;background:var(--gold);top:-8rem;right:-6rem;"></div>
+<div class="blob" style="width:20rem;height:20rem;background:var(--terracotta);top:20rem;left:-8rem;opacity:.28;"></div>
+
+<header id="site-header">
+  <div class="wrap">
+    <a href="#main" class="brand"><span class="mark">N</span> Nefis</a>
+    <nav class="primary">
+      <a href="#collections">Kolleksiya</a>
+      <a href="#how">Necə İşləyir</a>
+      <a href="#faq">Suallar</a>
+      <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener">Instagram</a>
+    </nav>
+    <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="btn btn-primary header-cta">
+      Sifariş Ver
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg>
+    </a>
+    <button class="menu-btn" id="menu-open" aria-label="Menyu"><span></span></button>
   </div>
+</header>
+
+<div class="mobile-nav" id="mobile-nav">
+  <button class="close-btn" id="menu-close" aria-label="Bağla">✕</button>
+  <a href="#collections">Kolleksiya</a>
+  <a href="#how">Necə İşləyir</a>
+  <a href="#faq">Suallar</a>
+  <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener">Instagram</a>
 </div>
 
-<div class="lattice-shell">
-  <div class="lattice-beam" id="beam"></div>
-  <div class="lattice-bars"></div>
+<main id="main">
 
-  <a href="#main" class="visually-hidden" style="position:fixed;top:-40px;left:1rem;z-index:200;background:#fff;color:#000;padding:.5rem 1rem;">Əsas məzmuna keç</a>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow">Nefis Şokolad Evi</span>
+        <h1>Hər Hədiyyə<br>Bir Xatirəyə Dönsün.</h1>
+        <p class="lede">Öz şəklinizi, öz sözünüzü seçin — biz onu sevdiklərinizə hədiyyə edəcəyiniz ən nəfis şokolad qutusuna çeviririk.</p>
+        <div class="hero-ctas">
+          <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="btn btn-primary">
+            İndi Sifariş Ver
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg>
+          </a>
+          <a href="#collections" class="btn btn-ghost">Dizaynlara Bax</a>
+        </div>
+        <div class="hero-badges">
+          <div class="hero-badge"><span class="dot"></span> Premium Şokolad</div>
+          <div class="hero-badge"><span class="dot"></span> 100% Fərdi Dizayn</div>
+          <div class="hero-badge"><span class="dot"></span> Sürətli Çatdırılma</div>
+        </div>
+      </div>
+      <div class="hero-visual reveal">
+        <div class="hero-ribbon">Fərdi Hədiyyə</div>
+        <div class="ph">
+          <div class="ring">🎁</div>
+          <p>Sizin şokolad qutunuzun<br>görüntüsü tezliklə burada</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-  <header class="site">
-    <div class="header-inner lattice-panel" style="border:0;">
-      <a href="#" class="logo"><span class="mark">◆</span> NEFİS</a>
-      <nav class="primary">
-        <a href="#collections" class="scramble" data-text="KOLLEKSİYA">KOLLEKSİYA</a>
-        <div class="submenu-wrap">
-          <button aria-expanded="false" class="scramble" data-text="ŞOKOLADLAR ▾">ŞOKOLADLAR ▾</button>
-          <div class="submenu lattice-panel">
-            <a href="#collections">AZERBAIJAN STYLE</a>
-            <a href="#collections">COUPLE BOX</a>
-            <a href="#collections">KİNDER STYLE</a>
-            <a href="#collections">MİLKA STYLE</a>
+  <!-- FEATURES -->
+  <section class="features">
+    <div class="wrap">
+      <div class="features-grid">
+        <div class="feature-card reveal">
+          <div class="ico">📸</div>
+          <h3>Fərdi Şəkil Çapı</h3>
+          <p>Üz və ya tam boy şəklinizi yüksək keyfiyyətdə qutuya çap edirik.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="ico">🍫</div>
+          <h3>Premium Şokolad</h3>
+          <p>Yalnız keyfiyyətli, təzə şokolad məhsullarından istifadə edirik.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="ico">💌</div>
+          <h3>Fərdi Yazı</h3>
+          <p>İstədiyiniz mətni, adı və ya tarixi qutuya əlavə edin.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="ico">⚡</div>
+          <h3>Sürətli Hazırlanma</h3>
+          <p>Sifarişiniz qısa müddətdə hazırlanıb sizə çatdırılır.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how" class="tinted">
+    <div class="wrap">
+      <div class="section-head center">
+        <span class="eyebrow" style="justify-content:center;">Necə İşləyir</span>
+        <h2>Üç Addımda Fərdi Hədiyyə</h2>
+        <p class="lede" style="margin-inline:auto;">Hər addım diqqətlə düşünülüb ki, xatirəniz ən nəfis formada sizə qaytarılsın.</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <div class="step-line"></div>
+          <div class="num">1</div>
+          <h3>Şəklinizi Göndərin</h3>
+          <p>Instagram və ya WhatsApp üzərindən sevdiyiniz fotonu bizə göndərin.</p>
+        </div>
+        <div class="step reveal">
+          <div class="step-line"></div>
+          <div class="num">2</div>
+          <h3>Dizaynı Seçin</h3>
+          <p>Hazır şablonlardan birini seçin və ya öz ideyanızı bizimlə bölüşün.</p>
+        </div>
+        <div class="step reveal">
+          <div class="num">3</div>
+          <h3>Qapınıza Çatdırılır</h3>
+          <p>Hədiyyəniz diqqətlə hazırlanıb, təhlükəsiz şəkildə çatdırılır.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COLLECTIONS -->
+  <section id="collections">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">Kolleksiya</span>
+        <h2>Hər Zövqə Uyğun Dizaynlar</h2>
+        <p class="lede">Hazır şablonlardan seçin və ya bizimlə öz unikal ideyanızı yaradın.</p>
+      </div>
+      <div class="cards-grid">
+        <div class="p-card reveal">
+          <div class="p-card-media"><span class="tag">Milli Ornament</span>[ Foto tezliklə ]</div>
+          <div class="p-card-body">
+            <h3>Azerbaijan Style</h3>
+            <p>Milli ornament motivləri ilə bəzədilmiş, qürur oyadan dizayn.</p>
+            <div class="p-card-foot">
+              <span class="p-card-price">Qiymət sorğu ilə</span>
+              <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="p-card-link">Sifariş ver <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            </div>
           </div>
         </div>
-        <a href="#process" class="scramble" data-text="NECƏ HAZIRLANIR">NECƏ HAZIRLANIR</a>
-        <a href="#faq" class="scramble" data-text="SUALLAR">SUALLAR</a>
-      </nav>
-      <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="cart-badge scramble" data-text="INSTAGRAM">INSTAGRAM</a>
-      <button class="hamburger" id="hamburger-open" aria-label="Menyu">☰</button>
+        <div class="p-card reveal">
+          <div class="p-card-media"><span class="tag">Cütlük Üçün</span>[ Foto tezliklə ]</div>
+          <div class="p-card-body">
+            <h3>Couple Box</h3>
+            <p>Sevginizi göstərmək üçün ikinizin şəkli ilə xüsusi dizayn.</p>
+            <div class="p-card-foot">
+              <span class="p-card-price">Qiymət sorğu ilə</span>
+              <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="p-card-link">Sifariş ver <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            </div>
+          </div>
+        </div>
+        <div class="p-card reveal">
+          <div class="p-card-media"><span class="tag">Klassik</span>[ Foto tezliklə ]</div>
+          <div class="p-card-body">
+            <h3>Kinder Style</h3>
+            <p>Tanış və sevimli qablaşdırma üzərində sizin şəkliniz.</p>
+            <div class="p-card-foot">
+              <span class="p-card-price">Qiymət sorğu ilə</span>
+              <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="p-card-link">Sifariş ver <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            </div>
+          </div>
+        </div>
+        <div class="p-card reveal">
+          <div class="p-card-media"><span class="tag">Populyar</span>[ Foto tezliklə ]</div>
+          <div class="p-card-body">
+            <h3>Milka Style</h3>
+            <p>Yumşaq bənövşəyi qablaşdırma üzərində fərdi toxunuş.</p>
+            <div class="p-card-foot">
+              <span class="p-card-price">Qiymət sorğu ilə</span>
+              <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="p-card-link">Sifariş ver <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  </header>
+  </section>
 
-  <div class="mobile-panel" id="mobile-panel">
-    <button class="close-x" id="hamburger-close" aria-label="Bağla">✕</button>
-    <a href="#collections">KOLLEKSİYA</a>
-    <a href="#process">NECƏ HAZIRLANIR</a>
-    <a href="#faq">SUALLAR</a>
-    <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener">INSTAGRAM</a>
-  </div>
-
-  <main id="main">
-
-    <!-- HERO -->
-    <section class="hero">
-      <div class="hero-markers">
-        <div class="marker left">
-          <p class="scramble" data-text="PREMİUM KEYFİYYƏT.">PREMİUM KEYFİYYƏT.</p>
-          <p class="scramble" data-text="FƏRDİ DİZAYN.">FƏRDİ DİZAYN.</p>
-          <p class="scramble" data-text="HƏR AN ÜÇÜN HAZIR.">HƏR AN ÜÇÜN HAZIR.</p>
-        </div>
-        <div class="marker right">
-          <p class="scramble" data-text="ÖZƏL GÜNLƏRİNİZ ÜÇÜN.">ÖZƏL GÜNLƏRİNİZ ÜÇÜN.</p>
-          <p class="scramble" data-text="UNUDULMAZ TƏƏSSÜRAT.">UNUDULMAZ TƏƏSSÜRAT.</p>
-          <p class="scramble" data-text="SÜRƏTLİ ÇATDIRILMA.">SÜRƏTLİ ÇATDIRILMA.</p>
-        </div>
-      </div>
-
-      <div class="hero-product" aria-hidden="true">
-        [ MƏHSUL VİZUALI TEZLİKLƏ ]
-      </div>
-
-      <h1 class="hero-claim scramble" data-text="ÖZ ŞƏKLİNİZLƏ ŞOKOLAD QUTUSU.&#10;FƏRDİ DİZAYN. NƏFİS DADIM.">ÖZ ŞƏKLİNİZLƏ ŞOKOLAD QUTUSU.<br>FƏRDİ DİZAYN. NƏFİS DADIM.</h1>
-
-      <div class="hero-cta">
-        <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="btn">
-          <span class="scramble" data-text="SİFARİŞ VER">SİFARİŞ VER</span>
-          <span class="arrow">→</span>
+  <!-- INSTAGRAM CTA -->
+  <section>
+    <div class="wrap">
+      <div class="insta-band reveal">
+        <span class="eyebrow" style="justify-content:center; color:var(--gold);">@nefis.az</span>
+        <h2>Bizi Instagramda İzləyin</h2>
+        <p>Yeni dizaynlar, müştəri işləri və sifariş vermək üçün Instagram səhifəmizə baxın.</p>
+        <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="btn btn-primary">
+          Instagrama Keç
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg>
         </a>
       </div>
+    </div>
+  </section>
 
-      <div class="corner-cards">
-        <div class="corner-card left lattice-panel">
-          <span class="icon">🌍</span>
-          <div>
-            <div class="cap">2024-DƏN BƏRİ</div>
-          </div>
-          <div class="rule-v"></div>
-          <div class="txt">KEYFİYYƏTLƏ QURULUB. /<br>İSTƏYİNİZLƏ HAZIRLANIR. /<br>SİZƏ ODAQLANIB.</div>
-        </div>
-        <div class="corner-card right lattice-panel">
-          <span class="icon">◎</span>
-          <div class="rule-v"></div>
-          <div class="txt">SÜRƏTLİ ÇATDIRILMA /<br>TƏHLÜKƏSİZ QABLAŞDIRMA</div>
-        </div>
+  <!-- FAQ -->
+  <section id="faq" class="tinted">
+    <div class="wrap">
+      <div class="section-head center reveal">
+        <span class="eyebrow" style="justify-content:center;">Suallar</span>
+        <h2>Tez-tez Soruşulan Suallar</h2>
       </div>
-    </section>
-
-    <!-- DETAILS -->
-    <section id="details">
-      <div class="frame-box">
-        <div class="details-grid">
-          <div class="reveal">
-            <h2 class="headline scramble" data-text="HƏR DETAL VACİBDİR.">HƏR DETAL<br>VACİBDİR.</h2>
-            <p class="standfirst">Hər qutu sizin xatirənizə görə fərdi hazırlanır — şəkildən tutmuş yazıya qədər hər şey sizin seçiminizdir.</p>
-            <div style="margin-top:2.5rem;">
-              <a href="#collections" class="btn"><span class="scramble" data-text="DİZAYNI KƏŞF ET">DİZAYNI KƏŞF ET</span><span class="arrow">→</span></a>
-            </div>
-          </div>
-          <ol class="spec-rows">
-            <li class="spec-row lattice-panel reveal"><span class="num">01</span><div><h3 class="scramble" data-text="FƏRDİ ŞƏKİL ÇAPI">FƏRDİ ŞƏKİL ÇAPI</h3><p>Öz şəklinizi (üz və ya tam boy) yüksək keyfiyyətdə qutunun üzərinə çap edirik.</p></div></li>
-            <li class="spec-row lattice-panel reveal"><span class="num">02</span><div><h3 class="scramble" data-text="PREMİUM ŞOKOLAD">PREMİUM ŞOKOLAD</h3><p>Yalnız keyfiyyətli, təzə şokolad məhsullarından istifadə olunur.</p></div></li>
-            <li class="spec-row lattice-panel reveal"><span class="num">03</span><div><h3 class="scramble" data-text="FƏRDİ YAZI">FƏRDİ YAZI</h3><p>İstədiyiniz mətni, adı və ya tarixi qutuya əlavə edə bilərsiniz.</p></div></li>
-            <li class="spec-row lattice-panel reveal"><span class="num">04</span><div><h3 class="scramble" data-text="MÜXTƏLİF DİZAYNLAR">MÜXTƏLİF DİZAYNLAR</h3><p>Kinder, Milka, Azerbaijan Style və digər hazır şablonlardan seçim edin.</p></div></li>
-            <li class="spec-row lattice-panel reveal"><span class="num">05</span><div><h3 class="scramble" data-text="SÜRƏTLİ HAZIRLANMA">SÜRƏTLİ HAZIRLANMA</h3><p>Sifarişiniz qısa müddətdə hazırlanıb çatdırılır.</p></div></li>
-          </ol>
-        </div>
-      </div>
-    </section>
-
-    <!-- COLLECTIONS -->
-    <section id="collections">
-      <div class="frame-box">
-        <div class="reveal">
-          <h2 class="headline scramble" data-text="KOLLEKSİYA.">KOLLEKSİYA.</h2>
-          <p class="standfirst">Hər zövqə uyğun hazır dizaynlardan seçin və ya özününüzü yaradın.</p>
-        </div>
-        <ol class="cards-row">
-          <li class="p-card reveal"><div class="p-card-surface lattice-panel">
-            <div><div class="p-card-title scramble" data-text="AZERBAIJAN STYLE">AZERBAIJAN STYLE</div><div class="p-card-price">QİYMƏT SORĞU İLƏ</div></div>
-            <div class="p-card-photo">[ FOTO ]</div>
-            <div class="p-card-foot">
-              <div class="p-card-chips"><span class="chip">MİLLİ ORNAMENT</span></div>
-              <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="p-card-link">SİFARİŞ VER <span class="arrow">→</span></a>
-            </div>
-          </div></li>
-          <li class="p-card reveal"><div class="p-card-surface lattice-panel">
-            <div><div class="p-card-title scramble" data-text="COUPLE BOX">COUPLE BOX</div><div class="p-card-price">QİYMƏT SORĞU İLƏ</div></div>
-            <div class="p-card-photo">[ FOTO ]</div>
-            <div class="p-card-foot">
-              <div class="p-card-chips"><span class="chip">CÜTLÜK ÜÇÜN</span></div>
-              <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="p-card-link">SİFARİŞ VER <span class="arrow">→</span></a>
-            </div>
-          </div></li>
-          <li class="p-card reveal"><div class="p-card-surface lattice-panel">
-            <div><div class="p-card-title scramble" data-text="KİNDER STYLE">KİNDER STYLE</div><div class="p-card-price">QİYMƏT SORĞU İLƏ</div></div>
-            <div class="p-card-photo">[ FOTO ]</div>
-            <div class="p-card-foot">
-              <div class="p-card-chips"><span class="chip">KLASSİK</span></div>
-              <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="p-card-link">SİFARİŞ VER <span class="arrow">→</span></a>
-            </div>
-          </div></li>
-          <li class="p-card reveal"><div class="p-card-surface lattice-panel">
-            <div><div class="p-card-title scramble" data-text="MİLKA STYLE">MİLKA STYLE</div><div class="p-card-price">QİYMƏT SORĞU İLƏ</div></div>
-            <div class="p-card-photo">[ FOTO ]</div>
-            <div class="p-card-foot">
-              <div class="p-card-chips"><span class="chip">POPULYAR</span></div>
-              <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="p-card-link">SİFARİŞ VER <span class="arrow">→</span></a>
-            </div>
-          </div></li>
-        </ol>
-      </div>
-    </section>
-
-    <!-- PROCESS -->
-    <section id="process">
-      <div class="frame-box">
-        <div class="reveal">
-          <h2 class="headline scramble" data-text="NECƏ HAZIRLANIR">NECƏ<br>HAZIRLANIR</h2>
-          <p class="standfirst">Hər addım diqqətlə, sizin xatirənizi ən nəfis formada təqdim etmək üçün planlaşdırılıb.</p>
-        </div>
-        <ol class="process-list">
-          <li class="process-row lattice-panel reveal"><span class="num">01</span><div><h3 class="scramble" data-text="ŞƏKLİNİZİ SEÇİN">ŞƏKLİNİZİ SEÇİN</h3><p>Üz və ya tam boy şəklinizi bizə göndərin.</p></div></li>
-          <li class="process-row lattice-panel reveal"><span class="num">02</span><div><h3 class="scramble" data-text="DİZAYNI SEÇİN">DİZAYNI SEÇİN</h3><p>Hazır şablonlardan birini seçin və ya öz ideyanızı bildirin.</p></div></li>
-          <li class="process-row lattice-panel reveal"><span class="num">03</span><div><h3 class="scramble" data-text="ÇAP HAZIRLANIR">ÇAP HAZIRLANIR</h3><p>Şəkliniz yüksək keyfiyyətdə qutu üzərinə çap olunur.</p></div></li>
-          <li class="process-row lattice-panel reveal"><span class="num">04</span><div><h3 class="scramble" data-text="ŞOKOLAD YERLƏŞDİRİLİR">ŞOKOLAD YERLƏŞDİRİLİR</h3><p>Premium şokolad diqqətlə qutuya yerləşdirilir.</p></div></li>
-          <li class="process-row lattice-panel reveal"><span class="num">05</span><div><h3 class="scramble" data-text="QABLAŞDIRILIR VƏ GÖNDƏRİLİR">QABLAŞDIRILIR VƏ GÖNDƏRİLİR</h3><p>Hədiyyəniz təhlükəsiz qablaşdırılıb sizə çatdırılır.</p></div></li>
-        </ol>
-      </div>
-    </section>
-
-    <!-- FAQ -->
-    <section id="faq">
-      <div class="frame-box">
-        <div class="reveal">
-          <h2 class="headline scramble" data-text="TEZ-TEZ SORUŞULAN SUALLAR">TEZ-TEZ<br>SORUŞULAN<br>SUALLAR.</h2>
-        </div>
-        <dl class="faq">
-          <div class="faq-row lattice-panel reveal">
-            <dt><span class="scramble" data-text="NECƏ SİFARİŞ VERƏ BİLƏRƏM?">NECƏ SİFARİŞ VERƏ BİLƏRƏM?</span><span class="idx">01</span></dt>
-            <dd>İnstagram səhifəmiz üzərindən şəklinizi göndərib istədiyiniz dizaynı seçməniz kifayətdir.</dd>
-          </div>
-          <div class="faq-row lattice-panel reveal">
-            <dt><span class="scramble" data-text="HANSI ŞOKOLAD NÖVLƏRİ MÖVCUDDUR?">HANSI ŞOKOLAD NÖVLƏRİ MÖVCUDDUR?</span><span class="idx">02</span></dt>
-            <dd>Kinder, Milka, Alionka və digər premium brendlərin dizaynında qutular təklif edirik.</dd>
-          </div>
-          <div class="faq-row lattice-panel reveal">
-            <dt><span class="scramble" data-text="ÇATDIRILMA NƏ QƏDƏR VAXT APARIR?">ÇATDIRILMA NƏ QƏDƏR VAXT APARIR?</span><span class="idx">03</span></dt>
-            <dd>Sifariş adətən 1-3 iş günü ərzində hazırlanıb çatdırılır.</dd>
-          </div>
-          <div class="faq-row lattice-panel reveal">
-            <dt><span class="scramble" data-text="BAKI XARİCİNƏ ÇATDIRILMA VARMI?">BAKI XARİCİNƏ ÇATDIRILMA VARMI?</span><span class="idx">04</span></dt>
-            <dd>Bəli, Azərbaycan daxilində bütün bölgələrə çatdırılma mövcuddur.</dd>
-          </div>
-          <div class="faq-row lattice-panel reveal">
-            <dt><span class="scramble" data-text="FƏRDİ SİFARİŞİ GERİ QAYTARA BİLƏRƏMMİ?">FƏRDİ SİFARİŞİ GERİ QAYTARA BİLƏRƏMMİ?</span><span class="idx">05</span></dt>
-            <dd>Fərdi hazırlanan məhsullar üçün geri qaytarma tətbiq olunmur, lakin çatdırılma zamanı zədə aşkar olarsa əvəz edilir.</dd>
-          </div>
-        </dl>
-      </div>
-    </section>
-
-  </main>
-
-  <footer class="lattice-panel" style="border-inline:0; border-bottom:0;">
-    <div class="frame-box">
-      <div class="footer-top">
-        <div class="footer-cols">
-          <div class="footer-col">
-            <h4>MƏHSULLAR</h4>
-            <a href="#collections">Kolleksiya</a>
-            <a href="#process">Fərdi Sifariş</a>
-            <a href="#">Hədiyyə Kartları</a>
-          </div>
-          <div class="footer-col">
-            <h4>KÖMƏK</h4>
-            <a href="#faq">Suallar</a>
-            <a href="#faq">Çatdırılma</a>
-            <a href="#faq">Sifariş İzləmə</a>
-          </div>
-          <div class="footer-col">
-            <h4>ƏLAQƏ</h4>
-            <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener">Instagram</a>
-            <a href="#">WhatsApp</a>
-            <a href="#">Email</a>
-          </div>
-        </div>
-        <form class="newsletter" onsubmit="event.preventDefault()">
-          <label for="nl-email">YENİLİKLƏRDƏN XƏBƏRDAR OLUN.</label>
-          <div class="newsletter-field">
-            <input id="nl-email" type="email" autocomplete="email" placeholder="E-poçtunuz">
-            <button type="submit" aria-label="Abunə ol">→</button>
-          </div>
-          <div class="consent">
-            <input type="checkbox" id="nl-consent">
-            <label for="nl-consent"><span>MARKETİNQ E-POÇTLARI ALMAĞA RAZIYAM.</span></label>
-          </div>
-        </form>
-      </div>
-      <div class="footer-rule"></div>
-      <div class="footer-bottom">
-        <span>© 2026 NEFİS. BÜTÜN HÜQUQLAR QORUNUR.</span>
-        <span>INSTAGRAM</span>
+      <div class="faq-list reveal">
+        <details class="faq-item" open>
+          <summary>Necə sifariş verə bilərəm?<span class="plus"></span></summary>
+          <div class="faq-a">İnstagram səhifəmiz üzərindən şəklinizi göndərib istədiyiniz dizaynı seçməniz kifayətdir.</div>
+        </details>
+        <details class="faq-item">
+          <summary>Hansı şokolad növləri mövcuddur?<span class="plus"></span></summary>
+          <div class="faq-a">Kinder, Milka, Alionka və digər premium brendlərin dizaynında qutular təklif edirik.</div>
+        </details>
+        <details class="faq-item">
+          <summary>Çatdırılma nə qədər vaxt aparır?<span class="plus"></span></summary>
+          <div class="faq-a">Sifariş adətən 1-3 iş günü ərzində hazırlanıb çatdırılır.</div>
+        </details>
+        <details class="faq-item">
+          <summary>Bakı xaricinə çatdırılma varmı?<span class="plus"></span></summary>
+          <div class="faq-a">Bəli, Azərbaycan daxilində bütün bölgələrə çatdırılma mövcuddur.</div>
+        </details>
+        <details class="faq-item">
+          <summary>Fərdi sifarişi geri qaytara bilərəmmi?<span class="plus"></span></summary>
+          <div class="faq-a">Fərdi hazırlanan məhsullar üçün geri qaytarma tətbiq olunmur, lakin çatdırılma zamanı zədə aşkar olarsa əvəz edilir.</div>
+        </details>
       </div>
     </div>
-  </footer>
+  </section>
 
-</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <span class="brand"><span class="mark">N</span> Nefis</span>
+        <p>Şokoladın ən nəfis halı — hər qutu sizin xatirəniz üçün fərdi hazırlanır.</p>
+        <div class="footer-social">
+          <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" aria-label="Instagram">📷</a>
+          <a href="#" aria-label="WhatsApp">💬</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Naviqasiya</h4>
+        <a href="#collections">Kolleksiya</a>
+        <a href="#how">Necə İşləyir</a>
+        <a href="#faq">Suallar</a>
+      </div>
+      <div class="footer-col">
+        <h4>Əlaqə</h4>
+        <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener">Instagram</a>
+        <a href="#">WhatsApp</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Nefis Şokolad Evi. Bütün hüquqlar qorunur.</span>
+      <span>Sevgi ilə hazırlanıb 🤎</span>
+    </div>
+  </div>
+</footer>
 
 <script>
 (function(){
   "use strict";
+
+  /* header shrink on scroll */
+  var header = document.getElementById("site-header");
+  var onScroll = function(){
+    if (window.scrollY > 24) header.classList.add("scrolled");
+    else header.classList.remove("scrolled");
+  };
+  document.addEventListener("scroll", onScroll, { passive:true });
+  onScroll();
+
+  /* mobile nav */
+  var nav = document.getElementById("mobile-nav");
+  document.getElementById("menu-open").addEventListener("click", function(){ nav.classList.add("open"); });
+  document.getElementById("menu-close").addEventListener("click", function(){ nav.classList.remove("open"); });
+  nav.querySelectorAll("a").forEach(function(a){ a.addEventListener("click", function(){ nav.classList.remove("open"); }); });
+
+  /* reveal on scroll — CSS transition driven, no rAF dependency */
   var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var coarse = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-
-  /* shared ticker */
-  var subs = new Set();
-  var rafId = null;
-  var lastT = performance.now();
-  function loop(t){
-    var dt = t - lastT; lastT = t;
-    subs.forEach(function(fn){ try{ fn(dt, t); }catch(e){} });
-    if (subs.size) rafId = requestAnimationFrame(loop); else rafId = null;
-  }
-  function subscribe(fn){ subs.add(fn); if(!rafId){ lastT = performance.now(); rafId = requestAnimationFrame(loop); } return function(){ subs.delete(fn); }; }
-
-  /* pointer field */
-  if (!coarse && !reduced){
-    var beam = document.getElementById("beam");
-    var px = -1000, py = -1000, tx = -1000, ty = -1000;
-    window.addEventListener("pointermove", function(e){ tx = e.clientX; ty = e.clientY; }, { passive:true });
-    subscribe(function(dt){
-      var k = 1 - Math.pow(1 - 0.12, dt/(1000/60));
-      px += (tx-px)*k; py += (ty-py)*k;
-      beam.style.setProperty("--px", px+"px");
-      beam.style.setProperty("--py", py+"px");
-    });
-  }
-
-  /* scramble decoder */
-  var CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*<>";
-  function buildScramble(el){
-    if (el.dataset.scrambleReady) return;
-    el.dataset.scrambleReady = "1";
-    var raw = el.getAttribute("data-text") || el.textContent;
-    var visible = document.createElement("span");
-    visible.setAttribute("aria-hidden","true");
-    var hidden = document.createElement("span");
-    hidden.className = "visually-hidden";
-    hidden.textContent = raw.replace(/&#10;/g,"\n");
-    el.textContent = "";
-    el.appendChild(visible);
-    el.appendChild(hidden);
-    el.__scrambleRaw = raw.replace(/&#10;/g,"\n");
-    el.__scrambleVisible = visible;
-    el.__scrambleRunning = false;
-    function run(){
-      if (reduced){ visible.textContent = el.__scrambleRaw; return; }
-      if (el.__scrambleRunning) return;
-      el.__scrambleRunning = true;
-      var text = el.__scrambleRaw;
-      var len = text.length;
-      var maxSteps = 22;
-      var charsPerStep = Math.max(1, Math.ceil(len/maxSteps));
-      var resolved = 0;
-      var stop = subscribe(throttle(40, function(){
-        var out = "";
-        for (var i=0;i<len;i++){
-          var ch = text[i];
-          if (ch === "\n"){ out += "\n"; continue; }
-          if (ch === " "){ out += " "; continue; }
-          if (i < resolved){ out += ch; }
-          else { out += CHARS[(Math.random()*CHARS.length)|0]; }
-        }
-        visible.textContent = out;
-        resolved += charsPerStep;
-        if (resolved >= len){ visible.textContent = text; stop(); el.__scrambleRunning = false; }
-      }));
-    }
-    el.__scrambleRun = run;
-    el.addEventListener("mouseenter", run);
-    el.addEventListener("focus", run);
-  }
-  function throttle(ms, fn){
-    var acc = 0;
-    return function(dt){ acc += dt; if (acc >= ms){ acc = 0; fn(); } };
-  }
-  var scrambleEls = document.querySelectorAll(".scramble");
-  scrambleEls.forEach(buildScramble);
-
-  var scrambleObserver = new IntersectionObserver(function(entries){
-    entries.forEach(function(entry){
-      if (entry.isIntersecting){ entry.target.__scrambleRun && entry.target.__scrambleRun(); scrambleObserver.unobserve(entry.target); }
-    });
-  }, { rootMargin: "0px 0px -10% 0px" });
-  scrambleEls.forEach(function(el){ scrambleObserver.observe(el); });
-
-  /* reveal on scroll */
-  var revealEls = document.querySelectorAll(".reveal");
-  function revealNow(el){ el.classList.add("is-visible"); }
-  if (reduced){
-    revealEls.forEach(revealNow);
+  var els = document.querySelectorAll(".reveal");
+  if (reduced || !("IntersectionObserver" in window)){
+    els.forEach(function(el){ el.classList.add("is-visible"); });
   } else {
-    var seen = new WeakSet();
-    function onReveal(entries, obs){
+    var io = new IntersectionObserver(function(entries, obs){
       entries.forEach(function(entry){
-        if (entry.isIntersecting && !seen.has(entry.target)){
-          seen.add(entry.target);
-          revealNow(entry.target);
+        if (entry.isIntersecting){
+          entry.target.classList.add("is-visible");
           obs.unobserve(entry.target);
         }
       });
-    }
-    var ro1 = new IntersectionObserver(onReveal, { rootMargin:"0px 0px -64px 0px" });
-    var ro2 = new IntersectionObserver(onReveal, { threshold:1 });
-    revealEls.forEach(function(el){ ro1.observe(el); ro2.observe(el); });
+    }, { threshold:0.12, rootMargin:"0px 0px -40px 0px" });
+    els.forEach(function(el){ io.observe(el); });
   }
 
-  /* card tilt */
-  if (!coarse && !reduced){
-    document.querySelectorAll(".p-card").forEach(function(card){
-      var surface = card.querySelector(".p-card-surface");
-      card.addEventListener("pointermove", function(e){
-        var r = card.getBoundingClientRect();
-        var nx = ((e.clientX - r.left) / r.width) * 2 - 1;
-        var ny = ((e.clientY - r.top) / r.height) * 2 - 1;
-        surface.style.transform = "rotateX(" + (-ny*6.5) + "deg) rotateY(" + (nx*6.5) + "deg)";
-      });
-      card.addEventListener("pointerleave", function(){ surface.style.transform = ""; });
+  /* only one FAQ item open at a time */
+  document.querySelectorAll(".faq-item").forEach(function(item){
+    item.addEventListener("toggle", function(){
+      if (item.open){
+        document.querySelectorAll(".faq-item[open]").forEach(function(other){
+          if (other !== item) other.removeAttribute("open");
+        });
+      }
     });
-  }
-
-  /* mobile nav */
-  var panel = document.getElementById("mobile-panel");
-  document.getElementById("hamburger-open").addEventListener("click", function(){ panel.classList.add("open"); });
-  document.getElementById("hamburger-close").addEventListener("click", function(){ panel.classList.remove("open"); });
-  panel.querySelectorAll("a").forEach(function(a){ a.addEventListener("click", function(){ panel.classList.remove("open"); }); });
-
-  /* preloader */
-  var pre = document.getElementById("preloader");
-  var fill = document.getElementById("preloader-fill");
-  var count = document.getElementById("preloader-count");
-  var startedAt = performance.now();
-  var target = 0, shown = 0;
-  var fontsReady = false, windowLoaded = false;
-  function ceiling(){ return (fontsReady && windowLoaded) ? 1 : Math.min(0.97, target + 0.12); }
-  var stopPreload = subscribe(function(dt){
-    target = Math.min(ceiling(), target + dt/4000);
-    shown += (target - shown) * 0.08;
-    if (fontsReady && windowLoaded) shown = Math.max(shown, 0.999*Math.min(1,shown+0.02));
-    var pct = Math.min(1, shown);
-    fill.style.transform = "scaleX(" + pct + ")";
-    count.textContent = "YÜKLƏNİR " + String(Math.round(pct*100)).padStart(3,"0");
-    if (fontsReady && windowLoaded && pct >= 0.999 && (performance.now()-startedAt) > 700){
-      pre.classList.add("done");
-      setTimeout(function(){ pre.remove(); }, 700);
-      stopPreload();
-    }
   });
-  if (document.fonts && document.fonts.ready){ document.fonts.ready.then(function(){ fontsReady = true; }); } else { fontsReady = true; }
-  if (document.readyState === "complete"){ windowLoaded = true; } else { window.addEventListener("load", function(){ windowLoaded = true; }); }
-  setTimeout(function(){ fontsReady = true; windowLoaded = true; }, 8000);
 })();
 </script>
 </body>
