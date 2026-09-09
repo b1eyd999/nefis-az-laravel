@@ -14,7 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        if (env('DEBUG_RENDER_EXCEPTIONS')) {
+        if (true) {
             $exceptions->render(function (\Throwable $e, $request) {
                 return response(
                     get_class($e) . ': ' . $e->getMessage() . "\n\n" . $e->getTraceAsString(),
