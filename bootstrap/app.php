@@ -14,5 +14,13 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        if (env('DEBUG_RENDER_EXCEPTIONS')) {
+            $exceptions->render(function (\Throwable $e, $request) {
+                return response(
+                    get_class($e) . ': ' . $e->getMessage() . "\n\n" . $e->getTraceAsString(),
+                    200,
+                    ['Content-Type' => 'text/plain']
+                );
+            });
+        }
     })->create();
