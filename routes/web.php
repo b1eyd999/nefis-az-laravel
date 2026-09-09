@@ -8,4 +8,7 @@ Route::get('/', function () {
 });
 
 Route::get('/one-time-setup/{secret}', [OneTimeSetupController::class, 'run'])
-    ->withoutMiddleware([\Illuminate\Session\Middleware\StartSession::class]);
+    ->withoutMiddleware([
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    ]);
