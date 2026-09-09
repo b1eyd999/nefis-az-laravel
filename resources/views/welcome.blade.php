@@ -5,7 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Nefis Şokolad Evi — Fərdi Şokolad Qutuları</title>
 <meta name="description" content="Öz şəklinizlə, öz sözünüzlə fərdi şokolad qutusu. Premium keyfiyyət, sevdiklərinizə unudulmaz hədiyyə.">
-<link rel="icon" href="data:,">
+<meta name="theme-color" content="#3A2617">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Nefis Şokolad Evi">
+<meta property="og:title" content="Nefis Şokolad Evi — Fərdi Şokolad Qutuları">
+<meta property="og:description" content="Öz şəklinizlə, öz sözünüzlə fərdi şokolad qutusu. Premium keyfiyyət, sevdiklərinizə unudulmaz hədiyyə.">
+<meta property="og:url" content="https://nefis.az">
+<link rel="canonical" href="https://nefis.az">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Nefis Şokolad Evi — Fərdi Şokolad Qutuları">
+<meta name="twitter:description" content="Öz şəklinizlə, öz sözünüzlə fərdi şokolad qutusu.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%AB%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -201,9 +211,12 @@
   .p-card:hover{ transform:translateY(-8px); box-shadow:var(--shadow); }
   .p-card-media{
     aspect-ratio:4/3; position:relative; display:flex; align-items:center; justify-content:center;
-    background:linear-gradient(155deg,var(--cream-2), #EAD2AE);
+    background:
+      radial-gradient(circle at 30% 25%, rgba(255,255,255,.5), transparent 55%),
+      linear-gradient(155deg,var(--cream-2), #EAD2AE);
     color:var(--cocoa-faint); font-size:.8125rem; letter-spacing:.04em;
   }
+  .p-card-media .ph-ico{ font-size:2.5rem; opacity:.55; filter:grayscale(.15); }
   .p-card-media span.tag{
     position:absolute; top:.9rem; left:.9rem; background:rgba(255,253,249,.9); color:var(--cocoa);
     font-size:.6875rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:.3rem .7rem; border-radius:999px;
@@ -396,7 +409,7 @@
       </div>
       <div class="cards-grid">
         <div class="p-card reveal">
-          <div class="p-card-media"><span class="tag">Milli Ornament</span>[ Foto tezliklə ]</div>
+          <div class="p-card-media"><span class="tag">Milli Ornament</span><span class="ph-ico">🍫</span></div>
           <div class="p-card-body">
             <h3>Azerbaijan Style</h3>
             <p>Milli ornament motivləri ilə bəzədilmiş, qürur oyadan dizayn.</p>
@@ -407,7 +420,7 @@
           </div>
         </div>
         <div class="p-card reveal">
-          <div class="p-card-media"><span class="tag">Cütlük Üçün</span>[ Foto tezliklə ]</div>
+          <div class="p-card-media"><span class="tag">Cütlük Üçün</span><span class="ph-ico">💕</span></div>
           <div class="p-card-body">
             <h3>Couple Box</h3>
             <p>Sevginizi göstərmək üçün ikinizin şəkli ilə xüsusi dizayn.</p>
@@ -418,7 +431,7 @@
           </div>
         </div>
         <div class="p-card reveal">
-          <div class="p-card-media"><span class="tag">Klassik</span>[ Foto tezliklə ]</div>
+          <div class="p-card-media"><span class="tag">Klassik</span><span class="ph-ico">🎁</span></div>
           <div class="p-card-body">
             <h3>Kinder Style</h3>
             <p>Tanış və sevimli qablaşdırma üzərində sizin şəkliniz.</p>
@@ -429,7 +442,7 @@
           </div>
         </div>
         <div class="p-card reveal">
-          <div class="p-card-media"><span class="tag">Populyar</span>[ Foto tezliklə ]</div>
+          <div class="p-card-media"><span class="tag">Populyar</span><span class="ph-ico">✨</span></div>
           <div class="p-card-body">
             <h3>Milka Style</h3>
             <p>Yumşaq bənövşəyi qablaşdırma üzərində fərdi toxunuş.</p>
@@ -500,7 +513,6 @@
         <p>Şokoladın ən nəfis halı — hər qutu sizin xatirəniz üçün fərdi hazırlanır.</p>
         <div class="footer-social">
           <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" aria-label="Instagram">📷</a>
-          <a href="#" aria-label="WhatsApp">💬</a>
         </div>
       </div>
       <div class="footer-col">
@@ -512,7 +524,6 @@
       <div class="footer-col">
         <h4>Əlaqə</h4>
         <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener">Instagram</a>
-        <a href="#">WhatsApp</a>
       </div>
     </div>
     <div class="footer-bottom">
