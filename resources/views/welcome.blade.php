@@ -114,7 +114,8 @@
   }
   header .wrap{ display:flex; align-items:center; justify-content:space-between; gap:1rem; }
   .brand{ display:flex; align-items:center; gap:.6rem; }
-  .brand img{ height:2.25rem; width:auto; display:block; }
+  .brand img{ height:3.75rem; width:auto; display:block; }
+  .footer-brand .brand img{ height:4.25rem; }
   nav.primary{ display:none; gap:2.25rem; font-weight:500; font-size:.9375rem; color:var(--cocoa-soft); }
   nav.primary a{ transition:color .25s; position:relative; }
   nav.primary a:hover{ color:var(--cocoa); }
