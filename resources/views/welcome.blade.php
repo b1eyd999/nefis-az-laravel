@@ -113,11 +113,8 @@
     background:rgba(251,244,234,.85); backdrop-filter:blur(12px); box-shadow:0 1px 0 var(--line); padding:.85rem 0;
   }
   header .wrap{ display:flex; align-items:center; justify-content:space-between; gap:1rem; }
-  .brand{ display:flex; align-items:center; gap:.6rem; font-family:var(--serif); font-weight:700; font-size:1.375rem; color:var(--cocoa); }
-  .brand .mark{
-    width:2.25rem; height:2.25rem; border-radius:50%; background:linear-gradient(145deg,var(--gold),var(--terracotta));
-    display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.125rem; flex:none;
-  }
+  .brand{ display:flex; align-items:center; gap:.6rem; }
+  .brand img{ height:2.25rem; width:auto; display:block; }
   nav.primary{ display:none; gap:2.25rem; font-weight:500; font-size:.9375rem; color:var(--cocoa-soft); }
   nav.primary a{ transition:color .25s; position:relative; }
   nav.primary a:hover{ color:var(--cocoa); }
@@ -281,7 +278,6 @@
   footer{ background:var(--cocoa); color:rgba(251,244,234,.7); padding:4rem 0 2rem; }
   .footer-top{ display:grid; gap:2.5rem; padding-bottom:2.5rem; border-bottom:1px solid rgba(251,244,234,.12); }
   @media (min-width:800px){ .footer-top{ grid-template-columns:1.4fr repeat(2,1fr); } }
-  .footer-brand .brand{ color:var(--cream); }
   .footer-brand p{ margin-top:1rem; max-width:22rem; font-size:.9375rem; }
   .footer-social{ display:flex; gap:.75rem; margin-top:1.5rem; }
   .footer-social a{ width:2.5rem; height:2.5rem; border-radius:50%; border:1px solid rgba(251,244,234,.25); display:flex; align-items:center; justify-content:center; transition:background .25s, transform .25s; }
@@ -324,7 +320,7 @@
 
 <header id="site-header">
   <div class="wrap">
-    <a href="#main" class="brand"><span class="mark">N</span> Nefis</a>
+    <a href="#main" class="brand"><img src="/images/logo.svg" alt="Nefis"></a>
     <nav class="primary">
       <a href="#collections">Kolleksiya</a>
       <a href="#how">Necə İşləyir</a>
@@ -547,7 +543,7 @@
   <div class="wrap">
     <div class="footer-top">
       <div class="footer-brand">
-        <span class="brand"><span class="mark">N</span> Nefis</span>
+        <span class="brand"><img src="/images/logo.svg" alt="Nefis"></span>
         <p>Şokoladın ən nəfis halı — hər qutu sizin xatirəniz üçün fərdi hazırlanır.</p>
         <div class="footer-social">
           <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" aria-label="Instagram">📷</a>
