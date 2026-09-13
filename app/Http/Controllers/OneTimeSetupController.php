@@ -21,9 +21,6 @@ class OneTimeSetupController extends Controller
         Artisan::call('migrate', ['--force' => true]);
         $out[] = Artisan::output();
 
-        Artisan::call('storage:link');
-        $out[] = Artisan::output();
-
         if (! Product::where('slug', 'test-box')->exists()) {
             $im = imagecreatetruecolor(1000, 1000);
             $bg = imagecolorallocate($im, 230, 200, 160);

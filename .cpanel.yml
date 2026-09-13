@@ -8,3 +8,4 @@ deployment:
     - /bin/rm -rf $APPPATH/public
     - /bin/cp -R public/* $WEBROOT/
     - /bin/cp -R public/.htaccess $WEBROOT/ 2>/dev/null || true
+    - /bin/ln -sfn $APPPATH/storage/app/public $WEBROOT/storage
