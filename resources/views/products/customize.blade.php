@@ -77,7 +77,7 @@
           <label>2. Şəkli Tənzimləyin</label>
           <div class="range-row">
             <span class="lbl">Yaxınlaşdır</span>
-            <input type="range" id="zoom-range" min="100" max="300" value="100">
+            <input type="range" id="zoom-range" min="50" max="500" value="100">
           </div>
           <p style="font-size:.8125rem; color:var(--cocoa-soft); margin-top:.5rem;">Şəkli sürükləyərək mövqeyini dəyişə bilərsiniz.</p>
         </div>
@@ -102,9 +102,23 @@
 @endsection
 
 @section('page_script')
+<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script>
 (function(){
   "use strict";
+
+  var FACE_MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+  var faceModelReady = null;
+  function ensureFaceModel(){
+    if (!faceModelReady) {
+      faceModelReady = (typeof faceapi === 'undefined')
+        ? Promise.reject(new Error('face-api not loaded'))
+        : faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL);
+    }
+    return faceModelReady;
+  }
+  /* kick off loading early so it's usually ready by the time a photo is uploaded */
+  setTimeout(function(){ ensureFaceModel().catch(function(){}); }, 300);
 
   var FONT_FAMILY = '"' + @json($product->text_font_family ?: 'Inter') + '", Inter, sans-serif';
   @if($product->text_font_file)
@@ -183,6 +197,7 @@
   var photoState = { scale: 1, offsetX: 0, offsetY: 0 };
   var templateReady = false;
   var activeAngle = 0;
+  var lastFaceBox = null; /* {x,y,width,height} in the uploaded photo's own pixel space, reused across angle switches */
 
   function currentAngle(){ return ANGLES[activeAngle]; }
   function areaCenterX(){ return currentAngle().area.x + currentAngle().area.w / 2; }
@@ -203,6 +218,17 @@
     });
 
     if (photoGuide) photoGuide.hidden = a.area.shape !== 'ellipse';
+
+    reframeForCurrentAngle();
+  }
+
+  function ellipseCoverScale(area, imgW, imgH){
+    var rotRad = area.rotation * Math.PI / 180;
+    var cosA = Math.abs(Math.cos(rotRad));
+    var sinA = Math.abs(Math.sin(rotRad));
+    var boundW = area.w * cosA + area.h * sinA;
+    var boundH = area.w * sinA + area.h * cosA;
+    return Math.max(boundW / imgW, boundH / imgH);
   }
 
   function draw(){
@@ -222,11 +248,7 @@
         ctx.beginPath();
         ctx.ellipse(areaCenterX(), areaCenterY(), area.w / 2, area.h / 2, rotRad, 0, Math.PI * 2);
         ctx.clip();
-        var cosA = Math.abs(Math.cos(rotRad));
-        var sinA = Math.abs(Math.sin(rotRad));
-        var boundW = area.w * cosA + area.h * sinA;
-        var boundH = area.w * sinA + area.h * cosA;
-        var baseScale = Math.max(boundW / photoImg.width, boundH / photoImg.height);
+        var baseScale = ellipseCoverScale(area, photoImg.width, photoImg.height);
         var scale = baseScale * photoState.scale;
         var w = photoImg.width * scale;
         var h = photoImg.height * scale;
@@ -302,6 +324,51 @@
     });
   });
 
+  function frameOnFace(box){
+    var area = currentAngle().area;
+    var faceCx = box.x + box.width / 2;
+    var faceCy = box.y + box.height / 2;
+    /* pad modestly beyond the strict face box so hair/chin stay in frame, but keep the crop tight */
+    var boxW = box.width * 1.5;
+    var boxH = box.height * 1.9;
+    var faceCenterBias = -0.05; /* nudge crop center up slightly to keep the forehead/hair in frame */
+
+    var desiredScale = Math.max(area.w / boxW, area.h / boxH);
+    var baseScale = ellipseCoverScale(area, photoImg.width, photoImg.height);
+
+    photoState.scale = desiredScale / baseScale;
+    photoState.offsetX = desiredScale * (photoImg.width / 2 - faceCx);
+    photoState.offsetY = desiredScale * (photoImg.height / 2 - (faceCy + box.height * faceCenterBias));
+    zoomRange.value = Math.round(photoState.scale * 100);
+  }
+
+  function reframeForCurrentAngle(){
+    if (!photoImg) return;
+    photoState = { scale: 1, offsetX: 0, offsetY: 0 };
+    zoomRange.value = 100;
+    if (currentAngle().area.shape === 'ellipse' && lastFaceBox) {
+      frameOnFace(lastFaceBox);
+    }
+    draw();
+  }
+
+  function applyAutoFraming(img){
+    lastFaceBox = null;
+    photoState = { scale: 1, offsetX: 0, offsetY: 0 };
+    zoomRange.value = 100;
+
+    if (currentAngle().area.shape !== 'ellipse' || typeof faceapi === 'undefined') return;
+
+    ensureFaceModel().then(function(){
+      return faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions());
+    }).then(function(det){
+      if (!det || photoImg !== img) return;
+      lastFaceBox = det.box;
+      frameOnFace(lastFaceBox);
+      draw();
+    }).catch(function(){ /* keep the cover-fit default on any detection failure */ });
+  }
+
   photoInput.addEventListener('change', function(){
     var file = photoInput.files && photoInput.files[0];
     if (!file) return;
@@ -311,8 +378,7 @@
       var img = new Image();
       img.onload = function(){
         photoImg = img;
-        photoState = { scale: 1, offsetX: 0, offsetY: 0 };
-        zoomRange.value = 100;
+        applyAutoFraming(img);
         dropHint.style.display = 'none';
         adjustControls.style.display = '';
         addBtn.disabled = false;
