@@ -29,9 +29,27 @@
     @endif
 
     <div class="customizer">
-      <div class="stage" id="stage">
-        <canvas id="preview-canvas"></canvas>
-        <div class="drop-hint" id="drop-hint">Öncə sağdan şəklinizi yükləyin</div>
+      <div>
+        <div class="stage" id="stage">
+          <canvas id="preview-canvas"></canvas>
+          <div class="drop-hint" id="drop-hint">Öncə sağdan şəklinizi yükləyin</div>
+          @if($product->angles->isNotEmpty())
+            <button type="button" class="angle-arrow prev" id="angle-prev" aria-label="Əvvəlki görünüş">‹</button>
+            <button type="button" class="angle-arrow next" id="angle-next" aria-label="Sonrakı görünüş">›</button>
+          @endif
+        </div>
+        @if($product->angles->isNotEmpty())
+          <div class="angle-thumbs" id="angle-thumbs">
+            <button type="button" class="angle-thumb active" data-angle="0">
+              <img src="{{ asset('storage/' . $product->template_image) }}" alt="{{ $product->name }}">
+            </button>
+            @foreach($product->angles as $angle)
+              <button type="button" class="angle-thumb" data-angle="{{ $loop->iteration }}">
+                <img src="{{ asset('storage/' . $angle->template_image) }}" alt="{{ $angle->label ?? $product->name }}">
+              </button>
+            @endforeach
+          </div>
+        @endif
       </div>
 
       <form class="customize-panel" method="POST" action="{{ route('cart.add') }}" enctype="multipart/form-data" id="customize-form">
@@ -80,24 +98,52 @@
 (function(){
   "use strict";
 
-  var TEMPLATE_URL = @json(asset('storage/' . $product->template_image));
-  var TW = {{ $product->template_width }};
-  var TH = {{ $product->template_height }};
-  var AREA = {
-    x: {{ $product->photo_area_x }},
-    y: {{ $product->photo_area_y }},
-    w: {{ $product->photo_area_width }},
-    h: {{ $product->photo_area_height }},
-    rotation: {{ $product->photo_area_rotation }}
-  };
-  var TEXT = {
-    x: {{ $product->text_x }},
-    y: {{ $product->text_y }},
-    maxWidth: {{ $product->text_max_width }},
-    fontSize: {{ $product->text_font_size }},
-    color: @json($product->text_color),
-    align: @json($product->text_align)
-  };
+  var ANGLES = [
+    {
+      url: @json(asset('storage/' . $product->template_image)),
+      tw: {{ $product->template_width }},
+      th: {{ $product->template_height }},
+      area: {
+        x: {{ $product->photo_area_x }},
+        y: {{ $product->photo_area_y }},
+        w: {{ $product->photo_area_width }},
+        h: {{ $product->photo_area_height }},
+        rotation: {{ $product->photo_area_rotation }}
+      },
+      text: {
+        allow: {{ $product->allow_text ? 'true' : 'false' }},
+        x: {{ $product->text_x }},
+        y: {{ $product->text_y }},
+        maxWidth: {{ $product->text_max_width }},
+        fontSize: {{ $product->text_font_size }},
+        color: @json($product->text_color),
+        align: @json($product->text_align)
+      }
+    }
+    @foreach($product->angles as $angle)
+    ,{
+      url: @json(asset('storage/' . $angle->template_image)),
+      tw: {{ $angle->template_width }},
+      th: {{ $angle->template_height }},
+      area: {
+        x: {{ $angle->photo_area_x }},
+        y: {{ $angle->photo_area_y }},
+        w: {{ $angle->photo_area_width }},
+        h: {{ $angle->photo_area_height }},
+        rotation: {{ $angle->photo_area_rotation }}
+      },
+      text: {
+        allow: {{ $angle->allow_text ? 'true' : 'false' }},
+        x: {{ $angle->text_x }},
+        y: {{ $angle->text_y }},
+        maxWidth: {{ $angle->text_max_width }},
+        fontSize: {{ $angle->text_font_size }},
+        color: @json($angle->text_color),
+        align: @json($angle->text_align)
+      }
+    }
+    @endforeach
+  ];
 
   var canvas = document.getElementById('preview-canvas');
   var ctx = canvas.getContext('2d');
@@ -108,30 +154,50 @@
   var zoomRange = document.getElementById('zoom-range');
   var customText = document.getElementById('custom_text');
   var addBtn = document.getElementById('add-to-cart-btn');
+  var anglePrev = document.getElementById('angle-prev');
+  var angleNext = document.getElementById('angle-next');
+  var angleThumbs = document.querySelectorAll('.angle-thumb');
 
   var template = new Image();
   var photoImg = null;
   var photoState = { scale: 1, offsetX: 0, offsetY: 0 };
   var templateReady = false;
+  var activeAngle = 0;
 
-  canvas.width = TW;
-  canvas.height = TH;
+  function currentAngle(){ return ANGLES[activeAngle]; }
+  function areaCenterX(){ return currentAngle().area.x + currentAngle().area.w / 2; }
+  function areaCenterY(){ return currentAngle().area.y + currentAngle().area.h / 2; }
 
-  function areaCenterX(){ return AREA.x + AREA.w / 2; }
-  function areaCenterY(){ return AREA.y + AREA.h / 2; }
+  function loadAngle(index){
+    activeAngle = index;
+    var a = ANGLES[index];
+    canvas.width = a.tw;
+    canvas.height = a.th;
+    templateReady = false;
+    template = new Image();
+    template.onload = function(){ templateReady = true; draw(); };
+    template.src = a.url;
+
+    angleThumbs.forEach(function(btn){
+      btn.classList.toggle('active', Number(btn.dataset.angle) === index);
+    });
+  }
 
   function draw(){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (templateReady) ctx.drawImage(template, 0, 0, canvas.width, canvas.height);
 
+    var area = currentAngle().area;
+    var text = currentAngle().text;
+
     if (photoImg) {
       ctx.save();
       ctx.translate(areaCenterX(), areaCenterY());
-      ctx.rotate(AREA.rotation * Math.PI / 180);
+      ctx.rotate(area.rotation * Math.PI / 180);
       ctx.beginPath();
-      ctx.rect(-AREA.w / 2, -AREA.h / 2, AREA.w, AREA.h);
+      ctx.rect(-area.w / 2, -area.h / 2, area.w, area.h);
       ctx.clip();
-      var baseScale = Math.max(AREA.w / photoImg.width, AREA.h / photoImg.height);
+      var baseScale = Math.max(area.w / photoImg.width, area.h / photoImg.height);
       var scale = baseScale * photoState.scale;
       var w = photoImg.width * scale;
       var h = photoImg.height * scale;
@@ -139,18 +205,18 @@
       ctx.restore();
     }
 
-    if (customText && customText.value) {
+    if (text.allow && customText && customText.value) {
       ctx.save();
-      ctx.font = '600 ' + TEXT.fontSize + 'px Inter, sans-serif';
-      ctx.fillStyle = TEXT.color;
-      ctx.textAlign = TEXT.align;
+      ctx.font = '600 ' + text.fontSize + 'px Inter, sans-serif';
+      ctx.fillStyle = text.color;
+      ctx.textAlign = text.align;
       ctx.textBaseline = 'middle';
-      wrapText(ctx, customText.value, TEXT.x, TEXT.y, TEXT.maxWidth, TEXT.fontSize * 1.2);
+      wrapText(ctx, customText.value, text.x, text.y, text.maxWidth, text.fontSize * 1.2, text.fontSize * 0.08);
       ctx.restore();
     }
   }
 
-  function wrapText(ctx, text, x, y, maxWidth, lineHeight){
+  function wrapText(ctx, text, x, y, maxWidth, lineHeight, strokeWidth){
     var words = text.split(' ');
     var lines = [];
     var line = '';
@@ -165,11 +231,35 @@
     }
     if (line) lines.push(line);
     var startY = y - ((lines.length - 1) * lineHeight) / 2;
-    lines.forEach(function(l, i){ ctx.fillText(l, x, startY + i * lineHeight); });
+    lines.forEach(function(l, i){
+      var ly = startY + i * lineHeight;
+      if (strokeWidth) {
+        ctx.lineWidth = strokeWidth;
+        ctx.strokeStyle = 'rgba(0,0,0,.5)';
+        ctx.lineJoin = 'round';
+        ctx.strokeText(l, x, ly);
+      }
+      ctx.fillText(l, x, ly);
+    });
   }
 
-  template.onload = function(){ templateReady = true; draw(); };
-  template.src = TEMPLATE_URL;
+  loadAngle(0);
+
+  if (anglePrev) {
+    anglePrev.addEventListener('click', function(){
+      loadAngle((activeAngle - 1 + ANGLES.length) % ANGLES.length);
+    });
+  }
+  if (angleNext) {
+    angleNext.addEventListener('click', function(){
+      loadAngle((activeAngle + 1) % ANGLES.length);
+    });
+  }
+  angleThumbs.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      loadAngle(Number(btn.dataset.angle));
+    });
+  });
 
   photoInput.addEventListener('change', function(){
     var file = photoInput.files && photoInput.files[0];

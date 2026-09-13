@@ -2,28 +2,22 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Product extends Model
+class ProductAngle extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
-        'name',
-        'slug',
-        'description',
-        'tag',
-        'price',
+        'product_id',
+        'label',
         'template_image',
+        'template_width',
+        'template_height',
         'photo_area_x',
         'photo_area_y',
         'photo_area_width',
         'photo_area_height',
         'photo_area_rotation',
-        'template_width',
-        'template_height',
         'allow_text',
         'text_x',
         'text_y',
@@ -31,7 +25,6 @@ class Product extends Model
         'text_font_size',
         'text_color',
         'text_align',
-        'is_active',
         'sort_order',
     ];
 
@@ -39,17 +32,11 @@ class Product extends Model
     {
         return [
             'allow_text' => 'boolean',
-            'is_active' => 'boolean',
         ];
     }
 
-    public function orderItems(): HasMany
+    public function product(): BelongsTo
     {
-        return $this->hasMany(OrderItem::class);
-    }
-
-    public function angles(): HasMany
-    {
-        return $this->hasMany(ProductAngle::class)->orderBy('sort_order');
+        return $this->belongsTo(Product::class);
     }
 }
