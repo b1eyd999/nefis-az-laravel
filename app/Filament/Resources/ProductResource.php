@@ -93,6 +93,53 @@ class ProductResource extends Resource
                             ->default(1000),
                     ]),
 
+                Forms\Components\Section::make('Arxa fon (istəyə bağlı)')
+                    ->description('Qutu mokupunu bir səhnə/arxa fonun üzərinə "yerləşdirmək" üçün. Boş saxlasanız qutu şəkli birbaşa tam kadrda göstərilir.')
+                    ->schema([
+                        Forms\Components\FileUpload::make('background_image')
+                            ->label('Arxa fon şəkli')
+                            ->image()
+                            ->disk('public')
+                            ->directory('backgrounds')
+                            ->live()
+                            ->afterStateUpdated(function ($state, Set $set) {
+                                if (! $state) {
+                                    return;
+                                }
+                                $path = method_exists($state, 'getRealPath') ? $state->getRealPath() : null;
+                                if ($path && $size = @getimagesize($path)) {
+                                    $set('background_width', $size[0]);
+                                    $set('background_height', $size[1]);
+                                }
+                            })
+                            ->columnSpanFull(),
+                        Forms\Components\TextInput::make('background_width')
+                            ->label('Arxa fonun eni (px)')->numeric(),
+                        Forms\Components\TextInput::make('background_height')
+                            ->label('Arxa fonun hündürlüyü (px)')->numeric(),
+                        Forms\Components\TextInput::make('box_area_x')
+                            ->label('Qutu X (soldan)')->numeric(),
+                        Forms\Components\TextInput::make('box_area_y')
+                            ->label('Qutu Y (yuxarıdan)')->numeric(),
+                        Forms\Components\TextInput::make('box_area_width')
+                            ->label('Qutu eni')->numeric(),
+                        Forms\Components\TextInput::make('box_area_height')
+                            ->label('Qutu hündürlüyü')->numeric(),
+                        Forms\Components\TextInput::make('box_area_rotation')
+                            ->label('Qutu bucağı (dərəcə)')->numeric()->default(0),
+                        Forms\Components\TextInput::make('content_x')
+                            ->label('Şəklin öz X-i')->numeric()
+                            ->helperText('Yuxarıdakı "Qutu şəkli"nin öz kətanında əsl qutunun harada yerləşdiyi (boş kənarlar çıxılmış). Boş saxlasanız bütün şəkil istifadə olunur.'),
+                        Forms\Components\TextInput::make('content_y')
+                            ->label('Şəklin öz Y-i')->numeric(),
+                        Forms\Components\TextInput::make('content_width')
+                            ->label('Şəklin öz eni')->numeric(),
+                        Forms\Components\TextInput::make('content_height')
+                            ->label('Şəklin öz hündürlüyü')->numeric(),
+                        Forms\Components\TextInput::make('content_rotation')
+                            ->label('Şəklin öz bucağı (dərəcə)')->numeric()->default(0),
+                    ])->columns(3),
+
                 Forms\Components\Section::make('Foto sahəsi')
                     ->description('Müştərinin şəklinin qutu üzərində hansı sahəyə yerləşəcəyini piksel dəyərləri ilə təyin edin (yuxarıdakı şəklin əsl ölçüsünə görə).')
                     ->schema([

@@ -41,11 +41,11 @@
         @if($product->angles->isNotEmpty())
           <div class="angle-thumbs" id="angle-thumbs">
             <button type="button" class="angle-thumb active" data-angle="0">
-              <img src="{{ asset('storage/' . $product->template_image) }}" alt="{{ $product->name }}">
+              <img src="{{ asset('storage/' . ($product->background_image ?: $product->template_image)) }}" alt="{{ $product->name }}">
             </button>
             @foreach($product->angles as $angle)
               <button type="button" class="angle-thumb" data-angle="{{ $loop->iteration }}">
-                <img src="{{ asset('storage/' . $angle->template_image) }}" alt="{{ $angle->label ?? $product->name }}">
+                <img src="{{ asset('storage/' . ($angle->background_image ?: $angle->template_image)) }}" alt="{{ $angle->label ?? $product->name }}">
               </button>
             @endforeach
           </div>
@@ -134,6 +134,23 @@
       url: @json(asset('storage/' . $product->template_image)),
       tw: {{ $product->template_width }},
       th: {{ $product->template_height }},
+      bg: {!! $product->background_image ? json_encode(asset('storage/' . $product->background_image)) : 'null' !!},
+      bgW: {{ $product->background_width ?? 0 }},
+      bgH: {{ $product->background_height ?? 0 }},
+      boxArea: {
+        x: {{ $product->box_area_x ?? 0 }},
+        y: {{ $product->box_area_y ?? 0 }},
+        w: {{ $product->box_area_width ?? 0 }},
+        h: {{ $product->box_area_height ?? 0 }},
+        rotation: {{ $product->box_area_rotation ?? 0 }}
+      },
+      contentBox: {
+        x: {{ $product->content_x ?? 0 }},
+        y: {{ $product->content_y ?? 0 }},
+        w: {{ $product->content_width ?? $product->template_width }},
+        h: {{ $product->content_height ?? $product->template_height }},
+        rotation: {{ $product->content_rotation ?? 0 }}
+      },
       area: {
         x: {{ $product->photo_area_x }},
         y: {{ $product->photo_area_y }},
@@ -157,6 +174,23 @@
       url: @json(asset('storage/' . $angle->template_image)),
       tw: {{ $angle->template_width }},
       th: {{ $angle->template_height }},
+      bg: {!! $angle->background_image ? json_encode(asset('storage/' . $angle->background_image)) : 'null' !!},
+      bgW: {{ $angle->background_width ?? 0 }},
+      bgH: {{ $angle->background_height ?? 0 }},
+      boxArea: {
+        x: {{ $angle->box_area_x ?? 0 }},
+        y: {{ $angle->box_area_y ?? 0 }},
+        w: {{ $angle->box_area_width ?? 0 }},
+        h: {{ $angle->box_area_height ?? 0 }},
+        rotation: {{ $angle->box_area_rotation ?? 0 }}
+      },
+      contentBox: {
+        x: {{ $angle->content_x ?? 0 }},
+        y: {{ $angle->content_y ?? 0 }},
+        w: {{ $angle->content_width ?? $angle->template_width }},
+        h: {{ $angle->content_height ?? $angle->template_height }},
+        rotation: {{ $angle->content_rotation ?? 0 }}
+      },
       area: {
         x: {{ $angle->photo_area_x }},
         y: {{ $angle->photo_area_y }},
@@ -193,9 +227,12 @@
   var photoGuide = document.getElementById('photo-guide');
 
   var template = new Image();
+  var templateReady = false;
+  var bgImg = new Image();
+  var bgReady = false;
+  var mockupCanvas = document.createElement('canvas');
   var photoImg = null;
   var photoState = { scale: 1, offsetX: 0, offsetY: 0 };
-  var templateReady = false;
   var activeAngle = 0;
   var lastFaceBox = null; /* {x,y,width,height} in the uploaded photo's own pixel space, reused across angle switches */
 
@@ -206,12 +243,23 @@
   function loadAngle(index){
     activeAngle = index;
     var a = ANGLES[index];
-    canvas.width = a.tw;
-    canvas.height = a.th;
+
     templateReady = false;
     template = new Image();
     template.onload = function(){ templateReady = true; draw(); };
     template.src = a.url;
+
+    if (a.bg) {
+      canvas.width = a.bgW;
+      canvas.height = a.bgH;
+      bgReady = false;
+      bgImg = new Image();
+      bgImg.onload = function(){ bgReady = true; draw(); };
+      bgImg.src = a.bg;
+    } else {
+      canvas.width = a.tw;
+      canvas.height = a.th;
+    }
 
     angleThumbs.forEach(function(btn){
       btn.classList.toggle('active', Number(btn.dataset.angle) === index);
@@ -231,51 +279,91 @@
     return Math.max(boundW / imgW, boundH / imgH);
   }
 
-  function draw(){
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (templateReady) ctx.drawImage(template, 0, 0, canvas.width, canvas.height);
+  /* Renders template + customer photo + text at the template's own native
+     resolution onto an offscreen canvas ("the mockup"), independent of
+     whether it's shown full-frame or set into a background scene. */
+  function renderMockup(){
+    var a = currentAngle();
+    var area = a.area;
+    var text = a.text;
 
-    var area = currentAngle().area;
-    var text = currentAngle().text;
+    mockupCanvas.width = a.tw;
+    mockupCanvas.height = a.th;
+    var mctx = mockupCanvas.getContext('2d');
+    mctx.clearRect(0, 0, mockupCanvas.width, mockupCanvas.height);
+    if (templateReady) mctx.drawImage(template, 0, 0, mockupCanvas.width, mockupCanvas.height);
+
+    var acx = area.x + area.w / 2;
+    var acy = area.y + area.h / 2;
 
     if (photoImg) {
-      ctx.save();
+      mctx.save();
       var rotRad = area.rotation * Math.PI / 180;
 
       if (area.shape === 'ellipse') {
         /* Keep the photo itself upright (a tilted face looks unnatural) —
            only the cutout outline follows the design's rotation. */
-        ctx.beginPath();
-        ctx.ellipse(areaCenterX(), areaCenterY(), area.w / 2, area.h / 2, rotRad, 0, Math.PI * 2);
-        ctx.clip();
+        mctx.beginPath();
+        mctx.ellipse(acx, acy, area.w / 2, area.h / 2, rotRad, 0, Math.PI * 2);
+        mctx.clip();
         var baseScale = ellipseCoverScale(area, photoImg.width, photoImg.height);
         var scale = baseScale * photoState.scale;
         var w = photoImg.width * scale;
         var h = photoImg.height * scale;
-        ctx.drawImage(photoImg, areaCenterX() - w / 2 + photoState.offsetX, areaCenterY() - h / 2 + photoState.offsetY, w, h);
+        mctx.drawImage(photoImg, acx - w / 2 + photoState.offsetX, acy - h / 2 + photoState.offsetY, w, h);
       } else {
-        ctx.translate(areaCenterX(), areaCenterY());
-        ctx.rotate(rotRad);
-        ctx.beginPath();
-        ctx.rect(-area.w / 2, -area.h / 2, area.w, area.h);
-        ctx.clip();
+        mctx.translate(acx, acy);
+        mctx.rotate(rotRad);
+        mctx.beginPath();
+        mctx.rect(-area.w / 2, -area.h / 2, area.w, area.h);
+        mctx.clip();
         var baseScale = Math.max(area.w / photoImg.width, area.h / photoImg.height);
         var scale = baseScale * photoState.scale;
         var w = photoImg.width * scale;
         var h = photoImg.height * scale;
-        ctx.drawImage(photoImg, -w / 2 + photoState.offsetX, -h / 2 + photoState.offsetY, w, h);
+        mctx.drawImage(photoImg, -w / 2 + photoState.offsetX, -h / 2 + photoState.offsetY, w, h);
       }
-      ctx.restore();
+      mctx.restore();
     }
 
     if (text.allow && customText && customText.value) {
+      mctx.save();
+      mctx.font = '600 ' + text.fontSize + 'px ' + FONT_FAMILY;
+      mctx.fillStyle = text.color;
+      mctx.textAlign = text.align;
+      mctx.textBaseline = 'middle';
+      wrapText(mctx, customText.value, text.x, text.y, text.maxWidth, text.fontSize * 1.2, text.fontSize * 0.08);
+      mctx.restore();
+    }
+
+    return mockupCanvas;
+  }
+
+  function draw(){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    var a = currentAngle();
+
+    if (a.bg) {
+      if (bgReady) ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+      var mockup = renderMockup();
+      var box = a.boxArea;
+      var cb = a.contentBox;
+      var scale = box.w / cb.w;
+      /* Undo the box art's own rotation within the template canvas, scale it
+         to match the background's cutout, then reapply the cutout's own
+         tilt — this composes correctly even when the art is itself drawn at
+         a steep angle inside its (still axis-aligned) template canvas. */
       ctx.save();
-      ctx.font = '600 ' + text.fontSize + 'px ' + FONT_FAMILY;
-      ctx.fillStyle = text.color;
-      ctx.textAlign = text.align;
-      ctx.textBaseline = 'middle';
-      wrapText(ctx, customText.value, text.x, text.y, text.maxWidth, text.fontSize * 1.2, text.fontSize * 0.08);
+      ctx.translate(box.x + box.w / 2, box.y + box.h / 2);
+      ctx.rotate(box.rotation * Math.PI / 180);
+      ctx.scale(scale, scale);
+      ctx.rotate(-cb.rotation * Math.PI / 180);
+      ctx.translate(-(cb.x + cb.w / 2), -(cb.y + cb.h / 2));
+      ctx.drawImage(mockup, 0, 0, a.tw, a.th);
       ctx.restore();
+    } else {
+      var mockup = renderMockup();
+      ctx.drawImage(mockup, 0, 0, canvas.width, canvas.height);
     }
   }
 
@@ -400,11 +488,36 @@
 
   /* drag to reposition */
   var dragging = false, lastX = 0, lastY = 0;
-  function toCanvasCoords(clientX, clientY){
+  function toCanvasPixel(clientX, clientY){
     var rect = canvas.getBoundingClientRect();
     var scaleX = canvas.width / rect.width;
     var scaleY = canvas.height / rect.height;
     return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+  }
+  /* Maps a screen point to the mockup's own (template-native) coordinate
+     space, undoing the background scene's position/rotation/scale first
+     when one is set, so drag/zoom math never needs to know about it. */
+  function toCanvasCoords(clientX, clientY){
+    var p = toCanvasPixel(clientX, clientY);
+    var a = currentAngle();
+    if (!a.bg) return p;
+    var box = a.boxArea;
+    var cb = a.contentBox;
+    var scale = box.w / cb.w;
+
+    var dx = p.x - (box.x + box.w / 2);
+    var dy = p.y - (box.y + box.h / 2);
+    var rad1 = -box.rotation * Math.PI / 180;
+    var cos1 = Math.cos(rad1), sin1 = Math.sin(rad1);
+    var rx = (dx * cos1 - dy * sin1) / scale;
+    var ry = (dx * sin1 + dy * cos1) / scale;
+
+    var rad2 = cb.rotation * Math.PI / 180;
+    var cos2 = Math.cos(rad2), sin2 = Math.sin(rad2);
+    return {
+      x: (rx * cos2 - ry * sin2) + (cb.x + cb.w / 2),
+      y: (rx * sin2 + ry * cos2) + (cb.y + cb.h / 2)
+    };
   }
   function startDrag(clientX, clientY){
     if (!photoImg) return;
