@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Defensive: an earlier failed deploy could have left a bare table (no FKs) behind.
+        Schema::dropIfExists('order_items');
+
         Schema::create('order_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->constrained()->cascadeOnDelete();
