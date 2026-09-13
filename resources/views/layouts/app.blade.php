@@ -362,6 +362,12 @@
   .angle-thumb:hover{ opacity:1; }
   .angle-thumb.active{ opacity:1; border-color:var(--gold); }
   .customize-panel{ display:flex; flex-direction:column; gap:1.5rem; }
+  .photo-guide{
+    display:flex; align-items:center; gap:.875rem; background:var(--paper); border:1px solid var(--line);
+    border-radius:var(--radius-sm); padding:.75rem .875rem; margin:.625rem 0;
+  }
+  .photo-guide svg{ flex:none; }
+  .photo-guide p{ margin:0; font-size:.8125rem; color:var(--cocoa-soft); line-height:1.4; }
   .upload-box{
     border:2px dashed var(--line); border-radius:var(--radius-sm); padding:2rem 1.5rem; text-align:center; cursor:pointer;
     transition:border-color .25s, background .25s;

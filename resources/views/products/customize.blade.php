@@ -58,6 +58,14 @@
 
         <div>
           <label>1. Şəklinizi Yükləyin</label>
+          <div class="photo-guide" id="photo-guide" hidden>
+            <svg viewBox="0 0 120 150" width="64" height="80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <ellipse cx="60" cy="78" rx="42" ry="54" stroke="var(--gold)" stroke-width="3"/>
+              <line x1="10" y1="78" x2="110" y2="78" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="4 4"/>
+              <line x1="60" y1="22" x2="60" y2="134" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="4 4"/>
+            </svg>
+            <p>Üzünüz şəklin mərkəzində, düz kameraya baxaraq çəkilmiş olsun</p>
+          </div>
           <label class="upload-box" for="photo-input">
             <div class="ico">📷</div>
             <div id="upload-label">Şəkil seçmək üçün klikləyin</div>
@@ -168,6 +176,7 @@
   var anglePrev = document.getElementById('angle-prev');
   var angleNext = document.getElementById('angle-next');
   var angleThumbs = document.querySelectorAll('.angle-thumb');
+  var photoGuide = document.getElementById('photo-guide');
 
   var template = new Image();
   var photoImg = null;
@@ -192,6 +201,8 @@
     angleThumbs.forEach(function(btn){
       btn.classList.toggle('active', Number(btn.dataset.angle) === index);
     });
+
+    if (photoGuide) photoGuide.hidden = a.area.shape !== 'ellipse';
   }
 
   function draw(){
@@ -323,8 +334,12 @@
   function moveDrag(clientX, clientY){
     if (!dragging) return;
     var p = toCanvasCoords(clientX, clientY);
-    photoState.offsetX += (p.x - lastX);
-    photoState.offsetY += (p.y - lastY);
+    var dx = p.x - lastX;
+    var dy = p.y - lastY;
+    var rad = -currentAngle().area.rotation * Math.PI / 180;
+    var cos = Math.cos(rad), sin = Math.sin(rad);
+    photoState.offsetX += dx * cos - dy * sin;
+    photoState.offsetY += dx * sin + dy * cos;
     lastX = p.x; lastY = p.y;
     draw();
   }
