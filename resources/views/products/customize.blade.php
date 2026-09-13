@@ -214,20 +214,35 @@
 
     if (photoImg) {
       ctx.save();
-      ctx.translate(areaCenterX(), areaCenterY());
-      ctx.rotate(area.rotation * Math.PI / 180);
-      ctx.beginPath();
+      var rotRad = area.rotation * Math.PI / 180;
+
       if (area.shape === 'ellipse') {
-        ctx.ellipse(0, 0, area.w / 2, area.h / 2, 0, 0, Math.PI * 2);
+        /* Keep the photo itself upright (a tilted face looks unnatural) —
+           only the cutout outline follows the design's rotation. */
+        ctx.beginPath();
+        ctx.ellipse(areaCenterX(), areaCenterY(), area.w / 2, area.h / 2, rotRad, 0, Math.PI * 2);
+        ctx.clip();
+        var cosA = Math.abs(Math.cos(rotRad));
+        var sinA = Math.abs(Math.sin(rotRad));
+        var boundW = area.w * cosA + area.h * sinA;
+        var boundH = area.w * sinA + area.h * cosA;
+        var baseScale = Math.max(boundW / photoImg.width, boundH / photoImg.height);
+        var scale = baseScale * photoState.scale;
+        var w = photoImg.width * scale;
+        var h = photoImg.height * scale;
+        ctx.drawImage(photoImg, areaCenterX() - w / 2 + photoState.offsetX, areaCenterY() - h / 2 + photoState.offsetY, w, h);
       } else {
+        ctx.translate(areaCenterX(), areaCenterY());
+        ctx.rotate(rotRad);
+        ctx.beginPath();
         ctx.rect(-area.w / 2, -area.h / 2, area.w, area.h);
+        ctx.clip();
+        var baseScale = Math.max(area.w / photoImg.width, area.h / photoImg.height);
+        var scale = baseScale * photoState.scale;
+        var w = photoImg.width * scale;
+        var h = photoImg.height * scale;
+        ctx.drawImage(photoImg, -w / 2 + photoState.offsetX, -h / 2 + photoState.offsetY, w, h);
       }
-      ctx.clip();
-      var baseScale = Math.max(area.w / photoImg.width, area.h / photoImg.height);
-      var scale = baseScale * photoState.scale;
-      var w = photoImg.width * scale;
-      var h = photoImg.height * scale;
-      ctx.drawImage(photoImg, -w / 2 + photoState.offsetX, -h / 2 + photoState.offsetY, w, h);
       ctx.restore();
     }
 
@@ -336,10 +351,16 @@
     var p = toCanvasCoords(clientX, clientY);
     var dx = p.x - lastX;
     var dy = p.y - lastY;
-    var rad = -currentAngle().area.rotation * Math.PI / 180;
-    var cos = Math.cos(rad), sin = Math.sin(rad);
-    photoState.offsetX += dx * cos - dy * sin;
-    photoState.offsetY += dx * sin + dy * cos;
+    if (currentAngle().area.shape === 'ellipse') {
+      /* photo is drawn upright for ellipse cutouts, so no de-rotation needed */
+      photoState.offsetX += dx;
+      photoState.offsetY += dy;
+    } else {
+      var rad = -currentAngle().area.rotation * Math.PI / 180;
+      var cos = Math.cos(rad), sin = Math.sin(rad);
+      photoState.offsetX += dx * cos - dy * sin;
+      photoState.offsetY += dx * sin + dy * cos;
+    }
     lastX = p.x; lastY = p.y;
     draw();
   }
