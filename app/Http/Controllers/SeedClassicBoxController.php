@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\ProductAngle;
+use Illuminate\Support\Facades\Artisan;
 
 // Müvəqqəti: shell girişi olmayan hostingdə "Klassik Şokolad Qutusu" məhsulunu
 // və bucaqlarını yaratmaq üçün. İstifadədən sonra bu fayl və ona aid route silinməlidir.
@@ -14,6 +15,9 @@ class SeedClassicBoxController extends Controller
         if (! hash_equals(env('SEED_CLASSIC_BOX_SECRET', ''), $secret)) {
             abort(404);
         }
+
+        Artisan::call('migrate', ['--force' => true]);
+        $migrateOutput = Artisan::output();
 
         $product = Product::updateOrCreate(
             ['slug' => 'klassik-qutu'],
@@ -109,6 +113,6 @@ class SeedClassicBoxController extends Controller
             );
         }
 
-        return response('Product ID: '.$product->id.' / Angles: '.$product->angles()->count());
+        return response("<pre>".e($migrateOutput)."</pre>Product ID: ".$product->id.' / Angles: '.$product->angles()->count());
     }
 }
