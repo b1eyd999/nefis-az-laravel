@@ -22,6 +22,7 @@ class Product extends Model
         'photo_area_width',
         'photo_area_height',
         'photo_area_rotation',
+        'photo_area_shape',
         'template_width',
         'template_height',
         'allow_text',
@@ -31,6 +32,8 @@ class Product extends Model
         'text_font_size',
         'text_color',
         'text_align',
+        'text_font_family',
+        'text_font_file',
         'is_active',
         'sort_order',
     ];

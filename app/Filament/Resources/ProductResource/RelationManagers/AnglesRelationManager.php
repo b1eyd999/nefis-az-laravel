@@ -68,6 +68,11 @@ class AnglesRelationManager extends RelationManager
                             ->label('Hündürlük')->numeric()->required()->default(100),
                         Forms\Components\TextInput::make('photo_area_rotation')
                             ->label('Bucaq (dərəcə)')->numeric()->required()->default(0),
+                        Forms\Components\Select::make('photo_area_shape')
+                            ->label('Forma')
+                            ->options(['rectangle' => 'Düzbucaqlı', 'ellipse' => 'Oval'])
+                            ->default('rectangle')
+                            ->required(),
                     ])->columns(3),
 
                 Forms\Components\Section::make('Mətn sahəsi')

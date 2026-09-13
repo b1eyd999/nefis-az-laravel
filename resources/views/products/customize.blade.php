@@ -98,6 +98,15 @@
 (function(){
   "use strict";
 
+  var FONT_FAMILY = '"' + @json($product->text_font_family ?: 'Inter') + '", Inter, sans-serif';
+  @if($product->text_font_file)
+    var fontFace = new FontFace(@json($product->text_font_family ?: 'Inter'), 'url(' + @json(asset('storage/' . $product->text_font_file)) + ')');
+    fontFace.load().then(function(loaded){
+      document.fonts.add(loaded);
+      draw();
+    }).catch(function(){});
+  @endif
+
   var ANGLES = [
     {
       url: @json(asset('storage/' . $product->template_image)),
@@ -108,7 +117,8 @@
         y: {{ $product->photo_area_y }},
         w: {{ $product->photo_area_width }},
         h: {{ $product->photo_area_height }},
-        rotation: {{ $product->photo_area_rotation }}
+        rotation: {{ $product->photo_area_rotation }},
+        shape: @json($product->photo_area_shape)
       },
       text: {
         allow: {{ $product->allow_text ? 'true' : 'false' }},
@@ -130,7 +140,8 @@
         y: {{ $angle->photo_area_y }},
         w: {{ $angle->photo_area_width }},
         h: {{ $angle->photo_area_height }},
-        rotation: {{ $angle->photo_area_rotation }}
+        rotation: {{ $angle->photo_area_rotation }},
+        shape: @json($angle->photo_area_shape)
       },
       text: {
         allow: {{ $angle->allow_text ? 'true' : 'false' }},
@@ -195,7 +206,11 @@
       ctx.translate(areaCenterX(), areaCenterY());
       ctx.rotate(area.rotation * Math.PI / 180);
       ctx.beginPath();
-      ctx.rect(-area.w / 2, -area.h / 2, area.w, area.h);
+      if (area.shape === 'ellipse') {
+        ctx.ellipse(0, 0, area.w / 2, area.h / 2, 0, 0, Math.PI * 2);
+      } else {
+        ctx.rect(-area.w / 2, -area.h / 2, area.w, area.h);
+      }
       ctx.clip();
       var baseScale = Math.max(area.w / photoImg.width, area.h / photoImg.height);
       var scale = baseScale * photoState.scale;
@@ -207,7 +222,7 @@
 
     if (text.allow && customText && customText.value) {
       ctx.save();
-      ctx.font = '600 ' + text.fontSize + 'px Inter, sans-serif';
+      ctx.font = '600 ' + text.fontSize + 'px ' + FONT_FAMILY;
       ctx.fillStyle = text.color;
       ctx.textAlign = text.align;
       ctx.textBaseline = 'middle';

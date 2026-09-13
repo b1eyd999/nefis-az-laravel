@@ -18,6 +18,7 @@ class ProductAngle extends Model
         'photo_area_width',
         'photo_area_height',
         'photo_area_rotation',
+        'photo_area_shape',
         'allow_text',
         'text_x',
         'text_y',
@@ -25,6 +26,8 @@ class ProductAngle extends Model
         'text_font_size',
         'text_color',
         'text_align',
+        'text_font_family',
+        'text_font_file',
         'sort_order',
     ];
 

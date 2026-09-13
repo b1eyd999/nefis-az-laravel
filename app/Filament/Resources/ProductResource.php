@@ -106,6 +106,11 @@ class ProductResource extends Resource
                             ->label('Hündürlük')->numeric()->required()->default(100),
                         Forms\Components\TextInput::make('photo_area_rotation')
                             ->label('Bucaq (dərəcə)')->numeric()->required()->default(0),
+                        Forms\Components\Select::make('photo_area_shape')
+                            ->label('Forma')
+                            ->options(['rectangle' => 'Düzbucaqlı', 'ellipse' => 'Oval'])
+                            ->default('rectangle')
+                            ->required(),
                     ])->columns(3),
 
                 Forms\Components\Section::make('Mətn sahəsi')
@@ -133,6 +138,16 @@ class ProductResource extends Resource
                             ->label('Düzülüş')
                             ->options(['left' => 'Sol', 'center' => 'Mərkəz', 'right' => 'Sağ'])
                             ->default('center')
+                            ->visible(fn (Get $get) => $get('allow_text')),
+                        Forms\Components\TextInput::make('text_font_family')
+                            ->label('Şrift adı (CSS)')
+                            ->helperText('Məs. "Great Vibes". Boş saxlasanız standart şrift istifadə olunur.')
+                            ->visible(fn (Get $get) => $get('allow_text')),
+                        Forms\Components\FileUpload::make('text_font_file')
+                            ->label('Şrift faylı (.woff2/.woff/.ttf/.otf)')
+                            ->disk('public')
+                            ->directory('fonts')
+                            ->acceptedFileTypes(['font/woff2', 'font/woff', 'font/ttf', 'font/otf', 'application/font-woff', 'application/font-woff2', 'application/x-font-ttf', 'application/x-font-otf'])
                             ->visible(fn (Get $get) => $get('allow_text')),
                     ])->columns(3),
             ]);
