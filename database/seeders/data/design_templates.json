@@ -421,6 +421,165 @@
     "font_family": "Argo Heavy",
     "font_file": "fonts/argo-heavy.woff2"
    }
+  ],
+  "background_image": "backgrounds/bar-scene-diagonal.jpg",
+  "background_width": 1400,
+  "background_height": 1750,
+  "box_area_x": 418,
+  "box_area_y": 374,
+  "box_area_width": 519,
+  "box_area_height": 1012,
+  "box_area_rotation": -3,
+  "content_x": 0,
+  "content_y": 0,
+  "content_width": 969,
+  "content_height": 1888,
+  "content_rotation": 0,
+  "angles": [
+   {
+    "label": "Əyri bucaq",
+    "sort_order": 0,
+    "template_image": "products/alpen-gold-back.png",
+    "overlay_image": "products/alpen-gold-overlay.png",
+    "template_width": 969,
+    "template_height": 1888,
+    "photo_slots": [
+     {
+      "label": "Şəkil",
+      "x": 49,
+      "y": 602,
+      "width": 873,
+      "height": 764,
+      "rotation": 0,
+      "shape": "rectangle"
+     }
+    ],
+    "text_slots": [
+     {
+      "label": "Ad",
+      "x": 485,
+      "y": 1838,
+      "max_width": 620,
+      "font_size": 46,
+      "color": "#F0D9A8",
+      "align": "center",
+      "default_value": "",
+      "placeholder": "Kimə hədiyyədir?",
+      "max_length": 24,
+      "font_family": "Argo Heavy",
+      "font_file": "fonts/argo-heavy.woff2"
+     }
+    ],
+    "background_image": "backgrounds/bar-scene-tilt.jpg",
+    "background_width": 1400,
+    "background_height": 1750,
+    "box_area_x": 424,
+    "box_area_y": 389,
+    "box_area_width": 519,
+    "box_area_height": 1012,
+    "box_area_rotation": -47,
+    "content_x": 0,
+    "content_y": 0,
+    "content_width": 969,
+    "content_height": 1888,
+    "content_rotation": 0
+   },
+   {
+    "label": "Yan görünüş",
+    "sort_order": 1,
+    "template_image": "products/alpen-gold-back.png",
+    "overlay_image": "products/alpen-gold-overlay.png",
+    "template_width": 969,
+    "template_height": 1888,
+    "photo_slots": [
+     {
+      "label": "Şəkil",
+      "x": 49,
+      "y": 602,
+      "width": 873,
+      "height": 764,
+      "rotation": 0,
+      "shape": "rectangle"
+     }
+    ],
+    "text_slots": [
+     {
+      "label": "Ad",
+      "x": 485,
+      "y": 1838,
+      "max_width": 620,
+      "font_size": 46,
+      "color": "#F0D9A8",
+      "align": "center",
+      "default_value": "",
+      "placeholder": "Kimə hədiyyədir?",
+      "max_length": 24,
+      "font_family": "Argo Heavy",
+      "font_file": "fonts/argo-heavy.woff2"
+     }
+    ],
+    "background_image": "backgrounds/bar-scene-front.jpg",
+    "background_width": 1400,
+    "background_height": 1750,
+    "box_area_x": 430,
+    "box_area_y": 392,
+    "box_area_width": 519,
+    "box_area_height": 1012,
+    "box_area_rotation": -65,
+    "content_x": 0,
+    "content_y": 0,
+    "content_width": 969,
+    "content_height": 1888,
+    "content_rotation": 0
+   },
+   {
+    "label": "Dik profil",
+    "sort_order": 2,
+    "template_image": "products/alpen-gold-back.png",
+    "overlay_image": "products/alpen-gold-overlay.png",
+    "template_width": 969,
+    "template_height": 1888,
+    "photo_slots": [
+     {
+      "label": "Şəkil",
+      "x": 49,
+      "y": 602,
+      "width": 873,
+      "height": 764,
+      "rotation": 0,
+      "shape": "rectangle"
+     }
+    ],
+    "text_slots": [
+     {
+      "label": "Ad",
+      "x": 485,
+      "y": 1838,
+      "max_width": 620,
+      "font_size": 46,
+      "color": "#F0D9A8",
+      "align": "center",
+      "default_value": "",
+      "placeholder": "Kimə hədiyyədir?",
+      "max_length": 24,
+      "font_family": "Argo Heavy",
+      "font_file": "fonts/argo-heavy.woff2"
+     }
+    ],
+    "background_image": "backgrounds/bar-scene-upright.jpg",
+    "background_width": 1400,
+    "background_height": 1750,
+    "box_area_x": 420,
+    "box_area_y": 364,
+    "box_area_width": 519,
+    "box_area_height": 1012,
+    "box_area_rotation": 25,
+    "content_x": 0,
+    "content_y": 0,
+    "content_width": 969,
+    "content_height": 1888,
+    "content_rotation": 0
+   }
   ]
  },
  {
@@ -492,7 +651,175 @@
     "shape": "rectangle"
    }
   ],
-  "text_slots": []
+  "text_slots": [],
+  "background_image": "backgrounds/bar-scene-diagonal.jpg",
+  "background_width": 1400,
+  "background_height": 1750,
+  "box_area_x": 418,
+  "box_area_y": 344,
+  "box_area_width": 519,
+  "box_area_height": 1072,
+  "box_area_rotation": -3,
+  "content_x": 0,
+  "content_y": 0,
+  "content_width": 906,
+  "content_height": 1871,
+  "content_rotation": 0,
+  "angles": [
+   {
+    "label": "Əyri bucaq",
+    "sort_order": 0,
+    "template_image": "products/google-my-love-back.png",
+    "overlay_image": null,
+    "template_width": 906,
+    "template_height": 1871,
+    "photo_slots": [
+     {
+      "label": "Sol şəkil",
+      "x": 48,
+      "y": 559,
+      "width": 397,
+      "height": 756,
+      "rotation": 0,
+      "shape": "rectangle"
+     },
+     {
+      "label": "Sağ şəkil",
+      "x": 463,
+      "y": 563,
+      "width": 395,
+      "height": 752,
+      "rotation": 0,
+      "shape": "rectangle"
+     },
+     {
+      "label": "Alt şəkil",
+      "x": 48,
+      "y": 1339,
+      "width": 810,
+      "height": 426,
+      "rotation": 0,
+      "shape": "rectangle"
+     }
+    ],
+    "text_slots": [],
+    "background_image": "backgrounds/bar-scene-tilt.jpg",
+    "background_width": 1400,
+    "background_height": 1750,
+    "box_area_x": 424,
+    "box_area_y": 358,
+    "box_area_width": 519,
+    "box_area_height": 1072,
+    "box_area_rotation": -47,
+    "content_x": 0,
+    "content_y": 0,
+    "content_width": 906,
+    "content_height": 1871,
+    "content_rotation": 0
+   },
+   {
+    "label": "Yan görünüş",
+    "sort_order": 1,
+    "template_image": "products/google-my-love-back.png",
+    "overlay_image": null,
+    "template_width": 906,
+    "template_height": 1871,
+    "photo_slots": [
+     {
+      "label": "Sol şəkil",
+      "x": 48,
+      "y": 559,
+      "width": 397,
+      "height": 756,
+      "rotation": 0,
+      "shape": "rectangle"
+     },
+     {
+      "label": "Sağ şəkil",
+      "x": 463,
+      "y": 563,
+      "width": 395,
+      "height": 752,
+      "rotation": 0,
+      "shape": "rectangle"
+     },
+     {
+      "label": "Alt şəkil",
+      "x": 48,
+      "y": 1339,
+      "width": 810,
+      "height": 426,
+      "rotation": 0,
+      "shape": "rectangle"
+     }
+    ],
+    "text_slots": [],
+    "background_image": "backgrounds/bar-scene-front.jpg",
+    "background_width": 1400,
+    "background_height": 1750,
+    "box_area_x": 430,
+    "box_area_y": 362,
+    "box_area_width": 519,
+    "box_area_height": 1072,
+    "box_area_rotation": -65,
+    "content_x": 0,
+    "content_y": 0,
+    "content_width": 906,
+    "content_height": 1871,
+    "content_rotation": 0
+   },
+   {
+    "label": "Dik profil",
+    "sort_order": 2,
+    "template_image": "products/google-my-love-back.png",
+    "overlay_image": null,
+    "template_width": 906,
+    "template_height": 1871,
+    "photo_slots": [
+     {
+      "label": "Sol şəkil",
+      "x": 48,
+      "y": 559,
+      "width": 397,
+      "height": 756,
+      "rotation": 0,
+      "shape": "rectangle"
+     },
+     {
+      "label": "Sağ şəkil",
+      "x": 463,
+      "y": 563,
+      "width": 395,
+      "height": 752,
+      "rotation": 0,
+      "shape": "rectangle"
+     },
+     {
+      "label": "Alt şəkil",
+      "x": 48,
+      "y": 1339,
+      "width": 810,
+      "height": 426,
+      "rotation": 0,
+      "shape": "rectangle"
+     }
+    ],
+    "text_slots": [],
+    "background_image": "backgrounds/bar-scene-upright.jpg",
+    "background_width": 1400,
+    "background_height": 1750,
+    "box_area_x": 420,
+    "box_area_y": 334,
+    "box_area_width": 519,
+    "box_area_height": 1072,
+    "box_area_rotation": 25,
+    "content_x": 0,
+    "content_y": 0,
+    "content_width": 906,
+    "content_height": 1871,
+    "content_rotation": 0
+   }
+  ]
  },
  {
   "slug": "kinder-special-foto-kollaj",
@@ -544,6 +871,165 @@
     "max_length": 60,
     "font_family": "SF Semibold",
     "font_file": "fonts/sanfrancisco-semibold.woff2"
+   }
+  ],
+  "background_image": "backgrounds/bar-scene-diagonal.jpg",
+  "background_width": 1400,
+  "background_height": 1750,
+  "box_area_x": 418,
+  "box_area_y": 343,
+  "box_area_width": 519,
+  "box_area_height": 1075,
+  "box_area_rotation": -3,
+  "content_x": 0,
+  "content_y": 0,
+  "content_width": 374,
+  "content_height": 774,
+  "content_rotation": 0,
+  "angles": [
+   {
+    "label": "Əyri bucaq",
+    "sort_order": 0,
+    "template_image": "products/kinder-chocolate-ferdi-back.png",
+    "overlay_image": "products/kinder-chocolate-ferdi-overlay.png",
+    "template_width": 374,
+    "template_height": 774,
+    "photo_slots": [
+     {
+      "label": "Şəkil",
+      "x": 0,
+      "y": 0,
+      "width": 374,
+      "height": 572,
+      "rotation": 0,
+      "shape": "rectangle"
+     }
+    ],
+    "text_slots": [
+     {
+      "label": "Ad",
+      "x": 188,
+      "y": 732,
+      "max_width": 164,
+      "font_size": 25,
+      "color": "#000000",
+      "align": "center",
+      "default_value": "Special edition",
+      "placeholder": "Special edition Aysel",
+      "max_length": 60,
+      "font_family": "SF Semibold",
+      "font_file": "fonts/sanfrancisco-semibold.woff2"
+     }
+    ],
+    "background_image": "backgrounds/bar-scene-tilt.jpg",
+    "background_width": 1400,
+    "background_height": 1750,
+    "box_area_x": 424,
+    "box_area_y": 357,
+    "box_area_width": 519,
+    "box_area_height": 1075,
+    "box_area_rotation": -47,
+    "content_x": 0,
+    "content_y": 0,
+    "content_width": 374,
+    "content_height": 774,
+    "content_rotation": 0
+   },
+   {
+    "label": "Yan görünüş",
+    "sort_order": 1,
+    "template_image": "products/kinder-chocolate-ferdi-back.png",
+    "overlay_image": "products/kinder-chocolate-ferdi-overlay.png",
+    "template_width": 374,
+    "template_height": 774,
+    "photo_slots": [
+     {
+      "label": "Şəkil",
+      "x": 0,
+      "y": 0,
+      "width": 374,
+      "height": 572,
+      "rotation": 0,
+      "shape": "rectangle"
+     }
+    ],
+    "text_slots": [
+     {
+      "label": "Ad",
+      "x": 188,
+      "y": 732,
+      "max_width": 164,
+      "font_size": 25,
+      "color": "#000000",
+      "align": "center",
+      "default_value": "Special edition",
+      "placeholder": "Special edition Aysel",
+      "max_length": 60,
+      "font_family": "SF Semibold",
+      "font_file": "fonts/sanfrancisco-semibold.woff2"
+     }
+    ],
+    "background_image": "backgrounds/bar-scene-front.jpg",
+    "background_width": 1400,
+    "background_height": 1750,
+    "box_area_x": 430,
+    "box_area_y": 361,
+    "box_area_width": 519,
+    "box_area_height": 1075,
+    "box_area_rotation": -65,
+    "content_x": 0,
+    "content_y": 0,
+    "content_width": 374,
+    "content_height": 774,
+    "content_rotation": 0
+   },
+   {
+    "label": "Dik profil",
+    "sort_order": 2,
+    "template_image": "products/kinder-chocolate-ferdi-back.png",
+    "overlay_image": "products/kinder-chocolate-ferdi-overlay.png",
+    "template_width": 374,
+    "template_height": 774,
+    "photo_slots": [
+     {
+      "label": "Şəkil",
+      "x": 0,
+      "y": 0,
+      "width": 374,
+      "height": 572,
+      "rotation": 0,
+      "shape": "rectangle"
+     }
+    ],
+    "text_slots": [
+     {
+      "label": "Ad",
+      "x": 188,
+      "y": 732,
+      "max_width": 164,
+      "font_size": 25,
+      "color": "#000000",
+      "align": "center",
+      "default_value": "Special edition",
+      "placeholder": "Special edition Aysel",
+      "max_length": 60,
+      "font_family": "SF Semibold",
+      "font_file": "fonts/sanfrancisco-semibold.woff2"
+     }
+    ],
+    "background_image": "backgrounds/bar-scene-upright.jpg",
+    "background_width": 1400,
+    "background_height": 1750,
+    "box_area_x": 420,
+    "box_area_y": 333,
+    "box_area_width": 519,
+    "box_area_height": 1075,
+    "box_area_rotation": 25,
+    "content_x": 0,
+    "content_y": 0,
+    "content_width": 374,
+    "content_height": 774,
+    "content_rotation": 0
    }
   ]
  },
