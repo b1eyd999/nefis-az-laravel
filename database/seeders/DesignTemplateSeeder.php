@@ -49,20 +49,24 @@ class DesignTemplateSeeder extends Seeder
             $product->fill($this->viewFields($config));
             $product->save();
 
-            $this->syncSlots($product, $config);
+            $this->seedSlots($product, $config);
 
-            $product->angles()->each(function (ProductAngle $angle) {
-                $angle->photoSlots()->delete();
-                $angle->textSlots()->delete();
-                $angle->delete();
-            });
-
-            foreach ($config['angles'] ?? [] as $order => $angleConfig) {
-                $angle = $product->angles()->create($this->viewFields($angleConfig) + [
-                    'label' => $angleConfig['label'] ?? null,
-                    'sort_order' => $angleConfig['sort_order'] ?? $order,
-                ]);
-                $this->syncSlots($angle, $angleConfig);
+            // Angles are only built once. After that the layout editor owns
+            // them, and re-seeding must not wipe hand-placed areas.
+            if ($product->angles()->doesntExist()) {
+                foreach ($config['angles'] ?? [] as $order => $angleConfig) {
+                    $angle = $product->angles()->create($this->viewFields($angleConfig) + [
+                        'label' => $angleConfig['label'] ?? null,
+                        'sort_order' => $angleConfig['sort_order'] ?? $order,
+                    ]);
+                    $this->seedSlots($angle, $angleConfig);
+                }
+            } else {
+                foreach ($product->angles as $angle) {
+                    $angle->update($this->viewFields(
+                        collect($config['angles'] ?? [])->firstWhere('label', $angle->label) ?? []
+                    ));
+                }
             }
 
             $this->command?->info(sprintf(
@@ -80,16 +84,22 @@ class DesignTemplateSeeder extends Seeder
         return array_intersect_key($config, array_flip(self::VIEW_FIELDS));
     }
 
-    private function syncSlots(Product|ProductAngle $owner, array $config): void
+    /**
+     * Seeds starting areas only when none exist. Once someone has placed them
+     * in the layout editor, that placement is the source of truth.
+     */
+    private function seedSlots(Product|ProductAngle $owner, array $config): void
     {
-        $owner->photoSlots()->delete();
-        foreach ($config['photo_slots'] as $order => $slot) {
-            $owner->photoSlots()->create($slot + ['sort_order' => $order]);
+        if ($owner->photoSlots()->doesntExist()) {
+            foreach ($config['photo_slots'] ?? [] as $order => $slot) {
+                $owner->photoSlots()->create($slot + ['sort_order' => $order]);
+            }
         }
 
-        $owner->textSlots()->delete();
-        foreach ($config['text_slots'] as $order => $slot) {
-            $owner->textSlots()->create($slot + ['sort_order' => $order]);
+        if ($owner->textSlots()->doesntExist()) {
+            foreach ($config['text_slots'] ?? [] as $order => $slot) {
+                $owner->textSlots()->create($slot + ['sort_order' => $order]);
+            }
         }
     }
 }
