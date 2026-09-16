@@ -417,7 +417,9 @@
     "align": "center",
     "default_value": "",
     "placeholder": "Kimə hədiyyədir?",
-    "max_length": 24
+    "max_length": 24,
+    "font_family": "Argo Heavy",
+    "font_file": "fonts/argo-heavy.woff2"
    }
   ]
  },
@@ -449,7 +451,9 @@
     "align": "center",
     "default_value": "",
     "placeholder": "Ad yazın",
-    "max_length": 60
+    "max_length": 60,
+    "font_family": "Great Vibes",
+    "font_file": null
    }
   ]
  },
@@ -537,7 +541,9 @@
     "align": "center",
     "default_value": "Special edition",
     "placeholder": "Special edition Aysel",
-    "max_length": 60
+    "max_length": 60,
+    "font_family": "SF Semibold",
+    "font_file": "fonts/sanfrancisco-semibold.woff2"
    }
   ]
  },
@@ -559,7 +565,9 @@
     "align": "center",
     "default_value": "Bəzən bir nöqtə bütün dünyanı əvəz edir. Mənim üçün dünya sənin olduğun yerdir.",
     "placeholder": "Bəzən bir nöqtə bütün dünyanı əvəz edir.",
-    "max_length": 119
+    "max_length": 119,
+    "font_family": "Komika Title",
+    "font_file": null
    },
    {
     "label": "Ad",
@@ -571,7 +579,9 @@
     "align": "center",
     "default_value": "SPECİAL EDİTİON FOR LEYLA",
     "placeholder": "SPECİAL EDİTİON FOR LEYLA",
-    "max_length": 65
+    "max_length": 65,
+    "font_family": "SF Regular",
+    "font_file": "fonts/sanfrancisco-regular.woff2"
    }
   ]
  },
@@ -593,7 +603,9 @@
     "align": "center",
     "default_value": "Minlərlə küçənin, sonsuz yolların arasında azmamağım üçün sən mənim ən parlaq bələdçimsən.",
     "placeholder": "Minlərlə küçənin, sonsuz yolların arasın",
-    "max_length": 130
+    "max_length": 130,
+    "font_family": "Komika Title",
+    "font_file": null
    },
    {
     "label": "Ad",
@@ -605,7 +617,9 @@
     "align": "center",
     "default_value": "SPECİAL EDİTİON FOR LEYLA",
     "placeholder": "SPECİAL EDİTİON FOR LEYLA",
-    "max_length": 65
+    "max_length": 65,
+    "font_family": "SF Regular",
+    "font_file": "fonts/sanfrancisco-regular.woff2"
    }
   ]
  },
@@ -627,7 +641,9 @@
     "align": "center",
     "default_value": "Harada olmağımdan asılı olmayaraq, ruhumun dincəldiyi tək ünvan, divarları sevgiylə hörülmüş o 'ev' sənsən.",
     "placeholder": "Harada olmağımdan asılı olmayaraq, ruhum",
-    "max_length": 147
+    "max_length": 147,
+    "font_family": "Komika Title",
+    "font_file": null
    },
    {
     "label": "Ad",
@@ -639,7 +655,9 @@
     "align": "center",
     "default_value": "SPECİAL EDİTİON FOR LEYLA",
     "placeholder": "SPECİAL EDİTİON FOR LEYLA",
-    "max_length": 65
+    "max_length": 65,
+    "font_family": "SF Regular",
+    "font_file": "fonts/sanfrancisco-regular.woff2"
    }
   ]
  },
@@ -661,7 +679,9 @@
     "align": "left",
     "default_value": "BMW",
     "placeholder": "BMW",
-    "max_length": 60
+    "max_length": 60,
+    "font_family": "SF Black",
+    "font_file": "fonts/sanfrancisco-black.woff2"
    },
    {
     "label": "Model",
@@ -673,7 +693,9 @@
     "align": "right",
     "default_value": "M5",
     "placeholder": "M5",
-    "max_length": 60
+    "max_length": 60,
+    "font_family": "SF Black",
+    "font_file": "fonts/sanfrancisco-black.woff2"
    },
    {
     "label": "Seriya",
@@ -685,7 +707,9 @@
     "align": "center",
     "default_value": "E39",
     "placeholder": "E39",
-    "max_length": 60
+    "max_length": 60,
+    "font_family": "SF Medium",
+    "font_file": "fonts/sanfrancisco-medium.woff2"
    },
    {
     "label": "Mesaj",
@@ -697,7 +721,9 @@
     "align": "center",
     "default_value": "Samalyotdur, amma ancaq yanacaqdoldurma məntəqələrində eniş edir.",
     "placeholder": "Samalyotdur, amma ancaq yanacaqdoldurma ",
-    "max_length": 105
+    "max_length": 105,
+    "font_family": "Dharma Gothic E",
+    "font_file": "fonts/dharmagothic-e-bold.woff2"
    },
    {
     "label": "Ad",
@@ -709,7 +735,9 @@
     "align": "center",
     "default_value": "Special edition for Jamel",
     "placeholder": "Special edition for Jamel",
-    "max_length": 65
+    "max_length": 65,
+    "font_family": "SF Regular",
+    "font_file": "fonts/sanfrancisco-regular.woff2"
    }
   ]
  }
