@@ -15,6 +15,9 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    // Temporary: guards the one-shot deploy route. Unset = route disabled.
+    'deploy_token' => env('DEPLOY_TOKEN'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment
