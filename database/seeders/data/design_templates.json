@@ -550,16 +550,28 @@
   "photo_slots": [],
   "text_slots": [
    {
+    "label": "Mesaj",
+    "x": 447,
+    "y": 1317,
+    "max_width": 750,
+    "font_size": 67,
+    "color": "#FFFF00",
+    "align": "center",
+    "default_value": "Bəzən bir nöqtə bütün dünyanı əvəz edir. Mənim üçün dünya sənin olduğun yerdir.",
+    "placeholder": "Bəzən bir nöqtə bütün dünyanı əvəz edir.",
+    "max_length": 119
+   },
+   {
     "label": "Ad",
     "x": 452,
-    "y": 1780,
+    "y": 1785,
     "max_width": 389,
     "font_size": 34,
     "color": "#FFFFFF",
     "align": "center",
-    "default_value": "SPECİAL EDİTİON FOR",
-    "placeholder": "SPECİAL EDİTİON FOR AYSEL",
-    "max_length": 60
+    "default_value": "SPECİAL EDİTİON FOR LEYLA",
+    "placeholder": "SPECİAL EDİTİON FOR LEYLA",
+    "max_length": 65
    }
   ]
  },
@@ -572,16 +584,28 @@
   "photo_slots": [],
   "text_slots": [
    {
+    "label": "Mesaj",
+    "x": 446,
+    "y": 1320,
+    "max_width": 795,
+    "font_size": 58,
+    "color": "#FFFF00",
+    "align": "center",
+    "default_value": "Minlərlə küçənin, sonsuz yolların arasında azmamağım üçün sən mənim ən parlaq bələdçimsən.",
+    "placeholder": "Minlərlə küçənin, sonsuz yolların arasın",
+    "max_length": 130
+   },
+   {
     "label": "Ad",
     "x": 452,
-    "y": 1780,
+    "y": 1785,
     "max_width": 389,
     "font_size": 34,
     "color": "#FFFFFF",
     "align": "center",
-    "default_value": "SPECİAL EDİTİON FOR",
-    "placeholder": "SPECİAL EDİTİON FOR AYSEL",
-    "max_length": 60
+    "default_value": "SPECİAL EDİTİON FOR LEYLA",
+    "placeholder": "SPECİAL EDİTİON FOR LEYLA",
+    "max_length": 65
    }
   ]
  },
@@ -594,16 +618,28 @@
   "photo_slots": [],
   "text_slots": [
    {
+    "label": "Mesaj",
+    "x": 446,
+    "y": 1357,
+    "max_width": 742,
+    "font_size": 54,
+    "color": "#FFFF00",
+    "align": "center",
+    "default_value": "Harada olmağımdan asılı olmayaraq, ruhumun dincəldiyi tək ünvan, divarları sevgiylə hörülmüş o 'ev' sənsən.",
+    "placeholder": "Harada olmağımdan asılı olmayaraq, ruhum",
+    "max_length": 147
+   },
+   {
     "label": "Ad",
     "x": 452,
-    "y": 1780,
+    "y": 1785,
     "max_width": 389,
     "font_size": 34,
     "color": "#FFFFFF",
     "align": "center",
-    "default_value": "SPECİAL EDİTİON FOR",
-    "placeholder": "SPECİAL EDİTİON FOR AYSEL",
-    "max_length": 60
+    "default_value": "SPECİAL EDİTİON FOR LEYLA",
+    "placeholder": "SPECİAL EDİTİON FOR LEYLA",
+    "max_length": 65
    }
   ]
  },
@@ -616,16 +652,64 @@
   "photo_slots": [],
   "text_slots": [
    {
+    "label": "Marka",
+    "x": 72,
+    "y": 248,
+    "max_width": 120,
+    "font_size": 34,
+    "color": "#000000",
+    "align": "left",
+    "default_value": "BMW",
+    "placeholder": "BMW",
+    "max_length": 60
+   },
+   {
+    "label": "Model",
+    "x": 831,
+    "y": 249,
+    "max_width": 120,
+    "font_size": 34,
+    "color": "#000000",
+    "align": "right",
+    "default_value": "M5",
+    "placeholder": "M5",
+    "max_length": 60
+   },
+   {
+    "label": "Seriya",
+    "x": 447,
+    "y": 248,
+    "max_width": 120,
+    "font_size": 34,
+    "color": "#000000",
+    "align": "center",
+    "default_value": "E39",
+    "placeholder": "E39",
+    "max_length": 60
+   },
+   {
+    "label": "Mesaj",
+    "x": 445,
+    "y": 1476,
+    "max_width": 724,
+    "font_size": 78,
+    "color": "#000000",
+    "align": "center",
+    "default_value": "Samalyotdur, amma ancaq yanacaqdoldurma məntəqələrində eniş edir.",
+    "placeholder": "Samalyotdur, amma ancaq yanacaqdoldurma ",
+    "max_length": 105
+   },
+   {
     "label": "Ad",
     "x": 457,
-    "y": 1784,
+    "y": 1794,
     "max_width": 338,
     "font_size": 44,
     "color": "#000000",
     "align": "center",
-    "default_value": "Special edition for",
-    "placeholder": "Special edition for Aysel",
-    "max_length": 60
+    "default_value": "Special edition for Jamel",
+    "placeholder": "Special edition for Jamel",
+    "max_length": 65
    }
   ]
  }
