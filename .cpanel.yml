@@ -12,3 +12,8 @@ deployment:
     # Drop compiled config/route/view caches so the new release is actually used
     - /bin/rm -f $APPPATH/bootstrap/cache/config.php $APPPATH/bootstrap/cache/routes-v7.php $APPPATH/bootstrap/cache/services.php $APPPATH/bootstrap/cache/packages.php
     - /bin/rm -rf $APPPATH/storage/framework/views/*.php
+    # No SSH on this account, so the release migrates and seeds itself here.
+    - export PHPBIN=$(command -v ea-php82 || echo /opt/cpanel/ea-php82/root/usr/bin/php)
+    - cd $APPPATH && $PHPBIN artisan migrate --force 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
+    - cd $APPPATH && $PHPBIN artisan db:seed --class=DesignSeeder --force 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
+    - cd $APPPATH && $PHPBIN artisan db:seed --class=DesignTemplateSeeder --force 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
