@@ -291,6 +291,12 @@ class ProductResource extends Resource
                     ->options(Product::CATEGORIES),
             ])
             ->actions([
+                Tables\Actions\Action::make('layout')
+                    ->label('Yerləşdirmə')
+                    ->icon('heroicon-o-viewfinder-circle')
+                    ->url(fn (Product $record) => route('layout.edit', $record->slug))
+                    ->openUrlInNewTab()
+                    ->visible(fn (Product $record) => $record->isCustomizable()),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
