@@ -1,5 +1,395 @@
 [
  {
+  "slug": "alyonka-azerbaijan-style",
+  "create": {
+   "name": "Alyonka Azerbaijan Style",
+   "description": "Milli kəlağayı çərçivəsində fərdi portret — öz şəklinizi yükləyin, üzünüz oval çərçivənin içində əks olunsun.",
+   "tag": null,
+   "category": "sokolad",
+   "preview_image": "designs/azerbaijan-style-kelagayi.jpg",
+   "price": null,
+   "is_active": true,
+   "sort_order": 2
+  },
+  "template_image": "products/alyonka-front.png",
+  "overlay_image": null,
+  "template_width": 1600,
+  "template_height": 2000,
+  "background_image": "backgrounds/alyonka-bg-front.png",
+  "background_width": 1600,
+  "background_height": 2000,
+  "box_area_x": -57,
+  "box_area_y": 568,
+  "box_area_width": 1677,
+  "box_area_height": 1182,
+  "box_area_rotation": -90,
+  "content_x": -59,
+  "content_y": 567,
+  "content_width": 1680,
+  "content_height": 1184,
+  "content_rotation": -90,
+  "photo_slots": [
+   {
+    "label": "Şəkil",
+    "x": 465,
+    "y": 788,
+    "width": 583,
+    "height": 824,
+    "rotation": -5,
+    "shape": "ellipse"
+   }
+  ],
+  "text_slots": [
+   {
+    "label": "Mətn",
+    "x": 757,
+    "y": 1200,
+    "max_width": 500,
+    "font_size": 60,
+    "color": "#FFFFFF",
+    "align": "center",
+    "default_value": null,
+    "placeholder": null,
+    "max_length": 60
+   }
+  ],
+  "angles": [
+   {
+    "label": "Açıq qutu",
+    "sort_order": 1,
+    "template_image": "products/alyonka-angle-open.png",
+    "overlay_image": null,
+    "template_width": 1600,
+    "template_height": 2000,
+    "background_image": "backgrounds/alyonka-bg-open.png",
+    "background_width": 1600,
+    "background_height": 2000,
+    "box_area_x": 390,
+    "box_area_y": 497,
+    "box_area_width": 551,
+    "box_area_height": 1236,
+    "box_area_rotation": -9,
+    "content_x": 384,
+    "content_y": 506,
+    "content_width": 744,
+    "content_height": 1242,
+    "content_rotation": -9,
+    "photo_slots": [
+     {
+      "label": "Şəkil",
+      "x": 491,
+      "y": 736,
+      "width": 268,
+      "height": 421,
+      "rotation": -12,
+      "shape": "ellipse"
+     }
+    ],
+    "text_slots": [
+     {
+      "label": "Mətn",
+      "x": 625,
+      "y": 946,
+      "max_width": 240,
+      "font_size": 30,
+      "color": "#FFFFFF",
+      "align": "center",
+      "default_value": null,
+      "placeholder": null,
+      "max_length": 60
+     }
+    ]
+   },
+   {
+    "label": "Əyri bucaq",
+    "sort_order": 2,
+    "template_image": "products/alyonka-angle-diagonal.png",
+    "overlay_image": null,
+    "template_width": 1600,
+    "template_height": 2000,
+    "background_image": "backgrounds/alyonka-bg-diagonal.png",
+    "background_width": 1600,
+    "background_height": 2000,
+    "box_area_x": 455,
+    "box_area_y": 445,
+    "box_area_width": 559,
+    "box_area_height": 1207,
+    "box_area_rotation": -66,
+    "content_x": 449,
+    "content_y": 439,
+    "content_width": 565,
+    "content_height": 1218,
+    "content_rotation": -66,
+    "photo_slots": [
+     {
+      "label": "Şəkil",
+      "x": 441,
+      "y": 783,
+      "width": 268,
+      "height": 414,
+      "rotation": -69,
+      "shape": "ellipse"
+     }
+    ],
+    "text_slots": [
+     {
+      "label": "Mətn",
+      "x": 575,
+      "y": 990,
+      "max_width": 240,
+      "font_size": 30,
+      "color": "#FFFFFF",
+      "align": "center",
+      "default_value": null,
+      "placeholder": null,
+      "max_length": 60
+     }
+    ]
+   },
+   {
+    "label": "Dik profil",
+    "sort_order": 3,
+    "template_image": "products/alyonka-angle-upright.png",
+    "overlay_image": null,
+    "template_width": 1600,
+    "template_height": 2000,
+    "background_image": "backgrounds/alyonka-bg-upright.png",
+    "background_width": 1600,
+    "background_height": 2000,
+    "box_area_x": 160,
+    "box_area_y": 906,
+    "box_area_width": 1388,
+    "box_area_height": 790,
+    "box_area_rotation": -90,
+    "content_x": 119,
+    "content_y": 866,
+    "content_width": 1474,
+    "content_height": 799,
+    "content_rotation": -89,
+    "photo_slots": [
+     {
+      "label": "Şəkil",
+      "x": 646,
+      "y": 913,
+      "width": 395,
+      "height": 596,
+      "rotation": 2,
+      "shape": "ellipse"
+     }
+    ],
+    "text_slots": [
+     {
+      "label": "Mətn",
+      "x": 844,
+      "y": 1211,
+      "max_width": 350,
+      "font_size": 45,
+      "color": "#FFFFFF",
+      "align": "center",
+      "default_value": null,
+      "placeholder": null,
+      "max_length": 60
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "klassik-qutu",
+  "create": {
+   "name": "Klassik Şokolad Qutusu",
+   "description": "Öz şəklinizi və mesajınızı əlavə edin, biz onu şokolad qutusunun üzərinə köçürək.",
+   "tag": null,
+   "category": "sokolad",
+   "preview_image": null,
+   "price": null,
+   "is_active": true,
+   "sort_order": 1
+  },
+  "template_image": "products/box-classic-front.png",
+  "overlay_image": null,
+  "template_width": 3080,
+  "template_height": 3850,
+  "background_image": null,
+  "background_width": null,
+  "background_height": null,
+  "box_area_x": null,
+  "box_area_y": null,
+  "box_area_width": null,
+  "box_area_height": null,
+  "box_area_rotation": null,
+  "content_x": null,
+  "content_y": null,
+  "content_width": null,
+  "content_height": null,
+  "content_rotation": null,
+  "photo_slots": [
+   {
+    "label": "Şəkil",
+    "x": -109,
+    "y": 1094,
+    "width": 3228,
+    "height": 2276,
+    "rotation": -90,
+    "shape": "rectangle"
+   }
+  ],
+  "text_slots": [
+   {
+    "label": "Mətn",
+    "x": 1505,
+    "y": 2232,
+    "max_width": 1800,
+    "font_size": 130,
+    "color": "#FFFFFF",
+    "align": "center",
+    "default_value": null,
+    "placeholder": null,
+    "max_length": 60
+   }
+  ],
+  "angles": [
+   {
+    "label": "Sınıq şokolad",
+    "sort_order": 1,
+    "template_image": "products/box-classic-angle-break.png",
+    "overlay_image": null,
+    "template_width": 3080,
+    "template_height": 3850,
+    "background_image": null,
+    "background_width": null,
+    "background_height": null,
+    "box_area_x": null,
+    "box_area_y": null,
+    "box_area_width": null,
+    "box_area_height": null,
+    "box_area_rotation": null,
+    "content_x": null,
+    "content_y": null,
+    "content_width": null,
+    "content_height": null,
+    "content_rotation": null,
+    "photo_slots": [
+     {
+      "label": "Şəkil",
+      "x": 751,
+      "y": 956,
+      "width": 1064,
+      "height": 2384,
+      "rotation": -9,
+      "shape": "rectangle"
+     }
+    ],
+    "text_slots": [
+     {
+      "label": "Mətn",
+      "x": 1283,
+      "y": 2148,
+      "max_width": 900,
+      "font_size": 100,
+      "color": "#FFFFFF",
+      "align": "center",
+      "default_value": null,
+      "placeholder": null,
+      "max_length": 60
+     }
+    ]
+   },
+   {
+    "label": "Metal fon",
+    "sort_order": 2,
+    "template_image": "products/box-classic-angle-metal.png",
+    "overlay_image": null,
+    "template_width": 3080,
+    "template_height": 3850,
+    "background_image": null,
+    "background_width": null,
+    "background_height": null,
+    "box_area_x": null,
+    "box_area_y": null,
+    "box_area_width": null,
+    "box_area_height": null,
+    "box_area_rotation": null,
+    "content_x": null,
+    "content_y": null,
+    "content_width": null,
+    "content_height": null,
+    "content_rotation": null,
+    "photo_slots": [
+     {
+      "label": "Şəkil",
+      "x": 875,
+      "y": 857,
+      "width": 1076,
+      "height": 2324,
+      "rotation": -66,
+      "shape": "rectangle"
+     }
+    ],
+    "text_slots": [
+     {
+      "label": "Mətn",
+      "x": 1413,
+      "y": 2019,
+      "max_width": 900,
+      "font_size": 100,
+      "color": "#FFFFFF",
+      "align": "center",
+      "default_value": null,
+      "placeholder": null,
+      "max_length": 60
+     }
+    ]
+   },
+   {
+    "label": "Dik profil",
+    "sort_order": 3,
+    "template_image": "products/box-classic-angle-upright.png",
+    "overlay_image": null,
+    "template_width": 3080,
+    "template_height": 3850,
+    "background_image": null,
+    "background_width": null,
+    "background_height": null,
+    "box_area_x": null,
+    "box_area_y": null,
+    "box_area_width": null,
+    "box_area_height": null,
+    "box_area_rotation": null,
+    "content_x": null,
+    "content_y": null,
+    "content_width": null,
+    "content_height": null,
+    "content_rotation": null,
+    "photo_slots": [
+     {
+      "label": "Şəkil",
+      "x": 310,
+      "y": 1742,
+      "width": 2672,
+      "height": 1524,
+      "rotation": -90,
+      "shape": "rectangle"
+     }
+    ],
+    "text_slots": [
+     {
+      "label": "Mətn",
+      "x": 1646,
+      "y": 2504,
+      "max_width": 1800,
+      "font_size": 130,
+      "color": "#FFFFFF",
+      "align": "center",
+      "default_value": null,
+      "placeholder": null,
+      "max_length": 60
+     }
+    ]
+   }
+  ]
+ },
+ {
   "slug": "alpen-gold-oreo-aile",
   "template_image": "products/alpen-gold-back.png",
   "overlay_image": "products/alpen-gold-overlay.png",
