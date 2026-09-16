@@ -9,3 +9,6 @@ deployment:
     - /bin/cp -R public/* $WEBROOT/
     - /bin/cp -R public/.htaccess $WEBROOT/ 2>/dev/null || true
     - /bin/ln -sfn $APPPATH/storage/app/public $WEBROOT/storage
+    # Drop compiled config/route/view caches so the new release is actually used
+    - /bin/rm -f $APPPATH/bootstrap/cache/config.php $APPPATH/bootstrap/cache/routes-v7.php $APPPATH/bootstrap/cache/services.php $APPPATH/bootstrap/cache/packages.php
+    - /bin/rm -rf $APPPATH/storage/framework/views/*.php
