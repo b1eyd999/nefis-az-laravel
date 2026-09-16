@@ -21,20 +21,28 @@
         <div class="ico">🛍️</div>
         <p>Səbətiniz hələ boşdur.</p>
         <div style="margin-top:1.5rem;">
-          <a href="{{ route('home') }}#collections" class="btn btn-primary">Dizaynlara Bax</a>
+          <a href="{{ route('designs.index') }}" class="btn btn-primary">Dizaynlara Bax</a>
         </div>
       </div>
     @else
       <div class="cart-list">
         @foreach($items as $item)
+          @php $texts = array_filter($item['custom_texts'] ?? []); @endphp
           <div class="cart-row">
             <div class="thumb">
-              <img src="{{ asset('storage/' . $item['photo_path']) }}" alt="Yüklənmiş şəkil">
+              @if(! empty($item['photo_paths']))
+                <img src="{{ asset('storage/' . $item['photo_paths'][0]) }}" alt="Yüklənmiş şəkil">
+                @if(count($item['photo_paths']) > 1)
+                  <span class="thumb-more">+{{ count($item['photo_paths']) - 1 }}</span>
+                @endif
+              @else
+                <img src="{{ asset('storage/' . $item['product']->catalogImage()) }}" alt="{{ $item['product']->name }}">
+              @endif
             </div>
             <div class="info">
               <h3>{{ $item['product']->name }}</h3>
               <p>
-                @if($item['custom_text']) "{{ $item['custom_text'] }}" &middot; @endif
+                @if($texts) "{{ implode('" · "', $texts) }}" &middot; @endif
                 {{ $item['quantity'] }} ədəd
                 @if($item['product']->price)
                   &middot; {{ number_format($item['product']->price * $item['quantity']) }} ₼

@@ -26,23 +26,51 @@ class CartController extends Controller
 
     public function add(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'product_id' => ['required', 'exists:products,id'],
-            'photo' => ['required', 'image', 'max:8192'],
-            'custom_text' => ['nullable', 'string', 'max:120'],
+        $product = Product::with(['photoSlots', 'textSlots'])->findOrFail($request->input('product_id'));
+        abort_unless($product->is_active && $product->isCustomizable(), 404);
+
+        $rules = [
             'quantity' => ['nullable', 'integer', 'min:1', 'max:20'],
-        ]);
+        ];
 
-        $path = $request->file('photo')->store('cart-photos', 'public');
+        foreach ($product->photoSlots as $index => $slot) {
+            $rules["photos.$index"] = ['required', 'image', 'max:8192'];
+        }
 
-        Cart::add(
-            (int) $data['product_id'],
-            $path,
-            $data['custom_text'] ?? null,
-            (int) ($data['quantity'] ?? 1)
-        );
+        foreach ($product->textSlots as $index => $slot) {
+            $rules["custom_texts.$index"] = ['nullable', 'string', 'max:' . $slot->max_length];
+        }
+
+        $request->validate($rules, [], $this->slotAttributeNames($product));
+
+        $paths = [];
+        foreach ($product->photoSlots as $index => $slot) {
+            $paths[] = $request->file("photos.$index")->store('cart-photos', 'public');
+        }
+
+        $texts = [];
+        foreach ($product->textSlots as $index => $slot) {
+            $texts[] = trim((string) $request->input("custom_texts.$index"));
+        }
+
+        Cart::add($product->id, $paths, $texts, (int) $request->input('quantity', 1));
 
         return redirect()->route('cart.index')->with('status', 'Məhsul səbətə əlavə olundu.');
+    }
+
+    private function slotAttributeNames(Product $product): array
+    {
+        $names = [];
+
+        foreach ($product->photoSlots as $index => $slot) {
+            $names["photos.$index"] = $slot->label ?: 'Şəkil ' . ($index + 1);
+        }
+
+        foreach ($product->textSlots as $index => $slot) {
+            $names["custom_texts.$index"] = $slot->label ?: 'Mətn ' . ($index + 1);
+        }
+
+        return $names;
     }
 
     public function remove(string $id): RedirectResponse

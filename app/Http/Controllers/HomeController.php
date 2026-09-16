@@ -9,9 +9,13 @@ class HomeController extends Controller
     public function index()
     {
         $products = Product::where('is_active', true)
+            ->orderByRaw('template_image is null')
             ->orderBy('sort_order')
+            ->take(8)
             ->get();
 
-        return view('welcome', compact('products'));
+        $designCount = Product::where('is_active', true)->count();
+
+        return view('welcome', compact('products', 'designCount'));
     }
 }

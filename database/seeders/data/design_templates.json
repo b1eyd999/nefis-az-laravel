@@ -1,0 +1,242 @@
+[
+ {
+  "slug": "alpen-gold-oreo-aile",
+  "template_image": "products/alpen-gold-back.png",
+  "overlay_image": "products/alpen-gold-overlay.png",
+  "template_width": 969,
+  "template_height": 1888,
+  "photo_slots": [
+   {
+    "label": "Şəkil",
+    "x": 49,
+    "y": 602,
+    "width": 873,
+    "height": 764,
+    "rotation": 0,
+    "shape": "rectangle"
+   }
+  ],
+  "text_slots": [
+   {
+    "label": "Ad",
+    "x": 485,
+    "y": 1838,
+    "max_width": 620,
+    "font_size": 46,
+    "color": "#F0D9A8",
+    "align": "center",
+    "default_value": "",
+    "placeholder": "Kimə hədiyyədir?",
+    "max_length": 24
+   }
+  ]
+ },
+ {
+  "slug": "barbie-cercive",
+  "template_image": "products/barbie-cercive-back.png",
+  "overlay_image": "products/barbie-cercive-overlay.png",
+  "template_width": 374,
+  "template_height": 774,
+  "photo_slots": [
+   {
+    "label": "Şəkil",
+    "x": 56,
+    "y": 152,
+    "width": 265,
+    "height": 471,
+    "rotation": 0,
+    "shape": "rectangle"
+   }
+  ],
+  "text_slots": [
+   {
+    "label": "Ad",
+    "x": 188,
+    "y": 611,
+    "max_width": 260,
+    "font_size": 33,
+    "color": "#B7814C",
+    "align": "center",
+    "default_value": "",
+    "placeholder": "Ad yazın",
+    "max_length": 60
+   }
+  ]
+ },
+ {
+  "slug": "google-my-love",
+  "template_image": "products/google-my-love-back.png",
+  "overlay_image": null,
+  "template_width": 906,
+  "template_height": 1871,
+  "photo_slots": [
+   {
+    "label": "Sol şəkil",
+    "x": 48,
+    "y": 559,
+    "width": 397,
+    "height": 756,
+    "rotation": 0,
+    "shape": "rectangle"
+   },
+   {
+    "label": "Sağ şəkil",
+    "x": 463,
+    "y": 563,
+    "width": 395,
+    "height": 752,
+    "rotation": 0,
+    "shape": "rectangle"
+   },
+   {
+    "label": "Alt şəkil",
+    "x": 48,
+    "y": 1339,
+    "width": 810,
+    "height": 426,
+    "rotation": 0,
+    "shape": "rectangle"
+   }
+  ],
+  "text_slots": []
+ },
+ {
+  "slug": "kinder-special-foto-kollaj",
+  "template_image": "products/kinder-special-foto-kollaj-back.png",
+  "overlay_image": "products/kinder-special-foto-kollaj-overlay.png",
+  "template_width": 1871,
+  "template_height": 906,
+  "photo_slots": [
+   {
+    "label": "Şəkil",
+    "x": 1304,
+    "y": 0,
+    "width": 567,
+    "height": 837,
+    "rotation": 0,
+    "shape": "rectangle"
+   }
+  ],
+  "text_slots": []
+ },
+ {
+  "slug": "kinder-chocolate-ferdi",
+  "template_image": "products/kinder-chocolate-ferdi-back.png",
+  "overlay_image": "products/kinder-chocolate-ferdi-overlay.png",
+  "template_width": 374,
+  "template_height": 774,
+  "photo_slots": [
+   {
+    "label": "Şəkil",
+    "x": 0,
+    "y": 0,
+    "width": 374,
+    "height": 572,
+    "rotation": 0,
+    "shape": "rectangle"
+   }
+  ],
+  "text_slots": [
+   {
+    "label": "Ad",
+    "x": 188,
+    "y": 732,
+    "max_width": 164,
+    "font_size": 25,
+    "color": "#000000",
+    "align": "center",
+    "default_value": "Special edition",
+    "placeholder": "Special edition Aysel",
+    "max_length": 60
+   }
+  ]
+ },
+ {
+  "slug": "love-is-qirmizi",
+  "template_image": "products/love-is-qirmizi-back.png",
+  "overlay_image": null,
+  "template_width": 906,
+  "template_height": 1871,
+  "photo_slots": [],
+  "text_slots": [
+   {
+    "label": "Ad",
+    "x": 452,
+    "y": 1780,
+    "max_width": 389,
+    "font_size": 34,
+    "color": "#FFFFFF",
+    "align": "center",
+    "default_value": "SPECİAL EDİTİON FOR",
+    "placeholder": "SPECİAL EDİTİON FOR AYSEL",
+    "max_length": 60
+   }
+  ]
+ },
+ {
+  "slug": "love-is-mavi",
+  "template_image": "products/love-is-mavi-back.png",
+  "overlay_image": null,
+  "template_width": 906,
+  "template_height": 1871,
+  "photo_slots": [],
+  "text_slots": [
+   {
+    "label": "Ad",
+    "x": 452,
+    "y": 1780,
+    "max_width": 389,
+    "font_size": 34,
+    "color": "#FFFFFF",
+    "align": "center",
+    "default_value": "SPECİAL EDİTİON FOR",
+    "placeholder": "SPECİAL EDİTİON FOR AYSEL",
+    "max_length": 60
+   }
+  ]
+ },
+ {
+  "slug": "love-is-narinci",
+  "template_image": "products/love-is-narinci-back.png",
+  "overlay_image": null,
+  "template_width": 906,
+  "template_height": 1871,
+  "photo_slots": [],
+  "text_slots": [
+   {
+    "label": "Ad",
+    "x": 452,
+    "y": 1780,
+    "max_width": 389,
+    "font_size": 34,
+    "color": "#FFFFFF",
+    "align": "center",
+    "default_value": "SPECİAL EDİTİON FOR",
+    "placeholder": "SPECİAL EDİTİON FOR AYSEL",
+    "max_length": 60
+   }
+  ]
+ },
+ {
+  "slug": "avtomobil-poster-bmw",
+  "template_image": "products/avtomobil-poster-bmw-back.png",
+  "overlay_image": null,
+  "template_width": 908,
+  "template_height": 1871,
+  "photo_slots": [],
+  "text_slots": [
+   {
+    "label": "Ad",
+    "x": 457,
+    "y": 1784,
+    "max_width": 338,
+    "font_size": 44,
+    "color": "#000000",
+    "align": "center",
+    "default_value": "Special edition for",
+    "placeholder": "Special edition for Aysel",
+    "max_length": 60
+   }
+  ]
+ }
+]

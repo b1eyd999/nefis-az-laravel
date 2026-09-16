@@ -323,6 +323,10 @@
   }
   .cart-row .thumb{ width:5.5rem; height:5.5rem; border-radius:.7rem; overflow:hidden; flex:none; position:relative; background:var(--cream-2); }
   .cart-row .thumb img{ width:100%; height:100%; object-fit:cover; }
+  .cart-row .thumb .thumb-more{
+    position:absolute; right:.25rem; bottom:.25rem; background:rgba(58,38,23,.85); color:var(--cream);
+    font-size:.6875rem; font-weight:700; padding:.1rem .4rem; border-radius:999px;
+  }
   .cart-row .thumb .photo-overlay{ position:absolute; }
   .cart-row .info{ flex:1; min-width:0; }
   .cart-row .info h3{ font-size:1.0625rem; }
@@ -428,7 +432,7 @@
   <div class="wrap">
     <a href="{{ route('home') }}" class="brand"><img src="/images/logo.svg" alt="Nefis"></a>
     <nav class="primary">
-      <a href="{{ route('home') }}#collections">Kolleksiya</a>
+      <a href="{{ route('designs.index') }}">Dizaynlar</a>
       <a href="{{ route('home') }}#how">Necə İşləyir</a>
       <a href="{{ route('home') }}#faq">Suallar</a>
       @auth
@@ -458,7 +462,7 @@
 
 <div class="mobile-nav" id="mobile-nav">
   <button class="close-btn" id="menu-close" aria-label="Bağla">✕</button>
-  <a href="{{ route('home') }}#collections">Kolleksiya</a>
+  <a href="{{ route('designs.index') }}">Dizaynlar</a>
   <a href="{{ route('home') }}#how">Necə İşləyir</a>
   <a href="{{ route('home') }}#faq">Suallar</a>
   <a href="{{ route('cart.index') }}">Səbət</a>
@@ -487,7 +491,7 @@
       </div>
       <div class="footer-col">
         <h4>Naviqasiya</h4>
-        <a href="{{ route('home') }}#collections">Kolleksiya</a>
+        <a href="{{ route('designs.index') }}">Dizaynlar</a>
         <a href="{{ route('home') }}#how">Necə İşləyir</a>
         <a href="{{ route('home') }}#faq">Suallar</a>
       </div>

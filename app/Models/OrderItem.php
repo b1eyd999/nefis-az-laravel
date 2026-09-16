@@ -13,11 +13,19 @@ class OrderItem extends Model
     protected $fillable = [
         'order_id',
         'product_id',
-        'customer_photo',
-        'custom_text',
+        'customer_photos',
+        'custom_texts',
         'quantity',
         'price',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'customer_photos' => 'array',
+            'custom_texts' => 'array',
+        ];
+    }
 
     public function order(): BelongsTo
     {

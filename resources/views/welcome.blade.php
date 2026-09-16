@@ -1,5 +1,10 @@
 @extends('layouts.app')
 
+@section('page_style')
+  .p-card-media{ aspect-ratio:4/5; }
+  .collections-foot{ display:flex; justify-content:center; margin-top:3rem; }
+@endsection
+
 @section('content')
 
   <!-- HERO -->
@@ -14,7 +19,7 @@
             İndi Sifariş Ver
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg>
           </a>
-          <a href="#collections" class="btn btn-ghost">Dizaynlara Bax</a>
+          <a href="{{ route('designs.index') }}" class="btn btn-ghost">Dizaynlara Bax</a>
         </div>
         <div class="hero-badges hero-in d5">
           <div class="hero-badge"><span class="dot"></span> Premium Şokolad</div>
@@ -100,17 +105,18 @@
       </div>
       <div class="cards-grid">
         @forelse($products as $product)
+          @php $link = $product->isCustomizable() ? route('products.customize', $product->slug) : route('designs.index'); @endphp
           <div class="p-card reveal">
-            <a href="{{ route('products.customize', $product->slug) }}" class="p-card-media">
+            <a href="{{ $link }}" class="p-card-media">
               @if($product->tag)<span class="tag">{{ $product->tag }}</span>@endif
-              <img src="{{ asset('storage/' . $product->template_image) }}" alt="{{ $product->name }}" loading="lazy">
+              <img src="{{ asset('storage/' . $product->catalogImage()) }}" alt="{{ $product->name }}" loading="lazy">
             </a>
             <div class="p-card-body">
               <h3>{{ $product->name }}</h3>
-              <p>{{ $product->description }}</p>
+              <p>{{ $product->description ?: $product->categoryLabel() }}</p>
               <div class="p-card-foot">
                 <span class="p-card-price">{{ $product->price ? number_format($product->price) . ' ₼' : 'Qiymət sorğu ilə' }}</span>
-                <a href="{{ route('products.customize', $product->slug) }}" class="p-card-link">Fərdiləşdir <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+                <a href="{{ $link }}" class="p-card-link">{{ $product->isCustomizable() ? 'Fərdiləşdir' : 'Önizlə' }} <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
               </div>
             </div>
           </div>
@@ -157,6 +163,14 @@
           </div>
         @endforelse
       </div>
+      @if(($designCount ?? 0) > $products->count())
+        <div class="collections-foot reveal">
+          <a href="{{ route('designs.index') }}" class="btn btn-ghost">
+            Bütün {{ $designCount }} dizayna bax
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
+      @endif
     </div>
   </section>
 

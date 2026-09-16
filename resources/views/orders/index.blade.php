@@ -21,7 +21,7 @@
         <div class="ico">📦</div>
         <p>Hələ heç bir sifarişiniz yoxdur.</p>
         <div style="margin-top:1.5rem;">
-          <a href="{{ route('home') }}#collections" class="btn btn-primary">Dizaynlara Bax</a>
+          <a href="{{ route('designs.index') }}" class="btn btn-primary">Dizaynlara Bax</a>
         </div>
       </div>
     @else

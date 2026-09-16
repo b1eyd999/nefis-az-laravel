@@ -10,7 +10,7 @@ class Cart
     protected const KEY = 'cart_items';
 
     /**
-     * Each item: ['id' => string, 'product_id' => int, 'photo_path' => string, 'custom_text' => ?string, 'quantity' => int]
+     * Each item: ['id' => string, 'product_id' => int, 'photo_paths' => string[], 'custom_texts' => string[], 'quantity' => int]
      */
     public static function items(): array
     {
@@ -22,14 +22,14 @@ class Cart
         return array_sum(array_column(self::items(), 'quantity'));
     }
 
-    public static function add(int $productId, string $photoPath, ?string $customText, int $quantity = 1): void
+    public static function add(int $productId, array $photoPaths, array $customTexts, int $quantity = 1): void
     {
         $items = self::items();
         $items[] = [
             'id' => Str::uuid()->toString(),
             'product_id' => $productId,
-            'photo_path' => $photoPath,
-            'custom_text' => $customText,
+            'photo_paths' => array_values($photoPaths),
+            'custom_texts' => array_values($customTexts),
             'quantity' => max(1, $quantity),
         ];
         Session::put(self::KEY, $items);

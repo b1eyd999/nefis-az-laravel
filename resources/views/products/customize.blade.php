@@ -2,6 +2,19 @@
 
 @section('title', $product->name . ' — Fərdiləşdir — Nefis Şokolad Evi')
 
+@php
+  $photoSlots = $product->photoSlots;
+  $textSlots = $product->textSlots;
+@endphp
+
+@section('page_style')
+  .slot-block [hidden]{ display:none !important; }
+  .slot-block{ border-top:1px solid var(--line); padding-top:1.25rem; }
+  .slot-block:first-of-type{ border-top:none; padding-top:0; }
+  .slot-block .zoom-row{ margin-top:.75rem; }
+  .slot-hint{ font-size:.8125rem; color:var(--cocoa-soft); margin-top:.5rem; }
+@endsection
+
 @section('content')
 <section class="page-hero" style="padding-bottom:0;">
   <div class="wrap">
@@ -32,7 +45,9 @@
       <div>
         <div class="stage" id="stage">
           <canvas id="preview-canvas"></canvas>
-          <div class="drop-hint" id="drop-hint">Öncə sağdan şəklinizi yükləyin</div>
+          @if($photoSlots->isNotEmpty())
+            <div class="drop-hint" id="drop-hint">Öncə sağdan şəklinizi yükləyin</div>
+          @endif
           @if($product->angles->isNotEmpty())
             <button type="button" class="angle-arrow prev" id="angle-prev" aria-label="Əvvəlki görünüş">‹</button>
             <button type="button" class="angle-arrow next" id="angle-next" aria-label="Sonrakı görünüş">›</button>
@@ -56,45 +71,50 @@
         @csrf
         <input type="hidden" name="product_id" value="{{ $product->id }}">
 
-        <div>
-          <label>1. Şəklinizi Yükləyin</label>
-          <div class="photo-guide" id="photo-guide" hidden>
-            <svg viewBox="0 0 120 150" width="64" height="80" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <ellipse cx="60" cy="78" rx="42" ry="54" stroke="var(--gold)" stroke-width="3"/>
-              <line x1="10" y1="78" x2="110" y2="78" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="4 4"/>
-              <line x1="60" y1="22" x2="60" y2="134" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="4 4"/>
-            </svg>
-            <p>Üzünüz şəklin mərkəzində, düz kameraya baxaraq çəkilmiş olsun</p>
+        @foreach($photoSlots as $index => $slot)
+          <div class="slot-block" data-slot="{{ $index }}">
+            <label>{{ $loop->iteration }}. {{ $slot->label ?: 'Şəkil' }}</label>
+            @if($slot->shape === 'ellipse')
+              <div class="photo-guide">
+                <svg viewBox="0 0 120 150" width="64" height="80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <ellipse cx="60" cy="78" rx="42" ry="54" stroke="var(--gold)" stroke-width="3"/>
+                  <line x1="10" y1="78" x2="110" y2="78" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="4 4"/>
+                  <line x1="60" y1="22" x2="60" y2="134" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="4 4"/>
+                </svg>
+                <p>Üzünüz şəklin mərkəzində, düz kameraya baxaraq çəkilmiş olsun</p>
+              </div>
+            @endif
+            <label class="upload-box" for="photo-input-{{ $index }}">
+              <div class="ico">📷</div>
+              <div class="upload-label">Şəkil seçmək üçün klikləyin</div>
+            </label>
+            <input type="file" class="photo-input" id="photo-input-{{ $index }}" name="photos[{{ $index }}]"
+                   accept="image/*" required style="display:none;">
+            <div class="range-row zoom-row" hidden>
+              <span class="lbl">Yaxınlaşdır</span>
+              <input type="range" class="zoom-range" min="50" max="500" value="100">
+            </div>
+            <p class="slot-hint" hidden>Şəkli önizləmədə sürükləyərək mövqeyini dəyişə bilərsiniz.</p>
           </div>
-          <label class="upload-box" for="photo-input">
-            <div class="ico">📷</div>
-            <div id="upload-label">Şəkil seçmək üçün klikləyin</div>
-          </label>
-          <input type="file" id="photo-input" name="photo" accept="image/*" required style="display:none;">
-        </div>
+        @endforeach
 
-        <div id="adjust-controls" style="display:none;">
-          <label>2. Şəkli Tənzimləyin</label>
-          <div class="range-row">
-            <span class="lbl">Yaxınlaşdır</span>
-            <input type="range" id="zoom-range" min="50" max="500" value="100">
-          </div>
-          <p style="font-size:.8125rem; color:var(--cocoa-soft); margin-top:.5rem;">Şəkli sürükləyərək mövqeyini dəyişə bilərsiniz.</p>
-        </div>
-
-        @if($product->allow_text)
+        @foreach($textSlots as $index => $slot)
           <div>
-            <label for="custom_text">3. Mətn Əlavə Edin (istəyə bağlı)</label>
-            <input type="text" id="custom_text" name="custom_text" maxlength="60" placeholder="Məs. Ad Soyad və ya qısa mesaj">
+            <label for="text-input-{{ $index }}">{{ $slot->label ?: 'Mətn' }}</label>
+            <input type="text" class="text-input" id="text-input-{{ $index }}" name="custom_texts[{{ $index }}]"
+                   maxlength="{{ $slot->max_length }}"
+                   placeholder="{{ $slot->placeholder ?: 'Məs. Ad Soyad və ya qısa mesaj' }}"
+                   value="{{ old('custom_texts.' . $index, $slot->default_value) }}">
           </div>
-        @endif
+        @endforeach
 
         <div>
           <label for="quantity">Say</label>
           <input type="number" id="quantity" name="quantity" value="1" min="1" max="20" style="max-width:7rem;">
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block" id="add-to-cart-btn" disabled>Səbətə Əlavə Et</button>
+        <button type="submit" class="btn btn-primary btn-block" id="add-to-cart-btn"
+                @if($photoSlots->isNotEmpty()) disabled @endif>Səbətə Əlavə Et</button>
       </form>
     </div>
   </div>
@@ -102,10 +122,15 @@
 @endsection
 
 @section('page_script')
+@if($photoSlots->where('shape', 'ellipse')->isNotEmpty())
 <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+@endif
 <script>
 (function(){
   "use strict";
+
+  var ANGLES = @json($viewData);
+  var SLOT_COUNT = {{ $photoSlots->count() }};
 
   var FACE_MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
   var faceModelReady = null;
@@ -117,129 +142,175 @@
     }
     return faceModelReady;
   }
-  /* kick off loading early so it's usually ready by the time a photo is uploaded */
-  setTimeout(function(){ ensureFaceModel().catch(function(){}); }, 300);
-
-  var FONT_FAMILY = '"' + @json($product->text_font_family ?: 'Inter') + '", Inter, sans-serif';
-  @if($product->text_font_file)
-    var fontFace = new FontFace(@json($product->text_font_family ?: 'Inter'), 'url(' + @json(asset('storage/' . $product->text_font_file)) + ')');
-    fontFace.load().then(function(loaded){
-      document.fonts.add(loaded);
-      draw();
-    }).catch(function(){});
-  @endif
-
-  var ANGLES = [
-    {
-      url: @json(asset('storage/' . $product->template_image)),
-      tw: {{ $product->template_width }},
-      th: {{ $product->template_height }},
-      bg: {!! $product->background_image ? json_encode(asset('storage/' . $product->background_image)) : 'null' !!},
-      bgW: {{ $product->background_width ?? 0 }},
-      bgH: {{ $product->background_height ?? 0 }},
-      boxArea: {
-        x: {{ $product->box_area_x ?? 0 }},
-        y: {{ $product->box_area_y ?? 0 }},
-        w: {{ $product->box_area_width ?? 0 }},
-        h: {{ $product->box_area_height ?? 0 }},
-        rotation: {{ $product->box_area_rotation ?? 0 }}
-      },
-      contentBox: {
-        x: {{ $product->content_x ?? 0 }},
-        y: {{ $product->content_y ?? 0 }},
-        w: {{ $product->content_width ?? $product->template_width }},
-        h: {{ $product->content_height ?? $product->template_height }},
-        rotation: {{ $product->content_rotation ?? 0 }}
-      },
-      area: {
-        x: {{ $product->photo_area_x }},
-        y: {{ $product->photo_area_y }},
-        w: {{ $product->photo_area_width }},
-        h: {{ $product->photo_area_height }},
-        rotation: {{ $product->photo_area_rotation }},
-        shape: @json($product->photo_area_shape)
-      },
-      text: {
-        allow: {{ $product->allow_text ? 'true' : 'false' }},
-        x: {{ $product->text_x }},
-        y: {{ $product->text_y }},
-        maxWidth: {{ $product->text_max_width }},
-        fontSize: {{ $product->text_font_size }},
-        color: @json($product->text_color),
-        align: @json($product->text_align)
-      }
-    }
-    @foreach($product->angles as $angle)
-    ,{
-      url: @json(asset('storage/' . $angle->template_image)),
-      tw: {{ $angle->template_width }},
-      th: {{ $angle->template_height }},
-      bg: {!! $angle->background_image ? json_encode(asset('storage/' . $angle->background_image)) : 'null' !!},
-      bgW: {{ $angle->background_width ?? 0 }},
-      bgH: {{ $angle->background_height ?? 0 }},
-      boxArea: {
-        x: {{ $angle->box_area_x ?? 0 }},
-        y: {{ $angle->box_area_y ?? 0 }},
-        w: {{ $angle->box_area_width ?? 0 }},
-        h: {{ $angle->box_area_height ?? 0 }},
-        rotation: {{ $angle->box_area_rotation ?? 0 }}
-      },
-      contentBox: {
-        x: {{ $angle->content_x ?? 0 }},
-        y: {{ $angle->content_y ?? 0 }},
-        w: {{ $angle->content_width ?? $angle->template_width }},
-        h: {{ $angle->content_height ?? $angle->template_height }},
-        rotation: {{ $angle->content_rotation ?? 0 }}
-      },
-      area: {
-        x: {{ $angle->photo_area_x }},
-        y: {{ $angle->photo_area_y }},
-        w: {{ $angle->photo_area_width }},
-        h: {{ $angle->photo_area_height }},
-        rotation: {{ $angle->photo_area_rotation }},
-        shape: @json($angle->photo_area_shape)
-      },
-      text: {
-        allow: {{ $angle->allow_text ? 'true' : 'false' }},
-        x: {{ $angle->text_x }},
-        y: {{ $angle->text_y }},
-        maxWidth: {{ $angle->text_max_width }},
-        fontSize: {{ $angle->text_font_size }},
-        color: @json($angle->text_color),
-        align: @json($angle->text_align)
-      }
-    }
-    @endforeach
-  ];
+  if (typeof faceapi !== 'undefined' || document.querySelector('script[src*="face-api"]')) {
+    setTimeout(function(){ ensureFaceModel().catch(function(){}); }, 300);
+  }
 
   var canvas = document.getElementById('preview-canvas');
   var ctx = canvas.getContext('2d');
   var dropHint = document.getElementById('drop-hint');
-  var photoInput = document.getElementById('photo-input');
-  var uploadLabel = document.getElementById('upload-label');
-  var adjustControls = document.getElementById('adjust-controls');
-  var zoomRange = document.getElementById('zoom-range');
-  var customText = document.getElementById('custom_text');
   var addBtn = document.getElementById('add-to-cart-btn');
   var anglePrev = document.getElementById('angle-prev');
   var angleNext = document.getElementById('angle-next');
   var angleThumbs = document.querySelectorAll('.angle-thumb');
-  var photoGuide = document.getElementById('photo-guide');
+  var slotBlocks = Array.prototype.slice.call(document.querySelectorAll('.slot-block'));
+  var textInputs = Array.prototype.slice.call(document.querySelectorAll('.text-input'));
 
-  var template = new Image();
-  var templateReady = false;
-  var bgImg = new Image();
-  var bgReady = false;
+  var template = new Image(), templateReady = false;
+  var overlay = new Image(), overlayReady = false;
+  var bgImg = new Image(), bgReady = false;
   var mockupCanvas = document.createElement('canvas');
-  var photoImg = null;
-  var photoState = { scale: 1, offsetX: 0, offsetY: 0 };
   var activeAngle = 0;
-  var lastFaceBox = null; /* {x,y,width,height} in the uploaded photo's own pixel space, reused across angle switches */
+
+  /* One entry per photo slot, kept across angle switches. */
+  var photos = [];
+  for (var i = 0; i < SLOT_COUNT; i++) {
+    photos.push({ img: null, scale: 1, offsetX: 0, offsetY: 0, faceBox: null });
+  }
 
   function currentAngle(){ return ANGLES[activeAngle]; }
-  function areaCenterX(){ return currentAngle().area.x + currentAngle().area.w / 2; }
-  function areaCenterY(){ return currentAngle().area.y + currentAngle().area.h / 2; }
+  function areaFor(slotIndex){ return currentAngle().areas[slotIndex] || null; }
 
+  /* ---------- fonts ---------- */
+  ANGLES.forEach(function(a){
+    a.texts.forEach(function(t){
+      if (!t.fontFile || !t.fontFamily) return;
+      try {
+        new FontFace(t.fontFamily, 'url(' + t.fontFile + ')').load().then(function(f){
+          document.fonts.add(f);
+          draw();
+        }).catch(function(){});
+      } catch (e) {}
+    });
+  });
+
+  function fontStack(t){
+    return '"' + (t.fontFamily || 'Inter') + '", Inter, sans-serif';
+  }
+
+  /* ---------- geometry ---------- */
+  function coverScale(area, imgW, imgH){
+    var rotRad = area.rotation * Math.PI / 180;
+    var cosA = Math.abs(Math.cos(rotRad));
+    var sinA = Math.abs(Math.sin(rotRad));
+    var boundW = area.w * cosA + area.h * sinA;
+    var boundH = area.w * sinA + area.h * cosA;
+    return Math.max(boundW / imgW, boundH / imgH);
+  }
+
+  function drawPhotoInArea(mctx, area, state){
+    var img = state.img;
+    if (!img) return;
+    var acx = area.x + area.w / 2;
+    var acy = area.y + area.h / 2;
+    var rotRad = area.rotation * Math.PI / 180;
+
+    mctx.save();
+    if (area.shape === 'ellipse') {
+      /* Keep the photo upright — only the cutout outline follows the design's tilt. */
+      mctx.beginPath();
+      mctx.ellipse(acx, acy, area.w / 2, area.h / 2, rotRad, 0, Math.PI * 2);
+      mctx.clip();
+      var s = coverScale(area, img.width, img.height) * state.scale;
+      mctx.drawImage(img, acx - img.width * s / 2 + state.offsetX, acy - img.height * s / 2 + state.offsetY,
+                     img.width * s, img.height * s);
+    } else {
+      mctx.translate(acx, acy);
+      mctx.rotate(rotRad);
+      mctx.beginPath();
+      mctx.rect(-area.w / 2, -area.h / 2, area.w, area.h);
+      mctx.clip();
+      var s2 = Math.max(area.w / img.width, area.h / img.height) * state.scale;
+      mctx.drawImage(img, -img.width * s2 / 2 + state.offsetX, -img.height * s2 / 2 + state.offsetY,
+                     img.width * s2, img.height * s2);
+    }
+    mctx.restore();
+  }
+
+  /* Renders artwork + photos + overlay + text at the template's own resolution. */
+  function renderMockup(){
+    var a = currentAngle();
+    mockupCanvas.width = a.tw;
+    mockupCanvas.height = a.th;
+    var mctx = mockupCanvas.getContext('2d');
+    mctx.clearRect(0, 0, a.tw, a.th);
+
+    if (templateReady) mctx.drawImage(template, 0, 0, a.tw, a.th);
+
+    a.areas.forEach(function(area, i){
+      if (photos[i]) drawPhotoInArea(mctx, area, photos[i]);
+    });
+
+    /* Foreground artwork (frames, props) must cover the photo edges. */
+    if (a.overlay && overlayReady) mctx.drawImage(overlay, 0, 0, a.tw, a.th);
+
+    a.texts.forEach(function(t, i){
+      var input = textInputs[i];
+      if (!input || !input.value) return;
+      mctx.save();
+      mctx.font = '600 ' + t.fontSize + 'px ' + fontStack(t);
+      mctx.fillStyle = t.color;
+      mctx.textAlign = t.align;
+      mctx.textBaseline = 'middle';
+      wrapText(mctx, input.value, t.x, t.y, t.maxWidth, t.fontSize * 1.2, t.fontSize * 0.08);
+      mctx.restore();
+    });
+
+    return mockupCanvas;
+  }
+
+  function draw(){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    var a = currentAngle();
+
+    if (a.bg) {
+      if (bgReady) ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+      var mockup = renderMockup();
+      var box = a.boxArea, cb = a.contentBox;
+      var scale = box.w / cb.w;
+      /* Undo the art's own rotation inside its template canvas, scale it to the
+         scene's cutout, then reapply the cutout's tilt. */
+      ctx.save();
+      ctx.translate(box.x + box.w / 2, box.y + box.h / 2);
+      ctx.rotate(box.rotation * Math.PI / 180);
+      ctx.scale(scale, scale);
+      ctx.rotate(-cb.rotation * Math.PI / 180);
+      ctx.translate(-(cb.x + cb.w / 2), -(cb.y + cb.h / 2));
+      ctx.drawImage(mockup, 0, 0, a.tw, a.th);
+      ctx.restore();
+    } else {
+      ctx.drawImage(renderMockup(), 0, 0, canvas.width, canvas.height);
+    }
+  }
+
+  function wrapText(c, text, x, y, maxWidth, lineHeight, strokeWidth){
+    var words = text.split(' ');
+    var lines = [];
+    var line = '';
+    for (var i = 0; i < words.length; i++) {
+      var test = line ? line + ' ' + words[i] : words[i];
+      if (c.measureText(test).width > maxWidth && line) {
+        lines.push(line);
+        line = words[i];
+      } else {
+        line = test;
+      }
+    }
+    if (line) lines.push(line);
+    var startY = y - ((lines.length - 1) * lineHeight) / 2;
+    lines.forEach(function(l, i){
+      var ly = startY + i * lineHeight;
+      if (strokeWidth) {
+        c.lineWidth = strokeWidth;
+        c.strokeStyle = 'rgba(0,0,0,.5)';
+        c.lineJoin = 'round';
+        c.strokeText(l, x, ly);
+      }
+      c.fillText(l, x, ly);
+    });
+  }
+
+  /* ---------- angles ---------- */
   function loadAngle(index){
     activeAngle = index;
     var a = ANGLES[index];
@@ -248,6 +319,13 @@
     template = new Image();
     template.onload = function(){ templateReady = true; draw(); };
     template.src = a.url;
+
+    overlayReady = false;
+    if (a.overlay) {
+      overlay = new Image();
+      overlay.onload = function(){ overlayReady = true; draw(); };
+      overlay.src = a.overlay;
+    }
 
     if (a.bg) {
       canvas.width = a.bgW;
@@ -265,134 +343,107 @@
       btn.classList.toggle('active', Number(btn.dataset.angle) === index);
     });
 
-    if (photoGuide) photoGuide.hidden = a.area.shape !== 'ellipse';
-
-    reframeForCurrentAngle();
-  }
-
-  function ellipseCoverScale(area, imgW, imgH){
-    var rotRad = area.rotation * Math.PI / 180;
-    var cosA = Math.abs(Math.cos(rotRad));
-    var sinA = Math.abs(Math.sin(rotRad));
-    var boundW = area.w * cosA + area.h * sinA;
-    var boundH = area.w * sinA + area.h * cosA;
-    return Math.max(boundW / imgW, boundH / imgH);
-  }
-
-  /* Renders template + customer photo + text at the template's own native
-     resolution onto an offscreen canvas ("the mockup"), independent of
-     whether it's shown full-frame or set into a background scene. */
-  function renderMockup(){
-    var a = currentAngle();
-    var area = a.area;
-    var text = a.text;
-
-    mockupCanvas.width = a.tw;
-    mockupCanvas.height = a.th;
-    var mctx = mockupCanvas.getContext('2d');
-    mctx.clearRect(0, 0, mockupCanvas.width, mockupCanvas.height);
-    if (templateReady) mctx.drawImage(template, 0, 0, mockupCanvas.width, mockupCanvas.height);
-
-    var acx = area.x + area.w / 2;
-    var acy = area.y + area.h / 2;
-
-    if (photoImg) {
-      mctx.save();
-      var rotRad = area.rotation * Math.PI / 180;
-
-      if (area.shape === 'ellipse') {
-        /* Keep the photo itself upright (a tilted face looks unnatural) —
-           only the cutout outline follows the design's rotation. */
-        mctx.beginPath();
-        mctx.ellipse(acx, acy, area.w / 2, area.h / 2, rotRad, 0, Math.PI * 2);
-        mctx.clip();
-        var baseScale = ellipseCoverScale(area, photoImg.width, photoImg.height);
-        var scale = baseScale * photoState.scale;
-        var w = photoImg.width * scale;
-        var h = photoImg.height * scale;
-        mctx.drawImage(photoImg, acx - w / 2 + photoState.offsetX, acy - h / 2 + photoState.offsetY, w, h);
-      } else {
-        mctx.translate(acx, acy);
-        mctx.rotate(rotRad);
-        mctx.beginPath();
-        mctx.rect(-area.w / 2, -area.h / 2, area.w, area.h);
-        mctx.clip();
-        var baseScale = Math.max(area.w / photoImg.width, area.h / photoImg.height);
-        var scale = baseScale * photoState.scale;
-        var w = photoImg.width * scale;
-        var h = photoImg.height * scale;
-        mctx.drawImage(photoImg, -w / 2 + photoState.offsetX, -h / 2 + photoState.offsetY, w, h);
-      }
-      mctx.restore();
-    }
-
-    if (text.allow && customText && customText.value) {
-      mctx.save();
-      mctx.font = '600 ' + text.fontSize + 'px ' + FONT_FAMILY;
-      mctx.fillStyle = text.color;
-      mctx.textAlign = text.align;
-      mctx.textBaseline = 'middle';
-      wrapText(mctx, customText.value, text.x, text.y, text.maxWidth, text.fontSize * 1.2, text.fontSize * 0.08);
-      mctx.restore();
-    }
-
-    return mockupCanvas;
-  }
-
-  function draw(){
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    var a = currentAngle();
-
-    if (a.bg) {
-      if (bgReady) ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-      var mockup = renderMockup();
-      var box = a.boxArea;
-      var cb = a.contentBox;
-      var scale = box.w / cb.w;
-      /* Undo the box art's own rotation within the template canvas, scale it
-         to match the background's cutout, then reapply the cutout's own
-         tilt — this composes correctly even when the art is itself drawn at
-         a steep angle inside its (still axis-aligned) template canvas. */
-      ctx.save();
-      ctx.translate(box.x + box.w / 2, box.y + box.h / 2);
-      ctx.rotate(box.rotation * Math.PI / 180);
-      ctx.scale(scale, scale);
-      ctx.rotate(-cb.rotation * Math.PI / 180);
-      ctx.translate(-(cb.x + cb.w / 2), -(cb.y + cb.h / 2));
-      ctx.drawImage(mockup, 0, 0, a.tw, a.th);
-      ctx.restore();
-    } else {
-      var mockup = renderMockup();
-      ctx.drawImage(mockup, 0, 0, canvas.width, canvas.height);
-    }
-  }
-
-  function wrapText(ctx, text, x, y, maxWidth, lineHeight, strokeWidth){
-    var words = text.split(' ');
-    var lines = [];
-    var line = '';
-    for (var i = 0; i < words.length; i++) {
-      var test = line ? line + ' ' + words[i] : words[i];
-      if (ctx.measureText(test).width > maxWidth && line) {
-        lines.push(line);
-        line = words[i];
-      } else {
-        line = test;
-      }
-    }
-    if (line) lines.push(line);
-    var startY = y - ((lines.length - 1) * lineHeight) / 2;
-    lines.forEach(function(l, i){
-      var ly = startY + i * lineHeight;
-      if (strokeWidth) {
-        ctx.lineWidth = strokeWidth;
-        ctx.strokeStyle = 'rgba(0,0,0,.5)';
-        ctx.lineJoin = 'round';
-        ctx.strokeText(l, x, ly);
-      }
-      ctx.fillText(l, x, ly);
+    photos.forEach(function(state, i){
+      if (!state.img) return;
+      state.scale = 1;
+      state.offsetX = 0;
+      state.offsetY = 0;
+      var zoom = slotBlocks[i] && slotBlocks[i].querySelector('.zoom-range');
+      if (zoom) zoom.value = 100;
+      var area = areaFor(i);
+      if (area && area.shape === 'ellipse' && state.faceBox) frameOnFace(i, state.faceBox);
     });
+
+    draw();
   }
+
+  function frameOnFace(slotIndex, box){
+    var area = areaFor(slotIndex);
+    var state = photos[slotIndex];
+    if (!area || !state.img) return;
+
+    var faceCx = box.x + box.width / 2;
+    var faceCy = box.y + box.height / 2;
+    /* pad beyond the strict face box so hair/chin stay in frame */
+    var boxW = box.width * 1.5;
+    var boxH = box.height * 1.9;
+    var faceCenterBias = -0.05;
+
+    var desiredScale = Math.max(area.w / boxW, area.h / boxH);
+    var baseScale = coverScale(area, state.img.width, state.img.height);
+
+    state.scale = desiredScale / baseScale;
+    state.offsetX = desiredScale * (state.img.width / 2 - faceCx);
+    state.offsetY = desiredScale * (state.img.height / 2 - (faceCy + box.height * faceCenterBias));
+
+    var zoom = slotBlocks[slotIndex] && slotBlocks[slotIndex].querySelector('.zoom-range');
+    if (zoom) zoom.value = Math.round(state.scale * 100);
+  }
+
+  function applyAutoFraming(slotIndex, img){
+    var state = photos[slotIndex];
+    state.faceBox = null;
+    state.scale = 1;
+    state.offsetX = 0;
+    state.offsetY = 0;
+
+    var area = areaFor(slotIndex);
+    if (!area || area.shape !== 'ellipse' || typeof faceapi === 'undefined') return;
+
+    ensureFaceModel().then(function(){
+      return faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions());
+    }).then(function(det){
+      if (!det || photos[slotIndex].img !== img) return;
+      photos[slotIndex].faceBox = det.box;
+      frameOnFace(slotIndex, det.box);
+      draw();
+    }).catch(function(){});
+  }
+
+  function allSlotsFilled(){
+    return photos.every(function(p){ return p.img !== null; });
+  }
+
+  slotBlocks.forEach(function(block){
+    var index = Number(block.dataset.slot);
+    var input = block.querySelector('.photo-input');
+    var label = block.querySelector('.upload-label');
+    var zoomRow = block.querySelector('.zoom-row');
+    var zoom = block.querySelector('.zoom-range');
+    var hint = block.querySelector('.slot-hint');
+
+    input.addEventListener('change', function(){
+      var file = input.files && input.files[0];
+      if (!file) return;
+      label.textContent = file.name;
+      var reader = new FileReader();
+      reader.onload = function(e){
+        var img = new Image();
+        img.onload = function(){
+          photos[index].img = img;
+          applyAutoFraming(index, img);
+          zoomRow.hidden = false;
+          if (hint) hint.hidden = false;
+          if (dropHint) dropHint.style.display = 'none';
+          if (allSlotsFilled()) addBtn.disabled = false;
+          draw();
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    if (zoom) {
+      zoom.addEventListener('input', function(){
+        photos[index].scale = zoom.value / 100;
+        draw();
+      });
+    }
+  });
+
+  textInputs.forEach(function(input){
+    input.addEventListener('input', draw);
+  });
 
   loadAngle(0);
 
@@ -407,150 +458,100 @@
     });
   }
   angleThumbs.forEach(function(btn){
-    btn.addEventListener('click', function(){
-      loadAngle(Number(btn.dataset.angle));
-    });
+    btn.addEventListener('click', function(){ loadAngle(Number(btn.dataset.angle)); });
   });
 
-  function frameOnFace(box){
-    var area = currentAngle().area;
-    var faceCx = box.x + box.width / 2;
-    var faceCy = box.y + box.height / 2;
-    /* pad modestly beyond the strict face box so hair/chin stay in frame, but keep the crop tight */
-    var boxW = box.width * 1.5;
-    var boxH = box.height * 1.9;
-    var faceCenterBias = -0.05; /* nudge crop center up slightly to keep the forehead/hair in frame */
+  /* ---------- drag to reposition ---------- */
+  var dragSlot = -1, lastX = 0, lastY = 0;
 
-    var desiredScale = Math.max(area.w / boxW, area.h / boxH);
-    var baseScale = ellipseCoverScale(area, photoImg.width, photoImg.height);
-
-    photoState.scale = desiredScale / baseScale;
-    photoState.offsetX = desiredScale * (photoImg.width / 2 - faceCx);
-    photoState.offsetY = desiredScale * (photoImg.height / 2 - (faceCy + box.height * faceCenterBias));
-    zoomRange.value = Math.round(photoState.scale * 100);
-  }
-
-  function reframeForCurrentAngle(){
-    if (!photoImg) return;
-    photoState = { scale: 1, offsetX: 0, offsetY: 0 };
-    zoomRange.value = 100;
-    if (currentAngle().area.shape === 'ellipse' && lastFaceBox) {
-      frameOnFace(lastFaceBox);
-    }
-    draw();
-  }
-
-  function applyAutoFraming(img){
-    lastFaceBox = null;
-    photoState = { scale: 1, offsetX: 0, offsetY: 0 };
-    zoomRange.value = 100;
-
-    if (currentAngle().area.shape !== 'ellipse' || typeof faceapi === 'undefined') return;
-
-    ensureFaceModel().then(function(){
-      return faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions());
-    }).then(function(det){
-      if (!det || photoImg !== img) return;
-      lastFaceBox = det.box;
-      frameOnFace(lastFaceBox);
-      draw();
-    }).catch(function(){ /* keep the cover-fit default on any detection failure */ });
-  }
-
-  photoInput.addEventListener('change', function(){
-    var file = photoInput.files && photoInput.files[0];
-    if (!file) return;
-    uploadLabel.textContent = file.name;
-    var reader = new FileReader();
-    reader.onload = function(e){
-      var img = new Image();
-      img.onload = function(){
-        photoImg = img;
-        applyAutoFraming(img);
-        dropHint.style.display = 'none';
-        adjustControls.style.display = '';
-        addBtn.disabled = false;
-        draw();
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  zoomRange.addEventListener('input', function(){
-    photoState.scale = zoomRange.value / 100;
-    draw();
-  });
-
-  if (customText) {
-    customText.addEventListener('input', draw);
-  }
-
-  /* drag to reposition */
-  var dragging = false, lastX = 0, lastY = 0;
   function toCanvasPixel(clientX, clientY){
     var rect = canvas.getBoundingClientRect();
-    var scaleX = canvas.width / rect.width;
-    var scaleY = canvas.height / rect.height;
-    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+    return {
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height)
+    };
   }
-  /* Maps a screen point to the mockup's own (template-native) coordinate
-     space, undoing the background scene's position/rotation/scale first
-     when one is set, so drag/zoom math never needs to know about it. */
-  function toCanvasCoords(clientX, clientY){
+
+  /* Maps a screen point into the mockup's own coordinate space, undoing the
+     background scene's placement first when one is set. */
+  function toMockupCoords(clientX, clientY){
     var p = toCanvasPixel(clientX, clientY);
     var a = currentAngle();
     if (!a.bg) return p;
-    var box = a.boxArea;
-    var cb = a.contentBox;
-    var scale = box.w / cb.w;
 
+    var box = a.boxArea, cb = a.contentBox;
+    var scale = box.w / cb.w;
     var dx = p.x - (box.x + box.w / 2);
     var dy = p.y - (box.y + box.h / 2);
-    var rad1 = -box.rotation * Math.PI / 180;
-    var cos1 = Math.cos(rad1), sin1 = Math.sin(rad1);
-    var rx = (dx * cos1 - dy * sin1) / scale;
-    var ry = (dx * sin1 + dy * cos1) / scale;
 
-    var rad2 = cb.rotation * Math.PI / 180;
-    var cos2 = Math.cos(rad2), sin2 = Math.sin(rad2);
-    return {
-      x: (rx * cos2 - ry * sin2) + (cb.x + cb.w / 2),
-      y: (rx * sin2 + ry * cos2) + (cb.y + cb.h / 2)
-    };
+    var boxRad = -box.rotation * Math.PI / 180;
+    var rx = dx * Math.cos(boxRad) - dy * Math.sin(boxRad);
+    var ry = dx * Math.sin(boxRad) + dy * Math.cos(boxRad);
+    rx /= scale;
+    ry /= scale;
+
+    var cbRad = cb.rotation * Math.PI / 180;
+    var ux = rx * Math.cos(cbRad) - ry * Math.sin(cbRad);
+    var uy = rx * Math.sin(cbRad) + ry * Math.cos(cbRad);
+
+    return { x: ux + (cb.x + cb.w / 2), y: uy + (cb.y + cb.h / 2) };
   }
-  function startDrag(clientX, clientY){
-    if (!photoImg) return;
-    dragging = true;
-    var p = toCanvasCoords(clientX, clientY);
-    lastX = p.x; lastY = p.y;
-  }
-  function moveDrag(clientX, clientY){
-    if (!dragging) return;
-    var p = toCanvasCoords(clientX, clientY);
-    var dx = p.x - lastX;
-    var dy = p.y - lastY;
-    if (currentAngle().area.shape === 'ellipse') {
-      /* photo is drawn upright for ellipse cutouts, so no de-rotation needed */
-      photoState.offsetX += dx;
-      photoState.offsetY += dy;
-    } else {
-      var rad = -currentAngle().area.rotation * Math.PI / 180;
-      var cos = Math.cos(rad), sin = Math.sin(rad);
-      photoState.offsetX += dx * cos - dy * sin;
-      photoState.offsetY += dx * sin + dy * cos;
+
+  function slotAtPoint(p){
+    var areas = currentAngle().areas;
+    for (var i = areas.length - 1; i >= 0; i--) {
+      if (!photos[i] || !photos[i].img) continue;
+      var area = areas[i];
+      var cx = area.x + area.w / 2;
+      var cy = area.y + area.h / 2;
+      var rad = -area.rotation * Math.PI / 180;
+      var dx = p.x - cx, dy = p.y - cy;
+      var lx = dx * Math.cos(rad) - dy * Math.sin(rad);
+      var ly = dx * Math.sin(rad) + dy * Math.cos(rad);
+      if (area.shape === 'ellipse') {
+        if ((lx * lx) / (area.w * area.w / 4) + (ly * ly) / (area.h * area.h / 4) <= 1) return i;
+      } else if (Math.abs(lx) <= area.w / 2 && Math.abs(ly) <= area.h / 2) {
+        return i;
+      }
     }
-    lastX = p.x; lastY = p.y;
+    return -1;
+  }
+
+  function startDrag(clientX, clientY){
+    var slot = slotAtPoint(toMockupCoords(clientX, clientY));
+    if (slot < 0) return false;
+    dragSlot = slot;
+    lastX = clientX;
+    lastY = clientY;
+    return true;
+  }
+
+  function moveDrag(clientX, clientY){
+    if (dragSlot < 0) return;
+    var a = toMockupCoords(lastX, lastY);
+    var b = toMockupCoords(clientX, clientY);
+    photos[dragSlot].offsetX += b.x - a.x;
+    photos[dragSlot].offsetY += b.y - a.y;
+    lastX = clientX;
+    lastY = clientY;
     draw();
   }
-  function endDrag(){ dragging = false; }
 
-  canvas.addEventListener('mousedown', function(e){ startDrag(e.clientX, e.clientY); });
+  canvas.addEventListener('mousedown', function(e){
+    if (startDrag(e.clientX, e.clientY)) e.preventDefault();
+  });
   window.addEventListener('mousemove', function(e){ moveDrag(e.clientX, e.clientY); });
-  window.addEventListener('mouseup', endDrag);
-  canvas.addEventListener('touchstart', function(e){ var t = e.touches[0]; startDrag(t.clientX, t.clientY); }, { passive:true });
-  canvas.addEventListener('touchmove', function(e){ var t = e.touches[0]; moveDrag(t.clientX, t.clientY); }, { passive:true });
-  canvas.addEventListener('touchend', endDrag);
+  window.addEventListener('mouseup', function(){ dragSlot = -1; });
+
+  canvas.addEventListener('touchstart', function(e){
+    var t = e.touches[0];
+    if (t && startDrag(t.clientX, t.clientY)) e.preventDefault();
+  }, { passive: false });
+  canvas.addEventListener('touchmove', function(e){
+    var t = e.touches[0];
+    if (t && dragSlot >= 0) { moveDrag(t.clientX, t.clientY); e.preventDefault(); }
+  }, { passive: false });
+  canvas.addEventListener('touchend', function(){ dragSlot = -1; });
 })();
 </script>
 @endsection

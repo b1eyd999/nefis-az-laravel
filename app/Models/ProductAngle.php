@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class ProductAngle extends Model
 {
@@ -11,6 +12,7 @@ class ProductAngle extends Model
         'product_id',
         'label',
         'template_image',
+        'overlay_image',
         'template_width',
         'template_height',
         'background_image',
@@ -26,33 +28,21 @@ class ProductAngle extends Model
         'content_width',
         'content_height',
         'content_rotation',
-        'photo_area_x',
-        'photo_area_y',
-        'photo_area_width',
-        'photo_area_height',
-        'photo_area_rotation',
-        'photo_area_shape',
-        'allow_text',
-        'text_x',
-        'text_y',
-        'text_max_width',
-        'text_font_size',
-        'text_color',
-        'text_align',
-        'text_font_family',
-        'text_font_file',
         'sort_order',
     ];
-
-    protected function casts(): array
-    {
-        return [
-            'allow_text' => 'boolean',
-        ];
-    }
 
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function photoSlots(): MorphMany
+    {
+        return $this->morphMany(PhotoSlot::class, 'slotable')->orderBy('sort_order');
+    }
+
+    public function textSlots(): MorphMany
+    {
+        return $this->morphMany(TextSlot::class, 'slotable')->orderBy('sort_order');
     }
 }

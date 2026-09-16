@@ -56,8 +56,8 @@ class CheckoutController extends Controller
 
             $order->items()->create([
                 'product_id' => $item['product_id'],
-                'customer_photo' => $item['photo_path'],
-                'custom_text' => $item['custom_text'],
+                'customer_photos' => $item['photo_paths'],
+                'custom_texts' => $item['custom_texts'],
                 'quantity' => $item['quantity'],
                 'price' => $product?->price,
             ]);

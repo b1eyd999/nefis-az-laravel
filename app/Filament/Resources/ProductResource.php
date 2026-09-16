@@ -7,7 +7,6 @@ use App\Filament\Resources\ProductResource\RelationManagers;
 use App\Models\Product;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -46,6 +45,17 @@ class ProductResource extends Resource
                             ->columnSpanFull(),
                         Forms\Components\TextInput::make('tag')
                             ->label('Etiket (məs. "Populyar")'),
+                        Forms\Components\Select::make('category')
+                            ->label('Kateqoriya')
+                            ->options(Product::CATEGORIES)
+                            ->helperText('Dizaynlar səhifəsində qruplaşdırma üçün.'),
+                        Forms\Components\FileUpload::make('preview_image')
+                            ->label('Kataloq önizləməsi')
+                            ->image()
+                            ->disk('public')
+                            ->directory('designs')
+                            ->helperText('Kataloqda göstərilən hazır render. Boş saxlasanız qutu şəkli istifadə olunur.')
+                            ->columnSpanFull(),
                         Forms\Components\TextInput::make('price')
                             ->label('Qiymət (₼)')
                             ->numeric()
@@ -61,14 +71,13 @@ class ProductResource extends Resource
                     ])->columns(2),
 
                 Forms\Components\Section::make('Qutu şəkli')
-                    ->description('Qutunun əsas mokup şəkli. Yüklədikdən sonra en/hündürlük avtomatik dolacaq.')
+                    ->description('Fərdiləşdirmə üçün istifadə olunan BOŞ qutu mokupu (müştəri şəkli olmadan). Boş saxlasanız dizayn kataloqda yalnız önizləmə kimi görünür. Yüklədikdən sonra en/hündürlük avtomatik dolacaq.')
                     ->schema([
                         Forms\Components\FileUpload::make('template_image')
                             ->label('Şəkil')
                             ->image()
                             ->disk('public')
                             ->directory('products')
-                            ->required()
                             ->live()
                             ->afterStateUpdated(function ($state, Set $set) {
                                 if (! $state) {
@@ -91,6 +100,13 @@ class ProductResource extends Resource
                             ->numeric()
                             ->required()
                             ->default(1000),
+                        Forms\Components\FileUpload::make('overlay_image')
+                            ->label('Üst qat (istəyə bağlı)')
+                            ->image()
+                            ->disk('public')
+                            ->directory('products')
+                            ->helperText('Müştərinin şəklinin ÜSTÜNDƏN keçməli olan hissə — çərçivə, ön plandakı elementlər. Eyni ölçüdə, şəffaf fonlu olmalıdır.')
+                            ->columnSpanFull(),
                     ]),
 
                 Forms\Components\Section::make('Arxa fon (istəyə bağlı)')
@@ -140,78 +156,117 @@ class ProductResource extends Resource
                             ->label('Şəklin öz bucağı (dərəcə)')->numeric()->default(0),
                     ])->columns(3),
 
-                Forms\Components\Section::make('Foto sahəsi')
-                    ->description('Müştərinin şəklinin qutu üzərində hansı sahəyə yerləşəcəyini piksel dəyərləri ilə təyin edin (yuxarıdakı şəklin əsl ölçüsünə görə).')
-                    ->schema([
-                        Forms\Components\TextInput::make('photo_area_x')
-                            ->label('X (soldan)')->numeric()->required()->default(0),
-                        Forms\Components\TextInput::make('photo_area_y')
-                            ->label('Y (yuxarıdan)')->numeric()->required()->default(0),
-                        Forms\Components\TextInput::make('photo_area_width')
-                            ->label('En')->numeric()->required()->default(100),
-                        Forms\Components\TextInput::make('photo_area_height')
-                            ->label('Hündürlük')->numeric()->required()->default(100),
-                        Forms\Components\TextInput::make('photo_area_rotation')
-                            ->label('Bucaq (dərəcə)')->numeric()->required()->default(0),
-                        Forms\Components\Select::make('photo_area_shape')
-                            ->label('Forma')
-                            ->options(['rectangle' => 'Düzbucaqlı', 'ellipse' => 'Oval'])
-                            ->default('rectangle')
-                            ->required(),
-                    ])->columns(3),
+                Forms\Components\Section::make('Foto sahələri')
+                    ->description('Müştərinin şəkillərinin maket üzərində düşəcəyi sahələr — yuxarıdakı şəklin öz piksel ölçüsünə görə. Bir neçə şəkil tələb edən dizayn üçün birdən çox sahə əlavə edin.')
+                    ->schema([self::photoSlotsRepeater()]),
 
-                Forms\Components\Section::make('Mətn sahəsi')
-                    ->schema([
-                        Forms\Components\Toggle::make('allow_text')
-                            ->label('Fərdi mətnə icazə ver')
-                            ->live()
-                            ->default(true),
-                        Forms\Components\TextInput::make('text_x')
-                            ->label('X')->numeric()->required()->default(0)
-                            ->visible(fn (Get $get) => $get('allow_text')),
-                        Forms\Components\TextInput::make('text_y')
-                            ->label('Y')->numeric()->required()->default(0)
-                            ->visible(fn (Get $get) => $get('allow_text')),
-                        Forms\Components\TextInput::make('text_max_width')
-                            ->label('Maks en')->numeric()->required()->default(300)
-                            ->visible(fn (Get $get) => $get('allow_text')),
-                        Forms\Components\TextInput::make('text_font_size')
-                            ->label('Şrift ölçüsü')->numeric()->required()->default(32)
-                            ->visible(fn (Get $get) => $get('allow_text')),
-                        Forms\Components\ColorPicker::make('text_color')
-                            ->label('Rəng')->default('#3A2617')
-                            ->visible(fn (Get $get) => $get('allow_text')),
-                        Forms\Components\Select::make('text_align')
-                            ->label('Düzülüş')
-                            ->options(['left' => 'Sol', 'center' => 'Mərkəz', 'right' => 'Sağ'])
-                            ->default('center')
-                            ->visible(fn (Get $get) => $get('allow_text')),
-                        Forms\Components\TextInput::make('text_font_family')
-                            ->label('Şrift adı (CSS)')
-                            ->helperText('Məs. "Great Vibes". Boş saxlasanız standart şrift istifadə olunur.')
-                            ->visible(fn (Get $get) => $get('allow_text')),
-                        Forms\Components\FileUpload::make('text_font_file')
-                            ->label('Şrift faylı (.woff2/.woff/.ttf/.otf)')
-                            ->disk('public')
-                            ->directory('fonts')
-                            ->acceptedFileTypes(['font/woff2', 'font/woff', 'font/ttf', 'font/otf', 'application/font-woff', 'application/font-woff2', 'application/x-font-ttf', 'application/x-font-otf'])
-                            ->visible(fn (Get $get) => $get('allow_text')),
-                    ])->columns(3),
+                Forms\Components\Section::make('Mətn sahələri')
+                    ->description('Müştərinin yazacağı mətnlər. Dizaynın sabit yazıları maketin öz şəklində qalmalıdır — bura yalnız redaktə olunan hissələri əlavə edin.')
+                    ->schema([self::textSlotsRepeater()]),
             ]);
+    }
+
+    public static function photoSlotsRepeater(): Forms\Components\Repeater
+    {
+        return Forms\Components\Repeater::make('photoSlots')
+            ->relationship()
+            ->label('')
+            ->addActionLabel('Foto sahəsi əlavə et')
+            ->schema([
+                Forms\Components\TextInput::make('label')
+                    ->label('Ad')
+                    ->placeholder('Məs. Gəlin'),
+                Forms\Components\Select::make('shape')
+                    ->label('Forma')
+                    ->options(['rectangle' => 'Düzbucaqlı', 'ellipse' => 'Oval'])
+                    ->default('rectangle')
+                    ->required(),
+                Forms\Components\TextInput::make('rotation')
+                    ->label('Bucaq (dərəcə)')->numeric()->required()->default(0),
+                Forms\Components\TextInput::make('x')
+                    ->label('X (soldan)')->numeric()->required()->default(0),
+                Forms\Components\TextInput::make('y')
+                    ->label('Y (yuxarıdan)')->numeric()->required()->default(0),
+                Forms\Components\TextInput::make('width')
+                    ->label('En')->numeric()->required()->default(100),
+                Forms\Components\TextInput::make('height')
+                    ->label('Hündürlük')->numeric()->required()->default(100),
+            ])
+            ->columns(3)
+            ->orderColumn('sort_order')
+            ->defaultItems(0)
+            ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
+            ->collapsible();
+    }
+
+    public static function textSlotsRepeater(): Forms\Components\Repeater
+    {
+        return Forms\Components\Repeater::make('textSlots')
+            ->relationship()
+            ->label('')
+            ->addActionLabel('Mətn sahəsi əlavə et')
+            ->schema([
+                Forms\Components\TextInput::make('label')
+                    ->label('Ad')
+                    ->placeholder('Məs. Ad'),
+                Forms\Components\TextInput::make('placeholder')
+                    ->label('İpucu mətni')
+                    ->placeholder('Məs. Ad Soyad yazın'),
+                Forms\Components\TextInput::make('default_value')
+                    ->label('İlkin dəyər')
+                    ->helperText('Sahədə hazır yazılı gələn mətn. Müştəri dəyişə bilər.'),
+                Forms\Components\TextInput::make('max_length')
+                    ->label('Maks simvol')->numeric()->required()->default(60),
+                Forms\Components\TextInput::make('x')
+                    ->label('X')->numeric()->required()->default(0),
+                Forms\Components\TextInput::make('y')
+                    ->label('Y')->numeric()->required()->default(0),
+                Forms\Components\TextInput::make('max_width')
+                    ->label('Maks en')->numeric()->required()->default(300),
+                Forms\Components\TextInput::make('font_size')
+                    ->label('Şrift ölçüsü')->numeric()->required()->default(32),
+                Forms\Components\ColorPicker::make('color')
+                    ->label('Rəng')->default('#3A2617'),
+                Forms\Components\Select::make('align')
+                    ->label('Düzülüş')
+                    ->options(['left' => 'Sol', 'center' => 'Mərkəz', 'right' => 'Sağ'])
+                    ->default('center')
+                    ->required(),
+                Forms\Components\TextInput::make('font_family')
+                    ->label('Şrift adı (CSS)')
+                    ->helperText('Məs. "Great Vibes". Boş saxlasanız standart şrift işlənir.'),
+                Forms\Components\FileUpload::make('font_file')
+                    ->label('Şrift faylı')
+                    ->disk('public')
+                    ->directory('fonts')
+                    ->acceptedFileTypes(['font/woff2', 'font/woff', 'font/ttf', 'font/otf', 'application/font-woff', 'application/font-woff2', 'application/x-font-ttf', 'application/x-font-otf']),
+            ])
+            ->columns(3)
+            ->orderColumn('sort_order')
+            ->defaultItems(0)
+            ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
+            ->collapsible();
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('template_image')
+                Tables\Columns\ImageColumn::make('preview_image')
                     ->label('Şəkil')
-                    ->disk('public'),
+                    ->disk('public')
+                    ->default(fn (Product $record) => $record->template_image),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Ad')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('tag')
-                    ->label('Etiket'),
+                Tables\Columns\TextColumn::make('category')
+                    ->label('Kateqoriya')
+                    ->formatStateUsing(fn (?string $state) => Product::CATEGORIES[$state] ?? '—')
+                    ->badge(),
+                Tables\Columns\IconColumn::make('template_image')
+                    ->label('Fərdiləşir')
+                    ->boolean()
+                    ->getStateUsing(fn (Product $record) => $record->isCustomizable()),
                 Tables\Columns\TextColumn::make('price')
                     ->label('Qiymət')
                     ->formatStateUsing(fn ($state) => $state ? number_format($state) . ' ₼' : 'Sorğu ilə')
@@ -231,7 +286,9 @@ class ProductResource extends Resource
             ])
             ->defaultSort('sort_order')
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('category')
+                    ->label('Kateqoriya')
+                    ->options(Product::CATEGORIES),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

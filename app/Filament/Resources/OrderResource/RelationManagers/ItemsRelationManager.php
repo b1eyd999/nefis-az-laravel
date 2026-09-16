@@ -17,21 +17,26 @@ class ItemsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('id')
             ->columns([
-                Tables\Columns\ImageColumn::make('customer_photo')
-                    ->label('Müştərinin şəkli')
+                Tables\Columns\ImageColumn::make('customer_photos')
+                    ->label('Müştərinin şəkilləri')
                     ->disk('public')
                     ->square()
-                    ->size(80),
+                    ->size(80)
+                    ->stacked()
+                    ->limit(4),
                 Tables\Columns\TextColumn::make('product.name')
                     ->label('Məhsul'),
                 Tables\Columns\ImageColumn::make('product.template_image')
                     ->label('Qutu dizaynı')
                     ->disk('public')
+                    ->getStateUsing(fn ($record) => $record->product?->catalogImage())
                     ->square()
                     ->size(80),
-                Tables\Columns\TextColumn::make('custom_text')
+                Tables\Columns\TextColumn::make('custom_texts')
                     ->label('Mətn')
-                    ->placeholder('—'),
+                    ->formatStateUsing(fn ($state) => implode(' · ', array_filter((array) $state)))
+                    ->placeholder('—')
+                    ->wrap(),
                 Tables\Columns\TextColumn::make('quantity')
                     ->label('Say'),
                 Tables\Columns\TextColumn::make('price')

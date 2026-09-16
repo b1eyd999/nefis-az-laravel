@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources\ProductResource\RelationManagers;
 
+use App\Filament\Resources\ProductResource;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
@@ -55,6 +55,13 @@ class AnglesRelationManager extends RelationManager
                     ->numeric()
                     ->required()
                     ->default(1000),
+                Forms\Components\FileUpload::make('overlay_image')
+                    ->label('Üst qat (istəyə bağlı)')
+                    ->image()
+                    ->disk('public')
+                    ->directory('products')
+                    ->helperText('Müştərinin şəklinin ÜSTÜNDƏN keçən hissə — çərçivə və ön plan elementləri.')
+                    ->columnSpanFull(),
 
                 Forms\Components\Section::make('Arxa fon (istəyə bağlı)')
                     ->description('Qutu mokupunu bir səhnə/arxa fonun üzərinə "yerləşdirmək" üçün. Boş saxlasanız qutu şəkli birbaşa tam kadrda göstərilir.')
@@ -102,52 +109,13 @@ class AnglesRelationManager extends RelationManager
                             ->label('Şəklin öz bucağı (dərəcə)')->numeric()->default(0),
                     ])->columns(3),
 
-                Forms\Components\Section::make('Foto sahəsi')
-                    ->schema([
-                        Forms\Components\TextInput::make('photo_area_x')
-                            ->label('X (soldan)')->numeric()->required()->default(0),
-                        Forms\Components\TextInput::make('photo_area_y')
-                            ->label('Y (yuxarıdan)')->numeric()->required()->default(0),
-                        Forms\Components\TextInput::make('photo_area_width')
-                            ->label('En')->numeric()->required()->default(100),
-                        Forms\Components\TextInput::make('photo_area_height')
-                            ->label('Hündürlük')->numeric()->required()->default(100),
-                        Forms\Components\TextInput::make('photo_area_rotation')
-                            ->label('Bucaq (dərəcə)')->numeric()->required()->default(0),
-                        Forms\Components\Select::make('photo_area_shape')
-                            ->label('Forma')
-                            ->options(['rectangle' => 'Düzbucaqlı', 'ellipse' => 'Oval'])
-                            ->default('rectangle')
-                            ->required(),
-                    ])->columns(3),
+                Forms\Components\Section::make('Foto sahələri')
+                    ->description('Bu bucaqda müştərinin şəkillərinin düşəcəyi sahələr. Sıra ön görünüşdəki sahələrlə eyni olmalıdır.')
+                    ->schema([ProductResource::photoSlotsRepeater()]),
 
-                Forms\Components\Section::make('Mətn sahəsi')
-                    ->schema([
-                        Forms\Components\Toggle::make('allow_text')
-                            ->label('Fərdi mətnə icazə ver')
-                            ->live()
-                            ->default(true),
-                        Forms\Components\TextInput::make('text_x')
-                            ->label('X')->numeric()->required()->default(0)
-                            ->visible(fn (Get $get) => $get('allow_text')),
-                        Forms\Components\TextInput::make('text_y')
-                            ->label('Y')->numeric()->required()->default(0)
-                            ->visible(fn (Get $get) => $get('allow_text')),
-                        Forms\Components\TextInput::make('text_max_width')
-                            ->label('Maks en')->numeric()->required()->default(300)
-                            ->visible(fn (Get $get) => $get('allow_text')),
-                        Forms\Components\TextInput::make('text_font_size')
-                            ->label('Şrift ölçüsü')->numeric()->required()->default(32)
-                            ->visible(fn (Get $get) => $get('allow_text')),
-                        Forms\Components\ColorPicker::make('text_color')
-                            ->label('Rəng')->default('#3A2617')
-                            ->visible(fn (Get $get) => $get('allow_text')),
-                        Forms\Components\Select::make('text_align')
-                            ->label('Düzülüş')
-                            ->options(['left' => 'Sol', 'center' => 'Mərkəz', 'right' => 'Sağ'])
-                            ->default('center')
-                            ->visible(fn (Get $get) => $get('allow_text')),
-                    ])->columns(3),
+                Forms\Components\Section::make('Mətn sahələri')
+                    ->description('Bu bucaqdakı mətn mövqeləri. Sıra ön görünüşdəki mətn sahələri ilə eyni olmalıdır.')
+                    ->schema([ProductResource::textSlotsRepeater()]),
             ]);
     }
 

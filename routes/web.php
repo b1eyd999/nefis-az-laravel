@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
+Route::get('/dizaynlar', [ProductController::class, 'index'])->name('designs.index');
 Route::get('/products/{product:slug}/customize', [ProductController::class, 'customize'])->name('products.customize');
 
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
