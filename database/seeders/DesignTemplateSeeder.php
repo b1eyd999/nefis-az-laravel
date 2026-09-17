@@ -49,7 +49,9 @@ class DesignTemplateSeeder extends Seeder
             $product->fill($this->viewFields($config));
             $product->save();
 
-            $this->seedSlots($product, $config);
+            $force = (bool) ($config['force_slots'] ?? false);
+
+            $this->seedSlots($product, $config, $force);
 
             // Angles are only built once. After that the layout editor owns
             // them, and re-seeding must not wipe hand-placed areas.
@@ -59,14 +61,14 @@ class DesignTemplateSeeder extends Seeder
                         'label' => $angleConfig['label'] ?? null,
                         'sort_order' => $angleConfig['sort_order'] ?? $order,
                     ]);
-                    $this->seedSlots($angle, $angleConfig);
+                    $this->seedSlots($angle, $angleConfig, $force);
                 }
             } else {
                 foreach ($product->angles as $angle) {
                     $angleConfig = collect($config['angles'] ?? [])->firstWhere('label', $angle->label) ?? [];
                     $angle->update($this->viewFields($angleConfig));
                     // An angle added before its areas existed still needs them.
-                    $this->seedSlots($angle, $angleConfig);
+                    $this->seedSlots($angle, $angleConfig, $force);
                 }
             }
 
@@ -87,17 +89,21 @@ class DesignTemplateSeeder extends Seeder
 
     /**
      * Seeds starting areas only when none exist. Once someone has placed them
-     * in the layout editor, that placement is the source of truth.
+     * in the layout editor, that placement is the source of truth — unless the
+     * entry is marked "force_slots", which republishes measured values over a
+     * placeholder that already shipped.
      */
-    private function seedSlots(Product|ProductAngle $owner, array $config): void
+    private function seedSlots(Product|ProductAngle $owner, array $config, bool $force = false): void
     {
-        if ($owner->photoSlots()->doesntExist()) {
+        if ($force || $owner->photoSlots()->doesntExist()) {
+            $owner->photoSlots()->delete();
             foreach ($config['photo_slots'] ?? [] as $order => $slot) {
                 $owner->photoSlots()->create($slot + ['sort_order' => $order]);
             }
         }
 
-        if ($owner->textSlots()->doesntExist()) {
+        if ($force || $owner->textSlots()->doesntExist()) {
+            $owner->textSlots()->delete();
             foreach ($config['text_slots'] ?? [] as $order => $slot) {
                 $owner->textSlots()->create($slot + ['sort_order' => $order]);
             }
