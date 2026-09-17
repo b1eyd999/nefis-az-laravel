@@ -62,11 +62,11 @@
         @if($product->angles->isNotEmpty())
           <div class="angle-thumbs" id="angle-thumbs">
             <button type="button" class="angle-thumb active" data-angle="0">
-              <img src="{{ asset('storage/' . ($product->background_image ?: $product->template_image)) }}" alt="{{ $product->name }}">
+              <img src="{{ \App\Support\Media::url(($product->background_image ?: $product->template_image)) }}" alt="{{ $product->name }}">
             </button>
             @foreach($product->angles as $angle)
               <button type="button" class="angle-thumb" data-angle="{{ $loop->iteration }}">
-                <img src="{{ asset('storage/' . ($angle->background_image ?: $angle->template_image)) }}" alt="{{ $angle->label ?? $product->name }}">
+                <img src="{{ \App\Support\Media::url(($angle->background_image ?: $angle->template_image)) }}" alt="{{ $angle->label ?? $product->name }}">
               </button>
             @endforeach
           </div>

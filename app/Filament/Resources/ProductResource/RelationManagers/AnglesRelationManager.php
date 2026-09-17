@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ProductResource\RelationManagers;
 
 use App\Filament\Resources\ProductResource;
 use Filament\Forms;
+use App\Support\Media;
 use Filament\Forms\Form;
 use Filament\Forms\Set;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -126,7 +127,7 @@ class AnglesRelationManager extends RelationManager
             ->columns([
                 Tables\Columns\ImageColumn::make('template_image')
                     ->label('Şəkil')
-                    ->disk('public'),
+                    ->getStateUsing(fn ($record) => Media::url($record->template_image)),
                 Tables\Columns\TextColumn::make('label')
                     ->label('Ad')
                     ->placeholder('—'),

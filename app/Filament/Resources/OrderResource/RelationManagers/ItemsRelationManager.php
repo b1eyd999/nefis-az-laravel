@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\OrderResource\RelationManagers;
 
+use App\Support\Media;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -28,8 +29,7 @@ class ItemsRelationManager extends RelationManager
                     ->label('Məhsul'),
                 Tables\Columns\ImageColumn::make('product.template_image')
                     ->label('Qutu dizaynı')
-                    ->disk('public')
-                    ->getStateUsing(fn ($record) => $record->product?->catalogImage())
+                    ->getStateUsing(fn ($record) => Media::url($record->product?->catalogImage()))
                     ->square()
                     ->size(80),
                 Tables\Columns\TextColumn::make('custom_texts')

@@ -51,7 +51,7 @@ class DesignSeeder extends Seeder
     {
         Product::where('slug', 'alyonka-azerbaijan-style')->update([
             'category' => 'sokolad',
-            'preview_image' => 'designs/azerbaijan-style-kelagayi.jpg',
+            'preview_image' => 'designs/azerbaijan-style-kelagayi.webp',
         ]);
 
         Product::where('slug', 'klassik-qutu')->update(['category' => 'sokolad']);
@@ -62,7 +62,7 @@ class DesignSeeder extends Seeder
                 [
                     'name' => $name,
                     'category' => $category,
-                    'preview_image' => "designs/{$slug}.jpg",
+                    'preview_image' => "designs/{$slug}.webp",
                     'is_active' => true,
                     'sort_order' => 10 + $i,
                 ]

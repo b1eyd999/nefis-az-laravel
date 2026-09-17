@@ -42,7 +42,7 @@
             </div>
             @foreach($order->items as $item)
               <div class="cart-row" style="background:var(--cream); margin-bottom:.5rem;">
-                <div class="thumb"><img src="{{ asset('storage/' . $item->customer_photo) }}" alt="Yüklənmiş şəkil"></div>
+                <div class="thumb"><img src="{{ \App\Support\Media::url($item->customer_photo) }}" alt="Yüklənmiş şəkil"></div>
                 <div class="info">
                   <h3>{{ $item->product->name ?? 'Silinmiş məhsul' }}</h3>
                   <p>

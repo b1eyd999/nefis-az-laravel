@@ -31,12 +31,12 @@
           <div class="cart-row">
             <div class="thumb">
               @if(! empty($item['photo_paths']))
-                <img src="{{ asset('storage/' . $item['photo_paths'][0]) }}" alt="Yüklənmiş şəkil">
+                <img src="{{ \App\Support\Media::url($item['photo_paths'][0]) }}" alt="Yüklənmiş şəkil">
                 @if(count($item['photo_paths']) > 1)
                   <span class="thumb-more">+{{ count($item['photo_paths']) - 1 }}</span>
                 @endif
               @else
-                <img src="{{ asset('storage/' . $item['product']->catalogImage()) }}" alt="{{ $item['product']->name }}">
+                <img src="{{ \App\Support\Media::url($item['product']->catalogImage()) }}" alt="{{ $item['product']->name }}">
               @endif
             </div>
             <div class="info">

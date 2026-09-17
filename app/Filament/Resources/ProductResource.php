@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ProductResource\Pages;
 use App\Filament\Resources\ProductResource\RelationManagers;
 use App\Models\Product;
+use App\Support\Media;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Set;
@@ -254,8 +255,7 @@ class ProductResource extends Resource
             ->columns([
                 Tables\Columns\ImageColumn::make('preview_image')
                     ->label('Şəkil')
-                    ->disk('public')
-                    ->default(fn (Product $record) => $record->template_image),
+                    ->getStateUsing(fn (Product $record) => Media::url($record->catalogImage())),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Ad')
                     ->searchable(),

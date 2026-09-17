@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Support\Media;
 use App\Models\ProductAngle;
 
 class ProductController extends Controller
@@ -40,11 +41,11 @@ class ProductController extends Controller
     private function viewPayload(Product|ProductAngle $view): array
     {
         return [
-            'url' => asset('storage/' . $view->template_image),
-            'overlay' => $view->overlay_image ? asset('storage/' . $view->overlay_image) : null,
+            'url' => Media::url($view->template_image),
+            'overlay' => Media::url($view->overlay_image),
             'tw' => (int) $view->template_width,
             'th' => (int) $view->template_height,
-            'bg' => $view->background_image ? asset('storage/' . $view->background_image) : null,
+            'bg' => Media::url($view->background_image),
             'bgW' => (int) ($view->background_width ?? 0),
             'bgH' => (int) ($view->background_height ?? 0),
             'boxArea' => [
@@ -78,7 +79,7 @@ class ProductController extends Controller
                 'align' => $slot->align,
                 'maxLines' => max(1, (int) $slot->max_lines),
                 'fontFamily' => $slot->font_family,
-                'fontFile' => $slot->font_file ? asset('storage/' . $slot->font_file) : null,
+                'fontFile' => Media::url($slot->font_file),
             ])->values()->all(),
         ];
     }

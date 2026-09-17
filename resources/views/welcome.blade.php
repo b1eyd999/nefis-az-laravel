@@ -109,7 +109,7 @@
           <div class="p-card reveal">
             <a href="{{ $link }}" class="p-card-media">
               @if($product->tag)<span class="tag">{{ $product->tag }}</span>@endif
-              <img src="{{ asset('storage/' . $product->catalogImage()) }}" alt="{{ $product->name }}" loading="lazy">
+              <img src="{{ \App\Support\Media::url($product->catalogImage()) }}" alt="{{ $product->name }}" loading="lazy">
             </a>
             <div class="p-card-body">
               <h3>{{ $product->name }}</h3>

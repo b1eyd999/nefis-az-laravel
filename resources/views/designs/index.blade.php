@@ -117,11 +117,11 @@
                 <button type="button" class="d-card"
                         data-name="{{ $design->name }}"
                         data-category="{{ $label }}"
-                        data-image="{{ asset('storage/' . $design->catalogImage()) }}"
+                        data-image="{{ \App\Support\Media::url($design->catalogImage()) }}"
                         data-url="{{ $design->isCustomizable() ? route('products.customize', $design->slug) : '' }}">
                   <div class="d-card-media">
                     @if($design->isCustomizable())<span class="pill">Fərdiləşdir</span>@endif
-                    <img src="{{ asset('storage/' . $design->catalogImage()) }}" alt="{{ $design->name }}" loading="lazy">
+                    <img src="{{ \App\Support\Media::url($design->catalogImage()) }}" alt="{{ $design->name }}" loading="lazy">
                   </div>
                   <div class="d-card-body">
                     <h3>{{ $design->name }}</h3>

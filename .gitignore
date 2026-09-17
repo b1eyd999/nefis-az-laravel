@@ -21,3 +21,8 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Design artwork is published from Yandex Disk, never from this repository.
+/storage/app/public/products
+/storage/app/public/designs
+/storage/app/public/backgrounds

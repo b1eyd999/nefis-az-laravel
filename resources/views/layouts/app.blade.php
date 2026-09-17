@@ -2,6 +2,9 @@
 <html lang="az">
 <head>
 <meta charset="UTF-8">
+{{-- The artwork is served from a Yandex Disk share, which rejects any request
+     that carries a referer from another site. --}}
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>@yield('title', 'Nefis Şokolad Evi — Fərdi Şokolad Qutuları')</title>
 <meta name="description" content="@yield('meta_description', 'Öz şəklinizlə, öz sözünüzlə fərdi şokolad qutusu. Premium keyfiyyət, sevdiklərinizə unudulmaz hədiyyə.')">
@@ -18,7 +21,9 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%AB%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=Great+Vibes&family=Poppins:wght@600&display=swap" rel="stylesheet">
+{{-- The families after Poppins stand in for the designs' own display faces,
+     which are not licensed for the web. --}}
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=Great+Vibes&family=Poppins:wght@600&family=Titan+One&family=Bungee&family=Fredoka:wght@500;600&family=Sacramento&family=Creepster&family=Source+Sans+3:wght@400;600&family=Orbitron:wght@600;800&family=Anton&family=Cinzel:wght@400;700&family=Bangers&family=Luckiest+Guy&family=Oswald:wght@500;700&family=Bevan&family=Archivo+Black&family=Caveat:wght@600&family=Pacifico&display=swap" rel="stylesheet">
 <style>
   :root{
     --cream:#FBF4EA;

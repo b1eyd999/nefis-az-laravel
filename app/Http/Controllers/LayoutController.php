@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Support\Media;
 use App\Models\ProductAngle;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -92,8 +93,8 @@ class LayoutController extends Controller
             'type' => $type,
             'id' => $id,
             'label' => $label,
-            'template' => asset('storage/' . $owner->template_image),
-            'overlay' => $owner->overlay_image ? asset('storage/' . $owner->overlay_image) : null,
+            'template' => Media::url($owner->template_image),
+            'overlay' => Media::url($owner->overlay_image),
             'width' => (int) $owner->template_width,
             'height' => (int) $owner->template_height,
             'photo_slots' => $owner->photoSlots->map(fn ($s) => [
