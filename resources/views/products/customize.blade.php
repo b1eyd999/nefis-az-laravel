@@ -12,6 +12,12 @@
   .slot-block{ border-top:1px solid var(--line); padding-top:1.25rem; }
   .slot-block:first-of-type{ border-top:none; padding-top:0; }
   .slot-block .zoom-row{ margin-top:.75rem; }
+  .slot-block .rotate-row{ margin-top:.5rem; }
+  .rotate-reset{
+    flex:none; width:2rem; height:2rem; border-radius:50%; border:1px solid var(--line);
+    background:var(--paper); color:var(--cocoa); font-size:.9rem; line-height:1;
+  }
+  .rotate-reset:hover{ border-color:var(--gold); }
   .slot-hint{ font-size:.8125rem; color:var(--cocoa-soft); margin-top:.5rem; }
 @endsection
 
@@ -94,6 +100,11 @@
               <span class="lbl">Yaxınlaşdır</span>
               <input type="range" class="zoom-range" min="50" max="500" value="100">
             </div>
+            <div class="range-row rotate-row" hidden>
+              <span class="lbl">Fırlat</span>
+              <input type="range" class="rotate-range" min="-180" max="180" value="0">
+              <button type="button" class="rotate-reset" title="Sıfırla">↺</button>
+            </div>
             <p class="slot-hint" hidden>Şəkli önizləmədə sürükləyərək mövqeyini dəyişə bilərsiniz.</p>
           </div>
         @endforeach
@@ -165,7 +176,7 @@
   /* One entry per photo slot, kept across angle switches. */
   var photos = [];
   for (var i = 0; i < SLOT_COUNT; i++) {
-    photos.push({ img: null, scale: 1, offsetX: 0, offsetY: 0, faceBox: null });
+    photos.push({ img: null, scale: 1, rotate: 0, offsetX: 0, offsetY: 0, faceBox: null });
   }
 
   function currentAngle(){ return ANGLES[activeAngle]; }
@@ -204,26 +215,30 @@
     var acx = area.x + area.w / 2;
     var acy = area.y + area.h / 2;
     var rotRad = area.rotation * Math.PI / 180;
+    var isEllipse = area.shape === 'ellipse';
+
+    /* An oval cutout keeps the photo upright — a tilted face looks unnatural —
+       while a rectangular one carries the design's own tilt. The customer's
+       own rotation is applied on top of whichever it is. */
+    var baseDeg = isEllipse ? 0 : area.rotation;
+    var photoRad = (baseDeg + (state.rotate || 0)) * Math.PI / 180;
+    var fit = isEllipse
+      ? coverScale(area, img.width, img.height)
+      : Math.max(area.w / img.width, area.h / img.height);
+    var s = fit * state.scale;
 
     mctx.save();
-    if (area.shape === 'ellipse') {
-      /* Keep the photo upright — only the cutout outline follows the design's tilt. */
-      mctx.beginPath();
-      mctx.ellipse(acx, acy, area.w / 2, area.h / 2, rotRad, 0, Math.PI * 2);
-      mctx.clip();
-      var s = coverScale(area, img.width, img.height) * state.scale;
-      mctx.drawImage(img, acx - img.width * s / 2 + state.offsetX, acy - img.height * s / 2 + state.offsetY,
-                     img.width * s, img.height * s);
-    } else {
-      mctx.translate(acx, acy);
-      mctx.rotate(rotRad);
-      mctx.beginPath();
-      mctx.rect(-area.w / 2, -area.h / 2, area.w, area.h);
-      mctx.clip();
-      var s2 = Math.max(area.w / img.width, area.h / img.height) * state.scale;
-      mctx.drawImage(img, -img.width * s2 / 2 + state.offsetX, -img.height * s2 / 2 + state.offsetY,
-                     img.width * s2, img.height * s2);
-    }
+    mctx.translate(acx, acy);
+    mctx.rotate(rotRad);
+    mctx.beginPath();
+    if (isEllipse) mctx.ellipse(0, 0, area.w / 2, area.h / 2, 0, 0, Math.PI * 2);
+    else mctx.rect(-area.w / 2, -area.h / 2, area.w, area.h);
+    mctx.clip();
+    mctx.rotate(-rotRad);
+
+    mctx.translate(state.offsetX, state.offsetY);
+    mctx.rotate(photoRad);
+    mctx.drawImage(img, -img.width * s / 2, -img.height * s / 2, img.width * s, img.height * s);
     mctx.restore();
   }
 
@@ -348,8 +363,11 @@
       state.scale = 1;
       state.offsetX = 0;
       state.offsetY = 0;
-      var zoom = slotBlocks[i] && slotBlocks[i].querySelector('.zoom-range');
+      var block = slotBlocks[i];
+      var zoom = block && block.querySelector('.zoom-range');
       if (zoom) zoom.value = 100;
+      var rot = block && block.querySelector('.rotate-range');
+      if (rot) rot.value = state.rotate || 0;
       var area = areaFor(i);
       if (area && area.shape === 'ellipse' && state.faceBox) frameOnFace(i, state.faceBox);
     });
@@ -410,6 +428,9 @@
     var label = block.querySelector('.upload-label');
     var zoomRow = block.querySelector('.zoom-row');
     var zoom = block.querySelector('.zoom-range');
+    var rotateRow = block.querySelector('.rotate-row');
+    var rotate = block.querySelector('.rotate-range');
+    var rotateReset = block.querySelector('.rotate-reset');
     var hint = block.querySelector('.slot-hint');
 
     input.addEventListener('change', function(){
@@ -423,6 +444,8 @@
           photos[index].img = img;
           applyAutoFraming(index, img);
           zoomRow.hidden = false;
+          rotateRow.hidden = false;
+          if (rotate) rotate.value = 0;
           if (hint) hint.hidden = false;
           if (dropHint) dropHint.style.display = 'none';
           if (allSlotsFilled()) addBtn.disabled = false;
@@ -436,6 +459,21 @@
     if (zoom) {
       zoom.addEventListener('input', function(){
         photos[index].scale = zoom.value / 100;
+        draw();
+      });
+    }
+
+    if (rotate) {
+      rotate.addEventListener('input', function(){
+        photos[index].rotate = Number(rotate.value);
+        draw();
+      });
+    }
+
+    if (rotateReset) {
+      rotateReset.addEventListener('click', function(){
+        photos[index].rotate = 0;
+        rotate.value = 0;
         draw();
       });
     }
