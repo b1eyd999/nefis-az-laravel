@@ -1392,8 +1392,7 @@
     "content_height": 1901,
     "content_rotation": 0
    }
-  ],
-  "force_slots": true
+  ]
  },
  {
   "slug": "alyonka-8-mart",
@@ -1536,8 +1535,7 @@
     "content_height": 1901,
     "content_rotation": 0
    }
-  ],
-  "force_slots": true
+  ]
  },
  {
   "slug": "love-is-ag-foto",
@@ -1864,8 +1862,7 @@
     "content_height": 1901,
     "content_rotation": 0
    }
-  ],
-  "force_slots": true
+  ]
  },
  {
   "slug": "evlilik-teklifi",
@@ -2092,8 +2089,7 @@
     "content_height": 1901,
     "content_rotation": 0
    }
-  ],
-  "force_slots": true
+  ]
  },
  {
   "slug": "alyonka-cicekli",
@@ -2236,8 +2232,7 @@
     "content_height": 1901,
     "content_rotation": 0
    }
-  ],
-  "force_slots": true
+  ]
  },
  {
   "slug": "love-is-mavi-qutu",
@@ -2464,8 +2459,7 @@
     "content_height": 1901,
     "content_rotation": 0
    }
-  ],
-  "force_slots": true
+  ]
  },
  {
   "slug": "hamilelik-xeberi",
@@ -2732,8 +2726,7 @@
     "content_height": 1901,
     "content_rotation": 0
    }
-  ],
-  "force_slots": true
+  ]
  },
  {
   "slug": "dobby-is-free",
@@ -2876,8 +2869,7 @@
     "content_height": 1901,
     "content_rotation": 0
    }
-  ],
-  "force_slots": true
+  ]
  },
  {
   "slug": "love-is-rengarenk",
@@ -3104,8 +3096,7 @@
     "content_height": 1901,
     "content_rotation": 0
    }
-  ],
-  "force_slots": true
+  ]
  },
  {
   "slug": "milka-dostluq",
@@ -3432,8 +3423,7 @@
     "content_height": 1901,
     "content_rotation": 0
    }
-  ],
-  "force_slots": true
+  ]
  },
  {
   "slug": "love-is-narinci-qutu",
@@ -3660,8 +3650,7 @@
     "content_height": 1901,
     "content_rotation": 0
    }
-  ],
-  "force_slots": true
+  ]
  },
  {
   "slug": "love-is-cehrayi",
@@ -3888,8 +3877,7 @@
     "content_height": 1901,
     "content_rotation": 0
    }
-  ],
-  "force_slots": true
+  ]
  },
  {
   "slug": "toybox-you-love-me",
@@ -3992,8 +3980,7 @@
     "content_height": 1901,
     "content_rotation": 0
    }
-  ],
-  "force_slots": true
+  ]
  },
  {
   "slug": "korpe-karti",
@@ -4640,7 +4627,6 @@
     "content_height": 1901,
     "content_rotation": 0
    }
-  ],
-  "force_slots": true
+  ]
  }
 ]
