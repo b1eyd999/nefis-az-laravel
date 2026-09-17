@@ -20,6 +20,7 @@ class TextSlot extends Model
         'placeholder',
         'default_value',
         'max_length',
+        'max_lines',
         'sort_order',
     ];
 

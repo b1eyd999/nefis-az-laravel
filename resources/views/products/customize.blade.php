@@ -263,11 +263,10 @@
       var input = textInputs[i];
       if (!input || !input.value) return;
       mctx.save();
-      mctx.font = '600 ' + t.fontSize + 'px ' + fontStack(t);
       mctx.fillStyle = t.color;
       mctx.textAlign = t.align;
       mctx.textBaseline = 'middle';
-      wrapText(mctx, input.value, t.x, t.y, t.maxWidth, t.fontSize * 1.2, t.fontSize * 0.08);
+      drawFitted(mctx, input.value, t);
       mctx.restore();
     });
 
@@ -298,7 +297,7 @@
     }
   }
 
-  function wrapText(c, text, x, y, maxWidth, lineHeight, strokeWidth){
+  function wrapLines(c, text, maxWidth){
     var words = text.split(' ');
     var lines = [];
     var line = '';
@@ -312,16 +311,39 @@
       }
     }
     if (line) lines.push(line);
-    var startY = y - ((lines.length - 1) * lineHeight) / 2;
+    return lines;
+  }
+
+  /* Text longer than the designer's own wording must not grow into whatever
+     sits below it, so it shrinks until it fits the slot's line budget. */
+  function drawFitted(c, text, t){
+    var maxLines = Math.max(1, t.maxLines || 1);
+    var size = t.fontSize;
+    var lines;
+
+    for (var attempt = 0; attempt < 40; attempt++) {
+      c.font = '600 ' + size + 'px ' + fontStack(t);
+      lines = wrapLines(c, text, t.maxWidth);
+      var widest = 0;
+      lines.forEach(function(l){ widest = Math.max(widest, c.measureText(l).width); });
+      if (lines.length <= maxLines && widest <= t.maxWidth) break;
+      if (size <= t.fontSize * 0.45 || size <= 8) break;
+      size -= Math.max(1, size * 0.04);
+    }
+
+    var lineHeight = size * 1.2;
+    var strokeWidth = size * 0.08;
+    var startY = t.y - ((lines.length - 1) * lineHeight) / 2;
+
     lines.forEach(function(l, i){
       var ly = startY + i * lineHeight;
       if (strokeWidth) {
         c.lineWidth = strokeWidth;
         c.strokeStyle = 'rgba(0,0,0,.5)';
         c.lineJoin = 'round';
-        c.strokeText(l, x, ly);
+        c.strokeText(l, t.x, ly);
       }
-      c.fillText(l, x, ly);
+      c.fillText(l, t.x, ly);
     });
   }
 

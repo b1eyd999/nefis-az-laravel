@@ -63,9 +63,10 @@ class DesignTemplateSeeder extends Seeder
                 }
             } else {
                 foreach ($product->angles as $angle) {
-                    $angle->update($this->viewFields(
-                        collect($config['angles'] ?? [])->firstWhere('label', $angle->label) ?? []
-                    ));
+                    $angleConfig = collect($config['angles'] ?? [])->firstWhere('label', $angle->label) ?? [];
+                    $angle->update($this->viewFields($angleConfig));
+                    // An angle added before its areas existed still needs them.
+                    $this->seedSlots($angle, $angleConfig);
                 }
             }
 

@@ -60,6 +60,7 @@ class LayoutController extends Controller
             'views.*.text_slots.*.default_value' => ['nullable', 'string', 'max:255'],
             'views.*.text_slots.*.placeholder' => ['nullable', 'string', 'max:255'],
             'views.*.text_slots.*.max_length' => ['required', 'integer', 'min:1', 'max:255'],
+            'views.*.text_slots.*.max_lines' => ['required', 'integer', 'min:1', 'max:10'],
         ]);
 
         foreach ($data['views'] as $view) {
@@ -109,6 +110,7 @@ class LayoutController extends Controller
                 'font_family' => $s->font_family, 'font_file' => $s->font_file,
                 'default_value' => $s->default_value, 'placeholder' => $s->placeholder,
                 'max_length' => (int) $s->max_length,
+                'max_lines' => max(1, (int) $s->max_lines),
             ])->values()->all(),
         ];
     }

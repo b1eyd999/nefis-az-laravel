@@ -76,6 +76,7 @@ class ProductController extends Controller
                 'fontSize' => (int) $slot->font_size,
                 'color' => $slot->color,
                 'align' => $slot->align,
+                'maxLines' => max(1, (int) $slot->max_lines),
                 'fontFamily' => $slot->font_family,
                 'fontFile' => $slot->font_file ? asset('storage/' . $slot->font_file) : null,
             ])->values()->all(),

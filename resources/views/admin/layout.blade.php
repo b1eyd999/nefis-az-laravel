@@ -380,8 +380,13 @@
       g2.appendChild(field('Rəng', t.color || '#000000', function(val){ t.color = val; render(); }, 'color'));
       g2.appendChild(field('Düzülüş', t.align, function(val){ t.align = val; render(); }, 'select',
         [['left','Sol'],['center','Mərkəz'],['right','Sağ']]));
-      g2.appendChild(field('Maks simvol', t.max_length, function(val){ t.max_length = val; }, 'number'));
+      g2.appendChild(field('Maks sətir', t.max_lines || 1, function(val){ t.max_lines = Math.max(1, val); render(); }, 'number'));
       card.appendChild(g2);
+
+      var g3 = document.createElement('div'); g3.className = 'grid2'; g3.style.marginTop = '.4rem';
+      g3.appendChild(field('Maks simvol', t.max_length, function(val){ t.max_length = val; }, 'number'));
+      g3.appendChild(field('İpucu', t.placeholder || '', function(val){ t.placeholder = val; }));
+      card.appendChild(g3);
 
       card.appendChild(field('Şrift adı', t.font_family || '', function(val){ t.font_family = val; render(); }));
       card.appendChild(field('Şrift faylı', t.font_file || '', function(val){ t.font_file = val; }));
@@ -410,7 +415,7 @@
       max_width: Math.round(v.width * 0.7), font_size: Math.max(14, Math.round(v.height / 40)),
       color: '#000000', align: 'center',
       font_family: null, font_file: null,
-      default_value: '', placeholder: '', max_length: 60
+      default_value: '', placeholder: '', max_length: 60, max_lines: 1
     });
     selected = { kind:'text', index: v.text_slots.length - 1 };
     render();
@@ -437,7 +442,7 @@
         });
       });
       v.text_slots.forEach(function(t, i){
-        ['label','x','y','max_width','font_size','color','align','font_family','font_file','default_value','placeholder','max_length'].forEach(function(k){
+        ['label','x','y','max_width','font_size','color','align','font_family','font_file','default_value','placeholder','max_length','max_lines'].forEach(function(k){
           put('[text_slots][' + i + '][' + k + ']', t[k]);
         });
       });
