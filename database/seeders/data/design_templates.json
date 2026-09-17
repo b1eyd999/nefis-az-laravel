@@ -1556,10 +1556,10 @@
   "photo_slots": [
    {
     "label": "Şəkil",
-    "x": 175,
-    "y": 304,
-    "width": 623,
-    "height": 760,
+    "x": 221,
+    "y": 221,
+    "width": 561,
+    "height": 841,
     "rotation": 0,
     "shape": "rectangle"
    }
@@ -1635,10 +1635,10 @@
     "photo_slots": [
      {
       "label": "Şəkil",
-      "x": 175,
-      "y": 304,
-      "width": 623,
-      "height": 760,
+      "x": 221,
+      "y": 221,
+      "width": 561,
+      "height": 841,
       "rotation": 0,
       "shape": "rectangle"
      }
@@ -1714,10 +1714,10 @@
     "photo_slots": [
      {
       "label": "Şəkil",
-      "x": 175,
-      "y": 304,
-      "width": 623,
-      "height": 760,
+      "x": 221,
+      "y": 221,
+      "width": 561,
+      "height": 841,
       "rotation": 0,
       "shape": "rectangle"
      }
@@ -1793,10 +1793,10 @@
     "photo_slots": [
      {
       "label": "Şəkil",
-      "x": 175,
-      "y": 304,
-      "width": 623,
-      "height": 760,
+      "x": 221,
+      "y": 221,
+      "width": 561,
+      "height": 841,
       "rotation": 0,
       "shape": "rectangle"
      }
@@ -2109,13 +2109,13 @@
   "template_height": 1901,
   "photo_slots": [
    {
-    "label": "Şəkil",
-    "x": 175,
-    "y": 304,
-    "width": 623,
-    "height": 760,
+    "label": "Üz",
+    "x": 167,
+    "y": 89,
+    "width": 587,
+    "height": 809,
     "rotation": 0,
-    "shape": "rectangle"
+    "shape": "ellipse"
    }
   ],
   "text_slots": [],
@@ -2142,13 +2142,13 @@
     "template_height": 1901,
     "photo_slots": [
      {
-      "label": "Şəkil",
-      "x": 175,
-      "y": 304,
-      "width": 623,
-      "height": 760,
+      "label": "Üz",
+      "x": 167,
+      "y": 89,
+      "width": 587,
+      "height": 809,
       "rotation": 0,
-      "shape": "rectangle"
+      "shape": "ellipse"
      }
     ],
     "text_slots": [],
@@ -2175,13 +2175,13 @@
     "template_height": 1901,
     "photo_slots": [
      {
-      "label": "Şəkil",
-      "x": 175,
-      "y": 304,
-      "width": 623,
-      "height": 760,
+      "label": "Üz",
+      "x": 167,
+      "y": 89,
+      "width": 587,
+      "height": 809,
       "rotation": 0,
-      "shape": "rectangle"
+      "shape": "ellipse"
      }
     ],
     "text_slots": [],
@@ -2208,13 +2208,13 @@
     "template_height": 1901,
     "photo_slots": [
      {
-      "label": "Şəkil",
-      "x": 175,
-      "y": 304,
-      "width": 623,
-      "height": 760,
+      "label": "Üz",
+      "x": 167,
+      "y": 89,
+      "width": 587,
+      "height": 809,
       "rotation": 0,
-      "shape": "rectangle"
+      "shape": "ellipse"
      }
     ],
     "text_slots": [],
@@ -2479,13 +2479,13 @@
   "template_height": 1901,
   "photo_slots": [
    {
-    "label": "Şəkil",
-    "x": 175,
-    "y": 304,
-    "width": 623,
-    "height": 760,
+    "label": "USM",
+    "x": 484,
+    "y": 508,
+    "width": 364,
+    "height": 365,
     "rotation": 0,
-    "shape": "rectangle"
+    "shape": "ellipse"
    }
   ],
   "text_slots": [
@@ -2543,13 +2543,13 @@
     "template_height": 1901,
     "photo_slots": [
      {
-      "label": "Şəkil",
-      "x": 175,
-      "y": 304,
-      "width": 623,
-      "height": 760,
+      "label": "USM",
+      "x": 484,
+      "y": 508,
+      "width": 364,
+      "height": 365,
       "rotation": 0,
-      "shape": "rectangle"
+      "shape": "ellipse"
      }
     ],
     "text_slots": [
@@ -2607,13 +2607,13 @@
     "template_height": 1901,
     "photo_slots": [
      {
-      "label": "Şəkil",
-      "x": 175,
-      "y": 304,
-      "width": 623,
-      "height": 760,
+      "label": "USM",
+      "x": 484,
+      "y": 508,
+      "width": 364,
+      "height": 365,
       "rotation": 0,
-      "shape": "rectangle"
+      "shape": "ellipse"
      }
     ],
     "text_slots": [
@@ -2671,13 +2671,13 @@
     "template_height": 1901,
     "photo_slots": [
      {
-      "label": "Şəkil",
-      "x": 175,
-      "y": 304,
-      "width": 623,
-      "height": 760,
+      "label": "USM",
+      "x": 484,
+      "y": 508,
+      "width": 364,
+      "height": 365,
       "rotation": 0,
-      "shape": "rectangle"
+      "shape": "ellipse"
      }
     ],
     "text_slots": [
@@ -2746,13 +2746,13 @@
   "template_height": 1901,
   "photo_slots": [
    {
-    "label": "Şəkil",
-    "x": 175,
-    "y": 304,
-    "width": 623,
-    "height": 760,
+    "label": "Üz",
+    "x": 240,
+    "y": 429,
+    "width": 487,
+    "height": 550,
     "rotation": 0,
-    "shape": "rectangle"
+    "shape": "ellipse"
    }
   ],
   "text_slots": [],
@@ -2779,13 +2779,13 @@
     "template_height": 1901,
     "photo_slots": [
      {
-      "label": "Şəkil",
-      "x": 175,
-      "y": 304,
-      "width": 623,
-      "height": 760,
+      "label": "Üz",
+      "x": 240,
+      "y": 429,
+      "width": 487,
+      "height": 550,
       "rotation": 0,
-      "shape": "rectangle"
+      "shape": "ellipse"
      }
     ],
     "text_slots": [],
@@ -2812,13 +2812,13 @@
     "template_height": 1901,
     "photo_slots": [
      {
-      "label": "Şəkil",
-      "x": 175,
-      "y": 304,
-      "width": 623,
-      "height": 760,
+      "label": "Üz",
+      "x": 240,
+      "y": 429,
+      "width": 487,
+      "height": 550,
       "rotation": 0,
-      "shape": "rectangle"
+      "shape": "ellipse"
      }
     ],
     "text_slots": [],
@@ -2845,13 +2845,13 @@
     "template_height": 1901,
     "photo_slots": [
      {
-      "label": "Şəkil",
-      "x": 175,
-      "y": 304,
-      "width": 623,
-      "height": 760,
+      "label": "Üz",
+      "x": 240,
+      "y": 429,
+      "width": 487,
+      "height": 550,
       "rotation": 0,
-      "shape": "rectangle"
+      "shape": "ellipse"
      }
     ],
     "text_slots": [],
@@ -3117,10 +3117,10 @@
   "photo_slots": [
    {
     "label": "Şəkil",
-    "x": 175,
-    "y": 304,
-    "width": 623,
-    "height": 760,
+    "x": 0,
+    "y": 80,
+    "width": 974,
+    "height": 1070,
     "rotation": 0,
     "shape": "rectangle"
    }
@@ -3196,10 +3196,10 @@
     "photo_slots": [
      {
       "label": "Şəkil",
-      "x": 175,
-      "y": 304,
-      "width": 623,
-      "height": 760,
+      "x": 0,
+      "y": 80,
+      "width": 974,
+      "height": 1070,
       "rotation": 0,
       "shape": "rectangle"
      }
@@ -3275,10 +3275,10 @@
     "photo_slots": [
      {
       "label": "Şəkil",
-      "x": 175,
-      "y": 304,
-      "width": 623,
-      "height": 760,
+      "x": 0,
+      "y": 80,
+      "width": 974,
+      "height": 1070,
       "rotation": 0,
       "shape": "rectangle"
      }
@@ -3354,10 +3354,10 @@
     "photo_slots": [
      {
       "label": "Şəkil",
-      "x": 175,
-      "y": 304,
-      "width": 623,
-      "height": 760,
+      "x": 0,
+      "y": 80,
+      "width": 974,
+      "height": 1070,
       "rotation": 0,
       "shape": "rectangle"
      }
