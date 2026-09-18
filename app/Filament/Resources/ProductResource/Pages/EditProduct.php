@@ -13,6 +13,10 @@ class EditProduct extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('editor')
+                ->label('Qutu redaktoru')
+                ->icon('heroicon-o-paint-brush')
+                ->url(fn () => route('box.edit', $this->record->slug)),
             Actions\DeleteAction::make(),
         ];
     }

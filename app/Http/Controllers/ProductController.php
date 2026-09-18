@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DesignLayer;
 use App\Models\Product;
-use App\Support\Media;
 use App\Models\ProductAngle;
+use App\Support\Media;
 
 class ProductController extends Controller
 {
     public function index()
     {
         $designs = Product::where('is_active', true)
+            ->withCount('layers')
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get()
@@ -23,26 +25,76 @@ class ProductController extends Controller
     {
         abort_unless($product->is_active && $product->isCustomizable(), 404);
 
-        $product->load(['photoSlots', 'textSlots', 'angles.photoSlots', 'angles.textSlots']);
+        $product->load(['layers', 'photoSlots', 'textSlots', 'angles.photoSlots', 'angles.textSlots']);
 
-        $viewData = collect([$product])
-            ->concat($product->angles)
-            ->map(fn ($view) => $this->viewPayload($view))
-            ->values()
-            ->all();
+        $viewData = $product->layers->isNotEmpty()
+            ? $this->boxViews($product)
+            : collect([$product])->concat($product->angles)
+                ->map(fn ($view) => $this->viewPayload($view))
+                ->values()
+                ->all();
 
         return view('products.customize', compact('product', 'viewData'));
     }
 
     /**
-     * The front view lives on the product itself; each extra angle is a
-     * ProductAngle. Both carry the same artwork + slot shape.
+     * A box built in the editor is one flat design shown in every scene from
+     * config/boxes.php, so the owner lays it out once and never per angle.
+     */
+    private function boxViews(Product $product): array
+    {
+        $w = (int) $product->template_width ?: config('boxes.canvas.width');
+        $h = (int) $product->template_height ?: config('boxes.canvas.height');
+
+        $layer = fn (DesignLayer $l) => [
+            'url' => Media::url($l->image),
+            'x' => $l->x, 'y' => $l->y, 'width' => $l->width, 'height' => $l->height,
+            'rotation' => $l->rotation, 'opacity' => $l->opacity,
+        ];
+        $layers = [
+            'below' => $product->layers->where('placement', DesignLayer::BELOW)->map($layer)->values()->all(),
+            'above' => $product->layers->where('placement', DesignLayer::ABOVE)->map($layer)->values()->all(),
+        ];
+
+        $flat = $this->viewPayload($product);
+
+        return collect(config('boxes.scenes'))->map(function (array $scene) use ($flat, $layers, $w, $h) {
+            $bw = $scene['scale'] * $w;
+            $bh = $scene['scale'] * $h;
+
+            return array_merge($flat, [
+                'url' => null,
+                'overlay' => null,
+                'layers' => $layers,
+                'tw' => $w,
+                'th' => $h,
+                'label' => $scene['label'],
+                'bg' => Media::url($scene['background']),
+                'bgW' => $scene['width'],
+                'bgH' => $scene['height'],
+                'boxArea' => [
+                    'x' => (int) round($scene['cx'] - $bw / 2),
+                    'y' => (int) round($scene['cy'] - $bh / 2),
+                    'w' => (int) round($bw),
+                    'h' => (int) round($bh),
+                    'rotation' => $scene['rotation'],
+                ],
+                'contentBox' => ['x' => 0, 'y' => 0, 'w' => $w, 'h' => $h, 'rotation' => 0],
+            ]);
+        })->values()->all();
+    }
+
+    /**
+     * Designs from before the editor: the front view lives on the product
+     * itself and each extra angle is a ProductAngle with its own slots.
      */
     private function viewPayload(Product|ProductAngle $view): array
     {
         return [
             'url' => Media::url($view->template_image),
             'overlay' => Media::url($view->overlay_image),
+            'layers' => ['below' => [], 'above' => []],
+            'label' => $view instanceof ProductAngle ? $view->label : null,
             'tw' => (int) $view->template_width,
             'th' => (int) $view->template_height,
             'bg' => Media::url($view->background_image),

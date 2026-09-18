@@ -9,7 +9,7 @@ class HomeController extends Controller
     public function index()
     {
         $products = Product::where('is_active', true)
-            ->orderByRaw('template_image is null')
+            ->withCount('layers')
             ->orderBy('sort_order')
             ->take(8)
             ->get();

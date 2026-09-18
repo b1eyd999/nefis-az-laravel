@@ -54,19 +54,16 @@
           @if($photoSlots->isNotEmpty())
             <div class="drop-hint" id="drop-hint">Öncə sağdan şəklinizi yükləyin</div>
           @endif
-          @if($product->angles->isNotEmpty())
+          @if(count($viewData) > 1)
             <button type="button" class="angle-arrow prev" id="angle-prev" aria-label="Əvvəlki görünüş">‹</button>
             <button type="button" class="angle-arrow next" id="angle-next" aria-label="Sonrakı görünüş">›</button>
           @endif
         </div>
-        @if($product->angles->isNotEmpty())
+        @if(count($viewData) > 1)
           <div class="angle-thumbs" id="angle-thumbs">
-            <button type="button" class="angle-thumb active" data-angle="0">
-              <img src="{{ \App\Support\Media::url(($product->background_image ?: $product->template_image)) }}" alt="{{ $product->name }}">
-            </button>
-            @foreach($product->angles as $angle)
-              <button type="button" class="angle-thumb" data-angle="{{ $loop->iteration }}">
-                <img src="{{ \App\Support\Media::url(($angle->background_image ?: $angle->template_image)) }}" alt="{{ $angle->label ?? $product->name }}">
+            @foreach($viewData as $view)
+              <button type="button" class="angle-thumb{{ $loop->first ? ' active' : '' }}" data-angle="{{ $loop->index }}">
+                <img src="{{ $view['bg'] ?: $view['url'] }}" alt="{{ $view['label'] ?? $product->name }}">
               </button>
             @endforeach
           </div>
@@ -146,6 +143,7 @@
 @if($photoSlots->where('shape', 'ellipse')->isNotEmpty())
 <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 @endif
+<script src="{{ asset('js/box-render.js') }}"></script>
 <script>
 (function(){
   "use strict";
@@ -181,6 +179,18 @@
   var overlay = new Image(), overlayReady = false;
   var bgImg = new Image(), bgReady = false;
   var mockupCanvas = document.createElement('canvas');
+  var layerImages = {};
+  function layerImage(url){
+    if (!layerImages[url]) {
+      layerImages[url] = new Image();
+      layerImages[url].onload = function(){ draw(); };
+      layerImages[url].src = url;
+    }
+    return layerImages[url];
+  }
+  function drawLayers(mctx, list){
+    (list || []).forEach(function(l){ NefisBox.drawLayer(mctx, layerImage(l.url), l); });
+  }
   var activeAngle = 0;
 
   /* One entry per photo slot, kept across angle switches. */
@@ -204,10 +214,6 @@
       } catch (e) {}
     });
   });
-
-  function fontStack(t){
-    return '"' + (t.fontFamily || 'Inter') + '", Inter, sans-serif';
-  }
 
   /* ---------- geometry ---------- */
   function coverScale(area, imgW, imgH){
@@ -260,30 +266,20 @@
     var mctx = mockupCanvas.getContext('2d');
     mctx.clearRect(0, 0, a.tw, a.th);
 
-    if (templateReady) mctx.drawImage(template, 0, 0, a.tw, a.th);
+    if (a.url && templateReady) mctx.drawImage(template, 0, 0, a.tw, a.th);
+    drawLayers(mctx, a.layers && a.layers.below);
 
     a.areas.forEach(function(area, i){
       if (photos[i]) drawPhotoInArea(mctx, area, photos[i]);
     });
 
-    /* Foreground artwork (frames, props) must cover the photo edges. */
+    /* Foreground artwork (frames, fades, props) must cover the photo edges. */
+    drawLayers(mctx, a.layers && a.layers.above);
     if (a.overlay && overlayReady) mctx.drawImage(overlay, 0, 0, a.tw, a.th);
 
     a.texts.forEach(function(t, i){
       var input = textInputs[i];
-      if (!input || !input.value) return;
-      mctx.save();
-      mctx.fillStyle = t.color;
-      mctx.textAlign = t.align;
-      mctx.textBaseline = 'middle';
-      if (t.rotation) {
-        /* Tilted captions turn about their own anchor point. */
-        mctx.translate(t.x, t.y);
-        mctx.rotate(t.rotation * Math.PI / 180);
-        t = Object.assign({}, t, { x: 0, y: 0 });
-      }
-      drawFitted(mctx, input.value, t);
-      mctx.restore();
+      if (input && input.value) NefisBox.drawText(mctx, input.value, t);
     });
 
     return mockupCanvas;
@@ -313,87 +309,17 @@
     }
   }
 
-  function wrapLines(c, text, maxWidth){
-    var words = text.split(' ');
-    var lines = [];
-    var line = '';
-    for (var i = 0; i < words.length; i++) {
-      var test = line ? line + ' ' + words[i] : words[i];
-      if (c.measureText(test).width > maxWidth && line) {
-        lines.push(line);
-        line = words[i];
-      } else {
-        line = test;
-      }
-    }
-    if (line) lines.push(line);
-    return lines;
-  }
-
-  /* Text longer than the designer's own wording must not grow into whatever
-     sits below it, so it shrinks until it fits the slot's line budget. */
-  function drawFitted(c, text, t){
-    var maxLines = Math.max(1, t.maxLines || 1);
-    var size = t.fontSize;
-    var lines;
-
-    /* Captions lifted from a layout carry the weight their font file really
-       has; asking for more makes the browser smear a fake bold on top. */
-    var weight = t.fontWeight || 600;
-
-    for (var attempt = 0; attempt < 40; attempt++) {
-      c.font = weight + ' ' + size + 'px ' + fontStack(t);
-      lines = wrapLines(c, text, t.maxWidth);
-      var widest = 0;
-      lines.forEach(function(l){ widest = Math.max(widest, c.measureText(l).width); });
-      if (lines.length <= maxLines && widest <= t.maxWidth) break;
-      if (size <= t.fontSize * 0.45 || size <= 8) break;
-      size -= Math.max(1, size * 0.04);
-    }
-
-    var lineHeight = size * 1.2;
-    var startY = t.y - ((lines.length - 1) * lineHeight) / 2;
-    var shrink = size / t.fontSize;
-
-    /* Styling measured from the layout scales with any shrink-to-fit. Older
-       slots have no styling recorded and keep their soft dark outline. */
-    var legacy = t.strokeWidth === null || t.strokeWidth === undefined;
-    var strokeWidth = legacy ? size * 0.08 : t.strokeWidth * shrink;
-    var strokeColor = legacy ? 'rgba(0,0,0,.5)' : t.strokeColor;
-
-    function shadow(on){
-      c.shadowColor = on && t.shadowColor ? t.shadowColor : 'transparent';
-      c.shadowBlur = on ? (t.shadowBlur || 0) * shrink : 0;
-      c.shadowOffsetX = on ? (t.shadowX || 0) * shrink : 0;
-      c.shadowOffsetY = on ? (t.shadowY || 0) * shrink : 0;
-    }
-
-    lines.forEach(function(l, i){
-      var ly = startY + i * lineHeight;
-      /* The shadow is cast once, by whichever layer is outermost. */
-      shadow(true);
-      if (strokeWidth > 0 && strokeColor) {
-        /* Photoshop's outside stroke: twice as wide, drawn under the fill. */
-        c.lineWidth = legacy ? strokeWidth : strokeWidth * 2;
-        c.strokeStyle = strokeColor;
-        c.lineJoin = 'round';
-        c.strokeText(l, t.x, ly);
-        shadow(false);
-      }
-      c.fillText(l, t.x, ly);
-    });
-    shadow(false);
-  }
-
   /* ---------- angles ---------- */
   function loadAngle(index){
     activeAngle = index;
     var a = ANGLES[index];
 
     templateReady = false;
-    template = new Image();
-    template.onload = function(){ templateReady = true; draw(); };
-    template.src = a.url;
+    if (a.url) {
+      template = new Image();
+      template.onload = function(){ templateReady = true; draw(); };
+      template.src = a.url;
+    }
 
     overlayReady = false;
     if (a.overlay) {

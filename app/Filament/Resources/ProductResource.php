@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProductResource\Pages;
-use App\Filament\Resources\ProductResource\RelationManagers;
 use App\Models\Product;
 use App\Support\Media;
 use Filament\Forms;
@@ -31,6 +30,7 @@ class ProductResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Section::make('Əsas məlumat')
+                    ->description('Qutunun şəkilləri, foto və mətn sahələri "Qutu redaktoru"nda qurulur — yaratdıqdan sonra ora keçəcəksiniz.')
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->label('Ad')
@@ -50,203 +50,20 @@ class ProductResource extends Resource
                             ->label('Kateqoriya')
                             ->options(Product::CATEGORIES)
                             ->helperText('Dizaynlar səhifəsində qruplaşdırma üçün.'),
-                        Forms\Components\FileUpload::make('preview_image')
-                            ->label('Kataloq önizləməsi')
-                            ->image()
-                            ->disk('public')
-                            ->directory('designs')
-                            ->helperText('Kataloqda göstərilən hazır render. Boş saxlasanız qutu şəkli istifadə olunur.')
-                            ->columnSpanFull(),
                         Forms\Components\TextInput::make('price')
                             ->label('Qiymət (₼)')
                             ->numeric()
                             ->suffix('₼')
                             ->helperText('Boş buraxsanız "Qiymət sorğu ilə" göstərilir.'),
-                        Forms\Components\Toggle::make('is_active')
-                            ->label('Aktivdir')
-                            ->default(true),
                         Forms\Components\TextInput::make('sort_order')
                             ->label('Sıra nömrəsi')
                             ->numeric()
                             ->default(0),
+                        Forms\Components\Toggle::make('is_active')
+                            ->label('Saytda görünsün')
+                            ->default(true),
                     ])->columns(2),
-
-                Forms\Components\Section::make('Qutu şəkli')
-                    ->description('Fərdiləşdirmə üçün istifadə olunan BOŞ qutu mokupu (müştəri şəkli olmadan). Boş saxlasanız dizayn kataloqda yalnız önizləmə kimi görünür. Yüklədikdən sonra en/hündürlük avtomatik dolacaq.')
-                    ->schema([
-                        Forms\Components\FileUpload::make('template_image')
-                            ->label('Şəkil')
-                            ->image()
-                            ->disk('public')
-                            ->directory('products')
-                            ->live()
-                            ->afterStateUpdated(function ($state, Set $set) {
-                                if (! $state) {
-                                    return;
-                                }
-                                $path = method_exists($state, 'getRealPath') ? $state->getRealPath() : null;
-                                if ($path && $size = @getimagesize($path)) {
-                                    $set('template_width', $size[0]);
-                                    $set('template_height', $size[1]);
-                                }
-                            })
-                            ->columnSpanFull(),
-                        Forms\Components\TextInput::make('template_width')
-                            ->label('Şəklin eni (px)')
-                            ->numeric()
-                            ->required()
-                            ->default(1000),
-                        Forms\Components\TextInput::make('template_height')
-                            ->label('Şəklin hündürlüyü (px)')
-                            ->numeric()
-                            ->required()
-                            ->default(1000),
-                        Forms\Components\FileUpload::make('overlay_image')
-                            ->label('Üst qat (istəyə bağlı)')
-                            ->image()
-                            ->disk('public')
-                            ->directory('products')
-                            ->helperText('Müştərinin şəklinin ÜSTÜNDƏN keçməli olan hissə — çərçivə, ön plandakı elementlər. Eyni ölçüdə, şəffaf fonlu olmalıdır.')
-                            ->columnSpanFull(),
-                    ]),
-
-                Forms\Components\Section::make('Arxa fon (istəyə bağlı)')
-                    ->description('Qutu mokupunu bir səhnə/arxa fonun üzərinə "yerləşdirmək" üçün. Boş saxlasanız qutu şəkli birbaşa tam kadrda göstərilir.')
-                    ->schema([
-                        Forms\Components\FileUpload::make('background_image')
-                            ->label('Arxa fon şəkli')
-                            ->image()
-                            ->disk('public')
-                            ->directory('backgrounds')
-                            ->live()
-                            ->afterStateUpdated(function ($state, Set $set) {
-                                if (! $state) {
-                                    return;
-                                }
-                                $path = method_exists($state, 'getRealPath') ? $state->getRealPath() : null;
-                                if ($path && $size = @getimagesize($path)) {
-                                    $set('background_width', $size[0]);
-                                    $set('background_height', $size[1]);
-                                }
-                            })
-                            ->columnSpanFull(),
-                        Forms\Components\TextInput::make('background_width')
-                            ->label('Arxa fonun eni (px)')->numeric(),
-                        Forms\Components\TextInput::make('background_height')
-                            ->label('Arxa fonun hündürlüyü (px)')->numeric(),
-                        Forms\Components\TextInput::make('box_area_x')
-                            ->label('Qutu X (soldan)')->numeric(),
-                        Forms\Components\TextInput::make('box_area_y')
-                            ->label('Qutu Y (yuxarıdan)')->numeric(),
-                        Forms\Components\TextInput::make('box_area_width')
-                            ->label('Qutu eni')->numeric(),
-                        Forms\Components\TextInput::make('box_area_height')
-                            ->label('Qutu hündürlüyü')->numeric(),
-                        Forms\Components\TextInput::make('box_area_rotation')
-                            ->label('Qutu bucağı (dərəcə)')->numeric()->default(0),
-                        Forms\Components\TextInput::make('content_x')
-                            ->label('Şəklin öz X-i')->numeric()
-                            ->helperText('Yuxarıdakı "Qutu şəkli"nin öz kətanında əsl qutunun harada yerləşdiyi (boş kənarlar çıxılmış). Boş saxlasanız bütün şəkil istifadə olunur.'),
-                        Forms\Components\TextInput::make('content_y')
-                            ->label('Şəklin öz Y-i')->numeric(),
-                        Forms\Components\TextInput::make('content_width')
-                            ->label('Şəklin öz eni')->numeric(),
-                        Forms\Components\TextInput::make('content_height')
-                            ->label('Şəklin öz hündürlüyü')->numeric(),
-                        Forms\Components\TextInput::make('content_rotation')
-                            ->label('Şəklin öz bucağı (dərəcə)')->numeric()->default(0),
-                    ])->columns(3),
-
-                Forms\Components\Section::make('Foto sahələri')
-                    ->description('Müştərinin şəkillərinin maket üzərində düşəcəyi sahələr — yuxarıdakı şəklin öz piksel ölçüsünə görə. Bir neçə şəkil tələb edən dizayn üçün birdən çox sahə əlavə edin.')
-                    ->schema([self::photoSlotsRepeater()]),
-
-                Forms\Components\Section::make('Mətn sahələri')
-                    ->description('Müştərinin yazacağı mətnlər. Dizaynın sabit yazıları maketin öz şəklində qalmalıdır — bura yalnız redaktə olunan hissələri əlavə edin.')
-                    ->schema([self::textSlotsRepeater()]),
             ]);
-    }
-
-    public static function photoSlotsRepeater(): Forms\Components\Repeater
-    {
-        return Forms\Components\Repeater::make('photoSlots')
-            ->relationship()
-            ->label('')
-            ->addActionLabel('Foto sahəsi əlavə et')
-            ->schema([
-                Forms\Components\TextInput::make('label')
-                    ->label('Ad')
-                    ->placeholder('Məs. Gəlin'),
-                Forms\Components\Select::make('shape')
-                    ->label('Forma')
-                    ->options(['rectangle' => 'Düzbucaqlı', 'ellipse' => 'Oval'])
-                    ->default('rectangle')
-                    ->required(),
-                Forms\Components\TextInput::make('rotation')
-                    ->label('Bucaq (dərəcə)')->numeric()->required()->default(0),
-                Forms\Components\TextInput::make('x')
-                    ->label('X (soldan)')->numeric()->required()->default(0),
-                Forms\Components\TextInput::make('y')
-                    ->label('Y (yuxarıdan)')->numeric()->required()->default(0),
-                Forms\Components\TextInput::make('width')
-                    ->label('En')->numeric()->required()->default(100),
-                Forms\Components\TextInput::make('height')
-                    ->label('Hündürlük')->numeric()->required()->default(100),
-            ])
-            ->columns(3)
-            ->orderColumn('sort_order')
-            ->defaultItems(0)
-            ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
-            ->collapsible();
-    }
-
-    public static function textSlotsRepeater(): Forms\Components\Repeater
-    {
-        return Forms\Components\Repeater::make('textSlots')
-            ->relationship()
-            ->label('')
-            ->addActionLabel('Mətn sahəsi əlavə et')
-            ->schema([
-                Forms\Components\TextInput::make('label')
-                    ->label('Ad')
-                    ->placeholder('Məs. Ad'),
-                Forms\Components\TextInput::make('placeholder')
-                    ->label('İpucu mətni')
-                    ->placeholder('Məs. Ad Soyad yazın'),
-                Forms\Components\TextInput::make('default_value')
-                    ->label('İlkin dəyər')
-                    ->helperText('Sahədə hazır yazılı gələn mətn. Müştəri dəyişə bilər.'),
-                Forms\Components\TextInput::make('max_length')
-                    ->label('Maks simvol')->numeric()->required()->default(60),
-                Forms\Components\TextInput::make('x')
-                    ->label('X')->numeric()->required()->default(0),
-                Forms\Components\TextInput::make('y')
-                    ->label('Y')->numeric()->required()->default(0),
-                Forms\Components\TextInput::make('max_width')
-                    ->label('Maks en')->numeric()->required()->default(300),
-                Forms\Components\TextInput::make('font_size')
-                    ->label('Şrift ölçüsü')->numeric()->required()->default(32),
-                Forms\Components\ColorPicker::make('color')
-                    ->label('Rəng')->default('#3A2617'),
-                Forms\Components\Select::make('align')
-                    ->label('Düzülüş')
-                    ->options(['left' => 'Sol', 'center' => 'Mərkəz', 'right' => 'Sağ'])
-                    ->default('center')
-                    ->required(),
-                Forms\Components\TextInput::make('font_family')
-                    ->label('Şrift adı (CSS)')
-                    ->helperText('Məs. "Great Vibes". Boş saxlasanız standart şrift işlənir.'),
-                Forms\Components\FileUpload::make('font_file')
-                    ->label('Şrift faylı')
-                    ->disk('public')
-                    ->directory('fonts')
-                    ->acceptedFileTypes(['font/woff2', 'font/woff', 'font/ttf', 'font/otf', 'application/font-woff', 'application/font-woff2', 'application/x-font-ttf', 'application/x-font-otf']),
-            ])
-            ->columns(3)
-            ->orderColumn('sort_order')
-            ->defaultItems(0)
-            ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
-            ->collapsible();
     }
 
     public static function table(Table $table): Table
@@ -284,6 +101,7 @@ class ProductResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->modifyQueryUsing(fn ($query) => $query->withCount('layers'))
             ->defaultSort('sort_order')
             ->filters([
                 Tables\Filters\SelectFilter::make('category')
@@ -291,12 +109,10 @@ class ProductResource extends Resource
                     ->options(Product::CATEGORIES),
             ])
             ->actions([
-                Tables\Actions\Action::make('layout')
-                    ->label('Yerləşdirmə')
-                    ->icon('heroicon-o-viewfinder-circle')
-                    ->url(fn (Product $record) => route('layout.edit', $record->slug))
-                    ->openUrlInNewTab()
-                    ->visible(fn (Product $record) => $record->isCustomizable()),
+                Tables\Actions\Action::make('editor')
+                    ->label('Redaktor')
+                    ->icon('heroicon-o-paint-brush')
+                    ->url(fn (Product $record) => route('box.edit', $record->slug)),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -308,9 +124,7 @@ class ProductResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            RelationManagers\AnglesRelationManager::class,
-        ];
+        return [];
     }
 
     public static function getPages(): array

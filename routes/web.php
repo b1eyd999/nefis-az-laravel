@@ -1,10 +1,10 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\BoxEditorController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\LayoutController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
@@ -32,8 +32,14 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/layout/{product:slug}', [LayoutController::class, 'edit'])->name('layout.edit');
-    Route::post('/layout/{product:slug}', [LayoutController::class, 'update'])->name('layout.update');
+    // The admin's box editor: artwork layers, photo areas and captions.
+    Route::prefix('qutu-redaktoru/{product:slug}')->name('box.')->group(function () {
+        Route::get('/', [BoxEditorController::class, 'edit'])->name('edit');
+        Route::post('/', [BoxEditorController::class, 'save'])->name('save');
+        Route::post('/asset', [BoxEditorController::class, 'uploadAsset'])->name('asset');
+        Route::post('/visual', [BoxEditorController::class, 'uploadVisual'])->name('visual');
+        Route::post('/font', [BoxEditorController::class, 'uploadFont'])->name('font');
+    });
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');

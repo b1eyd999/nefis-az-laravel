@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
@@ -55,14 +56,41 @@ class Product extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        // A box's uploads live in their own folder; nothing else uses them.
+        static::deleted(fn (Product $product) => Storage::disk('public')->deleteDirectory($product->assetDirectory()));
+    }
+
+    /** Where the box editor keeps this product's uploaded artwork. */
+    public function assetDirectory(): string
+    {
+        return 'boxes/' . $this->id;
+    }
+
     public function catalogImage(): ?string
     {
         return $this->preview_image ?: $this->template_image;
     }
 
+    /**
+     * A product can be customised once it has artwork: layers built in the box
+     * editor, or a single template image from before the editor existed.
+     */
     public function isCustomizable(): bool
     {
-        return filled($this->template_image);
+        if (filled($this->template_image)) {
+            return true;
+        }
+
+        return isset($this->attributes['layers_count'])
+            ? $this->attributes['layers_count'] > 0
+            : $this->layers()->exists();
+    }
+
+    public function isBox(): bool
+    {
+        return $this->relationLoaded('layers') ? $this->layers->isNotEmpty() : $this->layers()->exists();
     }
 
     public function categoryLabel(): ?string
@@ -73,6 +101,11 @@ class Product extends Model
     public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function layers(): HasMany
+    {
+        return $this->hasMany(DesignLayer::class)->orderBy('sort_order');
     }
 
     public function angles(): HasMany
