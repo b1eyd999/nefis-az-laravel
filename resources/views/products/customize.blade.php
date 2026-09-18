@@ -108,7 +108,10 @@
 
         @php $seenLinks = []; @endphp
         @foreach($textSlots as $index => $slot)
-          @if($slot->link_key && in_array($slot->link_key, $seenLinks, true))
+          @if($slot->fixed)
+            {{-- Part of the design: drawn as set, never asked for, never sent. --}}
+            <input type="hidden" class="text-input" data-fixed value="{{ $slot->default_value }}">
+          @elseif($slot->link_key && in_array($slot->link_key, $seenLinks, true))
             {{-- A repeat of a field already shown: it follows that field. --}}
             <input type="hidden" class="text-input" data-link="{{ $slot->link_key }}"
                    name="custom_texts[{{ $index }}]"
@@ -117,11 +120,20 @@
             @php if ($slot->link_key) $seenLinks[] = $slot->link_key; @endphp
             <div>
               <label for="text-input-{{ $index }}">{{ $slot->label ?: 'Mətn' }}</label>
-              <input type="text" class="text-input" id="text-input-{{ $index }}" name="custom_texts[{{ $index }}]"
-                     @if($slot->link_key) data-link="{{ $slot->link_key }}" data-link-lead @endif
-                     maxlength="{{ $slot->max_length }}"
-                     placeholder="{{ $slot->placeholder ?: 'Məs. Ad Soyad və ya qısa mesaj' }}"
-                     value="{{ old('custom_texts.' . $index, $slot->default_value) }}">
+              @if($slot->isTime())
+                {{-- Four digits; the colon is put in as the customer types. --}}
+                <input type="text" class="text-input time-input" id="text-input-{{ $index }}" name="custom_texts[{{ $index }}]"
+                       @if($slot->link_key) data-link="{{ $slot->link_key }}" data-link-lead @endif
+                       inputmode="numeric" maxlength="5" pattern="[0-9]{2}:[0-5][0-9]" required
+                       placeholder="dəq:san (məs. 03:45)" title="dəq:san, məs. 03:45"
+                       value="{{ old('custom_texts.' . $index, $slot->default_value) }}">
+              @else
+                <input type="text" class="text-input" id="text-input-{{ $index }}" name="custom_texts[{{ $index }}]"
+                       @if($slot->link_key) data-link="{{ $slot->link_key }}" data-link-lead @endif
+                       maxlength="{{ $slot->max_length }}"
+                       placeholder="{{ $slot->placeholder ?: 'Məs. Ad Soyad və ya qısa mesaj' }}"
+                       value="{{ old('custom_texts.' . $index, $slot->default_value) }}">
+              @endif
             </div>
           @endif
         @endforeach
@@ -465,8 +477,14 @@
     }
   });
 
+  function formatTime(v){
+    var d = String(v).replace(/\D/g, '').slice(0, 4);
+    return d.length > 2 ? d.slice(0, 2) + ':' + d.slice(2) : d;
+  }
+
   textInputs.forEach(function(input){
     input.addEventListener('input', function(){
+      if (input.classList.contains('time-input')) input.value = formatTime(input.value);
       /* A name the design repeats is typed once and fills every copy. */
       var key = input.getAttribute('data-link');
       if (key) {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\TextSlot;
 use App\Support\Cart;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,10 +39,17 @@ class CartController extends Controller
         }
 
         foreach ($product->textSlots as $index => $slot) {
-            $rules["custom_texts.$index"] = ['nullable', 'string', 'max:' . $slot->max_length];
+            if ($slot->fixed) {
+                continue;   // part of the design; nothing the customer sends counts
+            }
+            $rules["custom_texts.$index"] = $slot->isTime()
+                ? ['required', 'regex:' . TextSlot::TIME_PATTERN]
+                : ['nullable', 'string', 'max:' . $slot->max_length];
         }
 
-        $request->validate($rules, [], $this->slotAttributeNames($product));
+        $request->validate($rules, [
+            'custom_texts.*.regex' => ':attribute dəq:san şəklində olmalıdır, məs. 03:45.',
+        ], $this->slotAttributeNames($product));
 
         $paths = [];
         foreach ($product->photoSlots as $index => $slot) {
@@ -50,7 +58,9 @@ class CartController extends Controller
 
         $texts = [];
         foreach ($product->textSlots as $index => $slot) {
-            $texts[] = trim((string) $request->input("custom_texts.$index"));
+            $texts[] = $slot->fixed
+                ? (string) $slot->default_value
+                : trim((string) $request->input("custom_texts.$index"));
         }
 
         Cart::add($product->id, $paths, $texts, (int) $request->input('quantity', 1));

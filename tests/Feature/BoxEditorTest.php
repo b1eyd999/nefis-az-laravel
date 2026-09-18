@@ -169,6 +169,68 @@ class BoxEditorTest extends TestCase
         Storage::disk('public')->assertExists($font->file);
     }
 
+    /** A published box with one fixed caption and one time caption. */
+    private function spotifyBox(): Product
+    {
+        $image = $this->actingAs($this->admin)
+            ->post(route('box.asset', $this->box->slug), ['file' => $this->transparentPng(969, 1895)], ['Accept' => 'application/json'])
+            ->json('image');
+
+        $design = $this->design($image);
+        $design['photos'] = [];
+        $base = $design['texts'][0];
+        $design['texts'] = [
+            array_merge($base, ['label' => 'Başlıq', 'default_value' => 'SPECIAL EDITION FOR', 'fixed' => true, 'kind' => 'text']),
+            array_merge($base, ['label' => 'Başlanğıc', 'default_value' => '00:34', 'fixed' => false, 'kind' => 'time', 'max_length' => 5]),
+        ];
+        $this->actingAs($this->admin)->postJson(route('box.save', $this->box->slug), $design)->assertOk();
+
+        return $this->box->fresh();
+    }
+
+    public function test_a_fixed_caption_is_printed_as_designed_whatever_is_sent(): void
+    {
+        $box = $this->spotifyBox();
+        $this->assertTrue($box->textSlots()->first()->fixed);
+
+        // The customer is never asked for it...
+        $this->get(route('products.customize', $box->slug))
+            ->assertOk()
+            ->assertDontSee('name="custom_texts[0]"', false)
+            ->assertSee('name="custom_texts[1]"', false);
+
+        // ...and a hand-made request cannot change it either.
+        $this->post(route('cart.add'), [
+            'product_id' => $box->id,
+            'custom_texts' => ['HACKED', '03:15'],
+        ])->assertRedirect(route('cart.index'));
+
+        $item = collect(\App\Support\Cart::items())->first();
+        $this->assertSame(['SPECIAL EDITION FOR', '03:15'], $item['custom_texts']);
+    }
+
+    public function test_a_time_caption_only_takes_minutes_and_seconds(): void
+    {
+        $box = $this->spotifyBox();
+
+        foreach (['4:39', '04:60', 'ab:cd', '0439', ''] as $bad) {
+            $this->post(route('cart.add'), ['product_id' => $box->id, 'custom_texts' => ['', $bad]])
+                ->assertSessionHasErrors('custom_texts.1');
+        }
+
+        $this->post(route('cart.add'), ['product_id' => $box->id, 'custom_texts' => ['', '04:39']])
+            ->assertSessionHasNoErrors();
+    }
+
+    public function test_the_editor_refuses_a_malformed_time(): void
+    {
+        $design = $this->design('boxes/' . $this->box->id . '/x.webp');
+        $design['layers'] = [];
+        $design['texts'][0] = array_merge($design['texts'][0], ['kind' => 'time', 'default_value' => '4:39']);
+
+        $this->actingAs($this->admin)->postJson(route('box.save', $this->box->slug), $design)->assertStatus(422);
+    }
+
     public function test_deleting_a_box_removes_its_uploads(): void
     {
         $image = $this->actingAs($this->admin)

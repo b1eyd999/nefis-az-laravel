@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DesignLayer;
 use App\Models\Font;
 use App\Models\Product;
+use App\Models\TextSlot;
 use App\Support\Media;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -45,7 +46,8 @@ class BoxEditorController extends Controller
                 'rotation' => $s->rotation, 'shape' => $s->shape,
             ])->values(),
             'texts' => $product->textSlots->map(fn ($s) => [
-                'label' => $s->label, 'default_value' => $s->default_value, 'placeholder' => $s->placeholder,
+                'label' => $s->label, 'kind' => $s->kind ?: TextSlot::KIND_TEXT, 'fixed' => (bool) $s->fixed,
+                'default_value' => $s->default_value, 'placeholder' => $s->placeholder,
                 'x' => $s->x, 'y' => $s->y, 'max_width' => $s->max_width, 'font_size' => $s->font_size,
                 'color' => $s->color, 'align' => $s->align, 'rotation' => (int) $s->rotation,
                 'font_family' => $s->font_family, 'font_file' => $s->font_file,
@@ -91,6 +93,8 @@ class BoxEditorController extends Controller
 
             'texts' => ['present', 'array'],
             'texts.*.label' => ['nullable', 'string', 'max:60'],
+            'texts.*.kind' => ['nullable', 'in:text,time'],
+            'texts.*.fixed' => ['boolean'],
             'texts.*.default_value' => ['nullable', 'string', 'max:255'],
             'texts.*.placeholder' => ['nullable', 'string', 'max:255'],
             'texts.*.x' => ['required', 'numeric'],
@@ -113,6 +117,12 @@ class BoxEditorController extends Controller
             'texts.*.max_length' => ['required', 'integer', 'between:1,255'],
             'texts.*.link_key' => ['nullable', 'string', 'max:60'],
         ]);
+
+        foreach ($data['texts'] as $i => $t) {
+            if (($t['kind'] ?? null) === TextSlot::KIND_TIME && ! preg_match(TextSlot::TIME_PATTERN, (string) ($t['default_value'] ?? ''))) {
+                abort(422, 'Vaxt sahəsi ' . ($i + 1) . ' dəq:san şəklində olmalıdır, məs. 03:45.');
+            }
+        }
 
         // Only files this editor uploaded for this box may be referenced.
         $folder = $product->assetDirectory() . '/';
@@ -155,6 +165,8 @@ class BoxEditorController extends Controller
             foreach (array_values($data['texts']) as $order => $t) {
                 $product->textSlots()->create([
                     'label' => $t['label'] ?? null,
+                    'kind' => $t['kind'] ?? TextSlot::KIND_TEXT,
+                    'fixed' => (bool) ($t['fixed'] ?? false),
                     'default_value' => $t['default_value'] ?? null,
                     'placeholder' => $t['placeholder'] ?? null,
                     'x' => (int) round($t['x']), 'y' => (int) round($t['y']),

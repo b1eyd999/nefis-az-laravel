@@ -161,6 +161,7 @@
     <button class="tool" id="tool-asset" title="Şəffaf PNG qatları yüklə"><span class="ico">🖼️</span>Qat yüklə</button>
     <button class="tool" id="tool-photo" title="Müştərinin şəkli üçün sahə"><span class="ico">👤</span>Foto sahəsi</button>
     <button class="tool" id="tool-text" title="Mətn əlavə et (T)"><span class="ico">T</span>Mətn</button>
+    <button class="tool" id="tool-time" title="4 rəqəmli vaxt sahəsi (dəq:san), məs. mahnının 00:34 / 04:39"><span class="ico">⏱</span>Vaxt</button>
     <hr>
     <button class="tool" id="tool-visual" title="Hazır görünüşü (vizual) yüklə"><span class="ico">🎯</span>Vizual</button>
     <button class="tool" id="tool-font" title="Şrift faylı yüklə (TTF, OTF, WOFF)"><span class="ico">Aa</span>Şrift</button>
@@ -262,6 +263,12 @@
     t.className = 'toast show' + (isError ? ' error' : '');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function(){ t.className = 'toast'; }, isError ? 5000 : 2200);
+  }
+
+  var TIME_RE = /^\d{2}:[0-5]\d$/;
+  function formatTime(v){
+    var d = String(v || '').replace(/\D/g, '').slice(0, 4);
+    return d.length > 2 ? d.slice(0, 2) + ':' + d.slice(2) : d;
   }
 
   function renderText(t){
@@ -816,7 +823,11 @@
     overlay.appendChild(inlineEl);
     inlineEl.focus();
     inlineEl.select();
-    inlineEl.addEventListener('input', function(){ t.default_value = inlineEl.value.replace(/\n/g, ' '); renderProps(true); });
+    inlineEl.addEventListener('input', function(){
+      if (t.kind === 'time') inlineEl.value = formatTime(inlineEl.value);
+      t.default_value = inlineEl.value.replace(/\n/g, ' ');
+      renderProps(true);
+    });
     inlineEl.addEventListener('keydown', function(e){
       if (e.key === 'Escape' || (e.key === 'Enter' && !e.shiftKey)) { e.preventDefault(); finishInlineEdit(); }
       e.stopPropagation();
@@ -868,14 +879,16 @@
     commit();
   }
 
-  function addText(){
+  function addText(kind){
+    var time = kind === 'time';
     var f = lastFont || fontByName('SF Regular') || FONTS[0] || { family: 'Inter', file: null, weight: 600 };
     doc.texts.push({
-      label: 'Mətn ' + (doc.texts.length + 1), default_value: 'Mətn', placeholder: '',
+      label: time ? 'Vaxt' : 'Mətn ' + (doc.texts.length + 1), kind: time ? 'time' : 'text', fixed: false,
+      default_value: time ? '00:00' : 'Mətn', placeholder: '',
       x: round(W / 2), y: round(H / 2), max_width: 600, font_size: 72, color: '#000000', align: 'center', rotation: 0,
       font_family: f.family, font_file: f.file, font_weight: f.weight || 400,
       stroke_color: '#000000', stroke_width: 0, shadow_color: null, shadow_blur: 0, shadow_x: 0, shadow_y: 0,
-      max_lines: 1, max_length: 60, link_key: null
+      max_lines: 1, max_length: time ? 5 : 60, link_key: null
     });
     select({ kind: 'text', index: doc.texts.length - 1 });
     commit();
@@ -1006,15 +1019,21 @@
     } else {
       var f = fontFor(it);
       h += '<h3>Mətn</h3>';
-      h += '<div class="row one">' + field('Müştəriyə görünən sahə adı', txt('label', it.label, 'Məs. Mahnının adı')) + '</div>';
-      h += '<div class="row one">' + field('Mətn (ilkin dəyər)', '<textarea data-k="default_value">' + esc(it.default_value) + '</textarea>') + '</div>';
+      var isTime = it.kind === 'time';
+      h += '<div class="row one">' + field('Növ', seg('kind', it.kind || 'text', [['text', 'Mətn'], ['time', 'Vaxt (dəq:san)']])) + '</div>';
+      h += '<label class="check" style="margin-bottom:.6rem"><input type="checkbox" data-k="fixed"' + (it.fixed ? ' checked' : '') + '> Müştəri dəyişə bilməz (sabit)</label>';
+      if (it.fixed) h += '<p class="hint" style="margin-top:0">Qutuda olduğu kimi çap olunur; müştəriyə sahə göstərilmir.</p>';
+      else h += '<div class="row one">' + field('Müştəriyə görünən sahə adı', txt('label', it.label, isTime ? 'Məs. Başlanğıc vaxtı' : 'Məs. Mahnının adı')) + '</div>';
+      h += '<div class="row one">' + (isTime
+        ? field('Vaxt (ilkin dəyər)', '<input type="text" data-k="default_value" inputmode="numeric" maxlength="5" placeholder="00:00" value="' + esc(it.default_value) + '">')
+        : field('Mətn (ilkin dəyər)', '<textarea data-k="default_value">' + esc(it.default_value) + '</textarea>')) + '</div>';
       h += '<div class="row one">' + field('Şrift', '<select data-k="font">' + FONTS.map(function(fo, i){
             return '<option value="' + i + '"' + (f === fo ? ' selected' : '') + '>' + esc(fo.name) + '</option>';
           }).join('') + (f ? '' : '<option selected>' + esc(it.font_family || 'Inter') + '</option>') + '</select>') + '</div>';
       h += '<div class="row">' + field('Ölçü', num('font_size', it.font_size)) + field('Rəng', color('color', it.color)) + '</div>';
       h += '<div class="row one">' + field('Düzülüş', seg('align', it.align, [['left', 'Sol'], ['center', 'Mərkəz'], ['right', 'Sağ']])) + '</div>';
       h += '<div class="row four">' + field('X', num('x', it.x)) + field('Y', num('y', it.y)) + field('Maks en', num('max_width', it.max_width)) + field('Bucaq °', num('rotation', it.rotation)) + '</div>';
-      h += '<div class="row">' + field('Maks sətir', num('max_lines', it.max_lines)) + field('Maks simvol', num('max_length', it.max_length)) + '</div>';
+      if (!isTime) h += '<div class="row">' + field('Maks sətir', num('max_lines', it.max_lines)) + field('Maks simvol', num('max_length', it.max_length)) + '</div>';
       h += '<h4>Kontur</h4><div class="row">' + field('Rəng', color('stroke_color', it.stroke_color)) + field('Qalınlıq', num('stroke_width', it.stroke_width, 0.5)) + '</div>';
       var sh = it.shadow_color || '';
       var shAlpha = sh.length === 9 ? Math.round(parseInt(sh.slice(7, 9), 16) / 2.55) : (sh ? 100 : 0);
@@ -1037,6 +1056,7 @@
     var it = itemOf(selection);
     if (!it) return;
     if (k === 'locked') it.locked = el.checked;
+    else if (k === 'fixed') { it.fixed = el.checked; renderProps(); renderList(); }
     else if (k === 'font') {
       var f = FONTS[+el.value];
       if (f) { it.font_family = f.family; it.font_file = f.file; it.font_weight = f.weight || 400; lastFont = f; loadFont(f); }
@@ -1049,7 +1069,10 @@
       if (el.value === '') return;
       it[k] = +el.value;
       if (k === 'opacity') el.closest('.field').querySelector('label').textContent = 'Şəffaflıq ' + it.opacity + '%';
-    } else if (k === 'default_value') it.default_value = el.value.replace(/\n/g, ' ');
+    } else if (k === 'default_value') {
+      if (it.kind === 'time') el.value = formatTime(el.value);
+      it.default_value = el.value.replace(/\n/g, ' ');
+    }
     else it[k] = el.value === '' && k === 'link_key' ? null : el.value;
     render();
     if (k === 'name' || k === 'label' || k === 'default_value') renderList();
@@ -1061,6 +1084,18 @@
     var b = e.target.closest('button');
     if (!b) return;
     var it = itemOf(selection);
+    if (b.dataset.seg === 'kind' && it) {
+      it.kind = b.dataset.v;
+      if (it.kind === 'time') {
+        it.default_value = TIME_RE.test(it.default_value || '') ? it.default_value : '00:00';
+        it.max_lines = 1;
+        it.max_length = 5;
+        if (!it.label || /^Mətn \d+$/.test(it.label)) it.label = 'Vaxt';
+      } else if (it.max_length === 5) {
+        it.max_length = 60;
+      }
+      commit(); refresh(); return;
+    }
     if (b.dataset.seg && it) {
       it[b.dataset.seg] = b.dataset.v;
       if (b.dataset.seg === 'align' && selection.kind === 'text') {
@@ -1113,7 +1148,11 @@
       var thumb, name, kind;
       if (r.kind === 'layer') { thumb = '<img src="' + esc(it.url) + '" alt="">'; name = it.name || 'Qat'; kind = it.placement === 'above' ? 'fotonun üstündə' : 'fotonun altında'; }
       else if (r.kind === 'photo') { thumb = '👤'; name = it.label || 'Foto'; kind = it.shape === 'ellipse' ? 'oval' : 'düzbucaqlı'; }
-      else { thumb = '<span style="font-family:&quot;' + esc(it.font_family) + '&quot;,Inter;font-weight:700">T</span>'; name = it.default_value || it.label || 'Mətn'; kind = it.label || 'mətn'; }
+      else {
+        thumb = it.kind === 'time' ? '⏱' : '<span style="font-family:&quot;' + esc(it.font_family) + '&quot;,Inter;font-weight:700">T</span>';
+        name = it.default_value || it.label || 'Mətn';
+        kind = it.fixed ? '🔒 sabit — müştəri dəyişmir' : (it.kind === 'time' ? 'vaxt · ' : '') + (it.label || 'mətn');
+      }
       h += '<li draggable="true" data-kind="' + r.kind + '" data-index="' + r.index + '" class="' + (on ? 'on' : '') + (r.kind === 'layer' && hiddenLayers[r.index] ? ' hidden-layer' : '') + '">'
          + '<span class="thumb">' + thumb + '</span>'
          + '<span class="name">' + esc(name) + '<br><span class="kind">' + esc(kind) + '</span></span>';
@@ -1232,7 +1271,8 @@
   document.getElementById('tool-asset').onclick = function(){ document.getElementById('file-asset').click(); };
   document.getElementById('file-asset').onchange = function(){ uploadAssets(this.files); this.value = ''; };
   document.getElementById('tool-photo').onclick = addPhoto;
-  document.getElementById('tool-text').onclick = addText;
+  document.getElementById('tool-text').onclick = function(){ addText('text'); };
+  document.getElementById('tool-time').onclick = function(){ addText('time'); };
   document.getElementById('tool-visual').onclick = function(){ document.getElementById('file-visual').click(); };
   document.getElementById('tool-font').onclick = function(){ document.getElementById('file-font').click(); };
   document.getElementById('tool-test').onclick = function(){ document.getElementById('file-test').click(); };
@@ -1297,6 +1337,12 @@
      ================================================================ */
   function save(){
     if (editingText >= 0) finishInlineEdit();
+    var badTime = doc.texts.findIndex(function(t){ return t.kind === 'time' && !TIME_RE.test(t.default_value || ''); });
+    if (badTime >= 0) {
+      select({ kind: 'text', index: badTime });
+      toast('Vaxt dəq:san şəklində olmalıdır, məs. 03:45', true);
+      return;
+    }
     commit();
     var payload = {
       layers: doc.layers.map(function(l){ return { name: l.name, image: l.image, x: l.x, y: l.y, width: l.width, height: l.height,
@@ -1345,7 +1391,7 @@
     if (mod && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) { e.preventDefault(); redo(); return; }
     if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); duplicateSelected(); return; }
     if (mod && e.key === '0') { e.preventDefault(); fitZoom(); return; }
-    if (!mod && e.key.toLowerCase() === 't') { e.preventDefault(); addText(); return; }
+    if (!mod && e.key.toLowerCase() === 't') { e.preventDefault(); addText('text'); return; }
     if (!mod && e.key.toLowerCase() === 'v') { guideOn.checked = !guideOn.checked; render(); renderProps(); return; }
     if (e.key === 'Escape') { select(null); return; }
 
