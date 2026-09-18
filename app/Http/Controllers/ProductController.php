@@ -69,7 +69,8 @@ class ProductController extends Controller
                 'tw' => $w,
                 'th' => $h,
                 'label' => $scene['label'],
-                'bg' => Media::url($scene['background']),
+                // Scenes are part of the site itself, shipped in public/.
+                'bg' => asset($scene['background']),
                 'bgW' => $scene['width'],
                 'bgH' => $scene['height'],
                 'boxArea' => [

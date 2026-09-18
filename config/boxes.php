@@ -26,17 +26,19 @@ return [
     |
     | cx/cy is where the box's centre falls on the scene, scale how many scene
     | pixels one canvas pixel takes, rotation the tilt of the bar's face.
+    | The images live in public/scenes — part of the site, not of any design,
+    | so they do not depend on the design storage.
     |
     */
 
     'scenes' => [
-        ['label' => 'Ön görünüş', 'background' => 'backgrounds/bar-scene-diagonal.webp',
+        ['label' => 'Ön görünüş', 'background' => 'scenes/bar-scene-diagonal.webp',
             'width' => 1400, 'height' => 1750, 'cx' => 677, 'cy' => 880.5, 'scale' => 0.5623, 'rotation' => -3],
-        ['label' => 'Əyri bucaq', 'background' => 'backgrounds/bar-scene-tilt.webp',
+        ['label' => 'Əyri bucaq', 'background' => 'scenes/bar-scene-tilt.webp',
             'width' => 1400, 'height' => 1750, 'cx' => 684, 'cy' => 894.5, 'scale' => 0.5623, 'rotation' => -47],
-        ['label' => 'Yan görünüş', 'background' => 'backgrounds/bar-scene-front.webp',
+        ['label' => 'Yan görünüş', 'background' => 'scenes/bar-scene-front.webp',
             'width' => 1400, 'height' => 1750, 'cx' => 690, 'cy' => 898.5, 'scale' => 0.5623, 'rotation' => -65],
-        ['label' => 'Dik profil', 'background' => 'backgrounds/bar-scene-upright.webp',
+        ['label' => 'Dik profil', 'background' => 'scenes/bar-scene-upright.webp',
             'width' => 1400, 'height' => 1750, 'cx' => 679, 'cy' => 870.5, 'scale' => 0.5623, 'rotation' => 25],
     ],
 
