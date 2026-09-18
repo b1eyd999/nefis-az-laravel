@@ -22,6 +22,15 @@ class TextSlot extends Model
         'max_length',
         'max_lines',
         'sort_order',
+        'rotation',
+        'font_weight',
+        'stroke_color',
+        'stroke_width',
+        'shadow_color',
+        'shadow_blur',
+        'shadow_x',
+        'shadow_y',
+        'link_key',
     ];
 
     public function slotable(): MorphTo

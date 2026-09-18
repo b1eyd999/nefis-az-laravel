@@ -62,6 +62,15 @@ class LayoutController extends Controller
             'views.*.text_slots.*.placeholder' => ['nullable', 'string', 'max:255'],
             'views.*.text_slots.*.max_length' => ['required', 'integer', 'min:1', 'max:255'],
             'views.*.text_slots.*.max_lines' => ['required', 'integer', 'min:1', 'max:10'],
+            'views.*.text_slots.*.rotation' => ['nullable', 'integer', 'between:-180,180'],
+            'views.*.text_slots.*.font_weight' => ['nullable', 'integer', 'between:100,900'],
+            'views.*.text_slots.*.stroke_color' => ['nullable', 'string', 'max:9'],
+            'views.*.text_slots.*.stroke_width' => ['nullable', 'numeric', 'min:0', 'max:200'],
+            'views.*.text_slots.*.shadow_color' => ['nullable', 'string', 'max:9'],
+            'views.*.text_slots.*.shadow_blur' => ['nullable', 'integer', 'min:0'],
+            'views.*.text_slots.*.shadow_x' => ['nullable', 'integer'],
+            'views.*.text_slots.*.shadow_y' => ['nullable', 'integer'],
+            'views.*.text_slots.*.link_key' => ['nullable', 'string', 'max:60'],
         ]);
 
         foreach ($data['views'] as $view) {
@@ -80,6 +89,10 @@ class LayoutController extends Controller
 
             $owner->textSlots()->delete();
             foreach ($view['text_slots'] ?? [] as $order => $slot) {
+                // Integer columns with defaults must not receive the null an
+                // untouched field posts back as.
+                $slot = array_filter($slot, fn ($v) => $v !== null)
+                    + ['rotation' => 0, 'shadow_blur' => 0, 'shadow_x' => 0, 'shadow_y' => 0];
                 $owner->textSlots()->create($slot + ['sort_order' => $order]);
             }
         }
@@ -112,6 +125,15 @@ class LayoutController extends Controller
                 'default_value' => $s->default_value, 'placeholder' => $s->placeholder,
                 'max_length' => (int) $s->max_length,
                 'max_lines' => max(1, (int) $s->max_lines),
+                'rotation' => (int) $s->rotation,
+                'font_weight' => $s->font_weight,
+                'stroke_color' => $s->stroke_color,
+                'stroke_width' => $s->stroke_width === null ? null : (float) $s->stroke_width,
+                'shadow_color' => $s->shadow_color,
+                'shadow_blur' => (int) $s->shadow_blur,
+                'shadow_x' => (int) $s->shadow_x,
+                'shadow_y' => (int) $s->shadow_y,
+                'link_key' => $s->link_key,
             ])->values()->all(),
         ];
     }

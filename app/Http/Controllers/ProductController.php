@@ -80,6 +80,14 @@ class ProductController extends Controller
                 'maxLines' => max(1, (int) $slot->max_lines),
                 'fontFamily' => $slot->font_family,
                 'fontFile' => Media::url($slot->font_file),
+                'fontWeight' => $slot->font_weight,
+                'rotation' => (int) $slot->rotation,
+                'strokeColor' => $slot->stroke_color,
+                'strokeWidth' => $slot->stroke_width === null ? null : (float) $slot->stroke_width,
+                'shadowColor' => $slot->shadow_color,
+                'shadowBlur' => (int) $slot->shadow_blur,
+                'shadowX' => (int) $slot->shadow_x,
+                'shadowY' => (int) $slot->shadow_y,
             ])->values()->all(),
         ];
     }

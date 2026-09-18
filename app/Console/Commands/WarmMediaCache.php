@@ -13,6 +13,10 @@ use Illuminate\Console\Command;
  * Without this the first visitor pays for one Yandex lookup per image on the
  * page, and on shared hosting that many simultaneous lookups tie up the PHP
  * workers. Warming them costs nothing because nobody is waiting.
+ *
+ * Links are looked up afresh rather than kept: a deploy is usually the
+ * moment artwork was replaced on Yandex, and a cached link can go on serving
+ * the old file for hours.
  */
 class WarmMediaCache extends Command
 {
@@ -45,6 +49,7 @@ class WarmMediaCache extends Command
         $bar = $this->output->createProgressBar($paths->count());
 
         foreach ($paths as $path) {
+            Media::forget($path);
             if (Media::resolve($path) === null) {
                 $failed++;
             }

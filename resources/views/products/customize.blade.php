@@ -109,14 +109,24 @@
           </div>
         @endforeach
 
+        @php $seenLinks = []; @endphp
         @foreach($textSlots as $index => $slot)
-          <div>
-            <label for="text-input-{{ $index }}">{{ $slot->label ?: 'Mətn' }}</label>
-            <input type="text" class="text-input" id="text-input-{{ $index }}" name="custom_texts[{{ $index }}]"
-                   maxlength="{{ $slot->max_length }}"
-                   placeholder="{{ $slot->placeholder ?: 'Məs. Ad Soyad və ya qısa mesaj' }}"
+          @if($slot->link_key && in_array($slot->link_key, $seenLinks, true))
+            {{-- A repeat of a field already shown: it follows that field. --}}
+            <input type="hidden" class="text-input" data-link="{{ $slot->link_key }}"
+                   name="custom_texts[{{ $index }}]"
                    value="{{ old('custom_texts.' . $index, $slot->default_value) }}">
-          </div>
+          @else
+            @php if ($slot->link_key) $seenLinks[] = $slot->link_key; @endphp
+            <div>
+              <label for="text-input-{{ $index }}">{{ $slot->label ?: 'Mətn' }}</label>
+              <input type="text" class="text-input" id="text-input-{{ $index }}" name="custom_texts[{{ $index }}]"
+                     @if($slot->link_key) data-link="{{ $slot->link_key }}" data-link-lead @endif
+                     maxlength="{{ $slot->max_length }}"
+                     placeholder="{{ $slot->placeholder ?: 'Məs. Ad Soyad və ya qısa mesaj' }}"
+                     value="{{ old('custom_texts.' . $index, $slot->default_value) }}">
+            </div>
+          @endif
         @endforeach
 
         <div>
@@ -266,6 +276,12 @@
       mctx.fillStyle = t.color;
       mctx.textAlign = t.align;
       mctx.textBaseline = 'middle';
+      if (t.rotation) {
+        /* Tilted captions turn about their own anchor point. */
+        mctx.translate(t.x, t.y);
+        mctx.rotate(t.rotation * Math.PI / 180);
+        t = Object.assign({}, t, { x: 0, y: 0 });
+      }
       drawFitted(mctx, input.value, t);
       mctx.restore();
     });
@@ -321,8 +337,12 @@
     var size = t.fontSize;
     var lines;
 
+    /* Captions lifted from a layout carry the weight their font file really
+       has; asking for more makes the browser smear a fake bold on top. */
+    var weight = t.fontWeight || 600;
+
     for (var attempt = 0; attempt < 40; attempt++) {
-      c.font = '600 ' + size + 'px ' + fontStack(t);
+      c.font = weight + ' ' + size + 'px ' + fontStack(t);
       lines = wrapLines(c, text, t.maxWidth);
       var widest = 0;
       lines.forEach(function(l){ widest = Math.max(widest, c.measureText(l).width); });
@@ -332,19 +352,37 @@
     }
 
     var lineHeight = size * 1.2;
-    var strokeWidth = size * 0.08;
     var startY = t.y - ((lines.length - 1) * lineHeight) / 2;
+    var shrink = size / t.fontSize;
+
+    /* Styling measured from the layout scales with any shrink-to-fit. Older
+       slots have no styling recorded and keep their soft dark outline. */
+    var legacy = t.strokeWidth === null || t.strokeWidth === undefined;
+    var strokeWidth = legacy ? size * 0.08 : t.strokeWidth * shrink;
+    var strokeColor = legacy ? 'rgba(0,0,0,.5)' : t.strokeColor;
+
+    function shadow(on){
+      c.shadowColor = on && t.shadowColor ? t.shadowColor : 'transparent';
+      c.shadowBlur = on ? (t.shadowBlur || 0) * shrink : 0;
+      c.shadowOffsetX = on ? (t.shadowX || 0) * shrink : 0;
+      c.shadowOffsetY = on ? (t.shadowY || 0) * shrink : 0;
+    }
 
     lines.forEach(function(l, i){
       var ly = startY + i * lineHeight;
-      if (strokeWidth) {
-        c.lineWidth = strokeWidth;
-        c.strokeStyle = 'rgba(0,0,0,.5)';
+      /* The shadow is cast once, by whichever layer is outermost. */
+      shadow(true);
+      if (strokeWidth > 0 && strokeColor) {
+        /* Photoshop's outside stroke: twice as wide, drawn under the fill. */
+        c.lineWidth = legacy ? strokeWidth : strokeWidth * 2;
+        c.strokeStyle = strokeColor;
         c.lineJoin = 'round';
         c.strokeText(l, t.x, ly);
+        shadow(false);
       }
       c.fillText(l, t.x, ly);
     });
+    shadow(false);
   }
 
   /* ---------- angles ---------- */
@@ -502,7 +540,16 @@
   });
 
   textInputs.forEach(function(input){
-    input.addEventListener('input', draw);
+    input.addEventListener('input', function(){
+      /* A name the design repeats is typed once and fills every copy. */
+      var key = input.getAttribute('data-link');
+      if (key) {
+        textInputs.forEach(function(other){
+          if (other !== input && other.getAttribute('data-link') === key) other.value = input.value;
+        });
+      }
+      draw();
+    });
   });
 
   loadAngle(0);

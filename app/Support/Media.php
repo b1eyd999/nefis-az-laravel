@@ -74,7 +74,7 @@ class Media
     public static function resolve(string $path): ?string
     {
         return Cache::remember(
-            'media:' . sha1($path),
+            self::cacheKey($path),
             config('media.cache_seconds'),
             function () use ($path) {
                 $response = Http::timeout(8)->retry(2, 200)->get(
@@ -97,6 +97,19 @@ class Media
                 return $response->json('href');
             }
         );
+    }
+
+    /**
+     * Drops a cached link, so the next lookup sees a file replaced on Yandex.
+     */
+    public static function forget(string $path): void
+    {
+        Cache::forget(self::cacheKey($path));
+    }
+
+    private static function cacheKey(string $path): string
+    {
+        return 'media:' . sha1($path);
     }
 
     /**

@@ -221,6 +221,11 @@
       el.style.top = (r.top * s) + 'px';
       el.style.width = (r.width * s) + 'px';
       el.style.height = (r.height * s) + 'px';
+      if (t.rotation) {
+        /* Same pivot the storefront uses: the slot's own anchor point. */
+        el.style.transformOrigin = ((t.x - r.left) * s) + 'px 50%';
+        el.style.transform = 'rotate(' + t.rotation + 'deg)';
+      }
       var preview = document.createElement('div');
       preview.className = 'preview-text';
       preview.textContent = t.default_value || t.placeholder || (t.label || 'Mətn');
@@ -228,7 +233,11 @@
       preview.style.color = t.color;
       preview.style.justifyContent = t.align === 'left' ? 'flex-start' : (t.align === 'right' ? 'flex-end' : 'center');
       preview.style.fontFamily = t.font_family ? ('"' + t.font_family + '", Inter, sans-serif') : 'Inter, sans-serif';
-      preview.style.fontWeight = '600';
+      preview.style.fontWeight = String(t.font_weight || 600);
+      if (t.stroke_width > 0 && t.stroke_color) {
+        preview.style.webkitTextStroke = (t.stroke_width * s) + 'px ' + t.stroke_color;
+        preview.style.paintOrder = 'stroke fill';
+      }
       el.innerHTML = '<div class="body"></div><span class="tag">' +
         (t.label || ('Mətn ' + (i + 1))) + '</span><span class="grip"></span>';
       el.appendChild(preview);
@@ -383,6 +392,12 @@
       g2.appendChild(field('Maks sətir', t.max_lines || 1, function(val){ t.max_lines = Math.max(1, val); render(); }, 'number'));
       card.appendChild(g2);
 
+      var g2b = document.createElement('div'); g2b.className = 'grid3'; g2b.style.marginTop = '.4rem';
+      g2b.appendChild(field('Bucaq °', t.rotation || 0, function(val){ t.rotation = Math.max(-180, Math.min(180, val)); render(); }, 'number'));
+      g2b.appendChild(field('Kontur rəngi', t.stroke_color || '#000000', function(val){ t.stroke_color = val; render(); }, 'color'));
+      g2b.appendChild(field('Kontur qalınlığı', t.stroke_width || 0, function(val){ t.stroke_width = Math.max(0, val); render(); }, 'number'));
+      card.appendChild(g2b);
+
       var g3 = document.createElement('div'); g3.className = 'grid2'; g3.style.marginTop = '.4rem';
       g3.appendChild(field('Maks simvol', t.max_length, function(val){ t.max_length = val; }, 'number'));
       g3.appendChild(field('İpucu', t.placeholder || '', function(val){ t.placeholder = val; }));
@@ -415,7 +430,8 @@
       max_width: Math.round(v.width * 0.7), font_size: Math.max(14, Math.round(v.height / 40)),
       color: '#000000', align: 'center',
       font_family: null, font_file: null,
-      default_value: '', placeholder: '', max_length: 60, max_lines: 1
+      default_value: '', placeholder: '', max_length: 60, max_lines: 1,
+      rotation: 0, shadow_blur: 0, shadow_x: 0, shadow_y: 0
     });
     selected = { kind:'text', index: v.text_slots.length - 1 };
     render();
@@ -442,7 +458,8 @@
         });
       });
       v.text_slots.forEach(function(t, i){
-        ['label','x','y','max_width','font_size','color','align','font_family','font_file','default_value','placeholder','max_length','max_lines'].forEach(function(k){
+        ['label','x','y','max_width','font_size','color','align','font_family','font_file','default_value','placeholder','max_length','max_lines',
+         'rotation','font_weight','stroke_color','stroke_width','shadow_color','shadow_blur','shadow_x','shadow_y','link_key'].forEach(function(k){
           put('[text_slots][' + i + '][' + k + ']', t[k]);
         });
       });
