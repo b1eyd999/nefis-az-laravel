@@ -35,7 +35,7 @@
   .d-card-media img{ width:100%; height:100%; object-fit:cover; transition:transform .6s var(--ease); }
   .d-card:hover .d-card-media img{ transform:scale(1.04); }
   .d-card-media .pill{
-    position:absolute; top:.75rem; right:.75rem; background:rgba(255,253,249,.92); color:var(--cocoa);
+    position:absolute; top:.75rem; right:.75rem; background:var(--glass); color:var(--cocoa);
     font-size:.625rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
     padding:.28rem .6rem; border-radius:999px;
   }
@@ -71,7 +71,7 @@
   }
   .lb-close{
     position:absolute; top:.9rem; right:.9rem; z-index:2; width:2.5rem; height:2.5rem; border-radius:50%;
-    background:rgba(251,244,234,.92); border:1px solid var(--line); font-size:1rem; color:var(--cocoa);
+    background:var(--glass); border:1px solid var(--line); font-size:1rem; color:var(--cocoa);
     display:flex; align-items:center; justify-content:center;
   }
 @endsection
