@@ -26,7 +26,9 @@ class ItemsRelationManager extends RelationManager
                     ->stacked()
                     ->limit(4),
                 Tables\Columns\TextColumn::make('product.name')
-                    ->label('Məhsul'),
+                    ->label('Məhsul')
+                    // The name was kept on the order line for when the design is gone.
+                    ->getStateUsing(fn ($record) => $record->product?->name ?? $record->product_name ?? 'Silinmiş məhsul'),
                 Tables\Columns\ImageColumn::make('product.template_image')
                     ->label('Qutu dizaynı')
                     ->getStateUsing(fn ($record) => Media::url($record->product?->catalogImage()))

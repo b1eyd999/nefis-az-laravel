@@ -31,7 +31,8 @@ class CheckoutController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $items = Cart::items();
+        // A cart can outlive the designs it was filled from.
+        $items = array_filter(Cart::items(), fn (array $item) => Product::whereKey($item['product_id'])->exists());
 
         if (empty($items)) {
             return redirect()->route('cart.index');
@@ -55,7 +56,8 @@ class CheckoutController extends Controller
             $product = Product::find($item['product_id']);
 
             $order->items()->create([
-                'product_id' => $item['product_id'],
+                'product_id' => $product->id,
+                'product_name' => $product->name,
                 'customer_photos' => $item['photo_paths'],
                 'custom_texts' => $item['custom_texts'],
                 'quantity' => $item['quantity'],

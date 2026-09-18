@@ -44,7 +44,7 @@
               <div class="cart-row" style="background:var(--cream); margin-bottom:.5rem;">
                 <div class="thumb"><img src="{{ \App\Support\Media::url($item->customer_photo) }}" alt="Yüklənmiş şəkil"></div>
                 <div class="info">
-                  <h3>{{ $item->product->name ?? 'Silinmiş məhsul' }}</h3>
+                  <h3>{{ $item->product->name ?? $item->product_name ?? 'Silinmiş məhsul' }}</h3>
                   <p>
                     @if($item->custom_text) "{{ $item->custom_text }}" &middot; @endif
                     {{ $item->quantity }} ədəd

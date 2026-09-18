@@ -12,11 +12,10 @@ deployment:
     # Drop compiled config/route/view caches so the new release is actually used
     - /bin/rm -f $APPPATH/bootstrap/cache/config.php $APPPATH/bootstrap/cache/routes-v7.php $APPPATH/bootstrap/cache/services.php $APPPATH/bootstrap/cache/packages.php
     - /bin/rm -rf $APPPATH/storage/framework/views/*.php
-    # No SSH on this account, so the release migrates and seeds itself here.
+    # No SSH on this account, so the release migrates itself here. The design
+    # seeders are gone: the catalogue was cleared on 2026-09-18 for a new approach.
     - export PHPBIN=$(command -v ea-php82 || echo /opt/cpanel/ea-php82/root/usr/bin/php)
     - cd $APPPATH && $PHPBIN artisan migrate --force 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
-    - cd $APPPATH && $PHPBIN artisan db:seed --class=DesignSeeder --force 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
-    - cd $APPPATH && $PHPBIN artisan db:seed --class=DesignTemplateSeeder --force 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
     # The artwork is served from Yandex Disk; resolve those links before the
     # first visitor arrives rather than making them wait for the lookups.
     - cd $APPPATH && $PHPBIN artisan media:warm 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
