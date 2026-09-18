@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\Media;
+
 return [
 
     /*
@@ -14,7 +16,7 @@ return [
     |
     */
 
-    'yandex_public_key' => env('YANDEX_MEDIA_KEY'),
+    'yandex_public_key' => env('YANDEX_MEDIA_KEY') ?: Media::keyFile(),
 
     // Folder inside the shared Yandex Disk link that mirrors storage/app/public.
     'yandex_root' => env('YANDEX_MEDIA_ROOT', ''),

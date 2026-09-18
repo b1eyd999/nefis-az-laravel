@@ -18,6 +18,24 @@ use Illuminate\Support\Str;
  */
 class Media
 {
+    /**
+     * The share link, when it is kept in a file beside the app rather than in
+     * the environment. The repository is public, so the link cannot live in
+     * it; this lets a deploy pick the link up without anyone editing .env.
+     *
+     * Called while config is still loading, so it touches nothing but disk.
+     */
+    public static function keyFile(): ?string
+    {
+        $path = dirname(__DIR__, 2) . '/yandex-media.txt';
+
+        if (! is_file($path)) {
+            return null;
+        }
+
+        return trim((string) file_get_contents($path)) ?: null;
+    }
+
     public static function url(?string $path): ?string
     {
         if (blank($path)) {
