@@ -1,0 +1,62 @@
+# Every push to master goes live on nefis.az by itself.
+#
+# The hosting has no shell, and its cPanel login cannot be automated, so
+# this drives the same two buttons through cPanel's API with a token the
+# owner created: "Update from Remote", then "Deploy HEAD Commit". The deploy
+# itself (copy, migrate, cache clear) is .cpanel.yml, unchanged.
+#
+# Needs one repository secret, CPANEL_TOKEN: cPanel -> Security ->
+# Manage API Tokens -> Create.
+name: Deploy to nefis.az
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      # Until the token is added the job skips quietly instead of failing.
+      HAS_TOKEN: ${{ secrets.CPANEL_TOKEN != '' }}
+    steps:
+      - name: Waiting for the CPANEL_TOKEN secret
+        if: env.HAS_TOKEN != 'true'
+        run: echo "::notice::CPANEL_TOKEN is not set yet, so nothing was deployed."
+
+      - name: Pull the new commit on the hosting
+        if: env.HAS_TOKEN == 'true'
+        env:
+          TOKEN: ${{ secrets.CPANEL_TOKEN }}
+        run: |
+          curl -fsS --retry 3 -H "Authorization: cpanel darkftga:$TOKEN" \
+            "https://nefis.az:2083/execute/VersionControl/update?repository_root=/home/darkftga/repos/nefis-laravel&branch=master" \
+            | tee pull.json
+          grep -q '"status":1' pull.json
+
+      - name: Deploy it
+        if: env.HAS_TOKEN == 'true'
+        env:
+          TOKEN: ${{ secrets.CPANEL_TOKEN }}
+        run: |
+          curl -fsS --retry 3 -H "Authorization: cpanel darkftga:$TOKEN" \
+            "https://nefis.az:2083/execute/VersionControlDeployment/create?repository_root=/home/darkftga/repos/nefis-laravel" \
+            | tee deploy.json
+          grep -q '"status":1' deploy.json
+
+      - name: Check the site answers
+        if: env.HAS_TOKEN == 'true'
+        run: |
+          # .cpanel.yml runs in the background; give it time to migrate.
+          for i in $(seq 1 12); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://nefis.az/)
+            [ "$code" = "200" ] && { echo "nefis.az is up ($code)"; exit 0; }
+            sleep 10
+          done
+          echo "::error::nefis.az did not answer 200 after the deploy (last: $code)"
+          exit 1
