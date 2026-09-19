@@ -52,11 +52,16 @@ class MapController extends Controller
                 'viewbox' => "{$b['west']},{$b['north']},{$b['east']},{$b['south']}", 'bounded' => 1,
             ]);
 
-            return collect($list ?: [])->map(fn ($r) => [
-                'lat' => (float) $r['lat'],
-                'lng' => (float) $r['lon'],
-                'label' => self::format($r) ?? $r['display_name'],
-            ])->values()->all();
+            return collect($list ?: [])->map(function ($r) {
+                // A shop or square leads with its own name: "28 Mall — Azadlıq prospekti 15a, …".
+                $label = self::format($r) ?? $r['display_name'];
+                $name = trim((string) ($r['name'] ?? ''));
+                if ($name !== '' && ! str_contains($label, $name)) {
+                    $label = $name . ' — ' . $label;
+                }
+
+                return ['lat' => round((float) $r['lat'], 7), 'lng' => round((float) $r['lon'], 7), 'label' => $label];
+            })->values()->all();
         });
 
         return response()->json(['results' => $results]);

@@ -115,7 +115,7 @@ class DeliveryTest extends TestCase
                 'address' => ['road' => 'Rəşid Behbudov küçəsi', 'house_number' => '10', 'suburb' => 'Nəsimi rayonu', 'city' => 'Bakı'],
             ]),
             'nominatim.openstreetmap.org/search*' => \Illuminate\Support\Facades\Http::response([
-                ['lat' => '40.3777', 'lon' => '49.8920', 'display_name' => 'Fəvvarələr meydanı', 'address' => ['road' => 'Nizami küçəsi', 'city' => 'Bakı']],
+                ['lat' => '40.3777', 'lon' => '49.8920', 'name' => 'Fəvvarələr meydanı', 'display_name' => 'Fəvvarələr meydanı, Bakı', 'address' => ['road' => 'Nizami küçəsi', 'city' => 'Bakı']],
             ]),
         ]);
 
@@ -124,7 +124,7 @@ class DeliveryTest extends TestCase
         $this->getJson(route('map.reverse', ['lat' => 40.6828, 'lng' => 46.3606]))
             ->assertOk()->assertJson(['address' => null, 'outside' => true]);
         $this->getJson(route('map.search', ['q' => 'Fəvvarələr']))
-            ->assertOk()->assertJsonPath('results.0.label', 'Nizami küçəsi, Bakı')->assertJsonPath('results.0.lat', 40.3777);
+            ->assertOk()->assertJsonPath('results.0.label', 'Fəvvarələr meydanı — Nizami küçəsi, Bakı')->assertJsonPath('results.0.lat', 40.3777);
 
         \Illuminate\Support\Facades\Http::assertSent(fn ($r) => str_contains($r->header('User-Agent')[0] ?? '', 'NefisShokoladEvi'));
     }
