@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\ArazMarket;
+use App\Support\Birmarket;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -16,6 +17,7 @@ class Market extends Model
     /** Shops whose websites can be read, by their importer key. */
     public const IMPORTERS = [
         'arazmarket' => ArazMarket::class,
+        'birmarket' => Birmarket::class,
     ];
 
     protected $fillable = ['name', 'slug', 'website', 'importer', 'sort_order'];

@@ -39,7 +39,7 @@ class CartController extends Controller
 
         // A bar has to be picked whenever there are bars to pick from.
         if (Chocolate::where('is_active', true)->exists()) {
-            $rules['chocolate_id'] = ['required', Rule::exists('chocolates', 'id')->where('is_active', true)];
+            $rules['chocolate_id'] = ['required', Rule::exists('chocolates', 'id')->where('is_active', true)->whereNull('deleted_at')];
         }
 
         foreach ($product->photoSlots as $index => $slot) {

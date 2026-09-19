@@ -6,6 +6,7 @@ use App\Support\Media;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -18,11 +19,19 @@ use Illuminate\Support\Facades\Storage;
  */
 class Chocolate extends Model
 {
+    /*
+     * Deleting a bar only marks it deleted: an imported bar has to stay known,
+     * or the next import from its shop would bring it straight back.
+     */
+    use SoftDeletes;
+
     public const SOURCE_ARAZ = 'arazmarket';
+
+    public const SOURCE_BIRMARKET = 'birmarket';
 
     protected $fillable = [
         'market_id', 'name', 'weight_g', 'image', 'base_price', 'sale_price', 'sale_percent', 'markup_percent',
-        'is_active', 'sort_order', 'source', 'source_id', 'source_url', 'barcode', 'in_source', 'synced_at',
+        'is_active', 'sort_order', 'source', 'source_id', 'source_url', 'barcode', 'seller', 'in_source', 'synced_at',
     ];
 
     protected function casts(): array
@@ -39,7 +48,7 @@ class Chocolate extends Model
 
     protected static function booted(): void
     {
-        static::deleted(function (Chocolate $chocolate) {
+        static::forceDeleted(function (Chocolate $chocolate) {
             if ($chocolate->image) {
                 Storage::disk('public')->delete($chocolate->image);
             }

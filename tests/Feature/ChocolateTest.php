@@ -191,6 +191,63 @@ class ChocolateTest extends TestCase
         $this->assertNull(Chocolate::where('name', 'Bravo Süd Şokoladı 100 q')->first()->market_id);
     }
 
+    public function test_a_bar_the_owner_deleted_is_not_brought_back_by_the_next_import(): void
+    {
+        Http::fake(['b7x9kq.arazmarket.az/*' => Http::response($this->png())]);
+        $listing = [
+            $this->listed(1600, 'Merci Fındıq və Badam ilə 100 qr', '7.20', '7.20'),
+            $this->listed(2699, 'Kr/O Alenka Süd Şokoladı 90qr', '3.00', '3.00'),
+        ];
+        ArazMarket::sync($listing);
+        Chocolate::where('source_id', '1600')->firstOrFail()->delete();
+
+        $r = ArazMarket::sync($listing);
+
+        $this->assertSame(['found' => 2, 'created' => 0, 'updated' => 1, 'missing' => 0], $r);
+        $this->assertSame(['Kr/O Alenka Süd Şokoladı 90qr'], Chocolate::pluck('name')->all());
+        $this->assertSame(1, Chocolate::onlyTrashed()->count());
+
+        // It can be brought back by hand.
+        Chocolate::onlyTrashed()->firstOrFail()->restore();
+        $this->assertSame(2, Chocolate::count());
+    }
+
+    public function test_birmarket_bars_are_read_from_its_catalogue_and_the_rest_left_out(): void
+    {
+        $offer = fn (float $now, float $before = 0, string $seller = 'ROSSMANN') => [
+            'retail_price' => $now, 'old_price' => $before,
+            'seller' => ['marketing_name' => ['id' => 1, 'name' => $seller]],
+        ];
+        $item = fn (int $id, string $name, array $o) => ['id' => $id, 'name' => $name, 'slugged_name' => 'bar-' . $id,
+            'status' => 'active', 'default_offer' => $o, 'category_id' => 2600,
+            'main_img' => ['medium' => 'https://strgimgr.umico.az/img/product/840/' . $id . '.jpeg']];
+
+        Http::fake([
+            'mp-catalog.umico.az/*' => Http::response(['products' => [
+                $item(919158, 'Südlü şokolad Ferrero Rocher Hazelnut, 90 q', $offer(3.99, 8.99)),
+                $item(2834009, 'Şokolad Bianca 72% Dark, 100 q', $offer(7.8, 8.1, 'ZEFIR AVROPA ŞİRNİYYATI')),
+                $item(1710063, 'Plitka şokolad Yummy, 100 q', $offer(5, 0, 'Qərb Şirniyyatı')),
+                $item(1829862, 'Fındıqlı şokoladlı konfet Messori, 100 q', $offer(8.07, 9)),
+                $item(961160, 'Şokolad Toblerone White, 100 q', $offer(7.34, 8.9)),
+                $item(191827, 'Şokolad Chikalab,tünd,fındıqlı,100 q, 4 əd', $offer(51.5, 57.2)),
+                $item(916108, 'Vafli Forum Qaymaqlı, 100 q', $offer(7.8, 9.15)),
+                $item(1234, 'Şokolad Alpen Gold 85 q', $offer(2.5)),
+            ], 'meta' => ['total' => 8]]),
+            'strgimgr.umico.az/*' => Http::response($this->png()),
+        ]);
+
+        $r = \App\Support\Birmarket::sync();
+
+        $this->assertSame(['found' => 3, 'created' => 3, 'updated' => 0, 'missing' => 0], $r);
+        $bir = Market::where('importer', 'birmarket')->firstOrFail();
+        $ferrero = Chocolate::where('source', 'birmarket')->where('source_id', '919158')->firstOrFail();
+        $this->assertSame([$bir->id, 8.99, 3.99, 56, 'ROSSMANN', 90.0],
+            [$ferrero->market_id, $ferrero->base_price, $ferrero->sale_price, $ferrero->sale_percent, $ferrero->seller, $ferrero->weight_g]);
+        $this->assertSame('https://birmarket.az/product/919158-bar-919158', $ferrero->source_url);
+        $this->assertNull(Chocolate::where('source_id', '1710063')->first()->sale_price, 'no old price, no promotion');
+        Storage::disk('public')->assertExists($ferrero->image);
+    }
+
     public function test_the_owner_sets_the_common_markup_in_the_panel(): void
     {
         Chocolate::create(['name' => 'Alenka', 'base_price' => 3.00]);

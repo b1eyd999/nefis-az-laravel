@@ -14,6 +14,7 @@ class EditChocolate extends EditRecord
     {
         return [
             Actions\DeleteAction::make(),
+            Actions\RestoreAction::make()->label('Bərpa et'),
         ];
     }
 

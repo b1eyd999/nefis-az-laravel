@@ -5,7 +5,6 @@ namespace App\Support;
 use App\Models\Chocolate;
 use App\Models\Market;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 /**
@@ -25,10 +24,6 @@ class ArazMarket
     public const CATEGORY_URL = 'https://www.arazmarket.az/az/categories/plitka-sokolad-635';
 
     public const CATEGORY_ID = 635;
-
-    public const MIN_GRAMS = 90;
-
-    public const MAX_GRAMS = 105;
 
     /** Every product the category's pages list, keyed by the shop's id. */
     public static function products(string $url = self::CATEGORY_URL): array
@@ -87,104 +82,44 @@ class ArazMarket
     /** A bar's weight in grams, read from its title ("Milka … 90 qr"). */
     public static function grams(string $title): ?float
     {
-        return preg_match('/(\d+(?:[.,]\d+)?)\s*(?:qr|q|gr|g|qram|gram)\b/iu', $title, $m)
-            ? (float) str_replace(',', '.', $m[1])
-            : null;
+        return ChocolateImport::grams($title);
     }
 
     /** Whether a listed product is a bar the boxes take. */
     public static function isBoxBar(array $product): bool
     {
-        $grams = self::grams((string) ($product['title'] ?? ''));
-
         return (int) ($product['category_id'] ?? 0) === self::CATEGORY_ID
-            && $grams !== null && $grams >= self::MIN_GRAMS && $grams <= self::MAX_GRAMS;
+            && ChocolateImport::fits(self::grams((string) ($product['title'] ?? '')));
     }
 
     /**
-     * Brings the bars and their prices up to date. New bars are added (and
-     * shown); known ones get fresh prices but keep the owner's name, picture,
-     * markup and on/off switch. A bar the shop no longer lists is flagged,
-     * not hidden, so a hiccup on their side cannot empty the choice.
+     * Brings Araz Market's bars and their prices up to date.
      *
      * @return array{found: int, created: int, updated: int, missing: int}
      */
     public static function sync(?array $products = null): array
     {
-        @set_time_limit(180);
-        $bars = array_filter($products ?? self::products(), [self::class, 'isBoxBar']);
-        if (! $bars) {
-            throw new RuntimeException('Araz Market-də 90–105 q plitka şokolad tapılmadı — heç nə dəyişdirilmədi.');
+        @set_time_limit(300);   // ~70 catalogue pages and new pictures
+        $rows = [];
+        foreach (array_filter($products ?? self::products(), [self::class, 'isBoxBar']) as $p) {
+            $onSale = ! empty($p['is_discount']) && (float) $p['discount_price'] < (float) $p['sales_price'];
+            $rows[] = [
+                'source_id' => (string) $p['id'],
+                'name' => (string) $p['title'],
+                'grams' => self::grams((string) $p['title']),
+                'base' => (float) $p['sales_price'],
+                'sale' => $onSale ? (float) $p['discount_price'] : null,
+                'sale_percent' => $onSale ? ($p['discount_percent'] ?? null) : null,
+                'url' => 'https://www.arazmarket.az/az/products/' . ($p['slug'] ?? ''),
+                'barcode' => $p['barcode'] ?? null,
+                'seller' => null,
+                'image' => $p['images'][0] ?? null,
+            ];
         }
 
         $market = Market::forImporter(Chocolate::SOURCE_ARAZ, 'Araz Market', 'https://www.arazmarket.az');
-        $created = $updated = 0;
-        $seen = [];
-        foreach ($bars as $p) {
-            $chocolate = Chocolate::firstOrNew(['source' => Chocolate::SOURCE_ARAZ, 'source_id' => (string) $p['id']]);
-            $isNew = ! $chocolate->exists;
-            $onSale = ! empty($p['is_discount']) && (float) $p['discount_price'] < (float) $p['sales_price'];
 
-            if ($isNew) {
-                $chocolate->fill(['name' => trim($p['title']), 'is_active' => true]);
-            }
-            $chocolate->market_id ??= $market->id;
-            $chocolate->fill([
-                'weight_g' => self::grams($p['title']),
-                'base_price' => (float) $p['sales_price'],
-                'sale_price' => $onSale ? (float) $p['discount_price'] : null,
-                'sale_percent' => $onSale ? ($p['discount_percent'] ?? null) : null,
-                'source_url' => 'https://www.arazmarket.az/az/products/' . ($p['slug'] ?? ''),
-                'barcode' => $p['barcode'] ?? null,
-                'in_source' => true,
-                'synced_at' => now(),
-            ]);
-            if (! $chocolate->image && ($image = $p['images'][0] ?? null)) {
-                $chocolate->image = self::storeImage($image, 'araz-' . $p['id']);
-            }
-            $chocolate->save();
-            $seen[] = $chocolate->id;
-            $isNew ? $created++ : $updated++;
-        }
-
-        $missing = Chocolate::where('source', Chocolate::SOURCE_ARAZ)->whereNotIn('id', $seen)->update(['in_source' => false]);
-
-        return ['found' => count($bars), 'created' => $created, 'updated' => $updated, 'missing' => $missing];
-    }
-
-    /** The bar's picture, shrunk and kept as WebP on this site. */
-    private static function storeImage(string $url, string $name): ?string
-    {
-        try {
-            $bytes = Http::timeout(20)->get($url)->throw()->body();
-            $im = @imagecreatefromstring($bytes);
-            if (! $im) {
-                return null;
-            }
-            imagepalettetotruecolor($im);
-            $w = imagesx($im);
-            $h = imagesy($im);
-            $k = min(1, 600 / max($w, $h));
-            if ($k < 1) {
-                $small = imagecreatetruecolor((int) round($w * $k), (int) round($h * $k));
-                imagealphablending($small, false);
-                imagesavealpha($small, true);
-                imagecopyresampled($small, $im, 0, 0, 0, 0, imagesx($small), imagesy($small), $w, $h);
-                imagedestroy($im);
-                $im = $small;
-            }
-            imagealphablending($im, false);
-            imagesavealpha($im, true);
-            ob_start();
-            imagewebp($im, null, 85);
-            $path = 'chocolates/' . $name . '.webp';
-            Storage::disk('public')->put($path, ob_get_clean());
-            imagedestroy($im);
-
-            return $path;
-        } catch (\Throwable $e) {
-            return null;
-        }
+        return ChocolateImport::upsert(Chocolate::SOURCE_ARAZ, $market, $rows);
     }
 
     /** Index of the quote that ends a JS string starting at $start. */

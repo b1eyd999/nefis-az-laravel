@@ -12,7 +12,9 @@ use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 /**
  * The chocolate bars a customer can have put inside their box: imported from
@@ -118,9 +120,9 @@ class ChocolateResource extends Resource
                     ->label('Ad')
                     ->searchable()
                     ->wrap()
-                    ->description(fn (Chocolate $r) => $r->source
+                    ->description(fn (Chocolate $r) => ($r->source
                         ? ($r->in_source ? 'Saytdan avtomatik' : 'Marketin saytında artıq yoxdur')
-                        : 'Əl ilə əlavə olunub'),
+                        : 'Əl ilə əlavə olunub') . ($r->seller ? ' · satıcı: ' . $r->seller : '')),
                 Tables\Columns\TextColumn::make('market.name')
                     ->label('Market')
                     ->badge()
@@ -163,6 +165,12 @@ class ChocolateResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_active')->label('Göstərilir'),
                 Tables\Filters\Filter::make('on_sale')->label('Endirimdə')
                     ->query(fn ($q) => $q->whereNotNull('sale_price')),
+                // Deleted bars stay known so imports leave them out; they can come back.
+                Tables\Filters\TrashedFilter::make()
+                    ->label('Silinənlər')
+                    ->placeholder('Silinməyənlər')
+                    ->trueLabel('Hamısı (silinənlər də)')
+                    ->falseLabel('Yalnız silinənlər'),
             ])
             ->actions([
                 Tables\Actions\Action::make('source')
@@ -171,6 +179,9 @@ class ChocolateResource extends Resource
                     ->url(fn (Chocolate $r) => $r->source_url, shouldOpenInNewTab: true)
                     ->visible(fn (Chocolate $r) => filled($r->source_url)),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->modalDescription('Şokolad gizlənir və marketdən yeniləyəndə geri gəlmir. İstəsəniz "Silinənlər" filtrindən bərpa edə bilərsiniz.'),
+                Tables\Actions\RestoreAction::make()->label('Bərpa et'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -194,8 +205,14 @@ class ChocolateResource extends Resource
                         ->action(fn (Collection $records) => $records->each->update(['is_active' => false]))
                         ->deselectRecordsAfterCompletion(),
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make()->label('Bərpa et'),
                 ]),
             ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withoutGlobalScopes([SoftDeletingScope::class]);
     }
 
     public static function getPages(): array
