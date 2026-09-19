@@ -39,10 +39,13 @@
   .btn.primary:hover{ background:#6d28d9; }
   .btn.danger{ color:var(--danger); }
   .btn.small{ padding:.3rem .55rem; font-size:12.5px; }
-  .box-color .lbl{ font-size:12px; color:var(--ink-2); white-space:nowrap; }
-  .box-color input[type=color]{ width:34px; height:28px; border:1px solid var(--line); border-radius:.4rem; padding:1px; background:#fff; cursor:pointer; }
-  .box-color .icon-btn.on{ background:var(--accent); color:#fff; }
-  .box-color .btn.on{ background:#f3eefe; border-color:#ddd0fb; color:var(--accent); }
+  #tool-box-color{ position:relative; cursor:pointer; }
+  .tool .swatch{ width:22px; height:22px; border-radius:50%; display:block; border:2px solid #fff; box-shadow:0 0 0 1px #c9ced8; }
+  .tool-note{ font-size:10.5px; color:var(--muted); margin-top:-.2rem; }
+  .hidden-color{ position:absolute; left:50%; bottom:0; width:1px; height:1px; opacity:0; border:0; padding:0; pointer-events:none; }
+  #box-pipette.on{ background:var(--accent); color:#fff; }
+  #box-auto .ico{ font-size:15px; font-weight:700; width:22px; height:22px; border-radius:50%; display:grid; place-items:center; border:1.5px solid currentColor; }
+  #box-auto.on{ color:var(--accent); background:#f3eefe; }
   .stage.picking, .stage.picking *{ cursor:crosshair !important; }
   .pick-chip{ position:fixed; z-index:55; pointer-events:none; display:flex; align-items:center; gap:.4rem; background:var(--ink); color:#fff; font-size:11.5px;
     padding:.25rem .5rem .25rem .25rem; border-radius:.45rem; font-variant-numeric:tabular-nums; }
@@ -53,7 +56,7 @@
 
   /* ---------- layout ---------- */
   .app{ display:grid; grid-template-columns:84px 1fr 330px; height:calc(100% - 56px); }
-  .toolbar{ background:var(--panel); border-right:1px solid var(--line); display:flex; flex-direction:column; align-items:stretch; padding:.6rem .4rem; gap:.25rem; }
+  .toolbar{ background:var(--panel); border-right:1px solid var(--line); display:flex; flex-direction:column; align-items:stretch; padding:.6rem .4rem; gap:.25rem; overflow-y:auto; min-height:0; }
   .tool{ border:none; background:none; border-radius:.6rem; padding:.55rem .2rem; display:flex; flex-direction:column; align-items:center; gap:.3rem; font-size:11.5px; color:var(--ink-2); }
   .tool .ico{ font-size:20px; line-height:1; }
   .tool:hover{ background:var(--bg); color:var(--ink); }
@@ -153,14 +156,6 @@
     <button class="icon-btn" id="zoom-in" title="Böyüt">+</button>
     <button class="btn small" id="zoom-fit" title="Ekrana sığdır (Ctrl+0)">Sığdır</button>
   </div>
-  <div class="tb-group box-color" title="Mokaplarda qutunun rəngi. Avto — dizaynın kənar rəngi özü götürülür.">
-    <span class="lbl">Qutu rəngi</span>
-    <input type="color" id="box-color">
-    <button class="icon-btn" id="box-pipette" title="Pipet: dizaynın istənilən yerinə klikləyin — o rəng qutunun rəngi olur">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/></svg>
-    </button>
-    <button class="btn small" id="box-auto" title="Rəngi dizaynın kənarından avtomatik götür">Avto</button>
-  </div>
   <div class="tb-group">
     <label class="check" title="Vizualı bələdçi kimi üstə göstər (V)"><input type="checkbox" id="guide-on"> Vizual</label>
     <input type="range" id="guide-op" min="10" max="100" value="45" style="width:80px" title="Vizualın şəffaflığı">
@@ -182,6 +177,17 @@
     <button class="tool" id="tool-visual" title="Hazır görünüşü (vizual) yüklə"><span class="ico">🎯</span>Vizual</button>
     <button class="tool" id="tool-font" title="Şrift faylı yüklə (TTF, OTF, WOFF)"><span class="ico">Aa</span>Şrift</button>
     <button class="tool" id="tool-test" title="Sınaq üçün şəkil — yalnız burada görünür, saxlanılmır"><span class="ico">🧪</span>Sınaq şəkli</button>
+    <hr>
+    {{-- The colour the box is dyed in the scenes; clicking the swatch opens the picker. --}}
+    <label class="tool" id="tool-box-color" title="Mokaplarda qutunun rəngi — klikləyin və rəng seçin">
+      <span class="ico"><span class="swatch" id="box-swatch"></span></span>Qutu rəngi
+      <small class="tool-note" id="box-color-mode">avto</small>
+      <input type="color" id="box-color" class="hidden-color">
+    </label>
+    <button class="tool" id="box-pipette" title="Pipet: dizaynın istənilən yerinə klikləyin — o rəng qutunun rəngi olur">
+      <span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/></svg></span>Pipet
+    </button>
+    <button class="tool" id="box-auto" title="Rəngi dizaynın kənarından avtomatik götür"><span class="ico">A</span>Avto</button>
     <input type="file" id="file-asset" accept="image/png,image/webp,image/jpeg" multiple hidden>
     <input type="file" id="file-visual" accept="image/png,image/webp,image/jpeg" hidden>
     <input type="file" id="file-font" accept=".ttf,.otf,.woff,.woff2" hidden>
@@ -996,7 +1002,7 @@
       else h += '<p class="hint">Hazır görünüşü yükləyin — kataloqda göstəriləcək və burada qatları düzmək üçün üstə qoyula bilər.</p>';
       h += '<div class="actions"><button class="btn small" data-act="visual">' + (visualUrl ? 'Vizualı dəyiş' : 'Vizual yüklə') + '</button>'
          + (visualUrl ? '<button class="btn small" data-act="guide">' + (guideOn.checked ? 'Bələdçini gizlət' : 'Bələdçini göstər') + '</button>' : '') + '</div>';
-      h += '<h4>Qutunun rəngi (mokaplarda)</h4><p class="hint" style="margin-top:0">Yuxarıdakı <b>Qutu rəngi</b>: '
+      h += '<h4>Qutunun rəngi (mokaplarda)</h4><p class="hint" style="margin-top:0">Soldakı <b>Qutu rəngi</b>: '
          + (doc.box_color ? 'əl ilə seçilib — <b>' + esc(doc.box_color) + '</b>.' : 'avtomatik — dizaynın kənar rəngi' + (autoBoxColor ? ' (<b>' + esc(autoBoxColor) + '</b>)' : '') + '.')
          + ' Pipetlə dizaynın istənilən yerindən rəng götürə bilərsiniz. Səhnələrdə qutu bu rəngə boyanır.</p>';
       h += '<h4>Sınaq şəkli</h4><p class="hint">Foto sahələrində necə görünəcəyini yoxlamaq üçün. Yalnız burada görünür, saxlanılmır.</p>'
@@ -1367,12 +1373,14 @@
 
   function updateBoxColorUI(){
     boxColorInput.value = doc.box_color || autoBoxColor || '#ffffff';
+    document.getElementById('box-swatch').style.background = boxColorInput.value;
+    document.getElementById('box-color-mode').textContent = doc.box_color ? boxColorInput.value : 'avto';
     autoBtn.classList.toggle('on', !doc.box_color);
     autoBtn.title = doc.box_color
       ? 'Əl ilə seçilmiş rəngi sil — dizaynın kənar rəngi avtomatik götürülsün'
       : 'İndi avtomatikdir' + (autoBoxColor ? ': ' + autoBoxColor : '');
   }
-  boxColorInput.addEventListener('input', function(){ doc.box_color = boxColorInput.value; autoBtn.classList.remove('on'); commitSoon(); });
+  boxColorInput.addEventListener('input', function(){ doc.box_color = boxColorInput.value; updateBoxColorUI(); commitSoon(); });
   boxColorInput.addEventListener('change', function(){ commit(); renderProps(); });
   autoBtn.onclick = function(){ doc.box_color = null; commit(); refresh(); toast('Qutu rəngi avtomatikdir' + (autoBoxColor ? ': ' + autoBoxColor : '')); };
 
