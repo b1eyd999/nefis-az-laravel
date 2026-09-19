@@ -8,7 +8,8 @@
  * A scene is {w, h, bgColor, bg (url), elements: [...]} in its own pixels,
  * bottom element first:
  *   image:  {id, url, x, y, width, height, rotation, opacity, blend, flip_x, flip_y,
- *            tint (colour a white render is dyed), sheen (0-100), recolor (takes
+ *            tint (colour a white render is dyed), tint_strength (0-100, default
+ *            70), sheen (0-100), recolor (takes
  *            the product's box colour instead of its own tint), tint_all (dye
  *            the whole picture, not only its white paper)}
  *   design: {id, corners: [[x,y] top-left, top-right, bottom-right, bottom-left],
@@ -19,6 +20,9 @@
  */
 (function (global) {
   'use strict';
+
+  /* How much of a box colour is laid on (per cent), unless a scene says. */
+  var TINT_STRENGTH = 70;
 
   function ready(img) {
     return !!img && (img instanceof HTMLCanvasElement ? img.width > 0 : (img.complete && img.naturalWidth > 0));
@@ -346,9 +350,13 @@
     x.globalAlpha = 1;
     x.clearRect(0, 0, bw, bh);
     paint('source-over', 1);
+    /* At full strength the dye looks painted on; by default 70 % of it goes
+       in and the render's own white shows through the rest. */
     x.globalCompositeOperation = 'multiply';
+    x.globalAlpha = (el.tint_strength == null ? TINT_STRENGTH : el.tint_strength) / 100;
     x.fillStyle = el.tint;
     x.fillRect(0, 0, bw, bh);
+    x.globalAlpha = 1;
     if (el.sheen) paint('screen', Math.min(1, el.sheen / 100));
     paint('destination-in', 1);
     /* Unless told to dye everything, only the render's white paper takes the

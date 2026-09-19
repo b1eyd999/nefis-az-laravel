@@ -211,6 +211,12 @@ class SceneEditorTest extends TestCase
         ])->assertOk();
         $saved = $scene->fresh()->elements[0];
         $this->assertSame(['#1b1b1d', 12, true, false], [$saved['tint'], $saved['sheen'], $saved['recolor'], $saved['tint_all']]);
+        $this->assertSame(70, $saved['tint_strength'], 'the colour goes on at 70 % unless the scene says');
+
+        $this->actingAs($this->admin)->postJson(route('scene.save', $scene), [
+            'name' => 'Qara', 'width' => 160, 'height' => 200, 'elements' => [['tint_strength' => 45] + $render],
+        ])->assertOk();
+        $this->assertSame(45, $scene->fresh()->elements[0]['tint_strength']);
 
         $this->actingAs($this->admin)->postJson(route('scene.save', $scene), [
             'name' => 'Qara', 'width' => 160, 'height' => 200, 'elements' => [['tint' => 'black'] + $render],

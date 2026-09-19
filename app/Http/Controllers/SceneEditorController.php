@@ -91,6 +91,7 @@ class SceneEditorController extends Controller
             'elements.*.flip_y' => ['boolean'],
             'elements.*.tint' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'elements.*.sheen' => ['nullable', 'integer', 'between:0,100'],
+            'elements.*.tint_strength' => ['nullable', 'integer', 'between:0,100'],
             'elements.*.recolor' => ['boolean'],
             'elements.*.tint_all' => ['boolean'],
             'elements.*.corners' => ['nullable', 'array', 'size:4'],
@@ -135,6 +136,7 @@ class SceneEditorController extends Controller
                     'flip_y' => (bool) ($el['flip_y'] ?? false),
                     'tint' => $el['tint'] ?? null,
                     'sheen' => (int) ($el['sheen'] ?? 0),
+                    'tint_strength' => (int) ($el['tint_strength'] ?? 70),
                     'recolor' => (bool) ($el['recolor'] ?? false),
                     'tint_all' => (bool) ($el['tint_all'] ?? false),
                 ];
