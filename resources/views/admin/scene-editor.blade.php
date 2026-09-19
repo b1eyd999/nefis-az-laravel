@@ -97,6 +97,7 @@
   .hint{ font-size:12px; color:var(--muted); line-height:1.5; }
   .hint kbd{ font-family:inherit; font-size:11px; border:1px solid var(--line); border-bottom-width:2px; border-radius:.3rem; padding:0 .3rem; background:#fafbfc; color:var(--ink-2); }
   .bg-thumb{ width:100%; max-height:10rem; object-fit:contain; border:1px solid var(--line); border-radius:.5rem; display:block; margin:.25rem 0 .5rem; background:#f6f7f9; }
+  .warn{ background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; border-radius:.5rem; padding:.5rem .6rem; font-size:12.5px; line-height:1.45; margin:0 0 .6rem; }
   .swatches{ display:flex; flex-wrap:wrap; gap:.35rem; margin-bottom:.6rem; }
   .sw{ width:24px; height:24px; border-radius:50%; border:1px solid #cfd4dc; padding:0; font-size:12px; color:var(--muted); line-height:1; }
   .sw.on{ outline:2px solid var(--accent); outline-offset:2px; }
@@ -934,6 +935,9 @@
              return '<option value="' + b[0] + '"' + ((el.blend || 'source-over') === b[0] ? ' selected' : '') + '>' + b[1] + '</option>';
            }).join('') + '</select>') + '</div>';
       h += '<h4>Qutunun rəngi</h4>';
+      if (!el.recolor && el.tint) {
+        h += '<div class="warn">Bu qutu <b>sabit rəngdədir</b> (' + esc(el.tint) + ') — dizaynın rəngini götürmür. Hər dizaynda öz rəngi olsun deyə aşağıda <b>Dizaynın rəngini götür</b>ü işarələyin.</div>';
+      }
       h += '<p class="hint" style="margin-top:0">Ağ renderi istənilən rəngə boyayır — işıq, kölgə və faktura qalır.</p>';
       h += '<div class="swatches">' + SWATCHES.map(function(s){
              var on = (el.tint || null) === s[0];
@@ -1045,7 +1049,7 @@
     for (var i = doc.elements.length - 1; i >= 0; i--) {
       var el = doc.elements[i];
       var thumb = el.type === 'design' ? '<span style="color:#7c3aed;font-weight:700">▦</span>' : '<img src="' + esc(el.url) + '" alt="">';
-      var kind = el.type === 'design' ? 'dizayn yeri' + (el.shade_from && el.shade ? ' · işıq ' + el.shade + '%' : '') : 'şəkil' + (el.recolor ? ' · dizaynın rəngi' : el.tint ? ' · rəng ' + el.tint : '') + (el.blend && el.blend !== 'source-over' ? ' · ' + el.blend : '');
+      var kind = el.type === 'design' ? 'dizayn yeri' + (el.shade_from && el.shade ? ' · işıq ' + el.shade + '%' : '') : 'şəkil' + (el.recolor ? ' · dizaynın rəngi' : el.tint ? ' · ⚠ sabit rəng ' + el.tint : '') + (el.blend && el.blend !== 'source-over' ? ' · ' + el.blend : '');
       h += '<li draggable="true" data-index="' + i + '" class="' + (i === selIndex ? 'on' : '') + (el.hidden ? ' hidden-el' : '') + '">'
          + '<span class="thumb">' + thumb + '</span>'
          + '<span class="name">' + esc(el.name || (el.type === 'design' ? 'Dizayn' : 'Şəkil')) + '<br><span class="kind">' + esc(kind) + '</span></span>'

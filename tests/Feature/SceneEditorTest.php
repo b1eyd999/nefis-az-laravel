@@ -230,6 +230,26 @@ class SceneEditorTest extends TestCase
         $this->assertTrue($views[0]['scene']['elements'][0]['recolor']);
     }
 
+    public function test_renders_left_on_a_fixed_colour_are_switched_to_follow_the_design(): void
+    {
+        $scene = Scene::create(['name' => 'test 2', 'elements' => [
+            ['id' => 'r', 'type' => 'image', 'image' => 'scenes/library/x.webp', 'x' => 0, 'y' => 0, 'width' => 10, 'height' => 10,
+                'tint' => '#f2e3c6', 'sheen' => 75, 'recolor' => false, 'tint_all' => true],
+            ['id' => 'd', 'type' => 'design', 'corners' => [[0, 0], [1, 0], [1, 1], [0, 1]]],
+        ]]);
+
+        $migration = require database_path('migrations/2026_09_19_000005_make_all_box_renders_follow_the_design.php');
+        $migration->up();
+        $migration->up(); // harmless twice
+
+        $render = $scene->fresh()->elements[0];
+        $this->assertTrue($render['recolor']);
+        $this->assertSame(0, $render['sheen']);
+        $this->assertFalse($render['tint_all']);
+        $this->assertSame('#f2e3c6', $render['tint'], 'kept as the fallback');
+        $this->assertSame([[0, 0], [1, 0], [1, 1], [0, 1]], $scene->fresh()->elements[1]['corners']);
+    }
+
     public function test_the_admin_panel_lists_and_creates_scenes(): void
     {
         $scene = Scene::create(['name' => 'Sarı fon']);
