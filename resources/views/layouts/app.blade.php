@@ -535,6 +535,10 @@
         @endif
       </a>
       @auth
+        @if(auth()->user()->is_admin)
+          {{-- Only the owner sees this; customers never have is_admin. --}}
+          <a href="{{ url('/admin') }}" class="btn btn-primary header-cta">Admin</a>
+        @endif
         <form method="POST" action="{{ route('logout') }}">
           @csrf
           <button type="submit" class="btn btn-ghost header-cta">Çıxış</button>
@@ -556,6 +560,9 @@
   <a href="{{ route('cart.index') }}">Səbət</a>
   @auth
     <a href="{{ route('orders.index') }}">Sifarişlərim</a>
+    @if(auth()->user()->is_admin)
+      <a href="{{ url('/admin') }}">Admin</a>
+    @endif
     <form method="POST" action="{{ route('logout') }}"><button type="submit">Çıxış</button></form>
   @else
     <a href="{{ route('login') }}">Giriş</a>
