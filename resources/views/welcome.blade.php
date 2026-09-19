@@ -115,7 +115,7 @@
               <h3>{{ $product->name }}</h3>
               <p>{{ $product->description ?: $product->categoryLabel() }}</p>
               <div class="p-card-foot">
-                <span class="p-card-price">{{ $product->price ? number_format($product->price) . ' ₼' : 'Qiymət sorğu ilə' }}</span>
+                <span class="p-card-price">{{ $product->price ? \App\Support\Price::format($product->price) : 'Qiymət sorğu ilə' }}</span>
                 <a href="{{ $link }}" class="p-card-link">{{ $product->isCustomizable() ? 'Fərdiləşdir' : 'Önizlə' }} <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
               </div>
             </div>

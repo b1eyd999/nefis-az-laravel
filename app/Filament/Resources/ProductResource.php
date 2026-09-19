@@ -7,6 +7,7 @@ use App\Filament\Resources\ProductResource\Pages;
 use App\Models\Product;
 use App\Models\Scene;
 use App\Support\Media;
+use App\Support\Price;
 use App\Support\YandexDisk;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -63,6 +64,9 @@ class ProductResource extends Resource
                         Forms\Components\TextInput::make('price')
                             ->label('Qiymət (₼)')
                             ->numeric()
+                            ->minValue(0)
+                            ->step(0.01)
+                            ->placeholder('məs. 4.90')
                             ->suffix('₼')
                             ->helperText('Boş buraxsanız "Qiymət sorğu ilə" göstərilir.'),
                         Forms\Components\TextInput::make('sort_order')
@@ -145,7 +149,7 @@ class ProductResource extends Resource
                     ->getStateUsing(fn (Product $record) => $record->isCustomizable()),
                 Tables\Columns\TextColumn::make('price')
                     ->label('Qiymət')
-                    ->formatStateUsing(fn ($state) => $state ? number_format($state) . ' ₼' : 'Sorğu ilə')
+                    ->formatStateUsing(fn ($state) => $state ? Price::format($state) : 'Sorğu ilə')
                     ->sortable(),
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Aktiv')

@@ -34,6 +34,7 @@ class OrderItem extends Model
             'photo_labels' => 'array',
             'text_labels' => 'array',
             'chocolate_price' => 'float',
+            'price' => 'float',
         ];
     }
 

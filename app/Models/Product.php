@@ -63,6 +63,7 @@ class Product extends Model
     {
         return [
             'is_active' => 'boolean',
+            'price' => 'float',
         ];
     }
 
