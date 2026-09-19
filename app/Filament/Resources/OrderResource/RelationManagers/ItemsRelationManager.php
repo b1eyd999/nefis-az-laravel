@@ -18,13 +18,6 @@ class ItemsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('id')
             ->columns([
-                Tables\Columns\ImageColumn::make('customer_photos')
-                    ->label('Müştərinin şəkilləri')
-                    ->disk('public')
-                    ->square()
-                    ->size(80)
-                    ->stacked()
-                    ->limit(4),
                 Tables\Columns\TextColumn::make('product.name')
                     ->label('Məhsul')
                     // The name was kept on the order line for when the design is gone.
@@ -34,11 +27,11 @@ class ItemsRelationManager extends RelationManager
                     ->getStateUsing(fn ($record) => Media::url($record->product?->catalogImage()))
                     ->square()
                     ->size(80),
-                Tables\Columns\TextColumn::make('custom_texts')
-                    ->label('Mətn')
-                    ->formatStateUsing(fn ($state) => implode(' · ', array_filter((array) $state)))
-                    ->placeholder('—')
-                    ->wrap(),
+                // The photos and captions under the names the customer filled
+                // them in, as on the design's page.
+                Tables\Columns\ViewColumn::make('fields')
+                    ->label('Müştərinin göndərdiyi')
+                    ->view('filament.order-item-fields'),
                 Tables\Columns\TextColumn::make('quantity')
                     ->label('Say'),
                 Tables\Columns\TextColumn::make('price')

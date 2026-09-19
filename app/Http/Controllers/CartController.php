@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\TextSlot;
 use App\Support\Cart;
@@ -63,7 +64,8 @@ class CartController extends Controller
                 : trim((string) $request->input("custom_texts.$index"));
         }
 
-        Cart::add($product->id, $paths, $texts, (int) $request->input('quantity', 1));
+        Cart::add($product->id, $paths, $texts, (int) $request->input('quantity', 1),
+            OrderItem::photoLabelsFor($product), OrderItem::textLabelsFor($product));
 
         return redirect()->route('cart.index')->with('status', 'Məhsul səbətə əlavə olundu.');
     }

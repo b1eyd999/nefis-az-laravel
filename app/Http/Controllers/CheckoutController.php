@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Support\Cart;
 use Illuminate\Http\RedirectResponse;
@@ -60,6 +61,9 @@ class CheckoutController extends Controller
                 'product_name' => $product->name,
                 'customer_photos' => $item['photo_paths'],
                 'custom_texts' => $item['custom_texts'],
+                // Carts filled before labels were kept take them from the design.
+                'photo_labels' => $item['photo_labels'] ?? OrderItem::photoLabelsFor($product),
+                'text_labels' => $item['text_labels'] ?? OrderItem::textLabelsFor($product),
                 'quantity' => $item['quantity'],
                 'price' => $product?->price,
             ]);
