@@ -74,6 +74,12 @@ class Chocolate extends Model
         return $fromSale && $this->sale_price ? (float) $this->sale_price : (float) $this->base_price;
     }
 
+    /** What the owner pays the shop for it today: the promotion while there is one. */
+    public function shopPrice(): float
+    {
+        return (float) ($this->sale_price ?: $this->base_price);
+    }
+
     public function markup(): int
     {
         return $this->markup_percent ?? (int) Setting::get(Setting::CHOCOLATE_MARKUP);

@@ -11,7 +11,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // The owner's maintenance switch; staff and the admin panel stay open.
+        $middleware->web(append: [\App\Http\Middleware\MaintenanceMode::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

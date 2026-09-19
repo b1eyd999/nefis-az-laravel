@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Accounting;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,6 +29,7 @@ class Order extends Model
         'metro_station',
         'delivery_lat',
         'delivery_lng',
+        'materials_cost',
     ];
 
     protected function casts(): array
@@ -36,7 +38,25 @@ class Order extends Model
             'delivery_price' => 'float',
             'delivery_lat' => 'float',
             'delivery_lng' => 'float',
+            'materials_cost' => 'float',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // Cancelling puts the boxes' materials back in stock; bringing an
+        // order back from cancelled takes them again.
+        static::updated(function (Order $order) {
+            if (! $order->wasChanged('status')) {
+                return;
+            }
+            $was = $order->getOriginal('status');
+            if ($order->status === 'cancelled' && $was !== 'cancelled') {
+                Accounting::restore($order);
+            } elseif ($was === 'cancelled' && $order->status !== 'cancelled') {
+                Accounting::consume($order);
+            }
+        });
     }
 
     /** The door-delivery point in Google Maps, for the courier. */

@@ -46,7 +46,7 @@ class MapController extends Controller
         $q = trim((string) $request->validate(['q' => ['required', 'string', 'min:3', 'max:120']])['q']);
         $b = DeliveryMethod::BAKU_BOUNDS;
 
-        $results = Cache::remember('map:search:' . md5(mb_strtolower($q)), now()->addDays(7), function () use ($q, $b) {
+        $results = Cache::remember('map:search:v2:' . md5(mb_strtolower($q)), now()->addDays(7), function () use ($q, $b) {
             $list = $this->nominatim('/search', [
                 'q' => $q, 'countrycodes' => 'az', 'limit' => 6, 'addressdetails' => 1,
                 'viewbox' => "{$b['west']},{$b['north']},{$b['east']},{$b['south']}", 'bounded' => 1,

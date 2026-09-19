@@ -65,7 +65,8 @@ class CartController extends Controller
         $chocolate = null;
         if ($request->filled('chocolate_id') && isset($rules['chocolate_id'])) {
             $bar = Chocolate::findOrFail($request->input('chocolate_id'));
-            $chocolate = ['id' => $bar->id, 'name' => trim($bar->name . ' ' . ($bar->weightLabel() ? '(' . $bar->weightLabel() . ')' : '')), 'price' => $bar->price()];
+            $chocolate = ['id' => $bar->id, 'name' => trim($bar->name . ' ' . ($bar->weightLabel() ? '(' . $bar->weightLabel() . ')' : '')),
+                'price' => $bar->price(), 'cost' => $bar->shopPrice()];
         }
 
         $paths = [];

@@ -6,6 +6,7 @@ use App\Models\DeliveryMethod;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Support\Accounting;
 use App\Support\Cart;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -68,8 +69,13 @@ class CheckoutController extends Controller
                 'chocolate_id' => $item['chocolate']['id'] ?? null,
                 'chocolate_name' => $item['chocolate']['name'] ?? null,
                 'chocolate_price' => $item['chocolate']['price'] ?? null,
+                // What the bar costs the owner — for the books.
+                'chocolate_cost' => $item['chocolate']['cost'] ?? null,
             ]);
         }
+
+        // The boxes' materials come out of stock now.
+        Accounting::consume($order);
 
         Cart::clear();
 

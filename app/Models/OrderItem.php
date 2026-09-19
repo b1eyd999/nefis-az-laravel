@@ -23,6 +23,7 @@ class OrderItem extends Model
         'chocolate_id',
         'chocolate_name',
         'chocolate_price',
+        'chocolate_cost',
     ];
 
     protected function casts(): array
