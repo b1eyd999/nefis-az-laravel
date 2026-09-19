@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Support\Media;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -20,7 +21,7 @@ class Chocolate extends Model
     public const SOURCE_ARAZ = 'arazmarket';
 
     protected $fillable = [
-        'name', 'weight_g', 'image', 'base_price', 'sale_price', 'sale_percent', 'markup_percent',
+        'market_id', 'name', 'weight_g', 'image', 'base_price', 'sale_price', 'sale_percent', 'markup_percent',
         'is_active', 'sort_order', 'source', 'source_id', 'source_url', 'barcode', 'in_source', 'synced_at',
     ];
 
@@ -43,6 +44,12 @@ class Chocolate extends Model
                 Storage::disk('public')->delete($chocolate->image);
             }
         });
+    }
+
+    /** The shop the bar is bought from. */
+    public function market(): BelongsTo
+    {
+        return $this->belongsTo(Market::class);
     }
 
     public function scopeShown(Builder $query): Builder

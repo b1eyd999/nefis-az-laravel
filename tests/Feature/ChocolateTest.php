@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\ChocolateResource\Pages\ListChocolates;
 use App\Models\Chocolate;
+use App\Models\Market;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Setting;
@@ -156,6 +157,38 @@ class ChocolateTest extends TestCase
         $this->assertSame([$bar->id, 'Kr/O Alenka Süd Şokoladı 90qr (90 q)', 3.9], [(int) $item->chocolate_id, $item->chocolate_name, $item->chocolate_price]);
         $this->assertSame(7.9, $item->unitPrice());
         $this->actingAs($user)->get(route('orders.index'))->assertSee('Kr/O Alenka Süd Şokoladı 90qr (90 q)')->assertSee('15.80 ₼', false);
+    }
+
+    public function test_bars_are_grouped_by_the_shop_they_come_from(): void
+    {
+        Http::fake(['b7x9kq.arazmarket.az/*' => Http::response($this->png())]);
+        ArazMarket::sync([$this->listed(7538, 'Milka Plitka Şokolad Fındıqlı 90 qr', '4.50', '2.69', 40)]);
+
+        $araz = Market::where('importer', 'arazmarket')->firstOrFail();
+        $this->assertSame('Araz Market', $araz->name);
+        $this->assertTrue($araz->canSync());
+        $this->assertSame($araz->id, Chocolate::firstOrFail()->market_id);
+
+        // A shop without an importer: its bars are added by hand.
+        $bravo = Market::create(['name' => 'Bravo', 'slug' => 'bravo']);
+        Chocolate::create(['market_id' => $bravo->id, 'name' => 'Bravo Süd Şokoladı 100 q', 'base_price' => 2.5]);
+        Chocolate::create(['name' => 'Öz şokoladım', 'base_price' => 2]);
+        $this->assertFalse($bravo->canSync());
+
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        Livewire::test(ListChocolates::class)
+            ->assertSee(['Hamısı', 'Araz Market', 'Bravo', 'Marketsiz'])
+            ->set('activeTab', 'market-' . $bravo->id)
+            ->assertSee('Bravo Süd Şokoladı 100 q')
+            ->assertDontSee('Milka Plitka Şokolad Fındıqlı 90 qr');
+
+        $this->get('/admin/markets')->assertOk()->assertSee('Araz Market')->assertSee('Avtomatik')->assertSee('Bravo');
+
+        // Removing a shop keeps its bars.
+        $bravo->delete();
+        $this->assertNull(Chocolate::where('name', 'Bravo Süd Şokoladı 100 q')->first()->market_id);
     }
 
     public function test_the_owner_sets_the_common_markup_in_the_panel(): void

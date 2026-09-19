@@ -24,13 +24,15 @@ class ChocolateResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-cake';
 
+    protected static ?string $navigationGroup = 'Şokolad';
+
     protected static ?string $navigationLabel = 'Şokoladlar';
 
     protected static ?string $modelLabel = 'şokolad';
 
     protected static ?string $pluralModelLabel = 'şokoladlar';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
     {
@@ -42,6 +44,16 @@ class ChocolateResource extends Resource
                             ->label('Ad (müştəri belə görür)')
                             ->required()
                             ->maxLength(255)
+                            ->columnSpanFull(),
+                        Forms\Components\Select::make('market_id')
+                            ->label('Market')
+                            ->relationship('market', 'name', fn ($query) => $query->orderBy('sort_order'))
+                            ->placeholder('Marketsiz')
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('name')->label('Marketin adı')->required(),
+                                Forms\Components\TextInput::make('slug')->label('Qısa ad (URL)')->required()->unique('markets', 'slug'),
+                                Forms\Components\TextInput::make('website')->label('Sayt')->url(),
+                            ])
                             ->columnSpanFull(),
                         Forms\Components\FileUpload::make('image')
                             ->label('Şəkil')
@@ -106,9 +118,14 @@ class ChocolateResource extends Resource
                     ->label('Ad')
                     ->searchable()
                     ->wrap()
-                    ->description(fn (Chocolate $r) => $r->source === Chocolate::SOURCE_ARAZ
-                        ? ($r->in_source ? 'Araz Market' : 'Araz Market-də artıq yoxdur')
+                    ->description(fn (Chocolate $r) => $r->source
+                        ? ($r->in_source ? 'Saytdan avtomatik' : 'Marketin saytında artıq yoxdur')
                         : 'Əl ilə əlavə olunub'),
+                Tables\Columns\TextColumn::make('market.name')
+                    ->label('Market')
+                    ->badge()
+                    ->placeholder('Marketsiz')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('weight_g')
                     ->label('Çəki')
                     ->formatStateUsing(fn (Chocolate $r) => $r->weightLabel() ?? '—')
@@ -142,13 +159,14 @@ class ChocolateResource extends Resource
             ->defaultSort('sort_order')
             ->reorderable('sort_order')
             ->filters([
+                Tables\Filters\SelectFilter::make('market_id')->label('Market')->relationship('market', 'name'),
                 Tables\Filters\TernaryFilter::make('is_active')->label('Göstərilir'),
                 Tables\Filters\Filter::make('on_sale')->label('Endirimdə')
                     ->query(fn ($q) => $q->whereNotNull('sale_price')),
             ])
             ->actions([
                 Tables\Actions\Action::make('source')
-                    ->label('Araz')
+                    ->label('Saytda')
                     ->icon('heroicon-o-arrow-top-right-on-square')
                     ->url(fn (Chocolate $r) => $r->source_url, shouldOpenInNewTab: true)
                     ->visible(fn (Chocolate $r) => filled($r->source_url)),

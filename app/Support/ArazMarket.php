@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Chocolate;
+use App\Models\Market;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -116,6 +117,7 @@ class ArazMarket
             throw new RuntimeException('Araz Market-də 90–105 q plitka şokolad tapılmadı — heç nə dəyişdirilmədi.');
         }
 
+        $market = Market::forImporter(Chocolate::SOURCE_ARAZ, 'Araz Market', 'https://www.arazmarket.az');
         $created = $updated = 0;
         $seen = [];
         foreach ($bars as $p) {
@@ -126,6 +128,7 @@ class ArazMarket
             if ($isNew) {
                 $chocolate->fill(['name' => trim($p['title']), 'is_active' => true]);
             }
+            $chocolate->market_id ??= $market->id;
             $chocolate->fill([
                 'weight_g' => self::grams($p['title']),
                 'base_price' => (float) $p['sales_price'],
