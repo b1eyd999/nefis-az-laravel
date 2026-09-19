@@ -747,7 +747,7 @@
     else { var k = Math.min(1, W() / w, H() / h); w *= k; h *= k; x = (W() - w) / 2; y = (H() - h) / 2; }
     doc.elements.push({ id: uid(), type: 'image', name: asset.name || 'Şəkil', image: asset.image, url: asset.url,
       x: r2(x), y: r2(y), width: r2(w), height: r2(h), rotation: 0, opacity: 100, blend: 'source-over',
-      flip_x: false, flip_y: false, tint: null, tint_strength: 70, sheen: 0, recolor: true, tint_all: false, locked: false, hidden: false });
+      flip_x: false, flip_y: false, tint: null, tint_strength: 90, sheen: 0, recolor: true, tint_all: false, locked: false, hidden: false });
     getImage(asset.url);
     select(doc.elements.length - 1);
     commit();
@@ -945,7 +945,7 @@
            }).join('') + '</div>';
       h += '<div class="row">' + field('Rəng', '<input type="color" data-k="tint" value="' + esc(el.tint || '#ffffff') + '">')
          + field('Parıltı ' + (el.sheen || 0) + '%', range('sheen', el.sheen || 0, 0, 100)) + '</div>';
-      var strength = el.tint_strength == null ? 70 : el.tint_strength;
+      var strength = el.tint_strength == null ? 90 : el.tint_strength;
       h += '<div class="row one">' + field('Rəngin gücü ' + strength + '%', range('tint_strength', strength, 0, 100)) + '</div>';
       h += '<label class="check" title="Qutu hər dizaynda o dizaynın rənginə boyanır"><input type="checkbox" data-k="recolor"' + (el.recolor ? ' checked' : '') + '> Dizaynın rəngini götür</label>';
       if (el.recolor) h += '<p class="hint" style="margin:.2rem 0 0 1.5rem">Qutu hər dizaynın öz rəngini alır: Qutu redaktorunda seçilmiş və ya dizaynın kənarından avtomatik götürülmüş. Yuxarıdakı rəng yalnız rəngi bilinməyən dizaynlar üçündür.'

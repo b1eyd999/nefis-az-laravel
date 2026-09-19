@@ -136,7 +136,7 @@ class SceneEditorController extends Controller
                     'flip_y' => (bool) ($el['flip_y'] ?? false),
                     'tint' => $el['tint'] ?? null,
                     'sheen' => (int) ($el['sheen'] ?? 0),
-                    'tint_strength' => (int) ($el['tint_strength'] ?? 70),
+                    'tint_strength' => (int) ($el['tint_strength'] ?? 90),
                     'recolor' => (bool) ($el['recolor'] ?? false),
                     'tint_all' => (bool) ($el['tint_all'] ?? false),
                 ];
