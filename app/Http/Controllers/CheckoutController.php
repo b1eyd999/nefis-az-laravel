@@ -114,6 +114,13 @@ class CheckoutController extends Controller
             ],
             default => [
                 'delivery_address' => ['required', 'string', 'min:5', 'max:255'],
+                // The point picked on the map: only inside Baku.
+                'delivery_lat' => ['nullable', 'required_with:delivery_lng', 'numeric'],
+                'delivery_lng' => ['nullable', 'required_with:delivery_lat', 'numeric', function ($attr, $value, $fail) use ($request) {
+                    if (! DeliveryMethod::inBaku((float) $request->input('delivery_lat'), (float) $value)) {
+                        $fail('Seçdiyiniz yer Bakıdan kənardadır — qapıya çatdırılma yalnız Bakı daxilindədir.');
+                    }
+                }],
             ],
         };
 
@@ -132,6 +139,8 @@ class CheckoutController extends Controller
             'postal_index' => isset($data['postal_index']) ? DeliveryMethod::normalizeIndex($data['postal_index']) : null,
             'metro_station' => $data['metro_station'] ?? null,
             'delivery_address' => $data['delivery_address'] ?? null,
+            'delivery_lat' => $data['delivery_lat'] ?? null,
+            'delivery_lng' => $data['delivery_lng'] ?? null,
         ];
         // Older screens show the address line; give them something to show.
         $order['delivery_address'] ??= (new Order($order))->deliverySummary();

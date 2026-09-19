@@ -75,6 +75,60 @@ class DeliveryTest extends TestCase
         $this->assertSame(9.0, $order->total());
     }
 
+    public function test_the_door_delivery_point_comes_from_the_map_and_stays_in_baku(): void
+    {
+        $this->fillCart();
+        $door = $this->method(DeliveryMethod::DOOR);
+
+        $page = $this->actingAs($this->customer)->get(route('checkout.index'))->assertOk();
+        $page->assertSee('id="dlv-map"', false)->assertSee('data-google=""', false)->assertSee('js/map-picker.js');
+        $page->assertSee('<meta name="referrer" content="strict-origin-when-cross-origin">', false);
+
+        // Ganja is not Baku.
+        $this->actingAs($this->customer)->post(route('checkout.store'), [
+            'delivery_method_id' => $door->id, 'contact_phone' => '1', 'delivery_address' => 'Gəncə, Nizami küç. 1',
+            'delivery_lat' => 40.6828, 'delivery_lng' => 46.3606,
+        ])->assertSessionHasErrors('delivery_lng');
+
+        $this->actingAs($this->customer)->post(route('checkout.store'), [
+            'delivery_method_id' => $door->id, 'contact_phone' => '1', 'delivery_address' => 'Rəşid Behbudov 10, mənzil 5',
+            'delivery_lat' => 40.3869, 'delivery_lng' => 49.8434,
+        ])->assertRedirect(route('orders.index'));
+
+        $order = Order::firstOrFail();
+        $this->assertSame([40.3869, 49.8434], [$order->delivery_lat, $order->delivery_lng]);
+        $this->assertSame('https://www.google.com/maps/search/?api=1&query=40.3869,49.8434', $order->mapUrl());
+        $this->actingAs(User::factory()->create(['is_admin' => true]))
+            ->get('/admin/orders/' . $order->id . '/edit')->assertSee('Xəritədə aç');
+
+        // With the owner's Google key the page uses it.
+        $door->update(['options' => ['google_maps_key' => 'AIza-test-key']]);
+        $this->actingAs($this->customer)->get(route('cart.index'));
+        $this->assertSame('AIza-test-key', DeliveryMethod::googleMapsKey());
+    }
+
+    public function test_the_map_looks_addresses_up_through_the_site(): void
+    {
+        \Illuminate\Support\Facades\Http::fake([
+            'nominatim.openstreetmap.org/reverse*' => \Illuminate\Support\Facades\Http::response([
+                'name' => '', 'display_name' => 'long',
+                'address' => ['road' => 'Rəşid Behbudov küçəsi', 'house_number' => '10', 'suburb' => 'Nəsimi rayonu', 'city' => 'Bakı'],
+            ]),
+            'nominatim.openstreetmap.org/search*' => \Illuminate\Support\Facades\Http::response([
+                ['lat' => '40.3777', 'lon' => '49.8920', 'display_name' => 'Fəvvarələr meydanı', 'address' => ['road' => 'Nizami küçəsi', 'city' => 'Bakı']],
+            ]),
+        ]);
+
+        $this->getJson(route('map.reverse', ['lat' => 40.3869, 'lng' => 49.8434]))
+            ->assertOk()->assertJson(['address' => 'Rəşid Behbudov küçəsi 10, Nəsimi rayonu, Bakı', 'outside' => false]);
+        $this->getJson(route('map.reverse', ['lat' => 40.6828, 'lng' => 46.3606]))
+            ->assertOk()->assertJson(['address' => null, 'outside' => true]);
+        $this->getJson(route('map.search', ['q' => 'Fəvvarələr']))
+            ->assertOk()->assertJsonPath('results.0.label', 'Nizami küçəsi, Bakı')->assertJsonPath('results.0.lat', 40.3777);
+
+        \Illuminate\Support\Facades\Http::assertSent(fn ($r) => str_contains($r->header('User-Agent')[0] ?? '', 'NefisShokoladEvi'));
+    }
+
     public function test_post_delivery_needs_the_name_phone_and_post_office_index(): void
     {
         $this->fillCart();

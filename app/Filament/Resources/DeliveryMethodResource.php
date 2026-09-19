@@ -59,6 +59,11 @@ class DeliveryMethodResource extends Resource
                             ->maxLength(255)
                             ->columnSpanFull(),
                         Forms\Components\Toggle::make('is_active')->label('Müştəriyə göstər'),
+                        Forms\Components\TextInput::make('options.google_maps_key')
+                            ->label('Google Maps açarı (istəyə bağlı)')
+                            ->helperText('Boş olarsa, xəritə OpenStreetMap ilə işləyir. Google üçün: Google Cloud Console → "Maps JavaScript API" və "Geocoding API"ni aktiv edin, açar yaradın və onu yalnız nefis.az saytına məhdudlaşdırın (HTTP referrer: https://nefis.az/*).')
+                            ->visible(fn (?DeliveryMethod $record) => $record?->type === DeliveryMethod::DOOR)
+                            ->columnSpanFull(),
                         Forms\Components\Textarea::make('options.stations')
                             ->label('Metro stansiyaları (hər sətirdə bir)')
                             ->helperText('Müştəri yalnız bu siyahıdan seçə bilər.')

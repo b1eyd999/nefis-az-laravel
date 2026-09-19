@@ -35,7 +35,27 @@ class DeliveryMethod extends Model
         'Avtovağzal', '8 Noyabr', 'Xocəsən',
     ];
 
+    /** Where door delivery goes: Baku, the Absheron settlements included. */
+    public const BAKU_BOUNDS = ['south' => 40.10, 'west' => 49.40, 'north' => 40.62, 'east' => 50.65];
+
+    public const BAKU_CENTER = ['lat' => 40.4093, 'lng' => 49.8671];
+
     protected $fillable = ['type', 'name', 'description', 'price', 'is_active', 'sort_order', 'options'];
+
+    /** The owner's Google Maps key, if they added one; else the map uses OpenStreetMap. */
+    public static function googleMapsKey(): ?string
+    {
+        $door = static::where('type', self::DOOR)->first();
+
+        return filled($door?->options['google_maps_key'] ?? null) ? trim($door->options['google_maps_key']) : null;
+    }
+
+    public static function inBaku(float $lat, float $lng): bool
+    {
+        $b = self::BAKU_BOUNDS;
+
+        return $lat >= $b['south'] && $lat <= $b['north'] && $lng >= $b['west'] && $lng <= $b['east'];
+    }
 
     protected function casts(): array
     {

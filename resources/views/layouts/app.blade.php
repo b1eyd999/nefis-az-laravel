@@ -12,7 +12,7 @@
 </script>
 {{-- The artwork is served from a Yandex Disk share, which rejects any request
      that carries a referer from another site. --}}
-<meta name="referrer" content="no-referrer">
+<meta name="referrer" content="@yield('referrer', 'no-referrer')">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>@yield('title', 'Nefis Şokolad Evi — Fərdi Şokolad Qutuları')</title>
 <meta name="description" content="@yield('meta_description', 'Öz şəklinizlə, öz sözünüzlə fərdi şokolad qutusu. Premium keyfiyyət, sevdiklərinizə unudulmaz hədiyyə.')">

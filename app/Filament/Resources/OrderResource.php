@@ -69,6 +69,12 @@ class OrderResource extends Resource
                         Forms\Components\TextInput::make('delivery_address')
                             ->label('Ünvan')
                             ->visible(fn (?Order $record) => ! in_array($record?->delivery_type, [DeliveryMethod::POST, DeliveryMethod::METRO], true)),
+                        Forms\Components\Placeholder::make('delivery_point')
+                            ->label('Xəritədə')
+                            ->content(fn (?Order $record) => new \Illuminate\Support\HtmlString(
+                                '<a href="' . e($record->mapUrl()) . '" target="_blank" rel="noopener" style="color:#d97706;font-weight:600;text-decoration:underline">Xəritədə aç ↗</a>'
+                                . '<span style="opacity:.6;margin-left:.6rem">' . e(number_format($record->delivery_lat, 5) . ', ' . number_format($record->delivery_lng, 5)) . '</span>'))
+                            ->visible(fn (?Order $record) => (bool) $record?->mapUrl()),
                         Forms\Components\Placeholder::make('totals')
                             ->label('Məbləğ')
                             ->content(fn (?Order $record) => $record
