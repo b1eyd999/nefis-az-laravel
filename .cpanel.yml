@@ -19,3 +19,6 @@ deployment:
     # The artwork is served from Yandex Disk; resolve those links before the
     # first visitor arrives rather than making them wait for the lookups.
     - cd $APPPATH && $PHPBIN artisan media:warm 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
+    # Chocolate bars and their prices (promotions included) from Araz Market.
+    # A failure only reports; the bars keep their last prices.
+    - cd $APPPATH && $PHPBIN artisan chocolates:sync 2>&1 | tee -a $APPPATH/storage/logs/deploy.log

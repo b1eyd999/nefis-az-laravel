@@ -44,10 +44,14 @@
               <p>
                 @if($texts) "{{ implode('" · "', $texts) }}" &middot; @endif
                 {{ $item['quantity'] }} ədəd
-                @if($item['product']->price)
-                  &middot; {{ number_format($item['product']->price * $item['quantity']) }} ₼
+                @php $unit = \App\Support\Cart::unitPrice($item, $item['product']); @endphp
+                @if($unit > 0)
+                  &middot; {{ \App\Support\Price::format($unit * $item['quantity']) }}
                 @endif
               </p>
+              @if(! empty($item['chocolate']))
+                <p style="margin-top:.2rem;">🍫 {{ $item['chocolate']['name'] }} &middot; {{ \App\Support\Price::format($item['chocolate']['price']) }}</p>
+              @endif
             </div>
             <form method="POST" action="{{ route('cart.remove', $item['id']) }}">
               @csrf
@@ -62,8 +66,8 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
           <span style="font-weight:700; font-size:1.125rem;">Cəmi</span>
           <span style="font-weight:700; font-size:1.125rem; color:var(--gold-deep);">
-            @php $total = $items->sum(fn($i) => ($i['product']->price ?? 0) * $i['quantity']); @endphp
-            {{ $total > 0 ? number_format($total) . ' ₼' : 'Qiymət sorğu ilə' }}
+            @php $total = $items->sum(fn($i) => \App\Support\Cart::unitPrice($i, $i['product']) * $i['quantity']); @endphp
+            {{ $total > 0 ? \App\Support\Price::format($total) : 'Qiymət sorğu ilə' }}
           </span>
         </div>
         <a href="{{ route('checkout.index') }}" class="btn btn-primary btn-block">Sifarişi Tamamla</a>

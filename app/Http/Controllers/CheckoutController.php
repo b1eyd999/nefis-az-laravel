@@ -66,6 +66,9 @@ class CheckoutController extends Controller
                 'text_labels' => $item['text_labels'] ?? OrderItem::textLabelsFor($product),
                 'quantity' => $item['quantity'],
                 'price' => $product?->price,
+                'chocolate_id' => $item['chocolate']['id'] ?? null,
+                'chocolate_name' => $item['chocolate']['name'] ?? null,
+                'chocolate_price' => $item['chocolate']['price'] ?? null,
             ]);
         }
 

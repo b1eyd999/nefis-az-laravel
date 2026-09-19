@@ -20,6 +20,9 @@ class OrderItem extends Model
         'text_labels',
         'quantity',
         'price',
+        'chocolate_id',
+        'chocolate_name',
+        'chocolate_price',
     ];
 
     protected function casts(): array
@@ -29,7 +32,14 @@ class OrderItem extends Model
             'custom_texts' => 'array',
             'photo_labels' => 'array',
             'text_labels' => 'array',
+            'chocolate_price' => 'float',
         ];
+    }
+
+    /** One box with its bar, as ordered. */
+    public function unitPrice(): float
+    {
+        return (float) ($this->price ?? 0) + (float) ($this->chocolate_price ?? 0);
     }
 
     /** The photo fields' names, as the customer page shows them ("1. Şəkil"). */

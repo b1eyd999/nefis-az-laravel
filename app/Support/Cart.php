@@ -11,7 +11,8 @@ class Cart
 
     /**
      * Each item: ['id' => string, 'product_id' => int, 'photo_paths' => string[], 'custom_texts' => string[], 'quantity' => int,
-     *             'photo_labels' => string[], 'text_labels' => array{label: string, fixed: bool, repeat: bool}[]]
+     *             'photo_labels' => string[], 'text_labels' => array{label: string, fixed: bool, repeat: bool}[],
+     *             'chocolate' => ?array{id: int, name: string, price: float}]
      */
     public static function items(): array
     {
@@ -23,7 +24,8 @@ class Cart
         return array_sum(array_column(self::items(), 'quantity'));
     }
 
-    public static function add(int $productId, array $photoPaths, array $customTexts, int $quantity = 1, array $photoLabels = [], array $textLabels = []): void
+    public static function add(int $productId, array $photoPaths, array $customTexts, int $quantity = 1,
+        array $photoLabels = [], array $textLabels = [], ?array $chocolate = null): void
     {
         $items = self::items();
         $items[] = [
@@ -34,8 +36,15 @@ class Cart
             'quantity' => max(1, $quantity),
             'photo_labels' => array_values($photoLabels),
             'text_labels' => array_values($textLabels),
+            'chocolate' => $chocolate,
         ];
         Session::put(self::KEY, $items);
+    }
+
+    /** One of a line: the box and the bar inside it. */
+    public static function unitPrice(array $item, ?\App\Models\Product $product): float
+    {
+        return (float) ($product?->price ?? 0) + (float) ($item['chocolate']['price'] ?? 0);
     }
 
     public static function remove(string $id): void

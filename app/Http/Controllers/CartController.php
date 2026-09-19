@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Chocolate;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\TextSlot;
 use App\Support\Cart;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class CartController extends Controller
@@ -35,6 +37,11 @@ class CartController extends Controller
             'quantity' => ['nullable', 'integer', 'min:1', 'max:20'],
         ];
 
+        // A bar has to be picked whenever there are bars to pick from.
+        if (Chocolate::where('is_active', true)->exists()) {
+            $rules['chocolate_id'] = ['required', Rule::exists('chocolates', 'id')->where('is_active', true)];
+        }
+
         foreach ($product->photoSlots as $index => $slot) {
             $rules["photos.$index"] = ['required', 'image', 'max:8192'];
         }
@@ -50,7 +57,16 @@ class CartController extends Controller
 
         $request->validate($rules, [
             'custom_texts.*.regex' => ':attribute dəq:san şəklində olmalıdır, məs. 03:45.',
+            'chocolate_id.required' => 'Qutunun içinə şokolad seçin.',
+            'chocolate_id.exists' => 'Seçdiyiniz şokolad artıq yoxdur, başqasını seçin.',
         ], $this->slotAttributeNames($product));
+
+        // The bar as it is now: its name and price stay with the order.
+        $chocolate = null;
+        if ($request->filled('chocolate_id') && isset($rules['chocolate_id'])) {
+            $bar = Chocolate::findOrFail($request->input('chocolate_id'));
+            $chocolate = ['id' => $bar->id, 'name' => trim($bar->name . ' ' . ($bar->weightLabel() ? '(' . $bar->weightLabel() . ')' : '')), 'price' => $bar->price()];
+        }
 
         $paths = [];
         foreach ($product->photoSlots as $index => $slot) {
@@ -65,7 +81,7 @@ class CartController extends Controller
         }
 
         Cart::add($product->id, $paths, $texts, (int) $request->input('quantity', 1),
-            OrderItem::photoLabelsFor($product), OrderItem::textLabelsFor($product));
+            OrderItem::photoLabelsFor($product), OrderItem::textLabelsFor($product), $chocolate);
 
         return redirect()->route('cart.index')->with('status', 'Məhsul səbətə əlavə olundu.');
     }

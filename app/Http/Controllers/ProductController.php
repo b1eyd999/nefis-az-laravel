@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Chocolate;
 use App\Models\DesignLayer;
 use App\Models\Product;
 use App\Models\ProductAngle;
@@ -35,7 +36,10 @@ class ProductController extends Controller
                 ->values()
                 ->all();
 
-        return view('products.customize', compact('product', 'viewData'));
+        // The bar that goes inside: chosen here, priced with the owner's markup.
+        $chocolates = Chocolate::shown()->get()->map->toCustomer()->values();
+
+        return view('products.customize', compact('product', 'viewData', 'chocolates'));
     }
 
     /**

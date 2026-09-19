@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\OrderResource\RelationManagers;
 
 use App\Support\Media;
+use App\Support\Price;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -32,11 +33,20 @@ class ItemsRelationManager extends RelationManager
                 Tables\Columns\ViewColumn::make('fields')
                     ->label('Müştərinin göndərdiyi')
                     ->view('filament.order-item-fields'),
+                Tables\Columns\TextColumn::make('chocolate_name')
+                    ->label('Şokolad')
+                    ->description(fn ($record) => $record->chocolate_price ? Price::format($record->chocolate_price) : null)
+                    ->placeholder('—')
+                    ->wrap(),
                 Tables\Columns\TextColumn::make('quantity')
                     ->label('Say'),
                 Tables\Columns\TextColumn::make('price')
                     ->label('Qiymət')
-                    ->formatStateUsing(fn ($state) => $state ? number_format($state) . ' ₼' : '—'),
+                    // The box and the bar each, then the line's total.
+                    ->getStateUsing(fn ($record) => $record->unitPrice() > 0 ? Price::format($record->unitPrice() * $record->quantity) : '—')
+                    ->description(fn ($record) => $record->chocolate_price
+                        ? 'qutu ' . ($record->price ? Price::format($record->price) : '—') . ' + şokolad ' . Price::format($record->chocolate_price) . ($record->quantity > 1 ? ' × ' . $record->quantity : '')
+                        : null),
             ])
             ->actions([
                 Tables\Actions\DeleteAction::make(),

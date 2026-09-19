@@ -41,14 +41,22 @@
               </span>
             </div>
             @foreach($order->items as $item)
+              @php
+                $photo = ($item->customer_photos ?? [])[0] ?? $item->customer_photo ?? $item->product?->catalogImage();
+                $texts = collect($item->fields()['texts'])->reject(fn ($t) => $t['fixed'] || $t['value'] === '')->pluck('value')->all();
+              @endphp
               <div class="cart-row" style="background:var(--cream); margin-bottom:.5rem;">
-                <div class="thumb"><img src="{{ \App\Support\Media::url($item->customer_photo) }}" alt="Yüklənmiş şəkil"></div>
+                <div class="thumb">@if($photo)<img src="{{ \App\Support\Media::url($photo) }}" alt="Yüklənmiş şəkil">@endif</div>
                 <div class="info">
                   <h3>{{ $item->product->name ?? $item->product_name ?? 'Silinmiş məhsul' }}</h3>
                   <p>
-                    @if($item->custom_text) "{{ $item->custom_text }}" &middot; @endif
+                    @if($texts) "{{ implode('" · "', $texts) }}" &middot; @endif
                     {{ $item->quantity }} ədəd
+                    @if($item->unitPrice() > 0) &middot; {{ \App\Support\Price::format($item->unitPrice() * $item->quantity) }} @endif
                   </p>
+                  @if($item->chocolate_name)
+                    <p style="margin-top:.2rem;">🍫 {{ $item->chocolate_name }}</p>
+                  @endif
                 </div>
               </div>
             @endforeach

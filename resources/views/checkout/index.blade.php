@@ -42,7 +42,12 @@
             <p>
               @if($texts) "{{ implode('" · "', $texts) }}" &middot; @endif
               {{ $item['quantity'] }} ədəd
+              @php $unit = \App\Support\Cart::unitPrice($item, $item['product']); @endphp
+              @if($unit > 0) &middot; {{ \App\Support\Price::format($unit * $item['quantity']) }} @endif
             </p>
+            @if(! empty($item['chocolate']))
+              <p style="margin-top:.2rem;">🍫 {{ $item['chocolate']['name'] }}</p>
+            @endif
           </div>
         </div>
       @endforeach

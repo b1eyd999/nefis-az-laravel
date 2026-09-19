@@ -20,6 +20,23 @@
   .rotate-reset:hover{ border-color:var(--gold); }
   .slot-hint{ font-size:.8125rem; color:var(--cocoa-soft); margin-top:.5rem; }
   .angle-thumb canvas{ width:100%; height:100%; object-fit:cover; display:block; }
+  .choc-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(8.5rem, 1fr)); gap:.625rem; margin-top:.5rem; }
+  .choc-card{ position:relative; display:flex; flex-direction:column; gap:.3rem; padding:.6rem; border:1.5px solid var(--line); border-radius:.9rem;
+    background:var(--paper); cursor:pointer; transition:border-color .15s, box-shadow .15s; margin:0; font-weight:400; }
+  .choc-card:hover{ border-color:var(--gold); }
+  .choc-card input{ position:absolute; opacity:0; pointer-events:none; }
+  .choc-card:has(input:checked){ border-color:var(--gold); box-shadow:0 0 0 3px var(--ring); }
+  .choc-card:has(input:checked)::after{ content:'✓'; position:absolute; top:.4rem; right:.5rem; width:1.4rem; height:1.4rem; border-radius:50%;
+    background:var(--gold); color:#fff; font-size:.8rem; display:grid; place-items:center; }
+  .choc-card:has(input:focus-visible){ outline:2px solid var(--gold); outline-offset:2px; }
+  .choc-pic{ aspect-ratio:1/1; display:grid; place-items:center; border-radius:.6rem; background:#fff; overflow:hidden; font-size:2rem; }
+  .choc-pic img{ width:100%; height:100%; object-fit:contain; }
+  .choc-name{ font-size:.8125rem; line-height:1.3; color:var(--cocoa); }
+  .choc-meta{ display:flex; justify-content:space-between; align-items:baseline; gap:.3rem; font-size:.75rem; color:var(--cocoa-soft); margin-top:auto; }
+  .choc-meta b{ color:var(--gold-deep); font-size:.875rem; }
+  .price-sum{ border:1px solid var(--line); border-radius:.9rem; padding:.75rem 1rem; display:flex; flex-direction:column; gap:.35rem; font-size:.9375rem; }
+  .price-sum div{ display:flex; justify-content:space-between; gap:1rem; color:var(--cocoa-soft); }
+  .price-sum .total{ color:var(--cocoa); font-weight:700; font-size:1.0625rem; border-top:1px solid var(--line); padding-top:.45rem; margin-top:.1rem; }
 @endsection
 
 @section('content')
@@ -146,10 +163,40 @@
           @endif
         @endforeach
 
+        @if($chocolates->isNotEmpty())
+          {{-- The bar that goes inside the box. --}}
+          <div class="choc-block">
+            <label>Qutunun içindəki şokolad</label>
+            <div class="choc-grid" role="radiogroup" aria-label="Şokolad seçin">
+              @foreach($chocolates as $choc)
+                <label class="choc-card">
+                  <input type="radio" name="chocolate_id" value="{{ $choc['id'] }}" data-price="{{ $choc['price'] }}" required
+                         @checked((string) old('chocolate_id') === (string) $choc['id'])>
+                  <span class="choc-pic">
+                    @if($choc['image'])<img src="{{ $choc['image'] }}" alt="" loading="lazy">@else🍫@endif
+                  </span>
+                  <span class="choc-name">{{ $choc['name'] }}</span>
+                  <span class="choc-meta">{{ $choc['weight'] }}<b>+{{ \App\Support\Price::format($choc['price']) }}</b></span>
+                </label>
+              @endforeach
+            </div>
+          </div>
+        @endif
+
         <div>
           <label for="quantity">Say</label>
           <input type="number" id="quantity" name="quantity" value="1" min="1" max="20" style="max-width:7rem;">
         </div>
+
+        @if($product->price || $chocolates->isNotEmpty())
+          <div class="price-sum" id="price-sum" data-box="{{ (float) $product->price }}">
+            <div><span>Qutu</span><span>{{ $product->price ? \App\Support\Price::format($product->price) : 'sorğu ilə' }}</span></div>
+            @if($chocolates->isNotEmpty())
+              <div><span>Şokolad</span><span id="sum-choc">seçilməyib</span></div>
+            @endif
+            <div class="total"><span>Cəmi</span><span id="sum-total">—</span></div>
+          </div>
+        @endif
 
         <button type="submit" class="btn btn-primary btn-block" id="add-to-cart-btn"
                 @if($photoSlots->isNotEmpty()) disabled @endif>Səbətə Əlavə Et</button>
@@ -664,6 +711,28 @@
     if (t && dragSlot >= 0) { moveDrag(t.clientX, t.clientY); e.preventDefault(); }
   }, { passive: false });
   canvas.addEventListener('touchend', function(){ dragSlot = -1; });
+})();
+
+/* The running price: the box, the chosen bar, times how many. */
+(function(){
+  var sum = document.getElementById('price-sum');
+  if (!sum) return;
+  var qty = document.getElementById('quantity');
+  var chocOut = document.getElementById('sum-choc');
+  var totalOut = document.getElementById('sum-total');
+  var box = parseFloat(sum.dataset.box) || 0;
+  function fmt(v){ v = Math.round(v * 100) / 100; return (v % 1 === 0 ? v.toFixed(0) : v.toFixed(2)) + ' ₼'; }
+  function update(){
+    var picked = document.querySelector('input[name="chocolate_id"]:checked');
+    var choc = picked ? parseFloat(picked.dataset.price) || 0 : 0;
+    var n = Math.max(1, parseInt(qty.value, 10) || 1);
+    if (chocOut) chocOut.textContent = picked ? fmt(choc) : 'seçilməyib';
+    var each = box + choc;
+    totalOut.textContent = each > 0 ? fmt(each * n) + (n > 1 ? ' (' + n + ' × ' + fmt(each) + ')' : '') : '—';
+  }
+  document.querySelectorAll('input[name="chocolate_id"]').forEach(function(r){ r.addEventListener('change', update); });
+  qty.addEventListener('input', update);
+  update();
 })();
 </script>
 @endsection
