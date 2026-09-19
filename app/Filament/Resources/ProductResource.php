@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProductResource\Pages;
 use App\Models\Product;
+use App\Models\Scene;
 use App\Support\Media;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -11,6 +12,8 @@ use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
 class ProductResource extends Resource
@@ -61,7 +64,9 @@ class ProductResource extends Resource
                             ->default(0),
                         Forms\Components\ColorPicker::make('box_color')
                             ->label('Qutunun rəngi (mokaplarda)')
-                            ->helperText('Səhnələrdə "məhsulun rəngini götür" işarəli ağ qutu renderi bu rəngə boyanır. Boş — ağ qalır.')
+                            ->helperText(fn (?Product $record) => 'Boş buraxsanız, dizaynın kənar rəngi avtomatik götürülür'
+                                . ($record?->box_color_auto ? ' (hazırda ' . $record->box_color_auto . ')' : '')
+                                . '. Qutu redaktorunda pipetlə dizaynın istənilən yerindən də seçə bilərsiniz.')
                             ->regex('/^#[0-9a-fA-F]{6}$/'),
                         Forms\Components\Toggle::make('is_active')
                             ->label('Saytda görünsün')
@@ -70,12 +75,24 @@ class ProductResource extends Resource
                 Forms\Components\Section::make('Səhnələr')
                     ->description('Müştəri bu qutunu hansı mokaplarda görsün. Heç biri seçilməsə, bütün aktiv səhnələrdə göstərilir.')
                     ->schema([
+                        Forms\Components\Select::make('cover_scene_id')
+                            ->label('Kataloq qapağı')
+                            ->helperText('Kataloqda bu dizayn seçdiyiniz səhnənin içində göstərilir. Saxlayanda qapaq özü hazırlanır.')
+                            ->options(fn () => Scene::orderBy('sort_order')->orderBy('id')->pluck('name', 'id'))
+                            ->placeholder('Yoxdur — kataloqda vizual göstərilir'),
+                        Forms\Components\Placeholder::make('cover_preview')
+                            ->label('Hazırkı qapaq')
+                            ->content(fn (?Product $record) => $record?->cover_image
+                                ? new HtmlString('<img src="' . e(Media::url($record->cover_image)) . '" alt="" style="max-height:220px;border-radius:.6rem">')
+                                : 'Hələ yoxdur'),
                         Forms\Components\CheckboxList::make('scenes')
-                            ->label('')
+                            ->label('Müştəri hansı səhnələrdə görsün')
                             ->relationship('scenes', 'name', fn ($query) => $query->orderBy('scenes.sort_order'))
                             ->columns(3)
-                            ->bulkToggleable(),
+                            ->bulkToggleable()
+                            ->columnSpanFull(),
                     ])
+                    ->columns(2)
                     ->collapsible(),
             ]);
     }
@@ -131,6 +148,23 @@ class ProductResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('cover')
+                        ->label('Kataloq qapağı seç')
+                        ->icon('heroicon-o-photo')
+                        ->form([
+                            Forms\Components\Select::make('scene')
+                                ->label('Səhnə')
+                                ->options(fn () => Scene::orderBy('sort_order')->orderBy('id')->pluck('name', 'id'))
+                                ->placeholder('Yoxdur — vizual göstərilsin'),
+                        ])
+                        ->action(function (Collection $records, array $data, $livewire) {
+                            $records->each(fn (Product $p) => $p->forceFill(['cover_scene_id' => $data['scene'] ?: null])->save());
+                            $livewire->redirect(route('cover.page', [
+                                'ids' => $records->pluck('id')->implode(','),
+                                'back' => static::getUrl('index', isAbsolute: false),
+                            ]));
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);

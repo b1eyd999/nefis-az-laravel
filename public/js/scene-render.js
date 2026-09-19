@@ -27,6 +27,10 @@
     return img instanceof HTMLCanvasElement ? { w: img.width, h: img.height } : { w: img.naturalWidth, h: img.naturalHeight };
   }
   function dist(a, b) { return Math.hypot(a[0] - b[0], a[1] - b[1]); }
+  function luminance(hex) {
+    var n = parseInt(String(hex).slice(1, 7), 16);
+    return (0.299 * (n >> 16 & 255) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) / 255;
+  }
 
   /* ---------- projective maths ---------- */
 
@@ -502,6 +506,8 @@
         var own = {}, k;
         for (k in el) own[k] = el[k];
         own.tint = opts.boxColor;
+        /* A dark box with no highlights reads as a flat cut-out. */
+        if (!own.sheen && luminance(opts.boxColor) < 0.3) own.sheen = 12;
         drawImageEl(c, getImage(el.url), own, false, cache);
       } else if (el.type === 'image') drawImageEl(c, getImage(el.url), el, false, cache);
       else if (el.type === 'design') drawDesignEl(c, scene, el, design, getImage, cache, opts);

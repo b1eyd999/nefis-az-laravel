@@ -196,6 +196,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="{{ asset('js/scene-render.js') }}"></script>
+<script src="{{ asset('js/cover.js') }}"></script>
 <script>
 (function(){
   'use strict';
@@ -745,7 +746,7 @@
     else { var k = Math.min(1, W() / w, H() / h); w *= k; h *= k; x = (W() - w) / 2; y = (H() - h) / 2; }
     doc.elements.push({ id: uid(), type: 'image', name: asset.name || 'Şəkil', image: asset.image, url: asset.url,
       x: r2(x), y: r2(y), width: r2(w), height: r2(h), rotation: 0, opacity: 100, blend: 'source-over',
-      flip_x: false, flip_y: false, tint: null, sheen: 0, recolor: false, tint_all: false, locked: false, hidden: false });
+      flip_x: false, flip_y: false, tint: null, sheen: 0, recolor: true, tint_all: false, locked: false, hidden: false });
     getImage(asset.url);
     select(doc.elements.length - 1);
     commit();
@@ -940,9 +941,9 @@
            }).join('') + '</div>';
       h += '<div class="row">' + field('Rəng', '<input type="color" data-k="tint" value="' + esc(el.tint || '#ffffff') + '">')
          + field('Parıltı ' + (el.sheen || 0) + '%', range('sheen', el.sheen || 0, 0, 100)) + '</div>';
-      h += '<label class="check" title="Hər dizayn üçün məhsulda seçilmiş qutu rəngi — seçilməyibsə yuxarıdakı rəng"><input type="checkbox" data-k="recolor"' + (el.recolor ? ' checked' : '') + '> Məhsulun qutu rəngini götür</label>';
-      if (el.recolor) h += '<p class="hint" style="margin:.2rem 0 0 1.5rem">Hər dizaynın öz qutu rəngi (Qutu redaktoru → boş yerə klik) istifadə olunur; rəngi olmayan dizaynlarda — yuxarıdakı rəng.'
-         + (sampleColor ? ' İndi nümunənin rəngi göstərilir: ' + esc(sampleColor) + '.' : '') + '</p>';
+      h += '<label class="check" title="Qutu hər dizaynda o dizaynın rənginə boyanır"><input type="checkbox" data-k="recolor"' + (el.recolor ? ' checked' : '') + '> Dizaynın rəngini götür</label>';
+      if (el.recolor) h += '<p class="hint" style="margin:.2rem 0 0 1.5rem">Qutu hər dizaynın öz rəngini alır: Qutu redaktorunda seçilmiş və ya dizaynın kənarından avtomatik götürülmüş. Yuxarıdakı rəng yalnız rəngi bilinməyən dizaynlar üçündür.'
+         + (sampleColor ? ' İndi nümunənin rəngi göstərilir: <b>' + esc(sampleColor) + '</b>.' : '') + '</p>';
       h += '<label class="check" style="margin-top:.35rem" title="Adətən yalnız ağ kağız boyanır; şokolad və s. öz rəngində qalır"><input type="checkbox" data-k="tint_all"' + (el.tint_all ? ' checked' : '') + '> Bütün şəkli boya (şokolad da)</label>';
       h += '<div class="actions"><button class="btn small" data-act="flip-x"' + (el.flip_x ? ' style="border-color:#7c3aed"' : '') + '>⇋ Güzgü</button>'
          + '<button class="btn small" data-act="flip-y"' + (el.flip_y ? ' style="border-color:#7c3aed"' : '') + '>⇅ Güzgü</button></div>';
@@ -1044,7 +1045,7 @@
     for (var i = doc.elements.length - 1; i >= 0; i--) {
       var el = doc.elements[i];
       var thumb = el.type === 'design' ? '<span style="color:#7c3aed;font-weight:700">▦</span>' : '<img src="' + esc(el.url) + '" alt="">';
-      var kind = el.type === 'design' ? 'dizayn yeri' + (el.shade_from && el.shade ? ' · işıq ' + el.shade + '%' : '') : 'şəkil' + (el.recolor ? ' · məhsulun rəngi' : el.tint ? ' · rəng ' + el.tint : '') + (el.blend && el.blend !== 'source-over' ? ' · ' + el.blend : '');
+      var kind = el.type === 'design' ? 'dizayn yeri' + (el.shade_from && el.shade ? ' · işıq ' + el.shade + '%' : '') : 'şəkil' + (el.recolor ? ' · dizaynın rəngi' : el.tint ? ' · rəng ' + el.tint : '') + (el.blend && el.blend !== 'source-over' ? ' · ' + el.blend : '');
       h += '<li draggable="true" data-index="' + i + '" class="' + (i === selIndex ? 'on' : '') + (el.hidden ? ' hidden-el' : '') + '">'
          + '<span class="thumb">' + thumb + '</span>'
          + '<span class="name">' + esc(el.name || (el.type === 'design' ? 'Dizayn' : 'Şəkil')) + '<br><span class="kind">' + esc(kind) + '</span></span>'
@@ -1289,6 +1290,12 @@
       saveState.textContent = 'Saxlanıldı ' + res.saved_at;
       saveState.className = 'save-state ok';
       toast('Saxlanıldı — saytda yenilənib');
+      /* Products whose catalogue cover is drawn in this scene get a new one. */
+      var covers = res.covers || [];
+      if (covers.length && window.NefisCover) {
+        NefisCover.runAll(covers, CSRF, function(i){ toast('Kataloq qapaqları yenilənir… ' + (i + 1) + '/' + covers.length); })
+          .then(function(failed){ toast(failed ? failed + ' qapaq yenilənmədi' : 'Kataloq qapaqları yeniləndi (' + covers.length + ')', !!failed); });
+      }
     }).catch(function(err){ toast('Saxlanılmadı: ' + err.message, true); updateDirty(); })
       .then(function(){ btn.disabled = false; });
   }

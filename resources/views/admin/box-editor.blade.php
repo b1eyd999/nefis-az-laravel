@@ -39,6 +39,14 @@
   .btn.primary:hover{ background:#6d28d9; }
   .btn.danger{ color:var(--danger); }
   .btn.small{ padding:.3rem .55rem; font-size:12.5px; }
+  .box-color .lbl{ font-size:12px; color:var(--ink-2); white-space:nowrap; }
+  .box-color input[type=color]{ width:34px; height:28px; border:1px solid var(--line); border-radius:.4rem; padding:1px; background:#fff; cursor:pointer; }
+  .box-color .icon-btn.on{ background:var(--accent); color:#fff; }
+  .box-color .btn.on{ background:#f3eefe; border-color:#ddd0fb; color:var(--accent); }
+  .stage.picking, .stage.picking *{ cursor:crosshair !important; }
+  .pick-chip{ position:fixed; z-index:55; pointer-events:none; display:flex; align-items:center; gap:.4rem; background:var(--ink); color:#fff; font-size:11.5px;
+    padding:.25rem .5rem .25rem .25rem; border-radius:.45rem; font-variant-numeric:tabular-nums; }
+  .pick-chip i{ width:22px; height:22px; border-radius:.3rem; border:1px solid rgba(255,255,255,.6); display:block; }
   .save-state{ font-size:12px; color:var(--muted); min-width:6.5rem; text-align:right; }
   .save-state.dirty{ color:#b45309; }
   .save-state.ok{ color:var(--ok); }
@@ -145,6 +153,14 @@
     <button class="icon-btn" id="zoom-in" title="Böyüt">+</button>
     <button class="btn small" id="zoom-fit" title="Ekrana sığdır (Ctrl+0)">Sığdır</button>
   </div>
+  <div class="tb-group box-color" title="Mokaplarda qutunun rəngi. Avto — dizaynın kənar rəngi özü götürülür.">
+    <span class="lbl">Qutu rəngi</span>
+    <input type="color" id="box-color">
+    <button class="icon-btn" id="box-pipette" title="Pipet: dizaynın istənilən yerinə klikləyin — o rəng qutunun rəngi olur">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/></svg>
+    </button>
+    <button class="btn small" id="box-auto" title="Rəngi dizaynın kənarından avtomatik götür">Avto</button>
+  </div>
   <div class="tb-group">
     <label class="check" title="Vizualı bələdçi kimi üstə göstər (V)"><input type="checkbox" id="guide-on"> Vizual</label>
     <input type="range" id="guide-op" min="10" max="100" value="45" style="width:80px" title="Vizualın şəffaflığı">
@@ -193,6 +209,8 @@
 <div class="toast" id="toast"></div>
 
 <script src="{{ asset('js/box-render.js') }}"></script>
+<script src="{{ asset('js/scene-render.js') }}"></script>
+<script src="{{ asset('js/cover.js') }}"></script>
 <script>
 (function(){
   'use strict';
@@ -218,6 +236,7 @@
     box_color: @json($design['box_color'])
   };
   var visualUrl = @json($design['visual']);
+  var autoBoxColor = @json($design['box_color_auto']);
 
   /* Editor-only state, never saved. */
   var images = {};        // url -> {img, alpha, aw, ah}
@@ -854,7 +873,7 @@
     renderList();
   }
 
-  function refresh(){ render(); renderProps(); renderList(); updateDirty(); }
+  function refresh(){ render(); renderProps(); renderList(); updateDirty(); updateBoxColorUI(); }
 
   function addLayer(entry){
     var w = entry.width, h = entry.height;
@@ -977,9 +996,9 @@
       else h += '<p class="hint">Hazır görünüşü yükləyin — kataloqda göstəriləcək və burada qatları düzmək üçün üstə qoyula bilər.</p>';
       h += '<div class="actions"><button class="btn small" data-act="visual">' + (visualUrl ? 'Vizualı dəyiş' : 'Vizual yüklə') + '</button>'
          + (visualUrl ? '<button class="btn small" data-act="guide">' + (guideOn.checked ? 'Bələdçini gizlət' : 'Bələdçini göstər') + '</button>' : '') + '</div>';
-      h += '<h4>Qutunun rəngi (mokaplarda)</h4><p class="hint" style="margin-top:0">Səhnələrdə "məhsulun rəngini götür" işarəli ağ qutu renderi bu rəngə boyanır. Rəngsiz — ağ qalır.</p>'
-         + '<div class="row"><div class="field"><label>Rəng</label><input type="color" data-box-color value="' + esc(doc.box_color || '#ffffff') + '"></div>'
-         + '<div class="field"><label>&nbsp;</label><button class="btn small" data-act="box-color-clear"' + (doc.box_color ? '' : ' disabled') + '>' + (doc.box_color ? 'Rəngsiz et' : 'Rəngsiz') + '</button></div></div>';
+      h += '<h4>Qutunun rəngi (mokaplarda)</h4><p class="hint" style="margin-top:0">Yuxarıdakı <b>Qutu rəngi</b>: '
+         + (doc.box_color ? 'əl ilə seçilib — <b>' + esc(doc.box_color) + '</b>.' : 'avtomatik — dizaynın kənar rəngi' + (autoBoxColor ? ' (<b>' + esc(autoBoxColor) + '</b>)' : '') + '.')
+         + ' Pipetlə dizaynın istənilən yerindən rəng götürə bilərsiniz. Səhnələrdə qutu bu rəngə boyanır.</p>';
       h += '<h4>Sınaq şəkli</h4><p class="hint">Foto sahələrində necə görünəcəyini yoxlamaq üçün. Yalnız burada görünür, saxlanılmır.</p>'
          + '<div class="actions"><button class="btn small" data-act="test">' + (testPhoto ? 'Başqa şəkil' : 'Şəkil seç') + '</button>'
          + (testPhoto ? '<button class="btn small" data-act="test-clear">Təmizlə</button>' : '') + '</div>';
@@ -1056,7 +1075,6 @@
 
   props.addEventListener('input', function(e){
     var el = e.target, k = el.dataset.k;
-    if (el.dataset.boxColor !== undefined) { doc.box_color = el.value; commitSoon(); return; }
     if (!k) return;
     var it = itemOf(selection);
     if (!it) return;
@@ -1118,7 +1136,6 @@
     if (act === 'test') return document.getElementById('file-test').click();
     if (act === 'test-clear') { testPhoto = null; render(); renderProps(); return; }
     if (act === 'font') return document.getElementById('file-font').click();
-    if (act === 'box-color-clear') { doc.box_color = null; commit(); renderProps(); return; }
     if (act === 'del') return removeSelected();
     if (act === 'dup') return duplicateSelected();
     if (['front', 'back', 'up', 'down'].indexOf(act) >= 0) return moveLayer(selection.index, act);
@@ -1292,8 +1309,11 @@
       visualUrl = res.url;
       visualImg = new Image(); visualImg.onload = render; visualImg.src = visualUrl;
       guideOn.checked = true;
+      autoBoxColor = res.box_color_auto || autoBoxColor;
+      updateBoxColorUI();
       toast(res.warning || 'Vizual yükləndi — kataloqda da bu şəkil görünəcək', !!res.warning);
       renderProps();
+      redrawCover(res.cover);
     }).catch(function(err){ toast(err.message, true); });
   };
 
@@ -1339,6 +1359,93 @@
   });
 
   /* ================================================================
+     Box colour (the colour the box is dyed in the scenes)
+     ================================================================ */
+  var boxColorInput = document.getElementById('box-color');
+  var pipetteBtn = document.getElementById('box-pipette');
+  var autoBtn = document.getElementById('box-auto');
+
+  function updateBoxColorUI(){
+    boxColorInput.value = doc.box_color || autoBoxColor || '#ffffff';
+    autoBtn.classList.toggle('on', !doc.box_color);
+    autoBtn.title = doc.box_color
+      ? 'Əl ilə seçilmiş rəngi sil — dizaynın kənar rəngi avtomatik götürülsün'
+      : 'İndi avtomatikdir' + (autoBoxColor ? ': ' + autoBoxColor : '');
+  }
+  boxColorInput.addEventListener('input', function(){ doc.box_color = boxColorInput.value; autoBtn.classList.remove('on'); commitSoon(); });
+  boxColorInput.addEventListener('change', function(){ commit(); renderProps(); });
+  autoBtn.onclick = function(){ doc.box_color = null; commit(); refresh(); toast('Qutu rəngi avtomatikdir' + (autoBoxColor ? ': ' + autoBoxColor : '')); };
+
+  /* The pipette reads what the owner is looking at: the visual while it is
+     shown as the guide (at full strength, not blended over the layers),
+     otherwise the layers themselves. */
+  var picking = false, pickChip = null, sampler = null;
+  function samplerCanvas(){
+    var c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    var x = c.getContext('2d', { willReadFrequently: true });
+    if (guideOn.checked && visualImg && visualImg.complete && visualImg.naturalWidth) x.drawImage(visualImg, 0, 0, W, H);
+    else {
+      var wasOn = guideOn.checked;
+      guideOn.checked = false; render(); guideOn.checked = wasOn;
+      x.drawImage(canvas, 0, 0);
+      render();
+    }
+    return x;
+  }
+  function colorAt(p){
+    var x0 = clamp(Math.round(p.x) - 1, 0, W - 3), y0 = clamp(Math.round(p.y) - 1, 0, H - 3);
+    var d = sampler.getImageData(x0, y0, 3, 3).data, r = 0, g = 0, b = 0;
+    for (var i = 0; i < 36; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; }
+    function hx(v){ return ('0' + Math.round(v / 9).toString(16)).slice(-2); }
+    return '#' + hx(r) + hx(g) + hx(b);
+  }
+  function setPicking(on){
+    picking = on;
+    pipetteBtn.classList.toggle('on', on);
+    stage.classList.toggle('picking', on);
+    if (on) {
+      try { sampler = samplerCanvas(); } catch (e) { sampler = null; picking = false; pipetteBtn.classList.remove('on'); stage.classList.remove('picking'); toast('Rəngi oxumaq olmadı', true); return; }
+      toast('Dizaynın istənilən yerinə klikləyin (Esc — ləğv)');
+    } else if (pickChip) { pickChip.remove(); pickChip = null; }
+  }
+  pipetteBtn.onclick = function(){ setPicking(!picking); };
+  stage.addEventListener('pointermove', function(e){
+    if (!picking || !sampler) return;
+    e.stopImmediatePropagation();
+    var p = toCanvas(e.clientX, e.clientY);
+    if (p.x < 0 || p.y < 0 || p.x >= W || p.y >= H) return;
+    var c = colorAt(p);
+    if (!pickChip) { pickChip = document.createElement('div'); pickChip.className = 'pick-chip'; pickChip.innerHTML = '<i></i><span></span>'; document.body.appendChild(pickChip); }
+    pickChip.firstChild.style.background = c;
+    pickChip.lastChild.textContent = c;
+    pickChip.style.left = (e.clientX + 16) + 'px';
+    pickChip.style.top = (e.clientY + 16) + 'px';
+  }, true);
+  stage.addEventListener('pointerdown', function(e){
+    if (!picking) return;
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    var p = toCanvas(e.clientX, e.clientY);
+    if (p.x >= 0 && p.y >= 0 && p.x < W && p.y < H && sampler) {
+      doc.box_color = colorAt(p);
+      commit();
+      toast('Qutu rəngi: ' + doc.box_color + ' — saxladıqdan sonra səhnələrdə görünəcək');
+    }
+    setPicking(false);
+    refresh();
+  }, true);
+  document.addEventListener('keydown', function(e){ if (picking && e.key === 'Escape') { e.stopImmediatePropagation(); setPicking(false); } }, true);
+
+  /* The catalogue cover shows this box in a scene; redraw it when it changes. */
+  function redrawCover(job){
+    if (!job || !window.NefisCover) return;
+    NefisCover.runAll([job], CSRF).then(function(failed){
+      if (!failed) toast('Kataloq qapağı yeniləndi');
+    });
+  }
+
+  /* ================================================================
      Save
      ================================================================ */
   function save(){
@@ -1370,6 +1477,7 @@
         saveState.textContent = 'Saxlanıldı ' + res.saved_at;
         saveState.className = 'save-state ok';
         toast('Saxlanıldı — saytda yenilənib');
+        redrawCover(res.cover);
       })
       .catch(function(err){ toast('Saxlanılmadı: ' + err.message, true); updateDirty(); })
       .then(function(){ btn.disabled = false; });
@@ -1377,7 +1485,7 @@
   document.getElementById('save').onclick = save;
   document.getElementById('undo').onclick = undo;
   document.getElementById('redo').onclick = redo;
-  guideOn.onchange = function(){ render(); renderProps(); };
+  guideOn.onchange = function(){ render(); renderProps(); if (picking) sampler = samplerCanvas(); };
   guideOp.oninput = render;
   window.addEventListener('beforeunload', function(e){ if (snapshot() !== savedSnapshot) { e.preventDefault(); e.returnValue = ''; } });
 

@@ -47,6 +47,13 @@ class Scene extends Model
             if ($scene->preview_image) {
                 Storage::disk('public')->delete($scene->preview_image);
             }
+            // Covers drawn in this scene go with it; the visual shows instead.
+            Product::where('cover_scene_id', $scene->id)->get()->each(function (Product $product) {
+                if ($product->cover_image) {
+                    Storage::disk('public')->delete($product->cover_image);
+                }
+                $product->forceFill(['cover_scene_id' => null, 'cover_image' => null])->saveQuietly();
+            });
         });
     }
 

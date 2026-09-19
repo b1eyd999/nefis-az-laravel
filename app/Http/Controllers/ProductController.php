@@ -66,7 +66,7 @@ class ProductController extends Controller
             'th' => $h,
             'scene' => null,
             // Renders marked to follow it are dyed this colour in every scene.
-            'boxColor' => $product->box_color,
+            'boxColor' => $product->effectiveBoxColor(),
         ]);
 
         $scenes = $product->scenes()->where('is_active', true)->get();

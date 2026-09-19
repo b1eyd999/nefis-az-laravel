@@ -47,7 +47,7 @@ class SceneEditorController extends Controller
 
         // Finished visuals make the best stand-in for "a design" while placing.
         $samples = Product::whereNotNull('preview_image')->orderBy('sort_order')->orderBy('name')->get()
-            ->map(fn (Product $p) => ['name' => $p->name, 'url' => Media::url($p->preview_image), 'box_color' => $p->box_color])
+            ->map(fn (Product $p) => ['name' => $p->name, 'url' => Media::url($p->preview_image), 'box_color' => $p->effectiveBoxColor()])
             ->values();
 
         $liveBox = Product::where('is_active', true)->has('layers')->orderBy('sort_order')->first();
@@ -168,6 +168,9 @@ class SceneEditorController extends Controller
         return response()->json([
             'ok' => true,
             'saved_at' => now()->format('H:i:s'),
+            // Catalogue covers drawn in this scene, for the editor to redraw.
+            'covers' => Product::with('coverScene')->where('cover_scene_id', $scene->id)->get()
+                ->map->coverJob()->filter()->values(),
             'preview' => Media::url($scene->preview_image),
         ]);
     }

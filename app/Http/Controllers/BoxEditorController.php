@@ -36,6 +36,8 @@ class BoxEditorController extends Controller
             'canvas' => $canvas,
             'visual' => $product->preview_image ? Media::url($product->preview_image) : null,
             'box_color' => $product->box_color,
+            // What the box turns without a colour of its own: read off the visual.
+            'box_color_auto' => $product->box_color ? $product->box_color_auto : $product->effectiveBoxColor(),
             'layers' => $product->layers->map(fn (DesignLayer $l) => [
                 'name' => $l->name, 'image' => $l->image, 'url' => Media::url($l->image),
                 'x' => $l->x, 'y' => $l->y, 'width' => $l->width, 'height' => $l->height,
@@ -198,7 +200,13 @@ class BoxEditorController extends Controller
 
         $this->pruneUnusedAssets($product);
 
-        return response()->json(['ok' => true, 'saved_at' => now()->format('H:i:s')]);
+        return response()->json([
+            'ok' => true,
+            'saved_at' => now()->format('H:i:s'),
+            // The editor redraws the catalogue cover when the box colour may
+            // have changed it.
+            'cover' => $product->fresh()->coverJob(),
+        ]);
     }
 
     public function uploadAsset(Request $request, Product $product): JsonResponse
@@ -234,7 +242,15 @@ class BoxEditorController extends Controller
             ? "Vizualın ölçüsü {$width}×{$height}-dir, qutu isə {$canvas['width']}×{$canvas['height']}. Bələdçi uzanaraq göstəriləcək."
             : null;
 
-        return response()->json(['url' => Media::url($path), 'warning' => $warning]);
+        // A new visual may run out to a new colour, and the cover shows it.
+        $product->refreshAutoBoxColor();
+
+        return response()->json([
+            'url' => Media::url($path),
+            'warning' => $warning,
+            'box_color_auto' => $product->box_color_auto,
+            'cover' => $product->fresh()->coverJob(),
+        ]);
     }
 
     public function uploadFont(Request $request, Product $product): JsonResponse
@@ -291,7 +307,7 @@ class BoxEditorController extends Controller
     private function pruneUnusedAssets(Product $product): void
     {
         $disk = Storage::disk('public');
-        $keep = $product->layers()->pluck('image')->push($product->preview_image)->filter()->all();
+        $keep = $product->layers()->pluck('image')->push($product->preview_image, $product->cover_image)->filter()->all();
         $cutoff = now()->subDay()->getTimestamp();
 
         foreach ($disk->files($product->assetDirectory()) as $path) {

@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BoxEditorController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CoverController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\OrderController;
@@ -41,6 +42,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/visual', [BoxEditorController::class, 'uploadVisual'])->name('visual');
         Route::post('/font', [BoxEditorController::class, 'uploadFont'])->name('font');
     });
+
+    // Catalogue covers, drawn in the admin's browser and uploaded.
+    Route::get('/qapaq-yarat', [CoverController::class, 'page'])->name('cover.page');
+    Route::post('/qapaq/{product}', [CoverController::class, 'store'])->whereNumber('product')->name('cover.store');
 
     // The admin's scene editor: the mockups customers see their box in.
     Route::prefix('sehne-redaktoru')->name('scene.')->group(function () {
