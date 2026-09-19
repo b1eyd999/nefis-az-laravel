@@ -178,27 +178,51 @@ class ChocolateTest extends TestCase
         $this->assertSame('Mondelez', $bar->fresh()->brand, "the owner's brand stays");
     }
 
-    public function test_the_customer_sees_one_brand_at_a_time(): void
+    public function test_the_customer_sees_one_brand_at_a_time_top_brands_first(): void
     {
         $box = $this->box();
-        Chocolate::create(['name' => 'Kr/O Alenka Süd Şokoladı 90qr', 'base_price' => 3]);
-        $milka = Chocolate::create(['name' => 'Milka Bubbles 90 qr', 'base_price' => 4]);
+        $alenka = Chocolate::create(['name' => 'Kr/O Alenka Süd Şokoladı 90qr', 'base_price' => 3]);
+        Chocolate::create(['name' => 'Milka Bubbles 90 qr', 'base_price' => 4]);
         Chocolate::create(['name' => 'Milka Oreo 92 qr', 'base_price' => 4]);
+        Chocolate::create(['name' => 'Bianca Dark 100 q', 'base_price' => 4]);
         Chocolate::create(['name' => 'Şekersiz şokolad, tünd, 100 q', 'base_price' => 2]);
+        $chips = function (string $html) {
+            preg_match_all('/class="choc-brand([^"]*)"\s*data-brand="([^"]*)"/', $html, $m);
 
+            return array_map(fn ($class, $brand) => $brand . (str_contains($class, 'top') ? '*' : ''), $m[1], $m[2]);
+        };
+
+        // Milka is a top brand by default (Alpen Gold too, but there is none): first, orange and open.
         $html = $this->get(route('products.customize', $box->slug))->assertOk()->getContent();
-        preg_match_all('/class="choc-brand[^"]*" *\s*data-brand="([^"]*)"/', $html, $chips);
-        $this->assertSame(['Alenka', 'Milka', 'Digər'], $chips[1], 'A–Z, the unbranded last');
-        $this->assertMatchesRegularExpression('/class="choc-brand active"\s*data-brand="Alenka"/', $html);
-        $this->assertMatchesRegularExpression('/class="choc-group" data-brand="Alenka"\s*>/', $html);
-        $this->assertMatchesRegularExpression('/class="choc-group" data-brand="Milka"\s*hidden/', $html);
+        $this->assertSame(['Milka*', 'Alenka', 'Bianca', 'Digər'], $chips($html), 'top brands, then A–Z, the unbranded last');
+        $this->assertMatchesRegularExpression('/class="choc-brand top active"\s*data-brand="Milka"/', $html);
+        $this->assertMatchesRegularExpression('/class="choc-group" data-brand="Milka"\s*>/', $html);
+        $this->assertMatchesRegularExpression('/class="choc-group" data-brand="Alenka"\s*hidden/', $html);
         $this->assertStringContainsString('Milka <span>2</span>', $html);
 
+        // The owner's own top list, in his order.
+        Setting::put(Setting::TOP_BRANDS, json_encode(['Bianca', 'Alenka']));
+        $html = $this->get(route('products.customize', $box->slug))->getContent();
+        $this->assertSame(['Bianca*', 'Alenka*', 'Milka', 'Digər'], $chips($html));
+
         // Back from a failed add, the chosen bar's brand is the one open.
-        $html = $this->withSession(['_old_input' => ['chocolate_id' => (string) $milka->id]])
+        $html = $this->withSession(['_old_input' => ['chocolate_id' => (string) $alenka->id]])
             ->get(route('products.customize', $box->slug))->getContent();
-        $this->assertMatchesRegularExpression('/class="choc-brand active has-pick"\s*data-brand="Milka"/', $html);
-        $this->assertMatchesRegularExpression('/value="' . $milka->id . '"[^>]*\s+checked/', $html);
+        $this->assertMatchesRegularExpression('/class="choc-brand top active has-pick"\s*data-brand="Alenka"/', $html);
+        $this->assertMatchesRegularExpression('/value="' . $alenka->id . '"[^>]*\s+checked/', $html);
+    }
+
+    public function test_the_owner_picks_the_top_brands_in_the_panel(): void
+    {
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        Livewire::test(ListChocolates::class)
+            ->assertActionHasLabel('top-brands', 'Top markalar')
+            ->callAction('top-brands', ['brands' => ['Nestlé', ' Milka ', 'Nestlé']])
+            ->assertHasNoActionErrors();
+
+        $this->assertSame(['Nestlé', 'Milka'], Setting::topBrands());
     }
 
     public function test_bars_are_grouped_by_the_shop_they_come_from(): void

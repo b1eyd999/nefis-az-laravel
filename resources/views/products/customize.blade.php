@@ -20,26 +20,26 @@
   .rotate-reset:hover{ border-color:var(--gold); }
   .slot-hint{ font-size:.8125rem; color:var(--cocoa-soft); margin-top:.5rem; }
   .angle-thumb canvas{ width:100%; height:100%; object-fit:cover; display:block; }
-  /* A grid item grows to its widest content; the chip strip must scroll instead. */
-  .customize-panel{ min-width:0; }
-  .choc-brands{
-    display:flex; flex-direction:column; gap:.4rem; margin:.6rem 0 .25rem; overflow-x:auto; scrollbar-width:none;
-    overscroll-behavior-x:contain; padding:.15rem .1rem;
-    -webkit-mask-image:linear-gradient(90deg, #000 calc(100% - 2.75rem), transparent); mask-image:linear-gradient(90deg, #000 calc(100% - 2.75rem), transparent);
-  }
-  .choc-brands::-webkit-scrollbar{ display:none; }
-  .choc-brands.at-end{ -webkit-mask-image:none; mask-image:none; }
-  .choc-brand-row{ display:flex; gap:.4rem; width:max-content; }
+  .choc-brands{ display:flex; flex-wrap:wrap; gap:.4rem; margin:.6rem 0 .25rem; }
   .choc-brand{
-    flex:none; white-space:nowrap; position:relative;
+    position:relative; white-space:nowrap;
     display:inline-flex; align-items:center; gap:.35rem; padding:.4rem .8rem; border-radius:999px;
     border:1px solid var(--line); background:var(--paper); color:var(--cocoa-soft);
-    font-size:.8125rem; font-weight:600; line-height:1.2; transition:background .2s, color .2s, border-color .2s;
+    font-size:.8125rem; font-weight:600; line-height:1.2; transition:background .2s, color .2s, border-color .2s, box-shadow .2s;
   }
   .choc-brand span{ font-size:.6875rem; font-weight:700; opacity:.6; }
   .choc-brand:hover{ border-color:var(--gold); color:var(--cocoa); }
   .choc-brand.active{ background:var(--cocoa); color:var(--cream); border-color:var(--cocoa); }
   .choc-brand:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+  /* The owner's top brands (Milka, Alpen Gold…): orange, with a slow glow. */
+  .choc-brand.top{ background:linear-gradient(135deg, #FB923C, #EA580C); border-color:#F97316; color:#fff; box-shadow:0 0 10px rgba(249,115,22,.4); }
+  .choc-brand.top span{ opacity:.85; }
+  .choc-brand.top:hover{ color:#fff; border-color:#FDBA74; box-shadow:0 0 16px rgba(249,115,22,.6); }
+  .choc-brand.top.active{ background:linear-gradient(135deg, #FB923C, #EA580C); color:#fff; border-color:#FDBA74;
+    box-shadow:0 0 0 2px var(--paper), 0 0 0 4px #F97316, 0 0 18px rgba(249,115,22,.55); }
+  .choc-brand.top:not(.active){ animation:choc-glow 2.6s ease-in-out infinite; }
+  @keyframes choc-glow{ 50%{ box-shadow:0 0 18px rgba(249,115,22,.7); } }
+  @media (prefers-reduced-motion: reduce){ .choc-brand.top:not(.active){ animation:none; } }
   /* The brand the chosen bar is in, so the choice is not lost when browsing another brand. */
   .choc-brand.has-pick::after{ content:''; position:absolute; top:-.1rem; right:-.1rem; width:.6rem; height:.6rem; border-radius:50%;
     background:var(--gold); box-shadow:0 0 0 2px var(--paper); }
@@ -193,26 +193,26 @@
 
         @if($chocolates->isNotEmpty())
           {{-- The bar that goes inside the box. --}}
-          {{-- One brand at a time (A–Z, unbranded last), so the list stays short however many bars there are. --}}
+          {{-- One brand at a time, so the list stays short however many bars there are. The owner's
+               top brands come first and glow orange; the rest follow A–Z, the unbranded last. --}}
           @php
-            $brands = $chocolates->groupBy('brand')
-              ->sortBy(fn ($bars, $brand) => ($brand === \App\Support\ChocolateBrand::OTHER ? '1' : '0') . mb_strtolower($brand));
+            $top = array_values(array_intersect(\App\Models\Setting::topBrands(), $chocolates->pluck('brand')->unique()->all()));
+            $brands = $chocolates->groupBy('brand')->sortBy(function ($bars, $brand) use ($top) {
+                $rank = array_search($brand, $top, true);
+
+                return $rank !== false ? sprintf('0%03d', $rank)
+                    : ($brand === \App\Support\ChocolateBrand::OTHER ? '2' : '1') . mb_strtolower($brand);
+            });
             $picked = $chocolates->firstWhere('id', (int) old('chocolate_id'));
             $openBrand = $picked['brand'] ?? $brands->keys()->first();
-            // Two rows that scroll sideways: every brand within a swipe, without a wall of chips.
-            $rows = $brands->count() > 5 ? $brands->chunk((int) ceil($brands->count() / 2)) : collect([$brands]);
           @endphp
           <div class="choc-block" id="choc-block">
             <label>Qutunun içindəki şokolad</label>
             @if($brands->count() > 1)
               <div class="choc-brands" aria-label="Marka seçin">
-                @foreach($rows as $row)
-                  <div class="choc-brand-row">
-                    @foreach($row as $brand => $bars)
-                      <button type="button" class="choc-brand{{ $brand === $openBrand ? ' active' : '' }}{{ $picked && $picked['brand'] === $brand ? ' has-pick' : '' }}"
-                              data-brand="{{ $brand }}" aria-pressed="{{ $brand === $openBrand ? 'true' : 'false' }}">{{ $brand }} <span>{{ $bars->count() }}</span></button>
-                    @endforeach
-                  </div>
+                @foreach($brands as $brand => $bars)
+                  <button type="button" class="choc-brand{{ in_array($brand, $top, true) ? ' top' : '' }}{{ $brand === $openBrand ? ' active' : '' }}{{ $picked && $picked['brand'] === $brand ? ' has-pick' : '' }}"
+                          data-brand="{{ $brand }}" aria-pressed="{{ $brand === $openBrand ? 'true' : 'false' }}">{{ $brand }} <span>{{ $bars->count() }}</span></button>
                 @endforeach
               </div>
             @endif
@@ -797,22 +797,6 @@
     block.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 
-  // The chip strip scrolls sideways: fade its edge while there is more, and let a mouse wheel move it.
-  var strip = block.querySelector('.choc-brands');
-  if (strip) {
-    var edge = function(){ strip.classList.toggle('at-end', strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 4); };
-    strip.addEventListener('scroll', edge, { passive: true });
-    window.addEventListener('resize', edge);
-    edge();
-    strip.addEventListener('wheel', function(e){
-      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
-      var before = strip.scrollLeft;
-      strip.scrollLeft += e.deltaY;
-      if (strip.scrollLeft !== before) e.preventDefault();
-    }, { passive: false });
-    var active = strip.querySelector('.choc-brand.active');
-    if (active && active.offsetLeft > strip.clientWidth - 40) strip.scrollLeft = active.offsetLeft - 16;
-  }
 })();
 
 /* The running price: the box, the chosen bar, times how many. */

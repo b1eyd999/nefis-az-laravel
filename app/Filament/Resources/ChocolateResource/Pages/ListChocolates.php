@@ -91,6 +91,24 @@ class ListChocolates extends ListRecords
                     Setting::put(Setting::CHOCOLATE_FROM_SALE, (bool) $data['from_sale']);
                     Notification::make()->success()->title('Qiymətlər yeniləndi')->send();
                 }),
+            Actions\Action::make('top-brands')
+                ->label('Top markalar')
+                ->icon('heroicon-o-fire')
+                ->color('warning')
+                ->fillForm(fn () => ['brands' => Setting::topBrands()])
+                ->form([
+                    Forms\Components\TagsInput::make('brands')
+                        ->label('Top markalar')
+                        ->placeholder('Marka yazın, məs. Milka')
+                        ->suggestions(fn () => Chocolate::whereNotNull('brand')->distinct()->orderBy('brand')->pluck('brand')->all())
+                        ->reorderable()
+                        ->helperText('Müştəri şokolad seçəndə bu markalar birinci gəlir və narıncı yanır; ilki açıq olur. Sıra buradakı kimidir.'),
+                ])
+                ->action(function (array $data) {
+                    $brands = array_values(array_unique(array_filter(array_map('trim', $data['brands'] ?? []))));
+                    Setting::put(Setting::TOP_BRANDS, json_encode($brands, JSON_UNESCAPED_UNICODE));
+                    Notification::make()->success()->title('Top markalar: ' . ($brands ? implode(', ', $brands) : 'yoxdur'))->send();
+                }),
             Actions\CreateAction::make()->label('Şokolad əlavə et'),
         ];
     }

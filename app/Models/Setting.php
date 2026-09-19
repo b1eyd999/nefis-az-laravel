@@ -31,8 +31,12 @@ class Setting extends Model
     /** JSON list of {name, percent}: how the net profit is shared out. */
     public const PROFIT_SHARES = 'profit_shares';
 
+    /** JSON list of brand names shown first, in orange, in the customer's bar picker. */
+    public const TOP_BRANDS = 'chocolate_top_brands';
+
     /** What each setting is until the owner changes it. */
     public const DEFAULTS = [
+        self::TOP_BRANDS => '["Milka","Alpen Gold"]',
         self::CHOCOLATE_MARKUP => '30',
         self::CHOCOLATE_FROM_SALE => '0',
         self::MAINTENANCE => '0',
@@ -44,6 +48,12 @@ class Setting extends Model
     public static function profitShares(): array
     {
         return array_values(array_filter((array) json_decode((string) static::get(self::PROFIT_SHARES), true), fn ($s) => is_array($s) && isset($s['name'])));
+    }
+
+    /** @return array<int, string> */
+    public static function topBrands(): array
+    {
+        return array_values(array_filter((array) json_decode((string) static::get(self::TOP_BRANDS), true), 'is_string'));
     }
 
     public static function get(string $key): ?string
