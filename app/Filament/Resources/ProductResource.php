@@ -7,6 +7,7 @@ use App\Filament\Resources\ProductResource\Pages;
 use App\Models\Product;
 use App\Models\Scene;
 use App\Support\Media;
+use App\Support\YandexDisk;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Set;
@@ -44,8 +45,11 @@ class ProductResource extends Resource
                             ->live(onBlur: true)
                             ->afterStateUpdated(fn (Set $set, ?string $state) => $set('slug', Str::slug($state))),
                         Forms\Components\TextInput::make('slug')
-                            ->label('Slug (URL)')
+                            ->label('Səhifə ünvanı (slug)')
+                            ->helperText('Addan özü yaranır, məs. dark-spotify. Şəklin linki buraya yox, aşağıdakı "Kataloq posteri"nə yazılır.')
                             ->required()
+                            ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
+                            ->validationMessages(['regex' => 'Yalnız kiçik latın hərfləri, rəqəmlər və defis olmalıdır, məs. dark-spotify. Link bu sahəyə yazılmır.'])
                             ->unique(ignoreRecord: true),
                         Forms\Components\Textarea::make('description')
                             ->label('Açıqlama')
@@ -75,6 +79,27 @@ class ProductResource extends Resource
                             ->label('Saytda görünsün')
                             ->default(true),
                     ])->columns(2),
+                Forms\Components\Section::make('Kataloq posteri')
+                    ->description('Dizaynlar səhifəsindəki kartda bu şəkil görünür (4:5, məs. 1080×1350). Şəkli Yandex Diskdə paylaşın və linkini bura yapışdırın — saxlayanda sayt onu özü yükləyir.')
+                    ->schema([
+                        Forms\Components\TextInput::make('poster_url')
+                            ->label('Yandex Disk linki')
+                            ->placeholder('https://disk.yandex.ru/i/…')
+                            ->maxLength(500)
+                            ->rule(fn () => function (string $attribute, $value, \Closure $fail) {
+                                if (filled($value) && ! YandexDisk::isPublicLink($value)) {
+                                    $fail('Bu Yandex Disk linki deyil. Link belə görünməlidir: https://disk.yandex.ru/i/…');
+                                }
+                            })
+                            ->helperText('Boş buraxsanız, kartda səhnə qapağı və ya dizaynın özü göstərilir. Şəkli Yandexdə dəyişsəniz, linki silib yenidən yapışdırın.'),
+                        Forms\Components\Placeholder::make('poster_preview')
+                            ->label('Hazırkı poster')
+                            ->content(fn (?Product $record) => $record?->poster_image
+                                ? new HtmlString('<img src="' . e(Media::url($record->poster_image)) . '" alt="" style="max-height:220px;border-radius:.6rem">')
+                                : 'Yoxdur'),
+                    ])
+                    ->columns(2)
+                    ->collapsible(),
                 Forms\Components\Section::make('Səhnələr')
                     ->description('Müştəri bu qutunu hansı mokaplarda görsün. Heç biri seçilməsə, bütün aktiv səhnələrdə göstərilir.')
                     ->schema([

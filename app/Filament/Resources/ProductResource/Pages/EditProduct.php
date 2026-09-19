@@ -3,8 +3,11 @@
 namespace App\Filament\Resources\ProductResource\Pages;
 
 use App\Filament\Resources\ProductResource;
+use App\Support\YandexDisk;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 class EditProduct extends EditRecord
@@ -13,6 +16,24 @@ class EditProduct extends EditRecord
 
     /** Set after a save that changed what the catalogue cover shows. */
     private bool $coverOutdated = false;
+
+    /** A new poster, fetched before saving so a bad link stops the save. */
+    private ?UploadedFile $poster = null;
+
+    protected function beforeSave(): void
+    {
+        $link = trim((string) ($this->data['poster_url'] ?? ''));
+        if ($link === '' || ($link === $this->record->poster_url && $this->record->poster_image)) {
+            return;
+        }
+
+        try {
+            $this->poster = YandexDisk::downloadImage($link);
+        } catch (\RuntimeException $e) {
+            Notification::make()->danger()->title('Poster yüklənmədi')->body($e->getMessage())->persistent()->send();
+            $this->halt();
+        }
+    }
 
     protected function getHeaderActions(): array
     {
@@ -28,6 +49,12 @@ class EditProduct extends EditRecord
     protected function afterSave(): void
     {
         $product = $this->record;
+
+        if ($this->poster) {
+            $product->storePoster($this->poster, $product->poster_url);
+        } elseif (! $product->poster_url && $product->poster_image) {
+            $product->removePoster();
+        }
 
         if (! $product->cover_scene_id) {
             if ($product->cover_image) {

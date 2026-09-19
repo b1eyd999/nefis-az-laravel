@@ -3,13 +3,16 @@
 namespace App\Models;
 
 use App\Support\ImageColor;
+use App\Support\ImageStore;
 use App\Support\Media;
+use App\Support\YandexDisk;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
@@ -31,6 +34,7 @@ class Product extends Model
         'tag',
         'category',
         'preview_image',
+        'poster_url',
         'box_color',
         'cover_scene_id',
         'price',
@@ -74,10 +78,51 @@ class Product extends Model
         return 'boxes/' . $this->id;
     }
 
-    /** The cover drawn in the owner's chosen scene, else the plain visual. */
+    /**
+     * The picture on the catalogue card: the owner's poster photo, else the
+     * cover drawn in his chosen scene, else the plain visual.
+     */
     public function catalogImage(): ?string
     {
-        return $this->cover_image ?: $this->preview_image ?: $this->template_image;
+        return $this->poster_image ?: $this->cover_image ?: $this->preview_image ?: $this->template_image;
+    }
+
+    /**
+     * Brings the poster in from its Yandex Disk link and keeps it as a small
+     * WebP beside the box's other artwork.
+     *
+     * @throws \RuntimeException with a message for the owner
+     */
+    public function importPoster(?string $link = null): void
+    {
+        $link = trim($link ?? (string) $this->poster_url);
+        $this->storePoster(YandexDisk::downloadImage($link), $link);
+    }
+
+    /** Keeps a poster already downloaded from `$link`, and deletes the download. */
+    public function storePoster(UploadedFile $file, string $link): void
+    {
+        try {
+            [$path] = ImageStore::store($file, $this->assetDirectory(), 'poster', 85, 1600);
+        } finally {
+            @unlink($file->getRealPath());
+        }
+
+        $this->dropPosterFile();
+        $this->forceFill(['poster_url' => $link, 'poster_image' => $path])->saveQuietly();
+    }
+
+    public function removePoster(): void
+    {
+        $this->dropPosterFile();
+        $this->forceFill(['poster_url' => null, 'poster_image' => null])->saveQuietly();
+    }
+
+    private function dropPosterFile(): void
+    {
+        if ($this->poster_image && str_starts_with($this->poster_image, $this->assetDirectory() . '/')) {
+            Storage::disk('public')->delete($this->poster_image);
+        }
     }
 
     /**
