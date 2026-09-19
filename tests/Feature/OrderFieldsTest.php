@@ -50,7 +50,8 @@ class OrderFieldsTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $this->actingAs($user)->post(route('checkout.store'), [
-            'contact_phone' => '+994 50 000 00 00', 'delivery_address' => 'Bakı',
+            'delivery_method_id' => \App\Models\DeliveryMethod::where('type', 'door')->value('id'),
+            'contact_phone' => '+994 50 000 00 00', 'delivery_address' => 'Bakı, Nizami küç. 5',
         ])->assertRedirect(route('orders.index'));
 
         return Order::firstOrFail();

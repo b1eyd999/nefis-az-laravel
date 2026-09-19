@@ -60,6 +60,15 @@
                 </div>
               </div>
             @endforeach
+            @if($order->delivery_name)
+              <p style="font-size:.875rem; color:var(--cocoa-soft); margin-top:.5rem;">
+                🚚 {{ $order->delivery_name }} — {{ $order->deliverySummary() }}
+                &middot; {{ $order->delivery_price > 0 ? \App\Support\Price::format($order->delivery_price) : 'pulsuz' }}
+              </p>
+            @endif
+            @if($order->total() > 0)
+              <p style="font-weight:700; margin-top:.35rem;">Cəmi: {{ \App\Support\Price::format($order->total()) }}</p>
+            @endif
             <p style="font-size:.8125rem; color:var(--cocoa-soft); margin-top:.75rem;">{{ $order->created_at->format('d.m.Y H:i') }}</p>
           </div>
         @endforeach

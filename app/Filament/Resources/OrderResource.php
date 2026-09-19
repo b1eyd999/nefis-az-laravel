@@ -4,7 +4,9 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\OrderResource\Pages;
 use App\Filament\Resources\OrderResource\RelationManagers;
+use App\Models\DeliveryMethod;
 use App\Models\Order;
+use App\Support\Price;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -38,20 +40,42 @@ class OrderResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('status')
                             ->label('Status')
-                            ->options([
-                                'pending' => 'Gözləmədə',
-                                'confirmed' => 'Təsdiqləndi',
-                                'completed' => 'Tamamlandı',
-                                'cancelled' => 'Ləğv edildi',
-                            ])
+                            ->options(self::STATUSES)
                             ->required(),
                         Forms\Components\TextInput::make('contact_phone')
-                            ->label('Əlaqə nömrəsi')
+                            ->label('Telefon')
                             ->tel(),
-                        Forms\Components\TextInput::make('delivery_address')
-                            ->label('Çatdırılma ünvanı'),
                         Forms\Components\Textarea::make('note')
-                            ->label('Qeyd')
+                            ->label('Müştərinin qeydi')
+                            ->columnSpanFull(),
+                    ])->columns(2),
+                // How it goes out, as the customer chose it at checkout.
+                Forms\Components\Section::make('Çatdırılma')
+                    ->schema([
+                        Forms\Components\Placeholder::make('delivery_method')
+                            ->label('Üsul')
+                            ->content(fn (?Order $record) => $record?->delivery_name
+                                ? $record->delivery_name . ' — ' . ($record->delivery_price > 0 ? Price::format($record->delivery_price) : 'pulsuz')
+                                : 'Seçilməyib (köhnə sifariş)'),
+                        Forms\Components\TextInput::make('recipient_name')
+                            ->label('Ad və soyad')
+                            ->visible(fn (?Order $record) => $record?->delivery_type === DeliveryMethod::POST),
+                        Forms\Components\TextInput::make('postal_index')
+                            ->label('Poçt şöbəsinin indeksi')
+                            ->visible(fn (?Order $record) => $record?->delivery_type === DeliveryMethod::POST),
+                        Forms\Components\TextInput::make('metro_station')
+                            ->label('Metro stansiyası')
+                            ->visible(fn (?Order $record) => $record?->delivery_type === DeliveryMethod::METRO),
+                        Forms\Components\TextInput::make('delivery_address')
+                            ->label('Ünvan')
+                            ->visible(fn (?Order $record) => ! in_array($record?->delivery_type, [DeliveryMethod::POST, DeliveryMethod::METRO], true)),
+                        Forms\Components\Placeholder::make('totals')
+                            ->label('Məbləğ')
+                            ->content(fn (?Order $record) => $record
+                                ? 'Məhsullar ' . Price::format($record->itemsTotal())
+                                    . ' + çatdırılma ' . Price::format($record->delivery_price ?? 0)
+                                    . ' = ' . Price::format($record->total())
+                                : '—')
                             ->columnSpanFull(),
                     ])->columns(2),
             ]);
@@ -72,6 +96,14 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('items_count')
                     ->label('Məhsul sayı')
                     ->counts('items'),
+                Tables\Columns\TextColumn::make('delivery_name')
+                    ->label('Çatdırılma')
+                    ->placeholder('—')
+                    ->description(fn (Order $r) => $r->delivery_type ? $r->deliverySummary() : null)
+                    ->wrap(),
+                Tables\Columns\TextColumn::make('total')
+                    ->label('Məbləğ')
+                    ->getStateUsing(fn (Order $r) => $r->total() > 0 ? Price::format($r->total()) : '—'),
                 Tables\Columns\BadgeColumn::make('status')
                     ->label('Status')
                     ->colors([
@@ -92,6 +124,7 @@ class OrderResource extends Resource
                     ->dateTime('d.m.Y H:i')
                     ->sortable(),
             ])
+            ->modifyQueryUsing(fn ($query) => $query->with('items'))
             ->defaultSort('created_at', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')

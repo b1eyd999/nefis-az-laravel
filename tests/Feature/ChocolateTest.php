@@ -150,7 +150,8 @@ class ChocolateTest extends TestCase
 
         // A later price change does not touch what is in the cart.
         $bar->update(['base_price' => 5]);
-        $this->actingAs($user)->post(route('checkout.store'), ['contact_phone' => '1', 'delivery_address' => 'Bakı'])
+        $this->actingAs($user)->post(route('checkout.store'), ['delivery_method_id' => \App\Models\DeliveryMethod::where('type', 'door')->value('id'),
+            'contact_phone' => '1', 'delivery_address' => 'Bakı, Nizami küç. 5'])
             ->assertRedirect(route('orders.index'));
 
         $item = Order::firstOrFail()->items()->firstOrFail();
