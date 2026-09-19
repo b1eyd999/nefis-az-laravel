@@ -98,7 +98,10 @@ class DeliveryTest extends TestCase
         $this->actingAs(User::factory()->create(['is_admin' => true]))
             ->get('/admin/orders/' . $order->id . '/edit')
             ->assertOk()
-            ->assertSee(['Poçt ilə çatdırılma', '3.50 ₼', 'Aysel Məmmədova', 'AZ2001', '7.50 ₼']);
+            ->assertSee(['Poçt ilə çatdırılma', '3.50 ₼', '7.50 ₼']);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(\App\Filament\Resources\OrderResource\Pages\EditOrder::class, ['record' => $order->getRouteKey()])
+            ->assertFormSet(['recipient_name' => 'Aysel Məmmədova', 'postal_index' => 'AZ2001', 'contact_phone' => '+994 50 1']);
         $this->get('/admin/orders')->assertSee('Poçt ilə çatdırılma');
     }
 
