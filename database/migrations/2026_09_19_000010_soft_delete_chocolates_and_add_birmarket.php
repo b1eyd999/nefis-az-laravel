@@ -36,6 +36,25 @@ return new class extends Migration
                 ->whereNull('deleted_at')
                 ->where('created_at', '>', \Illuminate\Support\Carbon::parse($first)->addMinutes(10))
                 ->update(['deleted_at' => now()]);
+
+            // The owner then deleted those four again, for good, before this
+            // release: leave a deleted marker for each, or the import right
+            // after this migration would bring them back a third time.
+            $araz = DB::table('markets')->where('importer', 'arazmarket')->value('id');
+            foreach ([
+                '939' => ['Babaevskiy Lyuks 90 qr', 3.50, 90],
+                '1600' => ['Merci Fındıq və Badam ilə 100 qr', 7.20, 100],
+                '2279' => ['Merci Plitka Qorkiy 72% 100qr', 7.20, 100],
+                '1593' => ['Merci Südlü 100 qr', 7.20, 100],
+            ] as $sourceId => [$name, $price, $grams]) {
+                if (! DB::table('chocolates')->where('source', 'arazmarket')->where('source_id', $sourceId)->exists()) {
+                    DB::table('chocolates')->insert([
+                        'market_id' => $araz, 'name' => $name, 'weight_g' => $grams, 'base_price' => $price,
+                        'is_active' => false, 'sort_order' => 0, 'source' => 'arazmarket', 'source_id' => $sourceId,
+                        'in_source' => true, 'created_at' => now(), 'updated_at' => now(), 'deleted_at' => now(),
+                    ]);
+                }
+            }
         }
 
         if (! DB::table('markets')->where('importer', 'birmarket')->exists()) {

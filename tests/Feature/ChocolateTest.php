@@ -195,11 +195,11 @@ class ChocolateTest extends TestCase
     {
         Http::fake(['b7x9kq.arazmarket.az/*' => Http::response($this->png())]);
         $listing = [
-            $this->listed(1600, 'Merci Fındıq və Badam ilə 100 qr', '7.20', '7.20'),
+            $this->listed(7550, 'Milka Bubbles Kapuçino Şokolad 97 qr', '5.40', '2.99', 45),
             $this->listed(2699, 'Kr/O Alenka Süd Şokoladı 90qr', '3.00', '3.00'),
         ];
         ArazMarket::sync($listing);
-        Chocolate::where('source_id', '1600')->firstOrFail()->delete();
+        Chocolate::where('source_id', '7550')->firstOrFail()->delete();
 
         $r = ArazMarket::sync($listing);
 
@@ -210,6 +210,27 @@ class ChocolateTest extends TestCase
         // It can be brought back by hand.
         Chocolate::onlyTrashed()->firstOrFail()->restore();
         $this->assertSame(2, Chocolate::count());
+    }
+
+    public function test_the_bars_the_owner_deleted_before_soft_deletes_stay_out(): void
+    {
+        Http::fake(['b7x9kq.arazmarket.az/*' => Http::response($this->png())]);
+        // A catalogue that had been imported, then lost Merci for good.
+        ArazMarket::sync([$this->listed(2699, 'Kr/O Alenka Süd Şokoladı 90qr', '3.00', '3.00')]);
+
+        $migration = require database_path('migrations/2026_09_19_000010_soft_delete_chocolates_and_add_birmarket.php');
+        $migration->up();
+        $migration->up(); // harmless twice
+
+        $this->assertSame(['1593', '1600', '2279', '939'], Chocolate::onlyTrashed()->orderBy('source_id')->pluck('source_id')->all());
+
+        $r = ArazMarket::sync([
+            $this->listed(2699, 'Kr/O Alenka Süd Şokoladı 90qr', '3.00', '3.00'),
+            $this->listed(1600, 'Merci Fındıq və Badam ilə 100 qr', '7.20', '7.20'),
+            $this->listed(939, 'Babaevskiy Lyuks 90 qr', '3.50', '3.50'),
+        ]);
+        $this->assertSame(0, $r['created']);
+        $this->assertSame(['Kr/O Alenka Süd Şokoladı 90qr'], Chocolate::pluck('name')->all());
     }
 
     public function test_birmarket_bars_are_read_from_its_catalogue_and_the_rest_left_out(): void
