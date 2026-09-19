@@ -6,6 +6,7 @@ use App\Filament\Concerns\AdminOnly;
 use App\Filament\Resources\ChocolateResource\Pages;
 use App\Models\Chocolate;
 use App\Models\Setting;
+use App\Support\ChocolateBrand;
 use App\Support\Price;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -49,6 +50,12 @@ class ChocolateResource extends Resource
                             ->label('Ad (müştəri belə görür)')
                             ->required()
                             ->maxLength(255)
+                            ->columnSpanFull(),
+                        Forms\Components\TextInput::make('brand')
+                            ->label('Marka')
+                            ->maxLength(60)
+                            ->datalist(fn () => Chocolate::withTrashed()->whereNotNull('brand')->distinct()->orderBy('brand')->pluck('brand')->all())
+                            ->helperText('Müştəri şokoladları markaya görə seçir. Boş qalsa, addan özü tapılır; tapılmasa "' . ChocolateBrand::OTHER . '" qrupuna düşür.')
                             ->columnSpanFull(),
                         Forms\Components\Select::make('market_id')
                             ->label('Market')
@@ -126,6 +133,11 @@ class ChocolateResource extends Resource
                     ->description(fn (Chocolate $r) => ($r->source
                         ? ($r->in_source ? 'Saytdan avtomatik' : 'Marketin saytında artıq yoxdur')
                         : 'Əl ilə əlavə olunub') . ($r->seller ? ' · satıcı: ' . $r->seller : '')),
+                Tables\Columns\TextColumn::make('brand')
+                    ->label('Marka')
+                    ->placeholder(ChocolateBrand::OTHER)
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('market.name')
                     ->label('Market')
                     ->badge()
@@ -165,6 +177,8 @@ class ChocolateResource extends Resource
             ->reorderable('sort_order')
             ->filters([
                 Tables\Filters\SelectFilter::make('market_id')->label('Market')->relationship('market', 'name'),
+                Tables\Filters\SelectFilter::make('brand')->label('Marka')
+                    ->options(fn () => Chocolate::whereNotNull('brand')->distinct()->orderBy('brand')->pluck('brand', 'brand')->all()),
                 Tables\Filters\TernaryFilter::make('is_active')->label('Göstərilir'),
                 Tables\Filters\Filter::make('on_sale')->label('Endirimdə')
                     ->query(fn ($q) => $q->whereNotNull('sale_price')),

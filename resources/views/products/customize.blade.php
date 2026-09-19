@@ -20,6 +20,34 @@
   .rotate-reset:hover{ border-color:var(--gold); }
   .slot-hint{ font-size:.8125rem; color:var(--cocoa-soft); margin-top:.5rem; }
   .angle-thumb canvas{ width:100%; height:100%; object-fit:cover; display:block; }
+  /* A grid item grows to its widest content; the chip strip must scroll instead. */
+  .customize-panel{ min-width:0; }
+  .choc-brands{
+    display:flex; flex-direction:column; gap:.4rem; margin:.6rem 0 .25rem; overflow-x:auto; scrollbar-width:none;
+    overscroll-behavior-x:contain; padding:.15rem .1rem;
+    -webkit-mask-image:linear-gradient(90deg, #000 calc(100% - 2.75rem), transparent); mask-image:linear-gradient(90deg, #000 calc(100% - 2.75rem), transparent);
+  }
+  .choc-brands::-webkit-scrollbar{ display:none; }
+  .choc-brands.at-end{ -webkit-mask-image:none; mask-image:none; }
+  .choc-brand-row{ display:flex; gap:.4rem; width:max-content; }
+  .choc-brand{
+    flex:none; white-space:nowrap; position:relative;
+    display:inline-flex; align-items:center; gap:.35rem; padding:.4rem .8rem; border-radius:999px;
+    border:1px solid var(--line); background:var(--paper); color:var(--cocoa-soft);
+    font-size:.8125rem; font-weight:600; line-height:1.2; transition:background .2s, color .2s, border-color .2s;
+  }
+  .choc-brand span{ font-size:.6875rem; font-weight:700; opacity:.6; }
+  .choc-brand:hover{ border-color:var(--gold); color:var(--cocoa); }
+  .choc-brand.active{ background:var(--cocoa); color:var(--cream); border-color:var(--cocoa); }
+  .choc-brand:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+  /* The brand the chosen bar is in, so the choice is not lost when browsing another brand. */
+  .choc-brand.has-pick::after{ content:''; position:absolute; top:-.1rem; right:-.1rem; width:.6rem; height:.6rem; border-radius:50%;
+    background:var(--gold); box-shadow:0 0 0 2px var(--paper); }
+  .choc-group{ margin-top:.25rem; }
+  .choc-group[hidden]{ display:none; }
+  .choc-error{ margin:.5rem 0 0; font-size:.875rem; font-weight:600; color:#dc2626; }
+  .choc-error[hidden]{ display:none; }
+  .sum-name{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .choc-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(8.5rem, 1fr)); gap:.625rem; margin-top:.5rem; }
   .choc-card{ position:relative; display:flex; flex-direction:column; gap:.3rem; padding:.6rem; border:1.5px solid var(--line); border-radius:.9rem;
     background:var(--paper); cursor:pointer; transition:border-color .15s, box-shadow .15s; margin:0; font-weight:400; }
@@ -165,21 +193,49 @@
 
         @if($chocolates->isNotEmpty())
           {{-- The bar that goes inside the box. --}}
-          <div class="choc-block">
+          {{-- One brand at a time (A–Z, unbranded last), so the list stays short however many bars there are. --}}
+          @php
+            $brands = $chocolates->groupBy('brand')
+              ->sortBy(fn ($bars, $brand) => ($brand === \App\Support\ChocolateBrand::OTHER ? '1' : '0') . mb_strtolower($brand));
+            $picked = $chocolates->firstWhere('id', (int) old('chocolate_id'));
+            $openBrand = $picked['brand'] ?? $brands->keys()->first();
+            // Two rows that scroll sideways: every brand within a swipe, without a wall of chips.
+            $rows = $brands->count() > 5 ? $brands->chunk((int) ceil($brands->count() / 2)) : collect([$brands]);
+          @endphp
+          <div class="choc-block" id="choc-block">
             <label>Qutunun içindəki şokolad</label>
-            <div class="choc-grid" role="radiogroup" aria-label="Şokolad seçin">
-              @foreach($chocolates as $choc)
-                <label class="choc-card">
-                  <input type="radio" name="chocolate_id" value="{{ $choc['id'] }}" data-price="{{ $choc['price'] }}" required
-                         @checked((string) old('chocolate_id') === (string) $choc['id'])>
-                  <span class="choc-pic">
-                    @if($choc['image'])<img src="{{ $choc['image'] }}" alt="" loading="lazy">@else🍫@endif
-                  </span>
-                  <span class="choc-name">{{ $choc['name'] }}</span>
-                  <span class="choc-meta">{{ $choc['weight'] }}<b>+{{ \App\Support\Price::format($choc['price']) }}</b></span>
-                </label>
+            @if($brands->count() > 1)
+              <div class="choc-brands" aria-label="Marka seçin">
+                @foreach($rows as $row)
+                  <div class="choc-brand-row">
+                    @foreach($row as $brand => $bars)
+                      <button type="button" class="choc-brand{{ $brand === $openBrand ? ' active' : '' }}{{ $picked && $picked['brand'] === $brand ? ' has-pick' : '' }}"
+                              data-brand="{{ $brand }}" aria-pressed="{{ $brand === $openBrand ? 'true' : 'false' }}">{{ $brand }} <span>{{ $bars->count() }}</span></button>
+                    @endforeach
+                  </div>
+                @endforeach
+              </div>
+            @endif
+            <div role="radiogroup" aria-label="Şokolad seçin">
+              @foreach($brands as $brand => $bars)
+                <div class="choc-group" data-brand="{{ $brand }}" @if($brand !== $openBrand) hidden @endif>
+                  <div class="choc-grid">
+                    @foreach($bars as $choc)
+                      <label class="choc-card">
+                        <input type="radio" name="chocolate_id" value="{{ $choc['id'] }}" data-price="{{ $choc['price'] }}" data-name="{{ $choc['name'] }}" data-brand="{{ $brand }}"
+                               @checked($picked && $picked['id'] === $choc['id'])>
+                        <span class="choc-pic">
+                          @if($choc['image'])<img src="{{ $choc['image'] }}" alt="" loading="lazy">@else🍫@endif
+                        </span>
+                        <span class="choc-name">{{ $choc['name'] }}</span>
+                        <span class="choc-meta">{{ $choc['weight'] }}<b>+{{ \App\Support\Price::format($choc['price']) }}</b></span>
+                      </label>
+                    @endforeach
+                  </div>
+                </div>
               @endforeach
             </div>
+            <p class="choc-error" id="choc-error" role="alert" @unless($errors->has('chocolate_id')) hidden @endunless>{{ $errors->first('chocolate_id') ?: 'Qutunun içinə şokolad seçin.' }}</p>
           </div>
         @endif
 
@@ -192,7 +248,7 @@
           <div class="price-sum" id="price-sum" data-box="{{ (float) $product->price }}">
             <div><span>Qutu</span><span>{{ $product->price ? \App\Support\Price::format($product->price) : 'sorğu ilə' }}</span></div>
             @if($chocolates->isNotEmpty())
-              <div><span>Şokolad</span><span id="sum-choc">seçilməyib</span></div>
+              <div><span id="sum-choc-name" class="sum-name">Şokolad</span><span id="sum-choc">seçilməyib</span></div>
             @endif
             <div class="total"><span>Cəmi</span><span id="sum-total">—</span></div>
           </div>
@@ -713,12 +769,59 @@
   canvas.addEventListener('touchend', function(){ dragSlot = -1; });
 })();
 
+/* Brand chips: one brand's bars at a time. */
+(function(){
+  var block = document.getElementById('choc-block');
+  if (!block) return;
+  var chips = block.querySelectorAll('.choc-brand');
+  var groups = block.querySelectorAll('.choc-group');
+  var radios = block.querySelectorAll('input[name="chocolate_id"]');
+  var error = document.getElementById('choc-error');
+  function show(brand){
+    chips.forEach(function(c){ var on = c.dataset.brand === brand; c.classList.toggle('active', on); c.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+    groups.forEach(function(g){ g.hidden = g.dataset.brand !== brand; });
+  }
+  chips.forEach(function(c){ c.addEventListener('click', function(){ show(c.dataset.brand); }); });
+  radios.forEach(function(r){
+    r.addEventListener('change', function(){
+      chips.forEach(function(c){ c.classList.toggle('has-pick', c.dataset.brand === r.dataset.brand); });
+      error.hidden = true;
+    });
+  });
+
+  // No bar chosen: say so here rather than let the browser point at a bar hidden under another brand.
+  document.getElementById('customize-form').addEventListener('submit', function(e){
+    if (block.querySelector('input[name="chocolate_id"]:checked')) return;
+    e.preventDefault();
+    error.hidden = false;
+    block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  // The chip strip scrolls sideways: fade its edge while there is more, and let a mouse wheel move it.
+  var strip = block.querySelector('.choc-brands');
+  if (strip) {
+    var edge = function(){ strip.classList.toggle('at-end', strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 4); };
+    strip.addEventListener('scroll', edge, { passive: true });
+    window.addEventListener('resize', edge);
+    edge();
+    strip.addEventListener('wheel', function(e){
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      var before = strip.scrollLeft;
+      strip.scrollLeft += e.deltaY;
+      if (strip.scrollLeft !== before) e.preventDefault();
+    }, { passive: false });
+    var active = strip.querySelector('.choc-brand.active');
+    if (active && active.offsetLeft > strip.clientWidth - 40) strip.scrollLeft = active.offsetLeft - 16;
+  }
+})();
+
 /* The running price: the box, the chosen bar, times how many. */
 (function(){
   var sum = document.getElementById('price-sum');
   if (!sum) return;
   var qty = document.getElementById('quantity');
   var chocOut = document.getElementById('sum-choc');
+  var chocName = document.getElementById('sum-choc-name');
   var totalOut = document.getElementById('sum-total');
   var box = parseFloat(sum.dataset.box) || 0;
   function fmt(v){ v = Math.round(v * 100) / 100; return (v % 1 === 0 ? v.toFixed(0) : v.toFixed(2)) + ' ₼'; }
@@ -727,6 +830,7 @@
     var choc = picked ? parseFloat(picked.dataset.price) || 0 : 0;
     var n = Math.max(1, parseInt(qty.value, 10) || 1);
     if (chocOut) chocOut.textContent = picked ? fmt(choc) : 'seçilməyib';
+    if (chocName) chocName.textContent = picked ? picked.dataset.name : 'Şokolad';
     var each = box + choc;
     totalOut.textContent = each > 0 ? fmt(each * n) + (n > 1 ? ' (' + n + ' × ' + fmt(each) + ')' : '') : '—';
   }

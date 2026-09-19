@@ -160,6 +160,47 @@ class ChocolateTest extends TestCase
         $this->actingAs($user)->get(route('orders.index'))->assertSee('Kr/O Alenka Süd Şokoladı 90qr (90 q)')->assertSee('15.80 ₼', false);
     }
 
+    public function test_bars_know_their_brand_from_the_name_unless_the_owner_set_one(): void
+    {
+        $names = [
+            'Kr/O Alenka Süd Şokoladı 90qr' => 'Alenka', 'Südlü şokolad Победа şəkərsiz, 36% kakao, 100q' => 'Pobeda',
+            'Şokolad BIanka Milk, 100 q' => 'Bianca', 'Fıstıqlı şokolad, Hamlet, 105 qram' => 'Hamlet',
+            'Südlü şokolad Ferrero Rocher Hazelnut, 90 q' => 'Ferrero', 'Nestle Milk Filling 90qr' => 'Nestlé',
+            'Şokolad Ritte Sport Ganze Mandel 100q' => 'Ritter Sport', 'Alpen Gold Fındıq və Uzum 100qr' => 'Alpen Gold',
+            'Şekersiz şokolad, tünd, 100 q' => null,
+        ];
+        foreach ($names as $name => $brand) {
+            $this->assertSame($brand, Chocolate::create(['name' => $name, 'base_price' => 3])->brand, $name);
+        }
+
+        $bar = Chocolate::create(['name' => 'Milka Oreo 92 qr', 'brand' => 'Mondelez', 'base_price' => 3]);
+        $bar->update(['name' => 'Milka Oreo Plitka 92 qr']);
+        $this->assertSame('Mondelez', $bar->fresh()->brand, "the owner's brand stays");
+    }
+
+    public function test_the_customer_sees_one_brand_at_a_time(): void
+    {
+        $box = $this->box();
+        Chocolate::create(['name' => 'Kr/O Alenka Süd Şokoladı 90qr', 'base_price' => 3]);
+        $milka = Chocolate::create(['name' => 'Milka Bubbles 90 qr', 'base_price' => 4]);
+        Chocolate::create(['name' => 'Milka Oreo 92 qr', 'base_price' => 4]);
+        Chocolate::create(['name' => 'Şekersiz şokolad, tünd, 100 q', 'base_price' => 2]);
+
+        $html = $this->get(route('products.customize', $box->slug))->assertOk()->getContent();
+        preg_match_all('/class="choc-brand[^"]*" *\s*data-brand="([^"]*)"/', $html, $chips);
+        $this->assertSame(['Alenka', 'Milka', 'Digər'], $chips[1], 'A–Z, the unbranded last');
+        $this->assertMatchesRegularExpression('/class="choc-brand active"\s*data-brand="Alenka"/', $html);
+        $this->assertMatchesRegularExpression('/class="choc-group" data-brand="Alenka"\s*>/', $html);
+        $this->assertMatchesRegularExpression('/class="choc-group" data-brand="Milka"\s*hidden/', $html);
+        $this->assertStringContainsString('Milka <span>2</span>', $html);
+
+        // Back from a failed add, the chosen bar's brand is the one open.
+        $html = $this->withSession(['_old_input' => ['chocolate_id' => (string) $milka->id]])
+            ->get(route('products.customize', $box->slug))->getContent();
+        $this->assertMatchesRegularExpression('/class="choc-brand active has-pick"\s*data-brand="Milka"/', $html);
+        $this->assertMatchesRegularExpression('/value="' . $milka->id . '"[^>]*\s+checked/', $html);
+    }
+
     public function test_bars_are_grouped_by_the_shop_they_come_from(): void
     {
         Http::fake(['b7x9kq.arazmarket.az/*' => Http::response($this->png())]);

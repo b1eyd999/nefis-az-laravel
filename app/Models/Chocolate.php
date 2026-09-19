@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ChocolateBrand;
 use App\Support\Media;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -30,7 +31,7 @@ class Chocolate extends Model
     public const SOURCE_BIRMARKET = 'birmarket';
 
     protected $fillable = [
-        'market_id', 'name', 'weight_g', 'image', 'base_price', 'sale_price', 'sale_percent', 'markup_percent',
+        'market_id', 'name', 'brand', 'weight_g', 'image', 'base_price', 'sale_price', 'sale_percent', 'markup_percent',
         'is_active', 'sort_order', 'source', 'source_id', 'source_url', 'barcode', 'seller', 'in_source', 'synced_at',
     ];
 
@@ -48,6 +49,11 @@ class Chocolate extends Model
 
     protected static function booted(): void
     {
+        // New bars (imported or added by hand) get their brand from the name.
+        static::saving(function (Chocolate $chocolate) {
+            $chocolate->brand = trim((string) $chocolate->brand) ?: ChocolateBrand::detect($chocolate->name);
+        });
+
         static::forceDeleted(function (Chocolate $chocolate) {
             if ($chocolate->image) {
                 Storage::disk('public')->delete($chocolate->image);
@@ -107,6 +113,7 @@ class Chocolate extends Model
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'brand' => $this->brand ?: ChocolateBrand::OTHER,
             'weight' => $this->weightLabel(),
             'price' => $this->price(),
             'image' => $this->imageUrl(),
