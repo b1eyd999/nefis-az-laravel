@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Storage;
@@ -27,6 +28,7 @@ class Product extends Model
         'tag',
         'category',
         'preview_image',
+        'box_color',
         'price',
         'template_image',
         'overlay_image',
@@ -106,6 +108,12 @@ class Product extends Model
     public function layers(): HasMany
     {
         return $this->hasMany(DesignLayer::class)->orderBy('sort_order');
+    }
+
+    /** Scenes picked for this product; none picked means every active one. */
+    public function scenes(): BelongsToMany
+    {
+        return $this->belongsToMany(Scene::class)->orderBy('scenes.sort_order')->orderBy('scenes.id');
     }
 
     public function angles(): HasMany

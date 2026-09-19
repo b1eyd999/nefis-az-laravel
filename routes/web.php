@@ -8,6 +8,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\SceneEditorController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -39,6 +40,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/asset', [BoxEditorController::class, 'uploadAsset'])->name('asset');
         Route::post('/visual', [BoxEditorController::class, 'uploadVisual'])->name('visual');
         Route::post('/font', [BoxEditorController::class, 'uploadFont'])->name('font');
+    });
+
+    // The admin's scene editor: the mockups customers see their box in.
+    Route::prefix('sehne-redaktoru')->name('scene.')->group(function () {
+        Route::post('/kitabxana', [SceneEditorController::class, 'uploadAsset'])->name('asset');
+        Route::delete('/kitabxana/{asset}', [SceneEditorController::class, 'destroyAsset'])->name('asset.destroy');
+        Route::get('/{scene}', [SceneEditorController::class, 'edit'])->whereNumber('scene')->name('edit');
+        Route::post('/{scene}', [SceneEditorController::class, 'save'])->whereNumber('scene')->name('save');
     });
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

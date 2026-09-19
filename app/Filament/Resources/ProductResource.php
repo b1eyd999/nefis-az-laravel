@@ -59,10 +59,24 @@ class ProductResource extends Resource
                             ->label('Sıra nömrəsi')
                             ->numeric()
                             ->default(0),
+                        Forms\Components\ColorPicker::make('box_color')
+                            ->label('Qutunun rəngi (mokaplarda)')
+                            ->helperText('Səhnələrdə "məhsulun rəngini götür" işarəli ağ qutu renderi bu rəngə boyanır. Boş — ağ qalır.')
+                            ->regex('/^#[0-9a-fA-F]{6}$/'),
                         Forms\Components\Toggle::make('is_active')
                             ->label('Saytda görünsün')
                             ->default(true),
                     ])->columns(2),
+                Forms\Components\Section::make('Səhnələr')
+                    ->description('Müştəri bu qutunu hansı mokaplarda görsün. Heç biri seçilməsə, bütün aktiv səhnələrdə göstərilir.')
+                    ->schema([
+                        Forms\Components\CheckboxList::make('scenes')
+                            ->label('')
+                            ->relationship('scenes', 'name', fn ($query) => $query->orderBy('scenes.sort_order'))
+                            ->columns(3)
+                            ->bulkToggleable(),
+                    ])
+                    ->collapsible(),
             ]);
     }
 

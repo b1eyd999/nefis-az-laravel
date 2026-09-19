@@ -19,6 +19,7 @@
   }
   .rotate-reset:hover{ border-color:var(--gold); }
   .slot-hint{ font-size:.8125rem; color:var(--cocoa-soft); margin-top:.5rem; }
+  .angle-thumb canvas{ width:100%; height:100%; object-fit:cover; display:block; }
 @endsection
 
 @section('content')
@@ -49,7 +50,8 @@
 
     <div class="customizer">
       <div>
-        <div class="stage" id="stage">
+        @php $firstScene = $viewData[0]['scene'] ?? null; @endphp
+        <div class="stage" id="stage" @if($firstScene) style="aspect-ratio: {{ $firstScene['w'] }} / {{ $firstScene['h'] }};" @endif>
           <canvas id="preview-canvas"></canvas>
           @if($photoSlots->isNotEmpty())
             <div class="drop-hint" id="drop-hint">Öncə sağdan şəklinizi yükləyin</div>
@@ -62,8 +64,14 @@
         @if(count($viewData) > 1)
           <div class="angle-thumbs" id="angle-thumbs">
             @foreach($viewData as $view)
-              <button type="button" class="angle-thumb{{ $loop->first ? ' active' : '' }}" data-angle="{{ $loop->index }}">
-                <img src="{{ $view['bg'] ?: $view['url'] }}" alt="{{ $view['label'] ?? $product->name }}">
+              <button type="button" class="angle-thumb{{ $loop->first ? ' active' : '' }}" data-angle="{{ $loop->index }}"
+                      title="{{ $view['label'] ?? $product->name }}" aria-label="{{ $view['label'] ?? $product->name }}">
+                @if(array_key_exists('scene', $view))
+                  {{-- Drawn live, so every thumbnail shows the customer's own box. --}}
+                  <canvas></canvas>
+                @else
+                  <img src="{{ $view['bg'] ?: $view['url'] }}" alt="{{ $view['label'] ?? $product->name }}">
+                @endif
               </button>
             @endforeach
           </div>
@@ -156,6 +164,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 @endif
 <script src="{{ asset('js/box-render.js') }}"></script>
+<script src="{{ asset('js/scene-render.js') }}"></script>
 <script>
 (function(){
   "use strict";
@@ -202,6 +211,18 @@
   }
   function drawLayers(mctx, list){
     (list || []).forEach(function(l){ NefisBox.drawLayer(mctx, layerImage(l.url), l); });
+  }
+  /* Pictures of the owner's mockup scenes, and the scratch canvases their
+     warps are drawn in (one set for the big view, one per thumbnail). */
+  var sceneImages = {}, sceneCache = {}, thumbCaches = {};
+  function sceneImage(url){
+    if (!url) return null;
+    if (!sceneImages[url]) {
+      sceneImages[url] = new Image();
+      sceneImages[url].onload = function(){ draw(); };
+      sceneImages[url].src = url;
+    }
+    return sceneImages[url];
   }
   var activeAngle = 0;
 
@@ -301,7 +322,10 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     var a = currentAngle();
 
-    if (a.bg) {
+    if (a.scene) {
+      /* The owner's mockup: the box design corner-pinned onto a rendered box. */
+      NefisScene.drawScene(ctx, a.scene, renderMockup(), sceneImage, sceneCache, { boxColor: a.boxColor });
+    } else if (a.bg) {
       if (bgReady) ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
       var mockup = renderMockup();
       var box = a.boxArea, cb = a.contentBox;
@@ -319,6 +343,35 @@
     } else {
       ctx.drawImage(renderMockup(), 0, 0, canvas.width, canvas.height);
     }
+    scheduleThumbs();
+  }
+
+  /* Thumbnails show the customer's own box in every scene. Every view of a
+     box shares one design, so the mockup just drawn serves them all. */
+  var thumbCanvases = Array.prototype.slice.call(document.querySelectorAll('.angle-thumb canvas'));
+  var thumbTimer = null;
+  function scheduleThumbs(){
+    if (!thumbCanvases.length) return;
+    clearTimeout(thumbTimer);
+    thumbTimer = setTimeout(drawThumbs, 250);
+  }
+  function drawThumbs(){
+    var design = mockupCanvas;
+    if (!design.width) return;
+    thumbCanvases.forEach(function(tc){
+      var i = Number(tc.parentNode.dataset.angle), a = ANGLES[i];
+      var sw = a.scene ? a.scene.w : a.tw, sh = a.scene ? a.scene.h : a.th;
+      var s = 112 / Math.min(sw, sh);
+      tc.width = Math.round(sw * s);
+      tc.height = Math.round(sh * s);
+      var tctx = tc.getContext('2d');
+      tctx.clearRect(0, 0, tc.width, tc.height);
+      if (a.scene) {
+        NefisScene.drawScene(tctx, NefisScene.scaled(a.scene, s), design, sceneImage, thumbCaches[i] || (thumbCaches[i] = {}), { boxColor: a.boxColor });
+      } else {
+        tctx.drawImage(design, 0, 0, tc.width, tc.height);
+      }
+    });
   }
 
   /* ---------- angles ---------- */
@@ -340,7 +393,10 @@
       overlay.src = a.overlay;
     }
 
-    if (a.bg) {
+    if (a.scene) {
+      canvas.width = a.scene.w;
+      canvas.height = a.scene.h;
+    } else if (a.bg) {
       canvas.width = a.bgW;
       canvas.height = a.bgH;
       bgReady = false;
@@ -528,6 +584,8 @@
   function toMockupCoords(clientX, clientY){
     var p = toCanvasPixel(clientX, clientY);
     var a = currentAngle();
+    /* On a mockup, undo the corner pin; off the box there is nothing to drag. */
+    if (a.scene) return NefisScene.designPoint(a.scene, p.x, p.y, a.tw, a.th);
     if (!a.bg) return p;
 
     var box = a.boxArea, cb = a.contentBox;
@@ -549,6 +607,7 @@
   }
 
   function slotAtPoint(p){
+    if (!p) return -1;
     var areas = currentAngle().areas;
     for (var i = areas.length - 1; i >= 0; i--) {
       if (!photos[i] || !photos[i].img) continue;
@@ -581,8 +640,10 @@
     if (dragSlot < 0) return;
     var a = toMockupCoords(lastX, lastY);
     var b = toMockupCoords(clientX, clientY);
-    photos[dragSlot].offsetX += b.x - a.x;
-    photos[dragSlot].offsetY += b.y - a.y;
+    if (a && b) {
+      photos[dragSlot].offsetX += b.x - a.x;
+      photos[dragSlot].offsetY += b.y - a.y;
+    }
     lastX = clientX;
     lastY = clientY;
     draw();

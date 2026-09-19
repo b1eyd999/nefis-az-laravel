@@ -112,10 +112,11 @@ class BoxEditorTest extends TestCase
         $this->assertNotNull($box->textSlots()->first()->stroke_width);
         $this->assertEquals(0, $box->textSlots()->first()->stroke_width);
 
-        // Every scene shows the same flat design, the layer included.
+        // Every scene shows the same flat design, the layer included, and the
+        // design is shown on its own last.
         $page = $this->get(route('products.customize', $box->slug))->assertOk();
         $views = $page->viewData('viewData');
-        $this->assertCount(count(config('boxes.scenes')), $views);
+        $this->assertCount(count(config('boxes.scenes')) + 1, $views);
         $this->assertSame(1060, $views[0]['areas'][0]['h']);
         $this->assertCount(1, $views[0]['layers']['above']);
         $this->assertSame('Leaving', $box->textSlots()->first()->default_value);

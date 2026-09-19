@@ -6,6 +6,7 @@ use App\Models\DesignLayer;
 use App\Models\Font;
 use App\Models\Product;
 use App\Models\TextSlot;
+use App\Support\ImageStore;
 use App\Support\Media;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,6 +35,7 @@ class BoxEditorController extends Controller
         $design = [
             'canvas' => $canvas,
             'visual' => $product->preview_image ? Media::url($product->preview_image) : null,
+            'box_color' => $product->box_color,
             'layers' => $product->layers->map(fn (DesignLayer $l) => [
                 'name' => $l->name, 'image' => $l->image, 'url' => Media::url($l->image),
                 'x' => $l->x, 'y' => $l->y, 'width' => $l->width, 'height' => $l->height,
@@ -116,6 +118,9 @@ class BoxEditorController extends Controller
             'texts.*.max_lines' => ['required', 'integer', 'between:1,10'],
             'texts.*.max_length' => ['required', 'integer', 'between:1,255'],
             'texts.*.link_key' => ['nullable', 'string', 'max:60'],
+
+            // The colour the box is dyed in the scenes (white renders).
+            'box_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
         ]);
 
         foreach ($data['texts'] as $i => $t) {
@@ -136,6 +141,7 @@ class BoxEditorController extends Controller
             $product->forceFill([
                 'template_width' => $canvas['width'],
                 'template_height' => $canvas['height'],
+                'box_color' => $data['box_color'] ?? null,
             ])->save();
 
             $product->layers()->delete();
@@ -265,41 +271,10 @@ class BoxEditorController extends Controller
         abort_unless($request->user()?->is_admin, 403);
     }
 
-    /**
-     * Keeps uploads small: artwork is re-encoded as WebP, which holds the same
-     * transparency at a fraction of a PNG's size. The hosting carries every
-     * box's files, so this is what keeps it light.
-     *
-     * @return array{0: string, 1: int, 2: int}
-     */
+    /** @return array{0: string, 1: int, 2: int} */
     private function storeImage(UploadedFile $file, string $dir, string $prefix, int $quality = 90): array
     {
-        [$width, $height] = getimagesize($file->getRealPath()) ?: [0, 0];
-        $name = $prefix . '-' . Str::lower(Str::random(10));
-
-        $source = match (strtolower($file->getClientOriginalExtension())) {
-            'png' => function_exists('imagecreatefrompng') ? @imagecreatefrompng($file->getRealPath()) : false,
-            'jpg', 'jpeg' => function_exists('imagecreatefromjpeg') ? @imagecreatefromjpeg($file->getRealPath()) : false,
-            default => false,
-        };
-
-        if ($source && function_exists('imagewebp')) {
-            imagepalettetotruecolor($source);
-            imagealphablending($source, false);
-            imagesavealpha($source, true);
-            $path = "{$dir}/{$name}.webp";
-            ob_start();
-            imagewebp($source, null, $quality);
-            Storage::disk('public')->put($path, ob_get_clean());
-            imagedestroy($source);
-
-            return [$path, (int) $width, (int) $height];
-        }
-
-        // No converter available (or already WebP): keep the file as it came.
-        $path = $file->storeAs($dir, $name . '.' . strtolower($file->getClientOriginalExtension()), 'public');
-
-        return [$path, (int) $width, (int) $height];
+        return ImageStore::store($file, $dir, $prefix, $quality);
     }
 
     private function looksLikeFont(UploadedFile $file): bool

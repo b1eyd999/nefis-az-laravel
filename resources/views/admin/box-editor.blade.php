@@ -214,7 +214,8 @@
   var doc = {
     layers: @json($design['layers']),
     photos: @json($design['photos']),
-    texts: @json($design['texts'])
+    texts: @json($design['texts']),
+    box_color: @json($design['box_color'])
   };
   var visualUrl = @json($design['visual']);
 
@@ -976,6 +977,9 @@
       else h += '<p class="hint">Hazır görünüşü yükləyin — kataloqda göstəriləcək və burada qatları düzmək üçün üstə qoyula bilər.</p>';
       h += '<div class="actions"><button class="btn small" data-act="visual">' + (visualUrl ? 'Vizualı dəyiş' : 'Vizual yüklə') + '</button>'
          + (visualUrl ? '<button class="btn small" data-act="guide">' + (guideOn.checked ? 'Bələdçini gizlət' : 'Bələdçini göstər') + '</button>' : '') + '</div>';
+      h += '<h4>Qutunun rəngi (mokaplarda)</h4><p class="hint" style="margin-top:0">Səhnələrdə "məhsulun rəngini götür" işarəli ağ qutu renderi bu rəngə boyanır. Rəngsiz — ağ qalır.</p>'
+         + '<div class="row"><div class="field"><label>Rəng</label><input type="color" data-box-color value="' + esc(doc.box_color || '#ffffff') + '"></div>'
+         + '<div class="field"><label>&nbsp;</label><button class="btn small" data-act="box-color-clear"' + (doc.box_color ? '' : ' disabled') + '>' + (doc.box_color ? 'Rəngsiz et' : 'Rəngsiz') + '</button></div></div>';
       h += '<h4>Sınaq şəkli</h4><p class="hint">Foto sahələrində necə görünəcəyini yoxlamaq üçün. Yalnız burada görünür, saxlanılmır.</p>'
          + '<div class="actions"><button class="btn small" data-act="test">' + (testPhoto ? 'Başqa şəkil' : 'Şəkil seç') + '</button>'
          + (testPhoto ? '<button class="btn small" data-act="test-clear">Təmizlə</button>' : '') + '</div>';
@@ -1052,6 +1056,7 @@
 
   props.addEventListener('input', function(e){
     var el = e.target, k = el.dataset.k;
+    if (el.dataset.boxColor !== undefined) { doc.box_color = el.value; commitSoon(); return; }
     if (!k) return;
     var it = itemOf(selection);
     if (!it) return;
@@ -1113,6 +1118,7 @@
     if (act === 'test') return document.getElementById('file-test').click();
     if (act === 'test-clear') { testPhoto = null; render(); renderProps(); return; }
     if (act === 'font') return document.getElementById('file-font').click();
+    if (act === 'box-color-clear') { doc.box_color = null; commit(); renderProps(); return; }
     if (act === 'del') return removeSelected();
     if (act === 'dup') return duplicateSelected();
     if (['front', 'back', 'up', 'down'].indexOf(act) >= 0) return moveLayer(selection.index, act);
@@ -1348,7 +1354,8 @@
       layers: doc.layers.map(function(l){ return { name: l.name, image: l.image, x: l.x, y: l.y, width: l.width, height: l.height,
         rotation: l.rotation || 0, opacity: l.opacity == null ? 100 : l.opacity, placement: l.placement, locked: !!l.locked }; }),
       photos: doc.photos.map(function(p){ return { label: p.label, x: p.x, y: p.y, width: p.width, height: p.height, rotation: p.rotation || 0, shape: p.shape }; }),
-      texts: doc.texts.map(function(t){ var o = clone(t); o.rotation = o.rotation || 0; o.max_lines = Math.max(1, +o.max_lines || 1); o.max_length = Math.max(1, +o.max_length || 60); return o; })
+      texts: doc.texts.map(function(t){ var o = clone(t); o.rotation = o.rotation || 0; o.max_lines = Math.max(1, +o.max_lines || 1); o.max_length = Math.max(1, +o.max_length || 60); return o; }),
+      box_color: doc.box_color || null
     };
     var btn = document.getElementById('save');
     btn.disabled = true;

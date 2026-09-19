@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DesignLayer;
 use App\Models\Product;
 use App\Models\ProductAngle;
+use App\Models\Scene;
 use App\Support\Media;
 
 class ProductController extends Controller
@@ -38,8 +39,9 @@ class ProductController extends Controller
     }
 
     /**
-     * A box built in the editor is one flat design shown in every scene from
-     * config/boxes.php, so the owner lays it out once and never per angle.
+     * A box built in the editor is one flat design, shown in every scene the
+     * owner built in the scene editor (or only those picked for it), then on
+     * its own. Until any scene exists, the stand-ins in config/boxes.php fill in.
      */
     private function boxViews(Product $product): array
     {
@@ -51,38 +53,36 @@ class ProductController extends Controller
             'x' => $l->x, 'y' => $l->y, 'width' => $l->width, 'height' => $l->height,
             'rotation' => $l->rotation, 'opacity' => $l->opacity,
         ];
-        $layers = [
-            'below' => $product->layers->where('placement', DesignLayer::BELOW)->map($layer)->values()->all(),
-            'above' => $product->layers->where('placement', DesignLayer::ABOVE)->map($layer)->values()->all(),
-        ];
 
-        $flat = $this->viewPayload($product);
+        $flat = array_merge($this->viewPayload($product), [
+            'url' => null,
+            'overlay' => null,
+            'bg' => null,
+            'layers' => [
+                'below' => $product->layers->where('placement', DesignLayer::BELOW)->map($layer)->values()->all(),
+                'above' => $product->layers->where('placement', DesignLayer::ABOVE)->map($layer)->values()->all(),
+            ],
+            'tw' => $w,
+            'th' => $h,
+            'scene' => null,
+            // Renders marked to follow it are dyed this colour in every scene.
+            'boxColor' => $product->box_color,
+        ]);
 
-        return collect(config('boxes.scenes'))->map(function (array $scene) use ($flat, $layers, $w, $h) {
-            $bw = $scene['scale'] * $w;
-            $bh = $scene['scale'] * $h;
+        $scenes = $product->scenes()->where('is_active', true)->get();
+        if ($scenes->isEmpty()) {
+            $scenes = Scene::shown()->get();
+        }
+        $scenes = $scenes->map->toCustomer();
+        if ($scenes->isEmpty()) {
+            $scenes = collect(config('boxes.scenes'))->map(fn (array $s) => Scene::fromConfig($s, $w, $h));
+        }
 
-            return array_merge($flat, [
-                'url' => null,
-                'overlay' => null,
-                'layers' => $layers,
-                'tw' => $w,
-                'th' => $h,
-                'label' => $scene['label'],
-                // Scenes are part of the site itself, shipped in public/.
-                'bg' => asset($scene['background']),
-                'bgW' => $scene['width'],
-                'bgH' => $scene['height'],
-                'boxArea' => [
-                    'x' => (int) round($scene['cx'] - $bw / 2),
-                    'y' => (int) round($scene['cy'] - $bh / 2),
-                    'w' => (int) round($bw),
-                    'h' => (int) round($bh),
-                    'rotation' => $scene['rotation'],
-                ],
-                'contentBox' => ['x' => 0, 'y' => 0, 'w' => $w, 'h' => $h, 'rotation' => 0],
-            ]);
-        })->values()->all();
+        return $scenes
+            ->map(fn (array $scene) => array_merge($flat, ['label' => $scene['label'], 'scene' => $scene]))
+            ->push(array_merge($flat, ['label' => 'Düz görünüş']))
+            ->values()
+            ->all();
     }
 
     /**
