@@ -23,6 +23,13 @@ class OrderResource extends Resource
 
     protected static ?string $pluralModelLabel = 'sifarişlər';
 
+    public const STATUSES = [
+        'pending' => 'Gözləmədə',
+        'confirmed' => 'Təsdiqləndi',
+        'completed' => 'Tamamlandı',
+        'cancelled' => 'Ləğv edildi',
+    ];
+
     public static function form(Form $form): Form
     {
         return $form

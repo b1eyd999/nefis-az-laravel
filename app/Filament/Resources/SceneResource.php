@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AdminOnly;
 use App\Filament\Resources\SceneResource\Pages;
 use App\Models\Scene;
 use App\Support\Media;
@@ -13,6 +14,8 @@ use Filament\Tables\Table;
 
 class SceneResource extends Resource
 {
+    use AdminOnly;
+
     protected static ?string $model = Scene::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-photo';

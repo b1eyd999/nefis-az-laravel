@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AdminOnly;
 use App\Filament\Resources\ProductResource\Pages;
 use App\Models\Product;
 use App\Models\Scene;
@@ -18,6 +19,8 @@ use Illuminate\Support\Str;
 
 class ProductResource extends Resource
 {
+    use AdminOnly;
+
     protected static ?string $model = Product::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';

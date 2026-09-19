@@ -16,9 +16,52 @@ class User extends Authenticatable implements FilamentUser
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    public const CUSTOMER = 'customer';
+
+    public const MANAGER = 'manager';
+
+    public const ADMIN = 'admin';
+
+    /** The roles, as the admin panel names them. */
+    public const ROLES = [
+        self::CUSTOMER => 'Müştəri',
+        self::MANAGER => 'Menecer',
+        self::ADMIN => 'Admin',
+    ];
+
+    protected static function booted(): void
+    {
+        // `is_admin` follows the role, which the editors and older code check;
+        // code that still sets `is_admin` moves the role with it.
+        static::saving(function (User $user) {
+            if ($user->isDirty('role') || ! $user->exists && $user->role) {
+                $user->is_admin = $user->role === self::ADMIN;
+            } elseif ($user->isDirty('is_admin')) {
+                $user->role = $user->is_admin ? self::ADMIN : ($user->role === self::ADMIN ? self::CUSTOMER : ($user->role ?? self::CUSTOMER));
+            }
+            $user->role ??= self::CUSTOMER;
+        });
+    }
+
+    /** Admins and managers get into the panel; managers see the orders only. */
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->is_admin;
+        return $this->isStaff();
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ADMIN || (bool) $this->is_admin;
+    }
+
+    public function isStaff(): bool
+    {
+        return $this->isAdmin() || $this->role === self::MANAGER;
+    }
+
+    public function roleLabel(): string
+    {
+        return self::ROLES[$this->role] ?? $this->role;
     }
 
     public function orders(): HasMany
@@ -37,6 +80,7 @@ class User extends Authenticatable implements FilamentUser
         'password',
         'phone',
         'is_admin',
+        'role',
     ];
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AdminOnly;
 use App\Filament\Resources\ChocolateResource\Pages;
 use App\Models\Chocolate;
 use App\Models\Setting;
@@ -22,6 +23,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
  */
 class ChocolateResource extends Resource
 {
+    use AdminOnly;
+
     protected static ?string $model = Chocolate::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-cake';

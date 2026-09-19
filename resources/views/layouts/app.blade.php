@@ -535,8 +535,8 @@
         @endif
       </a>
       @auth
-        @if(auth()->user()->is_admin)
-          {{-- Only the owner sees this; customers never have is_admin. --}}
+        @if(auth()->user()->isStaff())
+          {{-- Only the owner and managers see this; customers never do. --}}
           <a href="{{ url('/admin') }}" class="btn btn-primary header-cta">Admin</a>
         @endif
         <form method="POST" action="{{ route('logout') }}">
@@ -560,7 +560,7 @@
   <a href="{{ route('cart.index') }}">Səbət</a>
   @auth
     <a href="{{ route('orders.index') }}">Sifarişlərim</a>
-    @if(auth()->user()->is_admin)
+    @if(auth()->user()->isStaff())
       <a href="{{ url('/admin') }}">Admin</a>
     @endif
     <form method="POST" action="{{ route('logout') }}"><button type="submit">Çıxış</button></form>

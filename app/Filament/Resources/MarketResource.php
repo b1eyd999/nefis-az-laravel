@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AdminOnly;
 use App\Filament\Resources\ChocolateResource\Pages\ListChocolates;
 use App\Filament\Resources\MarketResource\Pages;
 use App\Models\Market;
@@ -18,6 +19,8 @@ use Illuminate\Support\Str;
  */
 class MarketResource extends Resource
 {
+    use AdminOnly;
+
     protected static ?string $model = Market::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-building-storefront';
