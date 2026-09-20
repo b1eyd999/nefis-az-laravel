@@ -340,10 +340,12 @@
   }
   var activeAngle = 0;
 
-  /* One entry per photo slot, kept across angle switches. */
+  /* One entry per photo slot, kept across angle switches. Zoom is a multiple of
+     the cutout's own fit and the pan is a share of the cutout's size, so the
+     same framing carries from the flat design into every mockup. */
   var photos = [];
   for (var i = 0; i < SLOT_COUNT; i++) {
-    photos.push({ img: null, scale: 1, rotate: 0, offsetX: 0, offsetY: 0, faceBox: null });
+    photos.push({ img: null, scale: 1, rotate: 0, panX: 0, panY: 0, faceBox: null, framed: false });
   }
 
   function currentAngle(){ return ANGLES[activeAngle]; }
@@ -399,7 +401,7 @@
     mctx.clip();
     mctx.rotate(-rotRad);
 
-    mctx.translate(state.offsetX, state.offsetY);
+    mctx.translate((state.panX || 0) * area.w, (state.panY || 0) * area.h);
     mctx.rotate(photoRad);
     mctx.drawImage(img, -img.width * s / 2, -img.height * s / 2, img.width * s, img.height * s);
     mctx.restore();
@@ -528,16 +530,15 @@
 
     photos.forEach(function(state, i){
       if (!state.img) return;
-      state.scale = 1;
-      state.offsetX = 0;
-      state.offsetY = 0;
+      /* What the customer framed by hand stays; only automatic face framing
+         follows this view's own cutout. */
+      var area = areaFor(i);
+      if (!state.framed && area && area.shape === 'ellipse' && state.faceBox) frameOnFace(i, state.faceBox);
       var block = slotBlocks[i];
       var zoom = block && block.querySelector('.zoom-range');
-      if (zoom) zoom.value = 100;
+      if (zoom) zoom.value = Math.round(state.scale * 100);
       var rot = block && block.querySelector('.rotate-range');
       if (rot) rot.value = state.rotate || 0;
-      var area = areaFor(i);
-      if (area && area.shape === 'ellipse' && state.faceBox) frameOnFace(i, state.faceBox);
     });
 
     draw();
@@ -559,8 +560,8 @@
     var baseScale = coverScale(area, state.img.width, state.img.height);
 
     state.scale = desiredScale / baseScale;
-    state.offsetX = desiredScale * (state.img.width / 2 - faceCx);
-    state.offsetY = desiredScale * (state.img.height / 2 - (faceCy + box.height * faceCenterBias));
+    state.panX = desiredScale * (state.img.width / 2 - faceCx) / area.w;
+    state.panY = desiredScale * (state.img.height / 2 - (faceCy + box.height * faceCenterBias)) / area.h;
 
     var zoom = slotBlocks[slotIndex] && slotBlocks[slotIndex].querySelector('.zoom-range');
     if (zoom) zoom.value = Math.round(state.scale * 100);
@@ -570,8 +571,9 @@
     var state = photos[slotIndex];
     state.faceBox = null;
     state.scale = 1;
-    state.offsetX = 0;
-    state.offsetY = 0;
+    state.panX = 0;
+    state.panY = 0;
+    state.framed = false;
 
     var area = areaFor(slotIndex);
     if (!area || area.shape !== 'ellipse' || typeof faceapi === 'undefined') return;
@@ -627,6 +629,7 @@
     if (zoom) {
       zoom.addEventListener('input', function(){
         photos[index].scale = zoom.value / 100;
+        photos[index].framed = true;
         draw();
       });
     }
@@ -755,8 +758,12 @@
     var a = toMockupCoords(lastX, lastY);
     var b = toMockupCoords(clientX, clientY);
     if (a && b) {
-      photos[dragSlot].offsetX += b.x - a.x;
-      photos[dragSlot].offsetY += b.y - a.y;
+      var area = areaFor(dragSlot);
+      if (area) {
+        photos[dragSlot].panX += (b.x - a.x) / area.w;
+        photos[dragSlot].panY += (b.y - a.y) / area.h;
+        photos[dragSlot].framed = true;
+      }
     }
     lastX = clientX;
     lastY = clientY;
