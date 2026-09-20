@@ -27,3 +27,6 @@ Thumbs.db
 /storage/app/public/designs
 /storage/app/public/backgrounds
 /yandex-media.txt
+
+# Local QA renders of admin pages
+/public/_qa_*.html
