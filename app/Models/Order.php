@@ -12,6 +12,16 @@ class Order extends Model
 {
     use HasFactory;
 
+    /** Where an order stands, from the customer's payment to the parcel. */
+    public const STATUSES = [
+        'awaiting_payment' => 'Ödəniş gözlənilir',
+        'payment_check' => 'Çek yoxlanılır',
+        'pending' => 'Gözləmədə',
+        'confirmed' => 'Təsdiqləndi',
+        'completed' => 'Tamamlandı',
+        'cancelled' => 'Ləğv edildi',
+    ];
+
     protected $fillable = [
         'user_id',
         'status',
@@ -30,6 +40,11 @@ class Order extends Model
         'delivery_lat',
         'delivery_lng',
         'materials_cost',
+        // Paying by transfer: which account the money goes to, and the receipt.
+        'payment_account_id',
+        'payment_receipt',
+        'receipt_at',
+        'payment_confirmed_at',
     ];
 
     protected function casts(): array
@@ -39,7 +54,30 @@ class Order extends Model
             'delivery_lat' => 'float',
             'delivery_lng' => 'float',
             'materials_cost' => 'float',
+            'receipt_at' => 'datetime',
+            'payment_confirmed_at' => 'datetime',
         ];
+    }
+
+    public function paymentAccount(): BelongsTo
+    {
+        return $this->belongsTo(PaymentAccount::class);
+    }
+
+    public function statusLabel(): string
+    {
+        return self::STATUSES[$this->status] ?? $this->status;
+    }
+
+    /** Still to be paid for: the customer is sent back to the payment page. */
+    public function awaitsPayment(): bool
+    {
+        return in_array($this->status, ['awaiting_payment', 'payment_check'], true);
+    }
+
+    public function receiptUrl(): ?string
+    {
+        return $this->payment_receipt ? \App\Support\Media::url($this->payment_receipt) : null;
     }
 
     protected static function booted(): void

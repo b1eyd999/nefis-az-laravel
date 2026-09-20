@@ -34,9 +34,21 @@ class Setting extends Model
     /** JSON list of brand names shown first, in orange, in the customer's bar picker. */
     public const TOP_BRANDS = 'chocolate_top_brands';
 
+    /** How many orders one payment account takes before the next one is offered. */
+    public const PAYMENT_LIMIT = 'payment_limit';
+
+    /** The span those orders are counted over, in hours. */
+    public const PAYMENT_WINDOW_HOURS = 'payment_window_hours';
+
+    /** What the customer is told on the payment page. */
+    public const PAYMENT_NOTE = 'payment_note';
+
     /** What each setting is until the owner changes it. */
     public const DEFAULTS = [
         self::TOP_BRANDS => '["Milka","Alpen Gold"]',
+        self::PAYMENT_LIMIT => '5',
+        self::PAYMENT_WINDOW_HOURS => '24',
+        self::PAYMENT_NOTE => 'Köçürmədən sonra çeki (qəbzi) buraya yükləyin. Ödənişi 1 saat ərzində yoxlayıb sifarişinizi təsdiqləyirik.',
         self::CHOCOLATE_MARKUP => '30',
         self::CHOCOLATE_FROM_SALE => '0',
         self::MAINTENANCE => '0',

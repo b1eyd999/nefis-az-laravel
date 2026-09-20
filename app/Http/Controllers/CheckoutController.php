@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DeliveryMethod;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\PaymentAccount;
 use App\Models\Product;
 use App\Support\Accounting;
 use App\Support\Cart;
@@ -47,9 +48,14 @@ class CheckoutController extends Controller
 
         $delivery = $this->validateDelivery($request);
 
+        // Paid by transfer: the order waits for the money and the receipt.
+        // Without an account set up it simply goes through as before.
+        $account = PaymentAccount::pick();
+
         $order = Order::create($delivery + [
             'user_id' => $request->user()->id,
-            'status' => 'pending',
+            'status' => $account ? 'awaiting_payment' : 'pending',
+            'payment_account_id' => $account?->id,
             'note' => $request->input('note'),
         ]);
 
@@ -79,7 +85,9 @@ class CheckoutController extends Controller
 
         Cart::clear();
 
-        return redirect()->route('orders.index')->with('status', 'Sifarişiniz qəbul edildi! Tezliklə sizinlə əlaqə saxlayacağıq.');
+        return $account
+            ? redirect()->route('orders.pay', $order)
+            : redirect()->route('orders.index')->with('status', 'Sifarişiniz qəbul edildi! Tezliklə sizinlə əlaqə saxlayacağıq.');
     }
 
     /**

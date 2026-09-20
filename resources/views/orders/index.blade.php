@@ -30,14 +30,8 @@
           <div class="cart-summary" style="margin-bottom:0;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
               <span style="font-weight:700;">Sifariş #{{ $order->id }}</span>
-              <span class="chip" style="border:1px solid var(--line); padding:.25rem .75rem; border-radius:999px; font-size:.75rem; text-transform:uppercase;">
-                @switch($order->status)
-                  @case('pending') Gözləmədə @break
-                  @case('confirmed') Təsdiqləndi @break
-                  @case('completed') Tamamlandı @break
-                  @case('cancelled') Ləğv edildi @break
-                  @default {{ $order->status }}
-                @endswitch
+              <span class="chip" style="border:1px solid var(--line); padding:.25rem .75rem; border-radius:999px; font-size:.75rem;">
+                {{ $order->statusLabel() }}
               </span>
             </div>
             @foreach($order->items as $item)
@@ -68,6 +62,11 @@
             @endif
             @if($order->total() > 0)
               <p style="font-weight:700; margin-top:.35rem;">Cəmi: {{ \App\Support\Price::format($order->total()) }}</p>
+            @endif
+            @if($order->awaitsPayment())
+              <a href="{{ route('orders.pay', $order) }}" class="btn btn-primary" style="margin-top:.75rem;">
+                {{ $order->payment_receipt ? 'Ödəniş səhifəsi' : 'Ödənişi tamamla' }}
+              </a>
             @endif
             <p style="font-size:.8125rem; color:var(--cocoa-soft); margin-top:.75rem;">{{ $order->created_at->format('d.m.Y H:i') }}</p>
           </div>

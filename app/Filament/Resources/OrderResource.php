@@ -9,9 +9,11 @@ use App\Models\Order;
 use App\Support\Price;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 
 class OrderResource extends Resource
 {
@@ -25,12 +27,7 @@ class OrderResource extends Resource
 
     protected static ?string $pluralModelLabel = 'sifarişlər';
 
-    public const STATUSES = [
-        'pending' => 'Gözləmədə',
-        'confirmed' => 'Təsdiqləndi',
-        'completed' => 'Tamamlandı',
-        'cancelled' => 'Ləğv edildi',
-    ];
+    public const STATUSES = Order::STATUSES;
 
     public static function form(Form $form): Form
     {
@@ -49,6 +46,35 @@ class OrderResource extends Resource
                             ->label('Müştərinin qeydi')
                             ->columnSpanFull(),
                     ])->columns(2),
+                // Paid by transfer: which account, and the receipt the customer sent.
+                Forms\Components\Section::make('Ödəniş')
+                    ->schema([
+                        Forms\Components\Placeholder::make('payment_account')
+                            ->label('Hesab')
+                            ->content(fn (?Order $record) => $record?->paymentAccount
+                                ? $record->paymentAccount->typeLabel() . ' · ' . $record->paymentAccount->label . ' · ' . $record->paymentAccount->formatted()
+                                : 'Təyin olunmayıb'),
+                        Forms\Components\Placeholder::make('receipt_at')
+                            ->label('Çek göndərilib')
+                            ->content(fn (?Order $record) => $record?->receipt_at?->format('d.m.Y H:i')
+                                ?? ($record?->payment_confirmed_at ? 'Çeksiz təsdiqlənib' : 'Hələ yox')),
+                        Forms\Components\Placeholder::make('receipt')
+                            ->label('Çek')
+                            ->content(function (?Order $record) {
+                                $url = $record?->receiptUrl();
+                                if (! $url) {
+                                    return 'Yoxdur';
+                                }
+                                $isPdf = str_ends_with(strtolower((string) $record->payment_receipt), '.pdf');
+
+                                return new HtmlString($isPdf
+                                    ? '<a href="' . e($url) . '" target="_blank" rel="noopener" style="text-decoration:underline;">PDF çeki aç</a>'
+                                    : '<a href="' . e($url) . '" target="_blank" rel="noopener"><img src="' . e($url) . '" alt="" style="max-height:320px;border-radius:.6rem"></a>');
+                            })
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->visible(fn (?Order $record) => $record?->payment_account_id || $record?->payment_receipt),
                 // How it goes out, as the customer chose it at checkout.
                 Forms\Components\Section::make('Çatdırılma')
                     ->schema([
@@ -113,18 +139,13 @@ class OrderResource extends Resource
                 Tables\Columns\BadgeColumn::make('status')
                     ->label('Status')
                     ->colors([
-                        'warning' => 'pending',
+                        'gray' => 'awaiting_payment',
+                        'warning' => fn ($state) => in_array($state, ['payment_check', 'pending'], true),
                         'info' => 'confirmed',
                         'success' => 'completed',
                         'danger' => 'cancelled',
                     ])
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'pending' => 'Gözləmədə',
-                        'confirmed' => 'Təsdiqləndi',
-                        'completed' => 'Tamamlandı',
-                        'cancelled' => 'Ləğv edildi',
-                        default => $state,
-                    }),
+                    ->formatStateUsing(fn (string $state): string => self::STATUSES[$state] ?? $state),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Tarix')
                     ->dateTime('d.m.Y H:i')
@@ -135,14 +156,22 @@ class OrderResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Status')
-                    ->options([
-                        'pending' => 'Gözləmədə',
-                        'confirmed' => 'Təsdiqləndi',
-                        'completed' => 'Tamamlandı',
-                        'cancelled' => 'Ləğv edildi',
-                    ]),
+                    ->options(self::STATUSES),
             ])
             ->actions([
+                // The receipt is checked, the money is in: the order is on.
+                Tables\Actions\Action::make('confirm_payment')
+                    ->label('Ödənişi təsdiqlə')
+                    ->icon('heroicon-o-check-badge')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalDescription(fn (Order $record) => 'Sifariş #' . $record->id . ' — ' . Price::format($record->total())
+                        . ($record->paymentAccount ? ' · ' . $record->paymentAccount->label : ''))
+                    ->visible(fn (Order $record) => in_array($record->status, ['awaiting_payment', 'payment_check'], true))
+                    ->action(function (Order $record) {
+                        $record->forceFill(['status' => 'confirmed', 'payment_confirmed_at' => now()])->save();
+                        Notification::make()->success()->title('Ödəniş təsdiqləndi')->send();
+                    }),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([

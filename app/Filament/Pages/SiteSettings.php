@@ -43,6 +43,9 @@ class SiteSettings extends Page implements HasForms
             'maintenance' => Setting::get(Setting::MAINTENANCE) === '1',
             'maintenance_message' => Setting::get(Setting::MAINTENANCE_MESSAGE),
             'shares' => Setting::profitShares(),
+            'payment_limit' => (int) Setting::get(Setting::PAYMENT_LIMIT),
+            'payment_window_hours' => (int) Setting::get(Setting::PAYMENT_WINDOW_HOURS),
+            'payment_note' => Setting::get(Setting::PAYMENT_NOTE),
         ]);
     }
 
@@ -57,6 +60,18 @@ class SiteSettings extends Page implements HasForms
                         Forms\Components\Toggle::make('maintenance')->label('Saytı texniki işlərə bağla')->onColor('danger'),
                         Forms\Components\Textarea::make('maintenance_message')->label('Müştərilərə yazı')->rows(3)->required()->maxLength(500),
                     ]),
+                Forms\Components\Section::make('Ödəniş')
+                    ->description('Müştəri "Ödəniş hesabları"ndakı hesaba köçürür və çeki yükləyir. Bir hesab limitini doldurduqda növbəti hesaba keçilir.')
+                    ->schema([
+                        Forms\Components\TextInput::make('payment_limit')
+                            ->label('Bir hesaba neçə sifariş')->numeric()->minValue(1)->maxValue(500)->required(),
+                        Forms\Components\TextInput::make('payment_window_hours')
+                            ->label('Neçə saat ərzində')->numeric()->minValue(1)->maxValue(720)->suffix('saat')->required()
+                            ->helperText('Bu müddət keçdikcə sayğac özü boşalır.'),
+                        Forms\Components\Textarea::make('payment_note')
+                            ->label('Ödəniş səhifəsindəki yazı')->rows(2)->maxLength(300)->columnSpanFull(),
+                    ])
+                    ->columns(2),
                 Forms\Components\Section::make('Mənfəətin bölgüsü')
                     ->description('Xalis mənfəət bu paylarla bölünür ("Balans" səhifəsində görünür). Faizlərin cəmi 100 olmalıdır.')
                     ->schema([
@@ -85,6 +100,9 @@ class SiteSettings extends Page implements HasForms
             return;
         }
 
+        Setting::put(Setting::PAYMENT_LIMIT, (int) $data['payment_limit']);
+        Setting::put(Setting::PAYMENT_WINDOW_HOURS, (int) $data['payment_window_hours']);
+        Setting::put(Setting::PAYMENT_NOTE, $data['payment_note'] ?? '');
         Setting::put(Setting::MAINTENANCE, (bool) $data['maintenance']);
         Setting::put(Setting::MAINTENANCE_MESSAGE, $data['maintenance_message']);
         Setting::put(Setting::PROFIT_SHARES, json_encode($shares, JSON_UNESCAPED_UNICODE));

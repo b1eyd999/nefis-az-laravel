@@ -9,6 +9,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MapController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SceneEditorController;
 use Illuminate\Support\Facades\Route;
@@ -66,4 +67,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+
+    // Paying by transfer, and the receipt that follows it.
+    Route::prefix('sifaris/{order}')->whereNumber('order')->name('orders.')->group(function () {
+        Route::get('/odenis', [PaymentController::class, 'show'])->name('pay');
+        Route::post('/odenis/usul', [PaymentController::class, 'method'])->name('pay.method');
+        Route::post('/odenis/cek', [PaymentController::class, 'receipt'])->name('pay.receipt');
+    });
 });
