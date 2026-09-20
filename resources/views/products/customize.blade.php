@@ -20,6 +20,7 @@
   .rotate-reset:hover{ border-color:var(--gold); }
   .slot-hint{ font-size:.8125rem; color:var(--cocoa-soft); margin-top:.5rem; }
   .angle-thumb canvas{ width:100%; height:100%; object-fit:cover; display:block; }
+  textarea.text-input{ resize:vertical; }
   .choc-brands{ display:flex; flex-wrap:wrap; gap:.4rem; margin:.6rem 0 .25rem; }
   .choc-brand{
     position:relative; white-space:nowrap;
@@ -180,6 +181,16 @@
                        inputmode="numeric" maxlength="5" pattern="[0-9]{2}:[0-5][0-9]" required
                        placeholder="dəq:san (məs. 03:45)" title="dəq:san, məs. 03:45"
                        value="{{ old('custom_texts.' . $index, $slot->default_value) }}">
+              @elseif($slot->max_lines > 1 || str_contains((string) $slot->default_value, "\n"))
+                {{-- Room for more than one line, so Enter breaks the line here too.
+                     A text input would quietly drop the line breaks. --}}
+                @php $value = old('custom_texts.' . $index, $slot->default_value); @endphp
+                <textarea class="text-input" id="text-input-{{ $index }}" name="custom_texts[{{ $index }}]"
+                          @if($slot->link_key) data-link="{{ $slot->link_key }}" data-link-lead @endif
+                          maxlength="{{ $slot->max_length }}"
+                          rows="{{ min(4, max(2, substr_count((string) $value, "\n") + 1)) }}"
+                          placeholder="{{ $slot->placeholder ?: 'Məs. Ad Soyad və ya qısa mesaj' }}">{{ $value }}</textarea>
+                <p class="slot-hint">Yeni sətir üçün Enter basın.</p>
               @else
                 <input type="text" class="text-input" id="text-input-{{ $index }}" name="custom_texts[{{ $index }}]"
                        @if($slot->link_key) data-link="{{ $slot->link_key }}" data-link-lead @endif

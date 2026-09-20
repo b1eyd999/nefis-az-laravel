@@ -76,9 +76,10 @@ class CartController extends Controller
 
         $texts = [];
         foreach ($product->textSlots as $index => $slot) {
+            // A textarea sends CRLF; the artwork is drawn from plain line breaks.
             $texts[] = $slot->fixed
                 ? (string) $slot->default_value
-                : trim((string) $request->input("custom_texts.$index"));
+                : trim(str_replace("\r\n", "\n", (string) $request->input("custom_texts.$index")));
         }
 
         Cart::add($product->id, $paths, $texts, (int) $request->input('quantity', 1),

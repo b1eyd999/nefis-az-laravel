@@ -18,27 +18,34 @@
     return '"' + (t.fontFamily || 'Inter') + '", Inter, sans-serif';
   }
 
+  /* A line the writer broke by hand (Shift+Enter) always stays its own line;
+     what is too long for the slot still wraps within it. */
   function wrapLines(c, text, maxWidth) {
-    var words = String(text).split(' ');
     var lines = [];
-    var line = '';
-    for (var i = 0; i < words.length; i++) {
-      var test = line ? line + ' ' + words[i] : words[i];
-      if (c.measureText(test).width > maxWidth && line) {
-        lines.push(line);
-        line = words[i];
-      } else {
-        line = test;
+    String(text).split('\n').forEach(function (paragraph) {
+      var words = paragraph.split(' ');
+      var line = '';
+      for (var i = 0; i < words.length; i++) {
+        var test = line ? line + ' ' + words[i] : words[i];
+        if (c.measureText(test).width > maxWidth && line) {
+          lines.push(line);
+          line = words[i];
+        } else {
+          line = test;
+        }
       }
-    }
-    if (line) lines.push(line);
+      lines.push(line);
+    });
+
     return lines;
   }
 
   /* Text longer than the designer's own wording must not grow into whatever
      sits below it, so it shrinks until it fits the slot's line budget. */
   function fitText(c, text, t) {
-    var maxLines = Math.max(1, t.maxLines || 1);
+    /* Lines the writer asked for are never shrunk away: they are the layout,
+       not text overrunning the slot. */
+    var maxLines = Math.max(1, t.maxLines || 1, String(text).split('\n').length);
     /* Captions carry the weight their font file really has; asking for more
        makes the browser smear a fake bold on top. */
     var weight = t.fontWeight || 600;

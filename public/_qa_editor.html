@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="csrf-token" content="{{ csrf_token() }}">
-{{-- Scene images come from Yandex Disk, which refuses foreign referers. --}}
+<meta name="csrf-token" content="kQ1vBZ8EDLRKuH3ApzlG034RHET8UDlxcbI3M2RS">
+
 <meta name="referrer" content="no-referrer">
-<title>{{ $product->name }} — Qutu redaktoru</title>
+<title>QA Qara Spotify — Qutu redaktoru</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500;600;700&family=Great+Vibes&family=Poppins:wght@600&family=Titan+One&family=Bungee&family=Fredoka:wght@600&family=Sacramento&family=Creepster&family=Source+Sans+3:wght@400;600&family=Orbitron:wght@800&family=Anton&family=Cinzel:wght@400;700&family=Bangers&family=Luckiest+Guy&family=Oswald:wght@500;700&family=Bevan&family=Archivo+Black&family=Caveat:wght@600&family=Pacifico&family=Montserrat:wght@300;500&display=swap" rel="stylesheet">
@@ -147,8 +147,8 @@
 <body>
 
 <header class="topbar">
-  <a class="back" href="{{ url('/admin/products') }}">← Admin</a>
-  <div class="title">{{ $product->name }}<span class="dim">{{ $design['canvas']['width'] }} × {{ $design['canvas']['height'] }}</span></div>
+  <a class="back" href="/admin/products">← Admin</a>
+  <div class="title">QA Qara Spotify<span class="dim">969 × 1895</span></div>
   <div class="spacer"></div>
   <div class="tb-group">
     <button class="icon-btn" id="undo" title="Geri al (Ctrl+Z)">↶</button>
@@ -166,7 +166,7 @@
   </div>
   <div class="tb-group">
     <span class="save-state" id="save-state">Saxlanılıb</span>
-    <a class="btn" href="{{ route('products.customize', $product->slug) }}" target="_blank">Saytda bax ↗</a>
+    <a class="btn" href="/products/qa-qara-spotify/customize" target="_blank">Saytda bax ↗</a>
     <button class="btn primary" id="save">Saxla</button>
   </div>
 </header>
@@ -182,7 +182,7 @@
     <button class="tool" id="tool-font" title="Şrift faylı yüklə (TTF, OTF, WOFF)"><span class="ico">Aa</span>Şrift</button>
     <button class="tool" id="tool-test" title="Sınaq üçün şəkil — yalnız burada görünür, saxlanılmır"><span class="ico">🧪</span>Sınaq şəkli</button>
     <hr>
-    {{-- The colour the box is dyed in the scenes; clicking the swatch opens the picker. --}}
+    
     <label class="tool" id="tool-box-color" title="Mokaplarda qutunun rəngi — klikləyin və rəng seçin">
       <span class="ico"><span class="swatch" id="box-swatch"></span></span>Qutu rəngi
       <small class="tool-note" id="box-color-mode">avto</small>
@@ -218,9 +218,9 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="{{ asset('js/box-render.js') }}"></script>
-<script src="{{ asset('js/scene-render.js') }}"></script>
-<script src="{{ asset('js/cover.js') }}"></script>
+<script src="/js/box-render.js"></script>
+<script src="/js/scene-render.js"></script>
+<script src="/js/cover.js"></script>
 <script>
 (function(){
   'use strict';
@@ -228,25 +228,23 @@
   /* ================================================================
      Data
      ================================================================ */
-  var CANVAS = @json($design['canvas']);
+  var CANVAS = {"width":969,"height":1895};
   var W = CANVAS.width, H = CANVAS.height;
   var ROUTES = {
-    save: @json(route('box.save', $product->slug)),
-    asset: @json(route('box.asset', $product->slug)),
-    visual: @json(route('box.visual', $product->slug)),
-    font: @json(route('box.font', $product->slug))
-  };
+    save: "\/qutu-redaktoru\/qa-qara-spotify",
+    asset: "\/qutu-redaktoru\/qa-qara-spotify\/asset",
+    visual: "\/qutu-redaktoru\/qa-qara-spotify\/visual",
+    font: "\/qutu-redaktoru\/qa-qara-spotify\/font"  };
   var CSRF = document.querySelector('meta[name="csrf-token"]').content;
 
-  var FONTS = @json($fonts);
+  var FONTS = [{"id":24,"name":"American Captain","family":"American Captain","file":"fonts\/american-captain.woff2","url":"\/storage\/fonts\/american-captain.woff2","weight":400},{"id":21,"name":"Anabelle Script","family":"Anabelle Script","file":"fonts\/anabelle-script.woff2","url":"\/storage\/fonts\/anabelle-script.woff2","weight":400},{"id":36,"name":"Anton","family":"Anton","file":null,"url":null,"weight":400},{"id":37,"name":"Archivo Black","family":"Archivo Black","file":null,"url":null,"weight":400},{"id":23,"name":"Argo Heavy","family":"Argo Heavy","file":"fonts\/argo-heavy.woff2","url":"\/storage\/fonts\/argo-heavy.woff2","weight":400},{"id":20,"name":"Artful Beauty","family":"Artful Beauty","file":"fonts\/artful-beauty.woff2","url":"\/storage\/fonts\/artful-beauty.woff2","weight":400},{"id":42,"name":"Bangers","family":"Bangers","file":null,"url":null,"weight":400},{"id":13,"name":"Bebas Neue","family":"Bebas Neue","file":"fonts\/bebasneue-bold.woff2","url":"\/storage\/fonts\/bebasneue-bold.woff2","weight":400},{"id":14,"name":"Bebas Neue Regular","family":"Bebas Neue Regular","file":"fonts\/bebasneue-regular.woff2","url":"\/storage\/fonts\/bebasneue-regular.woff2","weight":400},{"id":39,"name":"Bevan","family":"Bevan","file":null,"url":null,"weight":400},{"id":38,"name":"Bungee","family":"Bungee","file":null,"url":null,"weight":400},{"id":52,"name":"Caveat","family":"Caveat","file":null,"url":null,"weight":600},{"id":46,"name":"Cinzel","family":"Cinzel","file":null,"url":null,"weight":400},{"id":47,"name":"Cinzel Bold","family":"Cinzel","file":null,"url":null,"weight":700},{"id":45,"name":"Creepster","family":"Creepster","file":null,"url":null,"weight":400},{"id":22,"name":"Dharma Gothic","family":"Dharma Gothic","file":"fonts\/dharmagothic-e-bold.woff2","url":"\/storage\/fonts\/dharmagothic-e-bold.woff2","weight":400},{"id":43,"name":"Fredoka","family":"Fredoka","file":null,"url":null,"weight":600},{"id":12,"name":"Gilroy Medium","family":"Gilroy Medium","file":"fonts\/gilroy-medium.woff2","url":"\/storage\/fonts\/gilroy-medium.woff2","weight":400},{"id":49,"name":"Great Vibes","family":"Great Vibes","file":null,"url":null,"weight":400},{"id":26,"name":"Inter","family":"Inter","file":null,"url":null,"weight":400},{"id":28,"name":"Inter Bold","family":"Inter","file":null,"url":null,"weight":700},{"id":27,"name":"Inter SemiBold","family":"Inter","file":null,"url":null,"weight":600},{"id":41,"name":"Luckiest Guy","family":"Luckiest Guy","file":null,"url":null,"weight":400},{"id":5,"name":"Mark Pro","family":"Mark Pro","file":"fonts\/markpro-regular.woff2","url":"\/storage\/fonts\/markpro-regular.woff2","weight":400},{"id":11,"name":"Mark Pro Black","family":"Mark Pro Black","file":"fonts\/markpro-black.woff2","url":"\/storage\/fonts\/markpro-black.woff2","weight":400},{"id":9,"name":"Mark Pro Bold","family":"Mark Pro Bold","file":"fonts\/markpro-bold.woff2","url":"\/storage\/fonts\/markpro-bold.woff2","weight":400},{"id":7,"name":"Mark Pro Book","family":"Mark Pro Book","file":"fonts\/markpro-book.woff2","url":"\/storage\/fonts\/markpro-book.woff2","weight":400},{"id":10,"name":"Mark Pro Heavy","family":"Mark Pro Heavy","file":"fonts\/markpro-heavy.woff2","url":"\/storage\/fonts\/markpro-heavy.woff2","weight":400},{"id":6,"name":"Mark Pro Light","family":"Mark Pro Light","file":"fonts\/markpro-light.woff2","url":"\/storage\/fonts\/markpro-light.woff2","weight":400},{"id":8,"name":"Mark Pro Medium","family":"Mark Pro Medium","file":"fonts\/markpro-medium.woff2","url":"\/storage\/fonts\/markpro-medium.woff2","weight":400},{"id":29,"name":"Montserrat Light","family":"Montserrat","file":null,"url":null,"weight":300},{"id":30,"name":"Montserrat Medium","family":"Montserrat","file":null,"url":null,"weight":500},{"id":15,"name":"Nivea","family":"Nivea","file":"fonts\/nivea-regular.woff2","url":"\/storage\/fonts\/nivea-regular.woff2","weight":400},{"id":16,"name":"Nivea Bold","family":"Nivea Bold","file":"fonts\/nivea-bold.woff2","url":"\/storage\/fonts\/nivea-bold.woff2","weight":400},{"id":44,"name":"Orbitron","family":"Orbitron","file":null,"url":null,"weight":800},{"id":35,"name":"Oswald Bold","family":"Oswald","file":null,"url":null,"weight":700},{"id":34,"name":"Oswald Medium","family":"Oswald","file":null,"url":null,"weight":500},{"id":51,"name":"Pacifico","family":"Pacifico","file":null,"url":null,"weight":400},{"id":17,"name":"Palatino","family":"Palatino Roman","file":"fonts\/palatino-roman.woff2","url":"\/storage\/fonts\/palatino-roman.woff2","weight":400},{"id":48,"name":"Playfair Display","family":"Playfair Display","file":null,"url":null,"weight":600},{"id":31,"name":"Poppins SemiBold","family":"Poppins","file":null,"url":null,"weight":600},{"id":4,"name":"SF Black","family":"SF Black","file":"fonts\/sanfrancisco-black.woff2","url":"\/storage\/fonts\/sanfrancisco-black.woff2","weight":400},{"id":2,"name":"SF Medium","family":"SF Medium","file":"fonts\/sanfrancisco-medium.woff2","url":"\/storage\/fonts\/sanfrancisco-medium.woff2","weight":400},{"id":1,"name":"SF Regular","family":"SF Regular","file":"fonts\/sanfrancisco-regular.woff2","url":"\/storage\/fonts\/sanfrancisco-regular.woff2","weight":400},{"id":3,"name":"SF Semibold","family":"SF Semibold","file":"fonts\/sanfrancisco-semibold.woff2","url":"\/storage\/fonts\/sanfrancisco-semibold.woff2","weight":400},{"id":50,"name":"Sacramento","family":"Sacramento","file":null,"url":null,"weight":400},{"id":32,"name":"Source Sans 3","family":"Source Sans 3","file":null,"url":null,"weight":400},{"id":33,"name":"Source Sans 3 SemiBold","family":"Source Sans 3","file":null,"url":null,"weight":600},{"id":25,"name":"Sweetly Broken","family":"Sweetly Broken","file":"fonts\/sweetly-broken.woff2","url":"\/storage\/fonts\/sweetly-broken.woff2","weight":400},{"id":40,"name":"Titan One","family":"Titan One","file":null,"url":null,"weight":400},{"id":18,"name":"Ultima Pro","family":"Ultima Pro","file":"fonts\/ultimapro-bold.woff2","url":"\/storage\/fonts\/ultimapro-bold.woff2","weight":400},{"id":19,"name":"Ultima Pro Italic","family":"Ultima Pro Italic","file":"fonts\/ultimapro-black-italic.woff2","url":"\/storage\/fonts\/ultimapro-black-italic.woff2","weight":400}];
   var doc = {
-    layers: @json($design['layers']),
-    photos: @json($design['photos']),
-    texts: @json($design['texts']),
-    box_color: @json($design['box_color'])
-  };
-  var visualUrl = @json($design['visual']);
-  var autoBoxColor = @json($design['box_color_auto']);
+    layers: [{"name":"BG","image":"boxes\/qa\/BG.webp","url":"\/storage\/boxes\/qa\/BG.webp","x":0,"y":0,"width":969,"height":1895,"rotation":0,"opacity":100,"placement":"above","locked":false},{"name":"Player","image":"boxes\/qa\/Player.webp","url":"\/storage\/boxes\/qa\/Player.webp","x":44,"y":1380,"width":880,"height":388,"rotation":0,"opacity":100,"placement":"above","locked":false}],
+    photos: [{"label":"\u015e\u0259kil","x":0,"y":0,"width":969,"height":1180,"rotation":0,"shape":"rectangle"}],
+    texts: [{"label":"Mahn\u0131","default_value":"Samalyotdur, amma ancaq yanacaqdoldurma m\u0259nt\u0259q\u0259l\u0259rind\u0259 eni\u015f edir.","placeholder":null,"x":60,"y":1330,"max_width":820,"font_size":46,"color":"#ffffff","align":"left","rotation":0,"font_family":"Inter","font_file":null,"font_weight":700,"stroke_color":null,"stroke_width":0,"shadow_color":null,"shadow_blur":0,"shadow_x":0,"shadow_y":0,"max_lines":2,"max_length":120,"link_key":null}],
+    box_color: null  };
+  var visualUrl = "\/storage\/boxes\/qa\/visual.jpg";
+  var autoBoxColor = null;
 
   /* Editor-only state, never saved. */
   var images = {};        // url -> {img, alpha, aw, ah}
