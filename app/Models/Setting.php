@@ -55,6 +55,9 @@ class Setting extends Model
 
     public const LETTER_MAX = 'letter_max';
 
+    /** JSON: the letter page's wording and the Polaroid's look (see App\Support\Letter::PAGE_DEFAULTS). */
+    public const LETTER_PAGE = 'letter_page';
+
     /** What each setting is until the owner changes it. */
     public const DEFAULTS = [
         self::LETTER_ENABLED => '1',

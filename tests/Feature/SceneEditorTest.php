@@ -258,9 +258,9 @@ class SceneEditorTest extends TestCase
 
     public function test_only_the_owner_sees_the_admin_link_in_the_header(): void
     {
-        $this->get(route('home'))->assertOk()->assertDontSee('>Admin</a>', false);
-        $this->actingAs(User::factory()->create(['is_admin' => false]))->get(route('home'))->assertDontSee('>Admin</a>', false);
-        $this->actingAs($this->admin)->get(route('home'))->assertSee('href="' . url('/admin') . '"', false)->assertSee('>Admin</a>', false);
+        $this->get(route('home'))->assertOk()->assertDontSee('Admin panel');
+        $this->actingAs(User::factory()->create(['is_admin' => false]))->get(route('home'))->assertDontSee('Admin panel');
+        $this->actingAs($this->admin)->get(route('home'))->assertSee('href="' . url('/admin') . '"', false)->assertSee('Admin panel');
     }
 
     public function test_the_admin_panel_lists_and_creates_scenes(): void

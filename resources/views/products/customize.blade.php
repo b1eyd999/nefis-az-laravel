@@ -331,7 +331,7 @@
           <div class="letter-block" id="letter-block">
             <label class="letter-toggle">
               <input type="checkbox" name="letter_on" value="1" id="letter-on" @checked($letterOn)>
-              <span>💌 Qutunun içinə polaroid məktub qoy</span>
+              <span>💌 {{ \App\Support\Letter::text('box_label') }}</span>
               <b>+{{ \App\Support\Price::format(\App\Support\Letter::price()) }}</b>
             </label>
             <div class="letter-fields" id="letter-fields" @unless($letterOn) hidden @endunless>

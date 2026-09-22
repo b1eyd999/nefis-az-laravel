@@ -1,0 +1,42 @@
+/*
+ * A Polaroid letter (resources/views/partials/polaroid.blade.php): a frame
+ * deeper at the bottom, the photo treated like instant film, the words
+ * handwritten. The owner's choices (Admin → Polaroid məktub) arrive as custom
+ * properties on the figure; sizes follow its width. Loaded by the site's
+ * layout and by the admin's preview alike.
+ */
+.polaroid{
+  container-type:inline-size; position:relative; display:block; margin:0 auto; width:100%; max-width:19rem;
+  padding:6% 6% 0; border-radius:2px; transform:rotate(var(--pol-tilt, -2.5deg)); color:var(--pol-ink, #2b2622);
+  background-color:var(--pol-frame, #fbfaf6);
+  background-image:linear-gradient(135deg, rgba(0,0,0,.015), transparent 40%, rgba(0,0,0,.035));
+  box-shadow:0 1px 1px rgba(0,0,0,.06), 0 18px 34px -14px rgba(0,0,0,.55);
+}
+.pol-photo{ position:relative; display:block; aspect-ratio:1/1; overflow:hidden; background:#26211d; }
+.pol-photo img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;
+  filter:contrast(1.06) saturate(1.15) sepia(.14) brightness(1.03) hue-rotate(-6deg); }
+.pol-photo img[hidden]{ display:none; }
+/* a warm light leak and the darker corners of instant film */
+.pol-photo::before{ content:''; position:absolute; inset:0; z-index:1; pointer-events:none; mix-blend-mode:screen;
+  background:linear-gradient(120deg, rgba(255,160,80,.22), transparent 38%), linear-gradient(300deg, rgba(120,180,255,.1), transparent 45%); }
+.pol-photo::after{ content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:radial-gradient(ellipse at center, transparent 58%, rgba(0,0,0,.35)); }
+/* the other looks the owner can pick */
+.pol-f-soft .pol-photo img{ filter:saturate(.92) contrast(.96) brightness(1.06) sepia(.06); }
+.pol-f-soft .pol-photo::before{ opacity:.5; }
+.pol-f-soft .pol-photo::after{ opacity:.55; }
+.pol-f-bw .pol-photo img{ filter:grayscale(1) contrast(1.12) brightness(1.02); }
+.pol-f-bw .pol-photo::before{ display:none; }
+.pol-f-none .pol-photo img{ filter:none; }
+.pol-f-none .pol-photo::before, .pol-f-none .pol-photo::after{ display:none; }
+
+.polaroid.no-photo .pol-photo{ background:var(--pol-paper, #f4efe4); }
+.polaroid.no-photo .pol-photo::before, .polaroid.no-photo .pol-photo::after{ display:none; }
+.pol-note, .pol-text{ font-family:var(--pol-font, 'Caveat'), 'Segoe Script', cursive; font-weight:600; color:var(--pol-ink, #2b2622);
+  white-space:pre-line; word-break:break-word; text-align:center; line-height:1.08; }
+.pol-note{ position:absolute; inset:0; z-index:2; display:grid; place-items:center; padding:10%; font-size:1.5rem; font-size:9.5cqw; }
+.pol-note:empty{ display:none; }
+.pol-text{ display:block; min-height:26cqw; padding:3cqw 3cqw 5cqw; font-size:1.3rem; font-size:8.5cqw; }
+.polaroid.pol-m .pol-text{ font-size:6.4cqw; } .polaroid.pol-l .pol-text{ font-size:5cqw; }
+.polaroid.pol-m .pol-note{ font-size:7.2cqw; } .polaroid.pol-l .pol-note{ font-size:5.6cqw; }
+.pol-note.is-placeholder{ opacity:.45; }

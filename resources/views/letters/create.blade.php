@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Polaroid məktub — Nefis Şokolad Evi')
+@section('title', \App\Support\Letter::text('title') . ' — Nefis Şokolad Evi')
 @section('meta_description', 'Şəkliniz və sözlərinizlə polaroid kimi çap olunan məktub — qutunun içinə və ya ayrıca hədiyyə.')
 
 @section('page_style')
@@ -23,9 +23,9 @@
 @section('content')
   <section class="page-hero" style="padding-bottom:0;">
     <div class="wrap">
-      <span class="eyebrow" style="justify-content:center;">Qutunun içinə və ya ayrıca</span>
-      <h1>Polaroid məktub</h1>
-      <p class="lede" style="margin-inline:auto;">Şəkliniz və bir neçə sözünüz — polaroid kimi çap edib qutunun içinə qoyuruq və ya ayrıca göndəririk.</p>
+      @if($t['eyebrow'])<span class="eyebrow" style="justify-content:center;">{{ $t['eyebrow'] }}</span>@endif
+      <h1>{{ $t['title'] }}</h1>
+      @if($t['lede'])<p class="lede" style="margin-inline:auto;">{{ $t['lede'] }}</p>@endif
     </div>
   </section>
 
@@ -48,22 +48,22 @@
             <label>Şəkil <span style="font-weight:400; color:var(--cocoa-soft);">(istəyə görə)</span></label>
             <label class="letter-file">
               <input type="file" name="letter_photo" id="letter-photo" accept="image/*">
-              <span id="letter-photo-name">📷 Şəkil seçin</span>
+              <span id="letter-photo-name" data-label="📷 {{ $t['photo_label'] }}">📷 {{ $t['photo_label'] }}</span>
             </label>
             <button type="button" class="letter-clear" id="letter-clear" hidden>Şəkli sil</button>
           </div>
           <div>
             <label for="letter-text">Mətn <span style="font-weight:400; color:var(--cocoa-soft);">(istəyə görə)</span></label>
-            <textarea id="letter-text" name="letter_text" rows="4" maxlength="{{ $max }}" placeholder="Məs. Səni çox sevirəm! Ad günün mübarək ❤">{{ old('letter_text') }}</textarea>
-            <p class="letter-hint">{{ $max }} simvola qədər. Şəkil olmasa, mətn polaroidin içində yazılır.</p>
+            <textarea id="letter-text" name="letter_text" rows="4" maxlength="{{ $max }}" placeholder="{{ $t['text_placeholder'] }}">{{ old('letter_text') }}</textarea>
+            <p class="letter-hint">{{ $max }} simvola qədər. {{ $t['hint'] }}</p>
           </div>
           <div>
             <label for="letter-qty">Say</label>
             <input type="number" id="letter-qty" name="quantity" value="{{ old('quantity', 1) }}" min="1" max="20" style="max-width:7rem;">
           </div>
           <div class="letter-price"><span>Qiymət</span><b>{{ \App\Support\Price::format($price) }}</b></div>
-          <button type="submit" class="btn btn-primary btn-block">Səbətə Əlavə Et</button>
-          <p class="letter-hint">Dizayn seçəndə də məktubu birbaşa qutunun içinə əlavə edə bilərsiniz.</p>
+          <button type="submit" class="btn btn-primary btn-block">{{ $t['button'] }}</button>
+          @if($t['note'])<p class="letter-hint">{{ $t['note'] }}</p>@endif
         </form>
       </div>
     </div>
@@ -80,10 +80,10 @@
   var p = NefisPolaroid.bind(document.getElementById('letter-preview'), file, document.getElementById('letter-text'));
   file.addEventListener('change', function(){
     var f = file.files && file.files[0];
-    name.textContent = f ? '📷 ' + f.name : '📷 Şəkil seçin';
+    name.textContent = f ? '📷 ' + f.name : name.dataset.label;
     clear.hidden = !f;
   });
-  clear.addEventListener('click', function(){ p.clearPhoto(); name.textContent = '📷 Şəkil seçin'; clear.hidden = true; });
+  clear.addEventListener('click', function(){ p.clearPhoto(); name.textContent = name.dataset.label; clear.hidden = true; });
 })();
 </script>
 @endsection

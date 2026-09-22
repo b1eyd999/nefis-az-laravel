@@ -32,6 +32,7 @@
 {{-- The families after Poppins stand in for the designs' own display faces,
      which are not licensed for the web. --}}
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=Great+Vibes&family=Poppins:wght@600&family=Titan+One&family=Bungee&family=Fredoka:wght@500;600&family=Sacramento&family=Creepster&family=Source+Sans+3:wght@400;600&family=Orbitron:wght@600;800&family=Anton&family=Cinzel:wght@400;700&family=Bangers&family=Luckiest+Guy&family=Oswald:wght@500;700&family=Bevan&family=Archivo+Black&family=Caveat:wght@600&family=Pacifico&family=Montserrat:wght@300;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('css/polaroid.css') }}">
 <style>
   :root{
     --cream:#FBF4EA;
@@ -208,6 +209,29 @@
   nav.primary a{ transition:color .25s; position:relative; }
   nav.primary a:hover{ color:var(--cocoa); }
   @media (min-width:900px){ nav.primary{ display:flex; } }
+  /* drop-downs: open on hover or focus, and on a tap for touch screens (the script adds .open) */
+  .nav-drop{ position:relative; }
+  .nav-drop > button:not(.icon-btn){ background:none; border:0; padding:0; color:inherit; font:inherit; display:inline-flex; align-items:center; gap:.35rem; transition:color .25s; }
+  .nav-drop > button:not(.icon-btn):hover{ color:var(--cocoa); }
+  .nav-drop > button svg{ width:.8rem; height:.8rem; transition:transform .25s var(--ease); }
+  .nav-drop:hover > button svg, .nav-drop.open > button svg{ transform:rotate(180deg); }
+  .account-drop > button svg{ width:1.15rem; height:1.15rem; transform:none !important; color:var(--cocoa); }
+  .nav-panel{ position:absolute; top:calc(100% + .9rem); left:50%; z-index:60; min-width:17.5rem; padding:.45rem; border-radius:1rem;
+    background:var(--paper); border:1px solid var(--line); box-shadow:var(--shadow);
+    opacity:0; visibility:hidden; transform:translate(-50%, 6px); transition:opacity .2s, transform .2s var(--ease), visibility .2s; }
+  .nav-panel::before{ content:''; position:absolute; left:0; right:0; top:-1rem; height:1rem; }
+  .nav-panel.right{ left:auto; right:0; min-width:14rem; transform:translateY(6px); }
+  .nav-drop:hover .nav-panel, .nav-drop:focus-within .nav-panel, .nav-drop.open .nav-panel{ opacity:1; visibility:visible; transform:translate(-50%, 0); }
+  .nav-drop:hover .nav-panel.right, .nav-drop:focus-within .nav-panel.right, .nav-drop.open .nav-panel.right{ transform:none; }
+  .nav-item{ display:flex; width:100%; gap:.75rem; align-items:center; padding:.6rem .7rem; border-radius:.7rem; color:var(--cocoa);
+    background:none; border:0; text-align:left; font:inherit; }
+  .nav-item:hover, .nav-item:focus-visible{ background:var(--cream-2); outline:none; }
+  .ni-ico{ width:2.3rem; height:2.3rem; border-radius:.7rem; background:var(--cream-2); display:grid; place-items:center; font-size:1.15rem; flex:none; }
+  .nav-item:hover .ni-ico{ background:var(--paper); }
+  .nav-item b{ display:block; font-weight:600; font-size:.9rem; }
+  .nav-item small{ display:block; font-size:.78rem; color:var(--cocoa-soft); font-weight:400; }
+  .nav-who{ padding:.5rem .7rem .4rem; font-size:.78rem; font-weight:600; color:var(--cocoa-soft); border-bottom:1px solid var(--line); margin-bottom:.3rem;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .header-actions{ display:flex; align-items:center; gap:.75rem; }
   .header-cta{ display:none; }
   @media (min-width:900px){ .header-cta{ display:inline-flex; } }
@@ -240,7 +264,12 @@
     opacity:0; visibility:hidden; transform:translateY(-12px); transition:opacity .35s var(--ease), transform .35s var(--ease), visibility .35s;
   }
   .mobile-nav.open{ opacity:1; visibility:visible; transform:none; }
-  .mobile-nav a{ font-family:var(--serif); font-size:1.5rem; }
+  .mobile-nav{ overflow-y:auto; justify-content:flex-start; padding:5rem 1.5rem 2rem; gap:1.5rem; }
+  .mobile-nav a, .mobile-nav form button{ font-family:var(--serif); font-size:1.35rem; }
+  .mn-group{ display:flex; flex-direction:column; align-items:center; gap:.7rem; width:100%; max-width:20rem; }
+  .mn-group + .mn-group{ border-top:1px solid var(--line); padding-top:1.25rem; }
+  .mn-head{ font-size:.72rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--gold-deep); }
+  .mobile-nav form button{ background:none; border:0; color:inherit; padding:0; }
   .mobile-nav .close-btn{ position:absolute; top:1.5rem; right:1.5rem; width:2.75rem; height:2.75rem; border-radius:50%; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; }
 
   /* ---------- page header (non-home pages) ---------- */
@@ -475,30 +504,6 @@
     background:radial-gradient(ellipse at center, rgba(0,0,0,.5), rgba(0,0,0,0) 70%); filter:blur(5px); z-index:-1; }
   @media (prefers-reduced-motion: reduce){ .gift-3d{ transition:none; } }
 
-  /* A Polaroid letter (partials/polaroid): a white frame deeper at the bottom, the photo
-     warmed and vignetted like instant film, the words handwritten. Sizes follow its width. */
-  .polaroid{ container-type:inline-size; position:relative; display:block; margin:0 auto; width:100%; max-width:19rem;
-    padding:6% 6% 0; border-radius:2px; transform:rotate(-2.5deg); color:#2b2622;
-    background:#fbfaf6 linear-gradient(135deg, rgba(0,0,0,.015), transparent 40%, rgba(0,0,0,.035));
-    box-shadow:0 1px 1px rgba(0,0,0,.06), 0 18px 34px -14px rgba(0,0,0,.55); }
-  .pol-photo{ position:relative; display:block; aspect-ratio:1/1; overflow:hidden; background:#26211d; }
-  .pol-photo img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
-    filter:contrast(1.06) saturate(1.15) sepia(.14) brightness(1.03) hue-rotate(-6deg); }
-  .pol-photo img[hidden]{ display:none; }
-  .pol-photo::before{ content:''; position:absolute; inset:0; z-index:1; pointer-events:none; mix-blend-mode:screen;
-    background:linear-gradient(120deg, rgba(255,160,80,.22), transparent 38%), linear-gradient(300deg, rgba(120,180,255,.1), transparent 45%); }
-  .pol-photo::after{ content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
-    background:radial-gradient(ellipse at center, transparent 58%, rgba(0,0,0,.35)); }
-  .polaroid.no-photo .pol-photo{ background:#f4efe4; }
-  .polaroid.no-photo .pol-photo::before, .polaroid.no-photo .pol-photo::after{ display:none; }
-  .pol-note, .pol-text{ font-family:'Caveat', 'Segoe Script', cursive; font-weight:600; color:#2b2622; white-space:pre-line;
-    word-break:break-word; text-align:center; line-height:1.08; }
-  .pol-note{ position:absolute; inset:0; z-index:2; display:grid; place-items:center; padding:10%; font-size:1.5rem; font-size:9.5cqw; }
-  .pol-note:empty{ display:none; }
-  .pol-text{ display:block; min-height:26cqw; padding:3cqw 3cqw 5cqw; font-size:1.3rem; font-size:8.5cqw; }
-  .polaroid.pol-m .pol-text{ font-size:6.4cqw; } .polaroid.pol-l .pol-text{ font-size:5cqw; }
-  .polaroid.pol-m .pol-note{ font-size:7.2cqw; } .polaroid.pol-l .pol-note{ font-size:5.6cqw; }
-  .pol-note.is-placeholder{ color:#b3aa9c; }
 
   /* The gift box viewer: all six sides, turned by hand (js/gift-box.js). */
   html.gv-open{ overflow:hidden; }
@@ -594,13 +599,29 @@
 <header id="site-header">
   <div class="wrap">
     <a href="{{ route('home') }}" class="brand"><img src="/images/logo.svg" alt="Nefis"></a>
-    <nav class="primary">
-      <a href="{{ route('designs.index') }}">Dizaynlar</a>@if($navWraps)<a href="{{ route('wrappings.index') }}">Qablaşdırma</a>@endif @if($navLetters)<a href="{{ route('letters.create') }}">Polaroid məktub</a>@endif
+    <nav class="primary" aria-label="Əsas menyu">
+      {{-- Everything for sale under one word, so the bar stays short however many there are. --}}
+      @if($navWraps || $navLetters)
+        <div class="nav-drop">
+          <button type="button" aria-expanded="false" aria-haspopup="true">
+            Məhsullar
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="nav-panel">
+            <a class="nav-item" href="{{ route('designs.index') }}"><span class="ni-ico">🍫</span><span><b>Dizaynlar</b><small>Fərdi şokolad qutuları</small></span></a>
+            @if($navWraps)
+              <a class="nav-item" href="{{ route('wrappings.index') }}"><span class="ni-ico">🎁</span><span><b>Qablaşdırma</b><small>Hədiyyə kağızı və lent</small></span></a>
+            @endif
+            @if($navLetters)
+              <a class="nav-item" href="{{ route('letters.create') }}"><span class="ni-ico">💌</span><span><b>{{ \App\Support\Letter::text('menu') }}</b><small>Şəkil və sözlərlə polaroid</small></span></a>
+            @endif
+          </div>
+        </div>
+      @else
+        <a href="{{ route('designs.index') }}">Dizaynlar</a>
+      @endif
       <a href="{{ route('home') }}#how">Necə İşləyir</a>
       <a href="{{ route('home') }}#faq">Suallar</a>
-      @auth
-        <a href="{{ route('orders.index') }}">Sifarişlərim</a>
-      @endauth
     </nav>
     <div class="header-actions">
       <button type="button" class="icon-btn theme-btn" id="theme-toggle" aria-label="Qaranlıq rejim" title="Qaranlıq / işıqlı rejim">
@@ -614,14 +635,23 @@
         @endif
       </a>
       @auth
-        @if(auth()->user()->isStaff())
-          {{-- Only the owner and managers see this; customers never do. --}}
-          <a href="{{ url('/admin') }}" class="btn btn-primary header-cta">Admin</a>
-        @endif
-        <form method="POST" action="{{ route('logout') }}">
-          @csrf
-          <button type="submit" class="btn btn-ghost header-cta">Çıxış</button>
-        </form>
+        {{-- The customer's own things, and the panel for the owner and managers only. --}}
+        <div class="nav-drop account-drop header-cta">
+          <button type="button" class="icon-btn" aria-expanded="false" aria-haspopup="true" aria-label="Hesabım" title="{{ auth()->user()->name }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          </button>
+          <div class="nav-panel right">
+            <div class="nav-who">{{ auth()->user()->name }}</div>
+            <a class="nav-item" href="{{ route('orders.index') }}"><span class="ni-ico">📦</span><span><b>Sifarişlərim</b></span></a>
+            @if(auth()->user()->isStaff())
+              <a class="nav-item" href="{{ url('/admin') }}"><span class="ni-ico">⚙️</span><span><b>Admin panel</b></span></a>
+            @endif
+            <form method="POST" action="{{ route('logout') }}">
+              @csrf
+              <button type="submit" class="nav-item"><span class="ni-ico">↩</span><span><b>Çıxış</b></span></button>
+            </form>
+          </div>
+        </div>
       @else
         <a href="{{ route('login') }}" class="btn btn-ghost header-cta">Giriş</a>
         <a href="{{ route('register') }}" class="btn btn-primary header-cta">Qeydiyyat</a>
@@ -633,20 +663,31 @@
 
 <div class="mobile-nav" id="mobile-nav">
   <button class="close-btn" id="menu-close" aria-label="Bağla">✕</button>
-  <a href="{{ route('designs.index') }}">Dizaynlar</a>@if($navWraps)<a href="{{ route('wrappings.index') }}">Qablaşdırma</a>@endif @if($navLetters)<a href="{{ route('letters.create') }}">Polaroid məktub</a>@endif
-  <a href="{{ route('home') }}#how">Necə İşləyir</a>
-  <a href="{{ route('home') }}#faq">Suallar</a>
-  <a href="{{ route('cart.index') }}">Səbət</a>
-  @auth
-    <a href="{{ route('orders.index') }}">Sifarişlərim</a>
-    @if(auth()->user()->isStaff())
-      <a href="{{ url('/admin') }}">Admin</a>
-    @endif
-    <form method="POST" action="{{ route('logout') }}"><button type="submit">Çıxış</button></form>
-  @else
-    <a href="{{ route('login') }}">Giriş</a>
-    <a href="{{ route('register') }}">Qeydiyyat</a>
-  @endauth
+  <div class="mn-group">
+    <span class="mn-head">Məhsullar</span>
+    <a href="{{ route('designs.index') }}">🍫 Dizaynlar</a>
+    @if($navWraps)<a href="{{ route('wrappings.index') }}">🎁 Qablaşdırma</a>@endif
+    @if($navLetters)<a href="{{ route('letters.create') }}">💌 {{ \App\Support\Letter::text('menu') }}</a>@endif
+  </div>
+  <div class="mn-group">
+    <span class="mn-head">Məlumat</span>
+    <a href="{{ route('home') }}#how">Necə İşləyir</a>
+    <a href="{{ route('home') }}#faq">Suallar</a>
+  </div>
+  <div class="mn-group">
+    <span class="mn-head">Hesab</span>
+    <a href="{{ route('cart.index') }}">Səbət</a>
+    @auth
+      <a href="{{ route('orders.index') }}">Sifarişlərim</a>
+      @if(auth()->user()->isStaff())
+        <a href="{{ url('/admin') }}">Admin panel</a>
+      @endif
+      <form method="POST" action="{{ route('logout') }}"><button type="submit">Çıxış</button></form>
+    @else
+      <a href="{{ route('login') }}">Giriş</a>
+      <a href="{{ route('register') }}">Qeydiyyat</a>
+    @endauth
+  </div>
 </div>
 
 <main id="main">
@@ -665,7 +706,7 @@
       </div>
       <div class="footer-col">
         <h4>Naviqasiya</h4>
-        <a href="{{ route('designs.index') }}">Dizaynlar</a>@if($navWraps)<a href="{{ route('wrappings.index') }}">Qablaşdırma</a>@endif @if($navLetters)<a href="{{ route('letters.create') }}">Polaroid məktub</a>@endif
+        <a href="{{ route('designs.index') }}">Dizaynlar</a>@if($navWraps)<a href="{{ route('wrappings.index') }}">Qablaşdırma</a>@endif @if($navLetters)<a href="{{ route('letters.create') }}">{{ \App\Support\Letter::text('menu') }}</a>@endif
         <a href="{{ route('home') }}#how">Necə İşləyir</a>
         <a href="{{ route('home') }}#faq">Suallar</a>
       </div>
@@ -719,6 +760,23 @@
   labelThemeBtn();
 
   /* mobile nav */
+  document.querySelectorAll('.nav-drop > button').forEach(function(b){
+    b.addEventListener('click', function(e){
+      var drop = b.parentNode, open = !drop.classList.contains('open');
+      document.querySelectorAll('.nav-drop.open').forEach(function(d){ d.classList.remove('open'); d.firstElementChild.setAttribute('aria-expanded', 'false'); });
+      drop.classList.toggle('open', open);
+      b.setAttribute('aria-expanded', open ? 'true' : 'false');
+      e.stopPropagation();
+    });
+  });
+  document.addEventListener('click', function(e){
+    if (e.target.closest && e.target.closest('.nav-drop')) return;
+    document.querySelectorAll('.nav-drop.open').forEach(function(d){ d.classList.remove('open'); d.firstElementChild.setAttribute('aria-expanded', 'false'); });
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key !== 'Escape') return;
+    document.querySelectorAll('.nav-drop.open').forEach(function(d){ d.classList.remove('open'); d.firstElementChild.setAttribute('aria-expanded', 'false'); d.firstElementChild.focus(); });
+  });
   var nav = document.getElementById("mobile-nav");
   document.getElementById("menu-open").addEventListener("click", function(){ nav.classList.add("open"); });
   document.getElementById("menu-close").addEventListener("click", function(){ nav.classList.remove("open"); });

@@ -11,6 +11,67 @@ use Illuminate\Http\Request;
  */
 class Letter
 {
+    /** The page's wording and the Polaroid's look, as the owner leaves them in the admin. */
+    public const PAGE_DEFAULTS = [
+        'menu' => 'Polaroid məktub',
+        'eyebrow' => 'Qutunun içinə və ya ayrıca',
+        'title' => 'Polaroid məktub',
+        'lede' => 'Şəkliniz və bir neçə sözünüz — polaroid kimi çap edib qutunun içinə qoyuruq və ya ayrıca göndəririk.',
+        'photo_label' => 'Şəkil seçin',
+        'text_placeholder' => 'Məs. Səni çox sevirəm! Ad günün mübarək ❤',
+        'hint' => 'Şəkil olmasa, mətn polaroidin içində yazılır.',
+        'button' => 'Səbətə Əlavə Et',
+        'note' => 'Dizayn seçəndə də məktubu birbaşa qutunun içinə əlavə edə bilərsiniz.',
+        'box_label' => 'Qutunun içinə polaroid məktub qoy',
+        'placeholder' => 'Sözləriniz burada',
+        'frame' => '#FBFAF6',
+        'ink' => '#2B2622',
+        'tilt' => -2.5,
+        'font' => 'Caveat',
+        'filter' => 'polaroid',
+    ];
+
+    /** Handwriting faces the site's layout already loads. */
+    public const FONTS = ['Caveat' => 'Caveat', 'Pacifico' => 'Pacifico', 'Great Vibes' => 'Great Vibes', 'Sacramento' => 'Sacramento'];
+
+    public const FILTERS = [
+        'polaroid' => 'Polaroid (isti rəng, künclər tünd)',
+        'soft' => 'Yumşaq',
+        'bw' => 'Ağ-qara',
+        'none' => 'Effektsiz',
+    ];
+
+    /** @return array<string, mixed> */
+    public static function page(): array
+    {
+        $saved = json_decode((string) Setting::get(Setting::LETTER_PAGE), true);
+
+        return array_merge(self::PAGE_DEFAULTS, array_filter(is_array($saved) ? $saved : [], fn ($v) => $v !== null && $v !== ''));
+    }
+
+    public static function text(string $key): string
+    {
+        return (string) (self::page()[$key] ?? '');
+    }
+
+    /** The Polaroid's look as custom properties for its figure's style. */
+    public static function style(): string
+    {
+        $p = self::page();
+        $hex = fn ($v, $d) => preg_match('/^#[0-9a-fA-F]{6}$/', (string) $v) ? $v : $d;
+        $font = array_key_exists($p['font'], self::FONTS) ? $p['font'] : 'Caveat';
+
+        return '--pol-frame:' . $hex($p['frame'], '#FBFAF6') . ';--pol-ink:' . $hex($p['ink'], '#2B2622')
+            . ';--pol-tilt:' . max(-10, min(10, (float) $p['tilt'])) . 'deg;--pol-font:\'' . $font . '\'';
+    }
+
+    public static function filterClass(): string
+    {
+        $f = self::page()['filter'];
+
+        return 'pol-f-' . (array_key_exists($f, self::FILTERS) ? $f : 'polaroid');
+    }
+
     public static function enabled(): bool
     {
         return Setting::get(Setting::LETTER_ENABLED) === '1';

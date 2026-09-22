@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Filament\Pages\SiteSettings;
+use App\Filament\Pages\LetterSettings;
 use App\Models\DeliveryMethod;
 use App\Models\Material;
 use App\Models\Order;
@@ -114,12 +114,22 @@ class LetterTest extends TestCase
     {
         $this->actingAs(User::factory()->create(['role' => User::ADMIN]));
         Filament::setCurrentPanel(Filament::getPanel('admin'));
-        Livewire::test(SiteSettings::class)
-            ->fillForm(['letter_enabled' => true, 'letter_price' => 4.5, 'letter_max' => 120])
+        $this->get('/admin/letters')->assertOk()->assertSee('Sifariş olunan məktublar');
+        Livewire::test(LetterSettings::class)
+            ->fillForm(['enabled' => true, 'price' => 4.5, 'max' => 120, 'title' => 'Sevgi məktubu', 'menu' => 'Məktub',
+                'button' => 'Səbətə at', 'frame' => '#FFF4E0', 'ink' => '#1A237E', 'tilt' => 3, 'font' => 'Pacifico', 'filter' => 'bw'])
             ->call('save')
             ->assertHasNoFormErrors();
         $this->assertSame(['1', '4.5', '120'], [Setting::get(Setting::LETTER_ENABLED), Setting::get(Setting::LETTER_PRICE), Setting::get(Setting::LETTER_MAX)]);
-        $this->get(route('letters.create'))->assertSee('4.50 ₼');
+
+        // The page, the menu and every Polaroid follow.
+        $this->get(route('letters.create'))->assertSee('4.50 ₼')->assertSee('Sevgi məktubu')->assertSee('Səbətə at')
+            ->assertSee('--pol-frame:#FFF4E0', false)->assertSee('--pol-font:&#039;Pacifico&#039;', false)->assertSee('pol-f-bw', false);
+        $this->get(route('home'))->assertSee('>Məktub</a>', false);
+
+        // Left empty, a text falls back to the original.
+        Livewire::test(LetterSettings::class)->fillForm(['title' => ''])->call('save');
+        $this->get(route('letters.create'))->assertSee('<h1>Polaroid məktub</h1>', false);
 
         Setting::put(Setting::LETTER_ENABLED, false);
         $this->get(route('letters.create'))->assertNotFound();

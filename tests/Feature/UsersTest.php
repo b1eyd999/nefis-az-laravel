@@ -48,10 +48,10 @@ class UsersTest extends TestCase
             $this->actingAs($manager)->get($url)->assertForbidden();
         }
         $this->actingAs($manager)->get(route('box.edit', $box->slug))->assertForbidden();
-        $this->actingAs($manager)->get(route('home'))->assertSee('>Admin</a>', false);
+        $this->actingAs($manager)->get(route('home'))->assertSee('Admin panel');
 
         $this->actingAs($customer)->get('/admin/orders')->assertForbidden();
-        $this->actingAs($customer)->get(route('home'))->assertDontSee('>Admin</a>', false);
+        $this->actingAs($customer)->get(route('home'))->assertDontSee('Admin panel');
     }
 
     public function test_the_admin_sees_the_users_and_gives_them_roles(): void
