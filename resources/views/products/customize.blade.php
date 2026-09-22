@@ -90,6 +90,9 @@
   .choc-error{ margin:.5rem 0 0; font-size:.875rem; font-weight:600; color:#dc2626; }
   .choc-error[hidden]{ display:none; }
   .sum-name{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* the form sits to the right on a wide screen, under the picture on a phone */
+  .dh-narrow{ display:none; }
+  @media (max-width:959px){ .dh-wide{ display:none; } .dh-narrow{ display:inline; } }
   .choc-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(8.5rem, 1fr)); gap:.625rem; margin-top:.5rem; }
   .choc-card{ position:relative; display:flex; flex-direction:column; gap:.3rem; padding:.6rem; border:1.5px solid var(--line); border-radius:.9rem;
     background:var(--paper); cursor:pointer; transition:border-color .15s, box-shadow .15s; margin:0; font-weight:400; }
@@ -106,6 +109,7 @@
   .choc-meta b{ color:var(--gold-deep); font-size:.875rem; }
   .price-sum{ border:1px solid var(--line); border-radius:.9rem; padding:.75rem 1rem; display:flex; flex-direction:column; gap:.35rem; font-size:.9375rem; }
   .price-sum div{ display:flex; justify-content:space-between; gap:1rem; color:var(--cocoa-soft); }
+  .price-sum div[hidden]{ display:none; }
   .price-sum .total{ color:var(--cocoa); font-weight:700; font-size:1.0625rem; border-top:1px solid var(--line); padding-top:.45rem; margin-top:.1rem; }
 @endsection
 
@@ -141,7 +145,7 @@
         <div class="stage" id="stage" @if($firstScene) style="aspect-ratio: {{ $firstScene['w'] }} / {{ $firstScene['h'] }};" @endif>
           <canvas id="preview-canvas"></canvas>
           @if($photoSlots->isNotEmpty())
-            <div class="drop-hint" id="drop-hint">Öncə sağdan şəklinizi yükləyin</div>
+            <div class="drop-hint" id="drop-hint">Öncə <span class="dh-wide">sağdan</span><span class="dh-narrow">aşağıdan</span>&nbsp;şəklinizi yükləyin</div>
           @endif
           @if(count($viewData) > 1)
             <button type="button" class="angle-arrow prev" id="angle-prev" aria-label="Əvvəlki görünüş">‹</button>

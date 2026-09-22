@@ -159,6 +159,10 @@
   .lede{ font-size:1.125rem; color:var(--cocoa-soft); max-width:34rem; }
 
   /* ---------- decorative blobs ---------- */
+  /* Clipped in a box of their own: sticking out past the screen's edge, they made
+     phones lay the page out wider than the screen (it slid sideways, and the
+     full-screen menu slid off to the right). */
+  .blobs{ position:absolute; top:0; left:0; right:0; height:64rem; overflow:hidden; pointer-events:none; z-index:0; }
   .blob{ position:absolute; border-radius:50%; filter:blur(60px); opacity:.5; pointer-events:none; z-index:0; animation:drift 16s ease-in-out infinite; }
   .blob.b2{ animation-duration:20s; animation-direction:reverse; }
   @keyframes drift{
@@ -397,7 +401,7 @@
   .p-card-body p{ font-size:.875rem; color:var(--cocoa-soft); flex:1; }
   .p-card-foot{ display:flex; align-items:center; justify-content:space-between; margin-top:.25rem; }
   .p-card-price{ font-weight:700; font-size:.9375rem; color:var(--gold-deep); }
-  .p-card-link{ font-size:.8125rem; font-weight:600; display:inline-flex; align-items:center; gap:.3rem; }
+  .p-card-link{ font-size:.8125rem; font-weight:600; display:inline-flex; align-items:center; gap:.3rem; padding:.6rem 0; margin:-.6rem 0; }
   .p-card-link svg{ width:.875rem; height:.875rem; transition:transform .3s var(--ease); }
   .p-card:hover .p-card-link svg{ transform:translateX(3px); }
 
@@ -454,6 +458,7 @@
 
   /* ---------- customizer ---------- */
   .customizer{ display:grid; gap:2.5rem; }
+  .customizer > *{ min-width:0; }
   @media (min-width:960px){ .customizer{ grid-template-columns:1.1fr .9fr; align-items:start; } }
   .stage{
     position:relative; border-radius:var(--radius); overflow:hidden; background:var(--paper); border:1px solid var(--line);
@@ -544,6 +549,7 @@
   }
   .upload-box:hover{ border-color:var(--gold); background:var(--paper); }
   .upload-box .ico{ font-size:2rem; margin-bottom:.5rem; }
+  .upload-box .upload-label{ overflow-wrap:anywhere; }
   .range-row{ display:flex; align-items:center; gap:.75rem; }
   .range-row input[type=range]{ flex:1; padding:0; }
   .range-row .lbl{ font-size:.8125rem; color:var(--cocoa-soft); width:5rem; flex:none; }
@@ -574,6 +580,8 @@
   .float-cta.show{ opacity:1; transform:none; pointer-events:auto; }
   .float-cta:hover{ transform:translateY(-3px); box-shadow:0 16px 34px -10px var(--shadow-strong); }
   .float-cta .ico{ font-size:1.125rem; line-height:1; }
+  /* On a phone just the round icon: the words covered the forms' last fields. */
+  .float-cta span.txt{ display:none; }
   @media (min-width:900px){ .float-cta span.txt{ display:inline; } }
 
   .sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
@@ -590,12 +598,14 @@
 
 <a href="#main" class="skip-link">Əsas məzmuna keç</a>
 
-<a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="float-cta" id="float-cta">
+<a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="float-cta" id="float-cta" aria-label="Instagramda yazın">
   <span class="ico">📷</span><span class="txt">Instagramda Yaz</span>
 </a>
 
-<div class="blob" style="width:26rem;height:26rem;background:var(--gold);top:-8rem;right:-6rem;"></div>
-<div class="blob b2" style="width:20rem;height:20rem;background:var(--terracotta);top:20rem;left:-8rem;opacity:.28;"></div>
+<div class="blobs" aria-hidden="true">
+  <div class="blob" style="width:26rem;height:26rem;background:var(--gold);top:-8rem;right:-6rem;"></div>
+  <div class="blob b2" style="width:20rem;height:20rem;background:var(--terracotta);top:20rem;left:-8rem;opacity:.28;"></div>
+</div>
 
 <header id="site-header">
   <div class="wrap">

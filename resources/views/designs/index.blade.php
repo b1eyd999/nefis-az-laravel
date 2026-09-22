@@ -36,7 +36,7 @@
   .d-card:hover .d-card-media img{ transform:scale(1.04); }
   .d-card-media .pill{
     position:absolute; top:.75rem; right:.75rem; background:var(--glass); color:var(--cocoa);
-    font-size:.625rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+    font-size:.6875rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
     padding:.28rem .6rem; border-radius:999px;
   }
   .d-card-body{ padding:.9rem 1rem 1.1rem; }
