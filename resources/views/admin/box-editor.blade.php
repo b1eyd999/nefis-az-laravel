@@ -931,7 +931,7 @@
       x: round(W / 2), y: round(H / 2), max_width: 600, font_size: 72, color: '#000000', align: 'center', rotation: 0,
       font_family: f.family, font_file: f.file, font_weight: f.weight || 400,
       stroke_color: '#000000', stroke_width: 0, shadow_color: null, shadow_blur: 0, shadow_x: 0, shadow_y: 0,
-      max_lines: 1, max_length: time ? 5 : 60, link_key: null
+      max_lines: 1, max_length: time ? 5 : 255, link_key: null
     });
     select({ kind: 'text', index: doc.texts.length - 1 });
     commit();
@@ -1138,7 +1138,7 @@
         it.max_length = 5;
         if (!it.label || /^Mətn \d+$/.test(it.label)) it.label = 'Vaxt';
       } else if (it.max_length === 5) {
-        it.max_length = 60;
+        it.max_length = 255;
       }
       commit(); refresh(); return;
     }
@@ -1486,7 +1486,7 @@
       layers: doc.layers.map(function(l){ return { name: l.name, image: l.image, x: l.x, y: l.y, width: l.width, height: l.height,
         rotation: l.rotation || 0, opacity: l.opacity == null ? 100 : l.opacity, placement: l.placement, locked: !!l.locked }; }),
       photos: doc.photos.map(function(p){ return { label: p.label, x: p.x, y: p.y, width: p.width, height: p.height, rotation: p.rotation || 0, shape: p.shape }; }),
-      texts: doc.texts.map(function(t){ var o = clone(t); o.rotation = o.rotation || 0; o.max_lines = Math.max(1, +o.max_lines || 1); o.max_length = Math.max(1, +o.max_length || 60); return o; }),
+      texts: doc.texts.map(function(t){ var o = clone(t); o.rotation = o.rotation || 0; o.max_lines = Math.max(1, +o.max_lines || 1); o.max_length = Math.max(1, +o.max_length || 255); return o; }),
       box_color: doc.box_color || null
     };
     var btn = document.getElementById('save');

@@ -82,6 +82,20 @@ class TextLineBreakTest extends TestCase
             ->assertSessionHasErrors(['custom_texts.0' => 'Mesaj 65 simvoldan uzun ola bilməz.']);
     }
 
+    public function test_captions_have_no_60_character_limit_any_more(): void
+    {
+        $box = $this->box(3, 'Salam');
+        $slot = $box->textSlots()->create(['label' => 'Uzun', 'default_value' => 'Test', 'x' => 10, 'y' => 200,
+            'max_width' => 820, 'font_size' => 40, 'color' => '#ffffff', 'align' => 'left', 'rotation' => 0,
+            'max_lines' => 3, 'kind' => 'text', 'fixed' => false, 'sort_order' => 1]);
+        $this->assertSame(255, (int) $slot->fresh()->max_length, 'a new caption takes up to 255 characters');
+
+        $long = str_repeat('Çox sevirəm səni, ', 10);   // 180 characters
+        $this->actingAs(User::factory()->create())->post(route('cart.add'), [
+            'product_id' => $box->id, 'custom_texts' => ['Salam', $long],
+        ])->assertSessionHasNoErrors();
+    }
+
     public function test_a_one_line_slot_stays_a_plain_field(): void
     {
         $box = $this->box(1, 'Leaving');
