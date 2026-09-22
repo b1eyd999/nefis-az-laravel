@@ -452,8 +452,8 @@
 
   /* A wrapped gift box in 3D (partials/gift-box, painted by js/gift-box.js).
      The face is 969×1895 like the boxes; the side and top are 15 % deep. */
-  .gift{ position:relative; perspective:1300px; padding:1.25rem 0 2.1rem; }
-  .gift-3d{ position:relative; width:60%; margin-inline:auto; aspect-ratio:969/1895; transform-style:preserve-3d;
+  .gift{ display:block; position:relative; perspective:1300px; padding:1.25rem 0 2.1rem; }
+  .gift-3d{ display:block; position:relative; width:60%; margin-inline:auto; aspect-ratio:969/1895; transform-style:preserve-3d;
     transform:rotateY(-24deg) rotateX(8deg); transition:transform .7s var(--ease); }
   .gift:hover .gift-3d{ transform:rotateY(-12deg) rotateX(5deg); }
   .gift-front{ position:absolute; inset:0; width:100%; height:100%; border-radius:2px; display:block; }
@@ -471,6 +471,33 @@
   .gift-shadow{ position:absolute; left:16%; right:6%; bottom:.9rem; height:1.5rem; border-radius:50%;
     background:radial-gradient(ellipse at center, rgba(0,0,0,.5), rgba(0,0,0,0) 70%); filter:blur(5px); z-index:-1; }
   @media (prefers-reduced-motion: reduce){ .gift-3d{ transition:none; } }
+
+  /* The gift box viewer: all six sides, turned by hand (js/gift-box.js). */
+  html.gv-open{ overflow:hidden; }
+  .gv{ position:fixed; inset:0; z-index:200; display:grid; place-items:center; padding:1rem; }
+  .gv-backdrop{ position:absolute; inset:0; background:rgba(10,6,4,.78); backdrop-filter:blur(6px); }
+  .gv-panel{ position:relative; width:min(34rem, 100%); max-height:100%; overflow:auto; background:var(--paper); border:1px solid var(--line);
+    border-radius:1.25rem; padding:1rem 1rem .9rem; box-shadow:var(--shadow); text-align:center; }
+  .gv-close{ position:absolute; top:.6rem; right:.7rem; z-index:2; width:2.4rem; height:2.4rem; border-radius:50%;
+    border:1px solid var(--line); background:var(--paper); color:var(--cocoa); font-size:1.5rem; line-height:1; }
+  .gv-close:hover{ border-color:var(--gold); }
+  .gv-stage{ position:relative; perspective:1400px; height:min(64vh, 580px); display:grid; place-items:center; cursor:grab;
+    touch-action:none; user-select:none; border-radius:1rem; background:radial-gradient(ellipse at 50% 42%, var(--cream-2), transparent 72%); }
+  .gv-stage:active{ cursor:grabbing; }
+  .gv-box{ position:relative; transform-style:preserve-3d; }
+  .gv-face{ position:absolute; left:0; top:0; backface-visibility:hidden; }
+  .gv-back{ filter:brightness(.94); } .gv-right{ filter:brightness(.8); } .gv-left{ filter:brightness(.7); }
+  .gv-top{ filter:brightness(1.06); } .gv-bottom{ filter:brightness(.6); }
+  .gv-floor{ position:absolute; bottom:5%; left:50%; width:42%; height:5%; transform:translateX(-50%); border-radius:50%;
+    background:radial-gradient(ellipse, rgba(0,0,0,.45), transparent 70%); filter:blur(6px); pointer-events:none; }
+  .gv-info h3{ font-family:var(--serif); font-size:1.3rem; margin-top:.6rem; }
+  .gv-info p{ color:var(--cocoa-soft); font-size:.9rem; margin-top:.15rem; }
+  .gv-views{ display:flex; flex-wrap:wrap; justify-content:center; gap:.4rem; margin-top:.75rem; }
+  .gv-views button{ padding:.45rem .9rem; border-radius:999px; border:1px solid var(--line); background:var(--paper);
+    color:var(--cocoa-soft); font-size:.85rem; font-weight:600; }
+  .gv-views button:hover{ border-color:var(--gold); color:var(--cocoa); }
+  .gv-views button.on{ background:var(--cocoa); color:var(--cream); border-color:var(--cocoa); }
+  .gv-hint{ font-size:.78rem; color:var(--cocoa-faint); margin-top:.55rem; }
   .customize-panel{ display:flex; flex-direction:column; gap:1.5rem; }
   .photo-guide{
     display:flex; align-items:center; gap:.875rem; background:var(--paper); border:1px solid var(--line);

@@ -27,11 +27,11 @@
   /* ---------- paper ---------- */
   var tileCache = { src: null, w: 0, canvas: null };
 
-  function drawPaper(c, w, h, img, scale) {
+  function drawPaper(c, w, h, img, scale, tilePx, noFold) {
     if (ready(img)) {
       /* The pattern at the size it is printed: one tile a share of the box wide.
          Scaled once into a canvas of its own, then repeated. */
-      var tw = Math.max(24, Math.round(w * (scale || 0.5)));
+      var tw = Math.max(8, Math.round(tilePx || w * (scale || 0.5)));
       if (tileCache.src !== img.src || tileCache.w !== tw) {
         var t = document.createElement('canvas');
         t.width = tw;
@@ -54,6 +54,7 @@
     c.fillStyle = g;
     c.fillRect(0, 0, w, h);
 
+    if (noFold) return;
     var fy = h * 0.86;
     var fold = c.createLinearGradient(0, fy - h * 0.01, 0, fy + h * 0.012);
     fold.addColorStop(0, 'rgba(0,0,0,0)');
@@ -197,7 +198,7 @@
     c.setLineDash([]);
   }
 
-  function twine(c, w, h, cx, cy, color) {
+  function twine(c, w, h, cx, cy, color, noBow) {
     var u = w, gap = u * 0.022;
     withShadow(c, u, function () {
       /* wound twice each way, as in the shop */
@@ -205,12 +206,14 @@
       cord(c, [[cx + gap, 0], [cx + gap, h]], u, color);
       cord(c, [[0, cy - gap], [w, cy - gap]], u, color);
       cord(c, [[0, cy + gap], [w, cy + gap]], u, color);
+      if (noBow) return;
       /* the bow: two loose loops and two ends */
       cord(c, [[cx, cy], [cx - 0.14 * u, cy - 0.16 * u], [cx - 0.3 * u, cy - 0.02 * u], [cx, cy]], u, color, true);
       cord(c, [[cx, cy], [cx + 0.14 * u, cy - 0.15 * u], [cx + 0.28 * u, cy + 0.02 * u], [cx, cy]], u, color, true);
       cord(c, [[cx, cy], [cx - 0.05 * u, cy + 0.12 * u], [cx - 0.16 * u, cy + 0.2 * u], [cx - 0.2 * u, cy + 0.3 * u]], u, color, true);
       cord(c, [[cx, cy], [cx + 0.06 * u, cy + 0.1 * u], [cx + 0.12 * u, cy + 0.22 * u], [cx + 0.1 * u, cy + 0.32 * u]], u, color, true);
     });
+    if (noBow) return;
     /* the knot */
     c.fillStyle = shade(color, -0.15);
     c.beginPath();
@@ -224,7 +227,8 @@
     var color = opts.color || '#F3D3B4';
     var ribbon = opts.ribbon || 'satin';
     c.save();
-    drawPaper(c, w, h, img, opts.scale);
+    drawPaper(c, w, h, img, opts.scale, null, opts.back);
+    if (opts.back) seam(c, w, h);
 
     /* The ribbon crosses a little above the middle, as it is tied. */
     var cx = w * 0.5, cy = h * 0.42;
@@ -234,9 +238,68 @@
         satinBand(c, cx - bw / 2, 0, bw, h, true, color);
         satinBand(c, 0, cy - bw / 2, w, bw, false, color);
       });
-      satinBow(c, cx, cy, w, color);
+      if (!opts.back) satinBow(c, cx, cy, w, color);
     } else if (ribbon === 'twine') {
-      twine(c, w, h, cx, cy, color);
+      twine(c, w, h, cx, cy, color, opts.back);
+    }
+    c.restore();
+  }
+
+  /* Where the paper overlaps itself along the back. */
+  function seam(c, w, h) {
+    var x = w * 0.64;
+    var g = c.createLinearGradient(x - w * 0.02, 0, x + w * 0.012, 0);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(0.7, 'rgba(0,0,0,.16)');
+    g.addColorStop(0.72, 'rgba(255,255,255,.22)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = g;
+    c.fillRect(x - w * 0.02, 0, w * 0.032, h);
+  }
+
+  /* A long side of the box, `unitW` being the face's width, so the paper and
+     the ribbon keep the face's size as they go round. */
+  function drawSide(c, d, h, img, opts, unitW) {
+    opts = opts || {};
+    var color = opts.color || '#F3D3B4';
+    c.save();
+    drawPaper(c, d, h, img, 0, unitW * (opts.scale || 0.5), true);
+    var cy = h * 0.42;
+    if (opts.ribbon === 'satin') {
+      var bw = unitW * 0.075;
+      satinBand(c, 0, cy - bw / 2, d, bw, false, color);
+    } else if (opts.ribbon === 'twine') {
+      var gap = unitW * 0.022;
+      cord(c, [[0, cy - gap], [d, cy - gap]], unitW, color);
+      cord(c, [[0, cy + gap], [d, cy + gap]], unitW, color);
+    }
+    c.restore();
+  }
+
+  /* An end of the box: the paper folded in, the long ribbon over it. */
+  function drawEnd(c, w, d, img, opts) {
+    opts = opts || {};
+    var color = opts.color || '#F3D3B4';
+    c.save();
+    drawPaper(c, w, d, img, opts.scale, null, true);
+    /* the folds: two flaps from the long edges meeting in the middle */
+    c.fillStyle = 'rgba(0,0,0,.10)';
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(d * 0.5, d * 0.5); c.lineTo(0, d); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(w, 0); c.lineTo(w - d * 0.5, d * 0.5); c.lineTo(w, d); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.18)';
+    c.lineWidth = Math.max(1, w * 0.004);
+    c.beginPath();
+    c.moveTo(0, 0); c.lineTo(d * 0.5, d * 0.5); c.lineTo(w - d * 0.5, d * 0.5); c.lineTo(w, 0);
+    c.moveTo(0, d); c.lineTo(d * 0.5, d * 0.5); c.moveTo(w, d); c.lineTo(w - d * 0.5, d * 0.5);
+    c.stroke();
+    var cx = w * 0.5;
+    if (opts.ribbon === 'satin') {
+      var bw = w * 0.075;
+      satinBand(c, cx - bw / 2, 0, bw, d, true, color);
+    } else if (opts.ribbon === 'twine') {
+      var gap = w * 0.022;
+      cord(c, [[cx - gap, 0], [cx - gap, d]], w, color);
+      cord(c, [[cx + gap, 0], [cx + gap, d]], w, color);
     }
     c.restore();
   }
@@ -259,5 +322,5 @@
     }
   }
 
-  global.NefisWrap = { draw: draw, averageColor: averageColor };
+  global.NefisWrap = { draw: draw, drawSide: drawSide, drawEnd: drawEnd, averageColor: averageColor };
 })(window);

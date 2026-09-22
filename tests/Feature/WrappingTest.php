@@ -97,7 +97,7 @@ class WrappingTest extends TestCase
             ->assertSee(['Qablaşdırma', 'Ürəklər', 'Kraft', 'Kəndir (cut)', 'Dizayn seç'])
             ->assertSee('js/gift-box.js', false)
             ->getContent();
-        $this->assertSame(2, substr_count($html, 'class="wr-card"'));
+        $this->assertSame(2, substr_count($html, 'class="wr-card" data-gift-open'), 'each box opens the 360° viewer');
         $this->assertStringContainsString('data-ribbon="twine"', $html);
     }
 

@@ -44,6 +44,8 @@
   .wrap-swatch .nm{ font-size:.72rem; line-height:1.25; text-align:center; color:var(--cocoa-soft); }
   .wrap-preview{ border:1px solid var(--line); border-radius:.9rem; padding:.5rem .75rem 1rem; background:radial-gradient(ellipse at 50% 30%, var(--cream-2), transparent 70%); }
   .wrap-preview[hidden]{ display:none; }
+  .wrap-preview{ cursor:zoom-in; }
+  .wrap-preview-name small{ display:block; font-weight:500; font-size:.72rem; color:var(--cocoa-faint); margin-top:.15rem; }
   .wrap-preview .gift{ max-width:15rem; margin-inline:auto; }
   .wrap-preview-name{ text-align:center; font-size:.85rem; font-weight:600; color:var(--cocoa); margin:0; }
 
@@ -303,7 +305,7 @@
               </div>
             @endforeach
             {{-- The box as it will be handed over, in the paper just picked. --}}
-            <div class="wrap-preview" id="wrap-preview" hidden>
+            <div class="wrap-preview" id="wrap-preview" data-gift-open title="Hər tərəfdən bax" hidden>
               @include('partials.gift-box', ['wrap' => null])
               <p class="wrap-preview-name" id="wrap-preview-name"></p>
             </div>
@@ -891,7 +893,16 @@
   function show(r){
     if (!r || !r.value) { preview.hidden = true; return; }
     preview.hidden = false;
-    name.textContent = r.dataset.name + ' · +' + r.dataset.price.replace(/\.00$/, '') + ' ₼';
+    var price = '+' + r.dataset.price.replace(/\.00$/, '') + ' ₼';
+    name.innerHTML = '';
+    name.appendChild(document.createTextNode(r.dataset.name + ' · ' + price));
+    var hint = document.createElement('small');
+    hint.textContent = 'Hər tərəfdən baxmaq üçün klikləyin';
+    name.appendChild(hint);
+    /* the viewer reads the wrap from here */
+    ['pattern', 'ribbon', 'color', 'scale'].forEach(function(k){ box.dataset[k] = r.dataset[k]; });
+    preview.dataset.name = r.dataset.name;
+    preview.dataset.price = price;
     NefisGift.paint(box, { pattern: r.dataset.pattern, ribbon: r.dataset.ribbon, color: r.dataset.color, scale: parseFloat(r.dataset.scale) || 0.5 });
   }
   document.querySelectorAll('input[name="wrapping_id"]').forEach(function(r){
