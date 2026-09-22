@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Chocolate;
 use App\Models\DesignLayer;
+use App\Models\GiftPage;
 use App\Models\Product;
 use App\Models\ProductAngle;
 use App\Models\Scene;
@@ -21,7 +22,9 @@ class ProductController extends Controller
             ->get()
             ->groupBy('category');
 
-        return view('designs.index', compact('designs'));
+        $gifts = GiftPage::shown()->get();
+
+        return view('designs.index', compact('designs', 'gifts'));
     }
 
     public function customize(Product $product)

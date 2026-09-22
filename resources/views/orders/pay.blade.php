@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Ödəniş — Sifariş #' . $order->id . ' — Nefis Şokolad Evi')
+@section('robots', 'noindex, nofollow')
 
 @section('page_style')
   .pay-grid{ display:grid; gap:1.5rem; grid-template-columns:minmax(0,1fr); max-width:44rem; margin-inline:auto; }

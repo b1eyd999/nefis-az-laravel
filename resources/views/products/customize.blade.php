@@ -1,6 +1,47 @@
 @extends('layouts.app')
 
-@section('title', $product->name . ' — Fərdiləşdir — Nefis Şokolad Evi')
+@php
+  $seoImage = \App\Support\Media::url($product->catalogImage());
+  $seoText = $product->description
+      ? \Illuminate\Support\Str::limit($product->description, 110) . ' Şəklinizi və sözlərinizi əlavə edin — Bakıda çatdırılma.'
+      : '«' . $product->name . '» dizaynında fərdi şokolad qutusu: şəklinizi və sözlərinizi əlavə edin, önizləməni dərhal görün'
+        . ($product->price ? ', ' . \App\Support\Price::format($product->price) . '-dan' : '')
+        . '. Ad günü və sevdiklərinizə hədiyyə — Bakıda çatdırılma.';
+@endphp
+@section('title', $product->name . ' — şəkilli şokolad qutusu | Nefis')
+@section('meta_description', $seoText)
+@if($seoImage)
+  @section('og_image', $seoImage)
+@endif
+@section('og_type', 'product')
+
+@push('jsonld')
+  {{ \App\Support\Seo::jsonLd(['@graph' => array_values(array_filter([
+      array_filter([
+          '@type' => 'Product',
+          'name' => $product->name . ' — şəkilli şokolad qutusu',
+          'image' => $seoImage ? [$seoImage] : null,
+          'description' => $seoText,
+          'sku' => 'nefis-' . $product->id,
+          'category' => 'Fərdi şokolad qutusu',
+          'brand' => ['@type' => 'Brand', 'name' => 'Nefis'],
+          'offers' => $product->price ? [
+              '@type' => 'Offer',
+              'url' => route('products.customize', $product->slug),
+              'priceCurrency' => 'AZN',
+              'price' => number_format((float) $product->price, 2, '.', ''),
+              'availability' => 'https://schema.org/InStock',
+              'itemCondition' => 'https://schema.org/NewCondition',
+              'seller' => ['@type' => 'Organization', 'name' => 'Nefis Şokolad Evi'],
+          ] : null,
+      ]),
+      \App\Support\Seo::breadcrumbs([
+          ['Ana səhifə', route('home')],
+          ['Dizaynlar', route('designs.index')],
+          [$product->name, route('products.customize', $product->slug)],
+      ]),
+  ]))]) }}
+@endpush
 
 @php
   $photoSlots = $product->photoSlots;

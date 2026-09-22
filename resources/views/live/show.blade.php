@@ -14,6 +14,8 @@
 <meta name="robots" content="noindex">
 {{-- Yandex Disk refuses requests that carry a referer from another site. --}}
 <meta name="referrer" content="no-referrer">
+{{-- A customer's own video: not for search engines. --}}
+<meta name="robots" content="noindex, nofollow">
 <title>{{ $live->title }} — Canlı şəkil · Nefis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">

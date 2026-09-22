@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Sifarişlərim — Nefis Şokolad Evi')
+@section('robots', 'noindex, nofollow')
 
 @section('content')
 <section class="page-hero" style="padding-bottom:0;">

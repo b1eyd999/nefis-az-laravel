@@ -14,18 +14,41 @@
      that carries a referer from another site. --}}
 <meta name="referrer" content="@yield('referrer', 'no-referrer')">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>@yield('title', 'Nefis Şokolad Evi — Fərdi Şokolad Qutuları')</title>
-<meta name="description" content="@yield('meta_description', 'Öz şəklinizlə, öz sözünüzlə fərdi şokolad qutusu. Premium keyfiyyət, sevdiklərinizə unudulmaz hədiyyə.')">
+{{-- Search engines and link previews: each page names itself (canonical), and
+     pages set their own title, description, picture and robots rule.
+     yieldContent() hands these back already escaped, hence {!! !!}. --}}
+@php
+  $seoTitle = trim($__env->yieldContent('title', 'Nefis — Şəkilli Şokolad Qutuları və Fərdi Hədiyyələr'));
+  $seoDescription = trim($__env->yieldContent('meta_description', 'Öz şəkliniz və sözlərinizlə fərdi şokolad qutusu — ad günü, sevgiliyə, 8 Mart və hər münasibətə unudulmaz hədiyyə. Bakıda və bütün Azərbaycanda çatdırılma.'));
+  $seoUrl = trim($__env->yieldContent('canonical', url()->current()));
+  $seoImage = trim($__env->yieldContent('og_image'));
+@endphp
+<title>{!! $seoTitle !!}</title>
+<meta name="description" content="{!! $seoDescription !!}">
+@hasSection('robots')
+<meta name="robots" content="@yield('robots')">
+@endif
+<link rel="canonical" href="{!! $seoUrl !!}">
 <meta name="theme-color" content="#3A2617">
-<meta property="og:type" content="website">
+<meta property="og:type" content="@yield('og_type', 'website')">
+<meta property="og:locale" content="az_AZ">
 <meta property="og:site_name" content="Nefis Şokolad Evi">
-<meta property="og:title" content="@yield('title', 'Nefis Şokolad Evi — Fərdi Şokolad Qutuları')">
-<meta property="og:description" content="@yield('meta_description', 'Öz şəklinizlə, öz sözünüzlə fərdi şokolad qutusu. Premium keyfiyyət, sevdiklərinizə unudulmaz hədiyyə.')">
-<meta property="og:url" content="https://nefis.az">
-<link rel="canonical" href="https://nefis.az">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="@yield('title', 'Nefis Şokolad Evi — Fərdi Şokolad Qutuları')">
-<meta name="twitter:description" content="@yield('meta_description', 'Öz şəklinizlə, öz sözünüzlə fərdi şokolad qutusu.')">
+<meta property="og:title" content="{!! $seoTitle !!}">
+<meta property="og:description" content="{!! $seoDescription !!}">
+<meta property="og:url" content="{!! $seoUrl !!}">
+@if($seoImage)
+<meta property="og:image" content="{!! $seoImage !!}">
+@else
+<meta property="og:image" content="{{ asset('images/og-nefis.jpg') }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+@endif
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{!! $seoTitle !!}">
+<meta name="twitter:description" content="{!! $seoDescription !!}">
+<meta name="twitter:image" content="{!! $seoImage ?: e(asset('images/og-nefis.jpg')) !!}">
+{{ \App\Support\Seo::verificationTags() }}
+@stack('jsonld')
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%AB%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -554,10 +577,36 @@
   .range-row input[type=range]{ flex:1; padding:0; }
   .range-row .lbl{ font-size:.8125rem; color:var(--cocoa-soft); width:5rem; flex:none; }
 
+  /* ---------- gift ideas (occasion pages, their links on other pages) ---------- */
+  .crumbs{ display:flex; flex-wrap:wrap; justify-content:center; gap:.4rem; font-size:.8125rem; color:var(--cocoa-faint); margin-bottom:1.25rem; }
+  .crumbs a{ color:var(--cocoa-soft); }
+  .crumbs a:hover{ color:var(--gold-deep); }
+  .occ-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(15rem, 1fr)); gap:1rem; }
+  .occ-card{ display:flex; gap:1rem; align-items:flex-start; background:var(--paper); border:1px solid var(--line); border-radius:var(--radius-sm);
+    padding:1.25rem; transition:transform .3s var(--ease), box-shadow .3s var(--ease), border-color .3s; }
+  .occ-card:hover{ transform:translateY(-4px); box-shadow:var(--shadow-sm); border-color:var(--gold); }
+  .occ-card .occ-ico{ flex:none; width:3rem; height:3rem; border-radius:50%; background:var(--cream-2); display:grid; place-items:center; font-size:1.5rem; }
+  .occ-card h2, .occ-card h3{ font-family:var(--sans); font-size:1rem; font-weight:700; }
+  .occ-card p{ margin-top:.3rem; font-size:.875rem; color:var(--cocoa-soft); line-height:1.5; }
+  .occ-chips{ display:flex; flex-wrap:wrap; justify-content:center; gap:.5rem; }
+  .occ-chip{ display:inline-flex; align-items:center; gap:.35rem; padding:.5rem .95rem; border-radius:999px; border:1px solid var(--line);
+    background:var(--paper); font-size:.875rem; font-weight:500; color:var(--cocoa-soft); transition:border-color .2s, color .2s, transform .2s; }
+  .occ-chip:hover{ border-color:var(--gold); color:var(--cocoa); transform:translateY(-2px); }
+  .prose{ max-width:44rem; margin-inline:auto; color:var(--cocoa-soft); font-size:1.0625rem; }
+  .prose h2{ font-size:clamp(1.4rem, 2.6vw, 1.75rem); margin:2.25rem 0 .75rem; }
+  .prose h2:first-child{ margin-top:0; }
+  .prose h3{ font-size:1.2rem; margin:1.75rem 0 .5rem; }
+  .prose p{ margin:.85rem 0; }
+  .prose ul, .prose ol{ margin:.85rem 0; padding-left:1.35rem; }
+  .prose li{ margin:.4rem 0; }
+  .prose li::marker{ color:var(--gold); }
+  .prose strong{ color:var(--cocoa); }
+  .prose a{ color:var(--gold-deep); text-decoration:underline; text-underline-offset:3px; }
+
   /* ---------- footer ---------- */
   footer{ background:var(--band); color:rgba(251,244,234,.7); padding:4rem 0 2rem; }
   .footer-top{ display:grid; gap:2.5rem; padding-bottom:2.5rem; border-bottom:1px solid rgba(251,244,234,.12); }
-  @media (min-width:800px){ .footer-top{ grid-template-columns:1.4fr repeat(2,1fr); } }
+  @media (min-width:800px){ .footer-top{ grid-template-columns:1.4fr repeat(3,1fr); } }
   .footer-brand p{ margin-top:1rem; max-width:22rem; font-size:.9375rem; }
   .footer-social{ display:flex; gap:.75rem; margin-top:1.5rem; }
   .footer-social a{ width:2.5rem; height:2.5rem; border-radius:50%; border:1px solid rgba(251,244,234,.25); display:flex; align-items:center; justify-content:center; transition:background .25s, transform .25s; }
@@ -595,6 +644,7 @@
 @php $navWraps = \App\Models\Wrapping::where('is_active', true)->exists(); @endphp
 @php $navLetters = \App\Support\Letter::enabled(); @endphp
 @php $navLive = \App\Support\LiveMaterials::enabled(); @endphp
+@php $navGifts = \App\Models\GiftPage::shown()->get(['id', 'slug', 'menu_label', 'emoji']); @endphp
 
 <a href="#main" class="skip-link">Əsas məzmuna keç</a>
 
@@ -612,7 +662,7 @@
     <a href="{{ route('home') }}" class="brand"><img src="/images/logo.svg" alt="Nefis"></a>
     <nav class="primary" aria-label="Əsas menyu">
       {{-- Everything for sale under one word, so the bar stays short however many there are. --}}
-      @if($navWraps || $navLetters || $navLive)
+      @if($navWraps || $navLetters || $navLive || $navGifts->isNotEmpty())
         <div class="nav-drop">
           <button type="button" aria-expanded="false" aria-haspopup="true">
             Məhsullar
@@ -620,6 +670,9 @@
           </button>
           <div class="nav-panel">
             <a class="nav-item" href="{{ route('designs.index') }}"><span class="ni-ico">🍫</span><span><b>Dizaynlar</b><small>Fərdi şokolad qutuları</small></span></a>
+            @if($navGifts->isNotEmpty())
+              <a class="nav-item" href="{{ route('gifts.index') }}"><span class="ni-ico">🎉</span><span><b>Hədiyyə fikirləri</b><small>{{ $navGifts->take(3)->pluck('menu_label')->implode(', ') }}…</small></span></a>
+            @endif
             @if($navWraps)
               <a class="nav-item" href="{{ route('wrappings.index') }}"><span class="ni-ico">🎁</span><span><b>Qablaşdırma</b><small>Hədiyyə kağızı və lent</small></span></a>
             @endif
@@ -680,6 +733,7 @@
   <div class="mn-group">
     <span class="mn-head">Məhsullar</span>
     <a href="{{ route('designs.index') }}">🍫 Dizaynlar</a>
+    @if($navGifts->isNotEmpty())<a href="{{ route('gifts.index') }}">🎉 Hədiyyə fikirləri</a>@endif
     @if($navWraps)<a href="{{ route('wrappings.index') }}">🎁 Qablaşdırma</a>@endif
     @if($navLetters)<a href="{{ route('letters.create') }}">💌 {{ \App\Support\Letter::text('menu') }}</a>@endif
     @if($navLive)<a href="{{ route('live.create') }}">🎬 Canlı şəkil</a>@endif
@@ -725,6 +779,15 @@
         <a href="{{ route('home') }}#how">Necə İşləyir</a>
         <a href="{{ route('home') }}#faq">Suallar</a>
       </div>
+      @if($navGifts->isNotEmpty())
+        <div class="footer-col">
+          <h4>Hədiyyə fikirləri</h4>
+          @foreach($navGifts->take(7) as $gift)
+            <a href="{{ route('gifts.show', $gift->slug) }}">{{ $gift->linkText() }}</a>
+          @endforeach
+          <a href="{{ route('gifts.index') }}">Hamısı →</a>
+        </div>
+      @endif
       <div class="footer-col">
         <h4>Əlaqə</h4>
         <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener">Instagram</a>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\GiftPage;
 use App\Models\HeroSlide;
 use App\Models\Product;
 use App\Models\Setting;
@@ -26,6 +27,8 @@ class HomeController extends Controller
         $autoplay = Setting::get(Setting::HERO_AUTOPLAY) === '1';
         $interval = max(2, (int) Setting::get(Setting::HERO_INTERVAL));
 
-        return view('welcome', compact('products', 'designCount', 'slides', 'autoplay', 'interval'));
+        $gifts = GiftPage::shown()->get();
+
+        return view('welcome', compact('products', 'designCount', 'slides', 'autoplay', 'interval', 'gifts'));
     }
 }

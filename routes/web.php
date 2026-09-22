@@ -5,6 +5,7 @@ use App\Http\Controllers\BoxEditorController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CoverController;
+use App\Http\Controllers\GiftPageController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LetterController;
 use App\Http\Controllers\LivePhotoController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SceneEditorController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\WrappingController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +27,11 @@ Route::get('/i/{path}', [MediaController::class, 'show'])
     ->name('media');
 
 Route::get('/dizaynlar', [ProductController::class, 'index'])->name('designs.index');
+
+// Gift ideas by occasion, written for search (ad günü, sevgiliyə, 8 Mart…), and the map of the site.
+Route::get('/hediyye', [GiftPageController::class, 'index'])->name('gifts.index');
+Route::get('/hediyye/{giftPage:slug}', [GiftPageController::class, 'show'])->name('gifts.show');
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/qablasdirma', [WrappingController::class, 'index'])->name('wrappings.index');
 Route::get('/mektub', [LetterController::class, 'create'])->name('letters.create');
 Route::post('/mektub', [LetterController::class, 'store'])->name('letters.store');

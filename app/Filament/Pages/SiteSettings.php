@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\Seo;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -12,8 +13,9 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
 /**
- * Site-wide switches: closing the site for maintenance, and how the net
- * profit is shared out between the owner and the managers.
+ * Site-wide switches: closing the site for maintenance, payments, how the net
+ * profit is shared out, and the codes that prove the site is the owner's to
+ * Google, Yandex and Bing.
  */
 class SiteSettings extends Page implements HasForms
 {
@@ -46,6 +48,9 @@ class SiteSettings extends Page implements HasForms
             'payment_limit' => (int) Setting::get(Setting::PAYMENT_LIMIT),
             'payment_window_hours' => (int) Setting::get(Setting::PAYMENT_WINDOW_HOURS),
             'payment_note' => Setting::get(Setting::PAYMENT_NOTE),
+            'seo_google' => Setting::get(Setting::SEO_GOOGLE),
+            'seo_yandex' => Setting::get(Setting::SEO_YANDEX),
+            'seo_bing' => Setting::get(Setting::SEO_BING),
         ]);
     }
 
@@ -72,6 +77,15 @@ class SiteSettings extends Page implements HasForms
                             ->label('Ödəniş səhifəsindəki yazı')->rows(2)->maxLength(300)->columnSpanFull(),
                     ])
                     ->columns(2),
+                Forms\Components\Section::make('Axtarış sistemləri (SEO)')
+                    ->description('Google Search Console, Yandex Webmaster və Bing Webmaster-də saytı təsdiqləmək üçün. Oradan "HTML tag" üsulunu seçin və verilən kodu (və ya bütün <meta …> sətrini) buraya yapışdırın. Sayt xəritəsi: ' . url('/sitemap.xml'))
+                    ->schema([
+                        Forms\Components\TextInput::make('seo_google')->label('Google (google-site-verification)')->maxLength(300),
+                        Forms\Components\TextInput::make('seo_yandex')->label('Yandex (yandex-verification)')->maxLength(300),
+                        Forms\Components\TextInput::make('seo_bing')->label('Bing (msvalidate.01)')->maxLength(300),
+                    ])
+                    ->columns(3)
+                    ->collapsible(),
                 // Shares are given with the role now, one per staff member.
                 Forms\Components\Section::make('Mənfəətin bölgüsü')
                     ->description('Pay hər menecerə "İstifadəçilər" bölməsində, rol verəndə təyin olunur. Menecer öz payını "Balansım" səhifəsində görür.')
@@ -101,6 +115,9 @@ class SiteSettings extends Page implements HasForms
         Setting::put(Setting::PAYMENT_NOTE, $data['payment_note'] ?? '');
         Setting::put(Setting::MAINTENANCE, (bool) $data['maintenance']);
         Setting::put(Setting::MAINTENANCE_MESSAGE, $data['maintenance_message']);
+        Setting::put(Setting::SEO_GOOGLE, Seo::cleanCode($data['seo_google'] ?? ''));
+        Setting::put(Setting::SEO_YANDEX, Seo::cleanCode($data['seo_yandex'] ?? ''));
+        Setting::put(Setting::SEO_BING, Seo::cleanCode($data['seo_bing'] ?? ''));
 
         Notification::make()->success()
             ->title($data['maintenance'] ? 'Saxlanıldı — sayt müştərilər üçün bağlıdır' : 'Saxlanıldı')

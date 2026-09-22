@@ -71,6 +71,13 @@ class Setting extends Model
 
     public const YANDEX_FOLDER = 'yandex_folder';
 
+    /** Ownership codes from Google Search Console, Yandex Webmaster and Bing Webmaster Tools. */
+    public const SEO_GOOGLE = 'seo_google_verification';
+
+    public const SEO_YANDEX = 'seo_yandex_verification';
+
+    public const SEO_BING = 'seo_bing_verification';
+
     /** What each setting is until the owner changes it. */
     public const DEFAULTS = [
         self::AR_ENABLED => '1',

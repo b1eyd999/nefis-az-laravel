@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Qeydiyyat — Nefis Şokolad Evi')
+@section('robots', 'noindex, nofollow')
 
 @section('content')
 <section class="page-hero">

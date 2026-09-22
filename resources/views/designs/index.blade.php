@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Dizaynlar — Nefis Şokolad Evi')
-@section('meta_description', 'Şokolad qutuları, posterlər, xəritə və Spotify dizaynları. Bəyəndiyiniz dizaynı seçin, şəklinizi və sözünüzü əlavə edin.')
+@section('title', 'Şokolad qutusu dizaynları — şəkilli fərdi hədiyyə | Nefis')
+@section('meta_description', 'Kinder, Milka, Love story, Netflix, Spotify və başqa şokolad qutusu dizaynları. Bəyəndiyinizi seçin, şəklinizi və sözünüzü əlavə edin — hədiyyə hazırdır.')
 
 @section('page_style')
   .filter-bar{ display:flex; flex-wrap:wrap; gap:.6rem; justify-content:center; margin-bottom:3.5rem; }
@@ -26,7 +26,7 @@
 
   .d-card{
     background:var(--paper); border:1px solid var(--line); border-radius:var(--radius-sm);
-    overflow:hidden; cursor:zoom-in; padding:0; text-align:left; display:flex; flex-direction:column;
+    overflow:hidden; cursor:zoom-in; padding:0; text-align:left; display:flex; flex-direction:column; color:inherit;
     transition:transform .4s var(--ease), box-shadow .4s var(--ease);
   }
   .d-card:hover{ transform:translateY(-6px); box-shadow:var(--shadow-sm); }
@@ -83,6 +83,14 @@
       <span class="eyebrow">Kolleksiya</span>
       <h1>Dizaynlar</h1>
       <p class="lede">Şokolad qutularından posterlərə qədər — bəyəndiyiniz dizaynı seçin, sonra öz şəklinizi və sözünüzü əlavə edin.</p>
+      @if($gifts->isNotEmpty())
+        <nav class="occ-chips" style="margin-top:1.75rem;" aria-label="Hədiyyə fikirləri">
+          <span style="width:100%; font-size:.8125rem; color:var(--cocoa-faint);">Münasibətə görə seçin:</span>
+          @foreach($gifts as $gift)
+            <a class="occ-chip" href="{{ $gift->url() }}">{{ $gift->emoji }} {{ $gift->menu_label }}</a>
+          @endforeach
+        </nav>
+      @endif
     </div>
   </section>
 
@@ -114,20 +122,20 @@
             </div>
             <div class="designs-grid">
               @foreach($designs[$key] as $design)
-                <button type="button" class="d-card"
+                <a class="d-card" href="{{ $design->isCustomizable() ? route('products.customize', $design->slug) : route('designs.index') }}"
                         data-name="{{ $design->name }}"
                         data-category="{{ $label }}"
                         data-image="{{ \App\Support\Media::url($design->catalogImage()) }}"
                         data-url="{{ $design->isCustomizable() ? route('products.customize', $design->slug) : '' }}">
                   <div class="d-card-media">
                     @if($design->isCustomizable())<span class="pill">Fərdiləşdir</span>@endif
-                    <img src="{{ \App\Support\Media::url($design->catalogImage()) }}" alt="{{ $design->name }}" loading="lazy">
+                    <img src="{{ \App\Support\Media::url($design->catalogImage()) }}" alt="{{ $design->name }} — şəkilli şokolad qutusu" loading="lazy">
                   </div>
                   <div class="d-card-body">
                     <h3>{{ $design->name }}</h3>
                     <span>{{ $label }}</span>
                   </div>
-                </button>
+                </a>
               @endforeach
             </div>
           </div>
@@ -200,8 +208,13 @@
     document.body.style.overflow = "";
   }
 
+  // Cards are links (search engines follow them); a plain click opens the preview instead.
   document.querySelectorAll(".d-card").forEach(function(card){
-    card.addEventListener("click", function(){ open(card); });
+    card.addEventListener("click", function(e){
+      if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+      e.preventDefault();
+      open(card);
+    });
   });
 
   document.getElementById("lb-close").addEventListener("click", close);

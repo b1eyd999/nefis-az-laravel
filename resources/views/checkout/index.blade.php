@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Sifarişi Tamamla — Nefis Şokolad Evi')
+@section('robots', 'noindex, nofollow')
 
 {{-- The map services check where their requests come from. --}}
 @section('referrer', 'strict-origin-when-cross-origin')

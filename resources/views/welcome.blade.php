@@ -1,5 +1,23 @@
 @extends('layouts.app')
 
+@section('title', 'Nefis — Şəkilli Şokolad Qutuları və Fərdi Hədiyyələr Bakıda')
+@section('meta_description', 'Ad günü, sevgiliyə, 8 Mart və hər münasibətə fərdi hədiyyə: öz şəkliniz və sözlərinizlə şokolad qutusu. Onlayn sifariş, Bakıda və bütün Azərbaycanda çatdırılma.')
+
+@php
+  // The questions on the home page, shown below and given to search engines as an FAQ.
+  $faq = [
+    ['q' => 'Necə sifariş verə bilərəm?', 'a' => 'Kolleksiyadan dizayn seçin, şəklinizi yükləyin, səbətə əlavə edib qeydiyyatdan keçərək sifarişi tamamlayın.'],
+    ['q' => 'Hansı şokolad növləri mövcuddur?', 'a' => 'Kinder, Milka, Alionka və digər premium brendlərin dizaynında qutular təklif edirik.'],
+    ['q' => 'Çatdırılma nə qədər vaxt aparır?', 'a' => 'Sifariş adətən 1-3 iş günü ərzində hazırlanıb çatdırılır.'],
+    ['q' => 'Bakı xaricinə çatdırılma varmı?', 'a' => 'Bəli, Azərbaycan daxilində bütün bölgələrə çatdırılma mövcuddur.'],
+    ['q' => 'Fərdi sifarişi geri qaytara bilərəmmi?', 'a' => 'Fərdi hazırlanan məhsullar üçün geri qaytarma tətbiq olunmur, lakin çatdırılma zamanı zədə aşkar olarsa əvəz edilir.'],
+  ];
+@endphp
+
+@push('jsonld')
+  {{ \App\Support\Seo::jsonLd(['@graph' => array_merge(\App\Support\Seo::organization()['@graph'], [\App\Support\Seo::faq($faq)])]) }}
+@endpush
+
 @section('page_style')
   .p-card-media{ aspect-ratio:4/5; }
   .hero .hero-title{ margin-top:1.25rem; font-size:clamp(2.25rem, 5vw, 3.75rem); line-height:1.08; }
@@ -168,21 +186,7 @@
       </div>
       <div class="cards-grid">
         @forelse($products as $product)
-          @php $link = $product->isCustomizable() ? route('products.customize', $product->slug) : route('designs.index'); @endphp
-          <div class="p-card reveal">
-            <a href="{{ $link }}" class="p-card-media">
-              @if($product->tag)<span class="tag">{{ $product->tag }}</span>@endif
-              <img src="{{ \App\Support\Media::url($product->catalogImage()) }}" alt="{{ $product->name }}" loading="lazy">
-            </a>
-            <div class="p-card-body">
-              <h3>{{ $product->name }}</h3>
-              <p>{{ $product->description ?: $product->categoryLabel() }}</p>
-              <div class="p-card-foot">
-                <span class="p-card-price">{{ $product->price ? \App\Support\Price::format($product->price) : 'Qiymət sorğu ilə' }}</span>
-                <a href="{{ $link }}" class="p-card-link">{{ $product->isCustomizable() ? 'Fərdiləşdir' : 'Önizlə' }} <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-              </div>
-            </div>
-          </div>
+          @include('partials.p-card', ['product' => $product])
         @empty
           <div class="p-card reveal">
             <div class="p-card-media"><span class="tag">Milli Ornament</span><span class="ph-ico">🍫</span></div>
@@ -237,6 +241,37 @@
     </div>
   </section>
 
+  <!-- GIFT IDEAS: one page per occasion people search for -->
+  @if($gifts->isNotEmpty())
+    <section id="gifts" class="tinted">
+      <div class="wrap">
+        <div class="section-head center reveal">
+          <span class="eyebrow" style="justify-content:center;">Hədiyyə fikirləri</span>
+          <h2>Hər Münasibətə Fərdi Hədiyyə</h2>
+          <p class="lede" style="margin-inline:auto;">Ad günü, sevgiliyə, 8 Mart, körpəyə — kimə və nə üçün hədiyyə axtarırsınız?</p>
+        </div>
+        <div class="occ-grid">
+          @foreach($gifts->take(8) as $gift)
+            <a class="occ-card reveal" href="{{ $gift->url() }}">
+              <span class="occ-ico">{{ $gift->emoji ?: '🎁' }}</span>
+              <div>
+                <h3>{{ $gift->linkText() }}</h3>
+                <p>{{ \Illuminate\Support\Str::limit((string) $gift->intro, 90) }}</p>
+              </div>
+            </a>
+          @endforeach
+        </div>
+        @if($gifts->count() > 8)
+          <div class="collections-foot reveal">
+            <a href="{{ route('gifts.index') }}" class="btn btn-ghost">Bütün hədiyyə fikirləri
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+          </div>
+        @endif
+      </div>
+    </section>
+  @endif
+
   <!-- INSTAGRAM CTA -->
   <section>
     <div class="wrap">
@@ -260,26 +295,12 @@
         <h2>Tez-tez Soruşulan Suallar</h2>
       </div>
       <div class="faq-list reveal">
-        <details class="faq-item" open>
-          <summary>Necə sifariş verə bilərəm?<span class="plus"></span></summary>
-          <div class="faq-a">Kolleksiyadan dizayn seçin, şəklinizi yükləyin, səbətə əlavə edib qeydiyyatdan keçərək sifarişi tamamlayın.</div>
-        </details>
-        <details class="faq-item">
-          <summary>Hansı şokolad növləri mövcuddur?<span class="plus"></span></summary>
-          <div class="faq-a">Kinder, Milka, Alionka və digər premium brendlərin dizaynında qutular təklif edirik.</div>
-        </details>
-        <details class="faq-item">
-          <summary>Çatdırılma nə qədər vaxt aparır?<span class="plus"></span></summary>
-          <div class="faq-a">Sifariş adətən 1-3 iş günü ərzində hazırlanıb çatdırılır.</div>
-        </details>
-        <details class="faq-item">
-          <summary>Bakı xaricinə çatdırılma varmı?<span class="plus"></span></summary>
-          <div class="faq-a">Bəli, Azərbaycan daxilində bütün bölgələrə çatdırılma mövcuddur.</div>
-        </details>
-        <details class="faq-item">
-          <summary>Fərdi sifarişi geri qaytara bilərəmmi?<span class="plus"></span></summary>
-          <div class="faq-a">Fərdi hazırlanan məhsullar üçün geri qaytarma tətbiq olunmur, lakin çatdırılma zamanı zədə aşkar olarsa əvəz edilir.</div>
-        </details>
+        @foreach($faq as $i => $f)
+          <details class="faq-item" @if($i === 0) open @endif>
+            <summary>{{ $f['q'] }}<span class="plus"></span></summary>
+            <div class="faq-a">{{ $f['a'] }}</div>
+          </details>
+        @endforeach
       </div>
     </div>
   </section>

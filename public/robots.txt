@@ -1,2 +1,9 @@
 User-agent: *
-Disallow:
+Disallow: /admin
+Disallow: /livewire/
+Disallow: /qutu-redaktoru/
+Disallow: /sehne-redaktoru/
+Disallow: /qapaq-yarat
+Disallow: /xerite/
+
+Sitemap: https://nefis.az/sitemap.xml

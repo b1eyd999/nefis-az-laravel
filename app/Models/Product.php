@@ -218,6 +218,12 @@ class Product extends Model
         return $this->belongsToMany(Scene::class)->orderBy('scenes.sort_order')->orderBy('scenes.id');
     }
 
+    /** The gift-idea pages (/hediyye/...) this design is offered on. */
+    public function giftPages(): BelongsToMany
+    {
+        return $this->belongsToMany(GiftPage::class);
+    }
+
     public function angles(): HasMany
     {
         return $this->hasMany(ProductAngle::class)->orderBy('sort_order');
