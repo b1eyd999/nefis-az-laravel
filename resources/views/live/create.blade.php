@@ -15,7 +15,7 @@
     background:linear-gradient(160deg, #6f655b, #4a423a); }
   .live-pic{ position:relative; width:78%; box-shadow:0 10px 24px rgba(0,0,0,.45); background:#fff; }
   .live-pic img, .live-pic video{ display:block; width:100%; height:100%; object-fit:cover; }
-  .live-pic video{ position:absolute; inset:0; }
+  .live-pic video{ position:absolute; inset:0; object-fit:contain; }
   .live-pic.empty{ aspect-ratio:3/4; display:flex; align-items:center; justify-content:center; text-align:center; padding:1rem;
     background:rgba(255,255,255,.12); color:#f3e6d6; font-size:.85rem; border:1.5px dashed rgba(255,255,255,.4); box-shadow:none; }
   .live-scan{ position:absolute; left:50%; bottom:1rem; transform:translateX(-50%); padding:.35rem .8rem; border-radius:999px; font-size:.7rem;
@@ -85,7 +85,7 @@
               <input type="file" name="ar_video" id="ar-video" accept="video/mp4,video/quicktime,video/webm,video/*" required>
               <span id="video-name">🎬 Video seçin (MP4/MOV, {{ $maxMb }} MB-a qədər)</span>
             </label>
-            <p class="live-hint" id="video-hint">Ən yaxşısı 10–30 saniyəlik video. Şəklin ölçüsünə uyğun kəsilir.</p>
+            <p class="live-hint" id="video-hint">Ən yaxşısı 10–30 saniyəlik video. Öz ölçüsündə (məs. 9:16), kəsilmədən oynayır.</p>
           </div>
 
           <input type="file" name="ar_mind" id="ar-mind" hidden>
@@ -194,7 +194,7 @@
     hint.classList.toggle('bad', big);
     hint.textContent = big
       ? 'Video ' + (f.size / 1048576).toFixed(1) + ' MB-dır — {{ $maxMb }} MB-dan kiçik olmalıdır. Qısaldın və ya sıxın.'
-      : 'Ən yaxşısı 10–30 saniyəlik video. Şəklin ölçüsünə uyğun kəsilir.';
+      : 'Ən yaxşısı 10–30 saniyəlik video. Öz ölçüsündə (məs. 9:16), kəsilmədən oynayır.';
     vidUrl = URL.createObjectURL(f);
     preview();
   });

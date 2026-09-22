@@ -160,7 +160,7 @@ class LivePhotoTest extends TestCase
             ->assertSee(route('live.video', $live->code))
             ->assertSee('mindar-image-three', false)
             ->assertSee('live\/1\/target.mind', false)
-            ->assertSee('height:1250px', false);
+            ->assertSee('const PIC = 1.25;', false)->assertSee('Bu şəkil canlanır');
         $this->assertSame(1, $live->fresh()->views);
 
         // Not prepared yet: a friendly wait, nothing counted.
