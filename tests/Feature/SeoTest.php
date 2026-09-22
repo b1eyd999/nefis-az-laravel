@@ -137,6 +137,18 @@ class SeoTest extends TestCase
         $this->assertStringContainsString('Sitemap: https://nefis.az/sitemap.xml', file_get_contents(public_path('robots.txt')));
     }
 
+    public function test_a_row_with_an_impossible_date_does_not_bring_the_sitemap_down(): void
+    {
+        $this->box('Love Story', 'love-story-vol-1');
+        \DB::table('products')->update(['updated_at' => '0000-00-00 00:00:00', 'created_at' => null]);
+
+        $xml = $this->get('/sitemap.xml')->assertOk()->getContent();
+
+        $this->assertNotFalse(simplexml_load_string($xml));
+        $this->assertStringContainsString(route('products.customize', 'love-story-vol-1'), $xml);
+        $this->assertStringNotContainsString('0000', $xml);
+    }
+
     public function test_every_page_names_itself_and_private_ones_stay_out_of_search(): void
     {
         $this->get(route('designs.index'))->assertOk()

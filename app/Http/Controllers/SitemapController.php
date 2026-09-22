@@ -9,7 +9,11 @@ use App\Support\Letter;
 use App\Support\LiveMaterials;
 use App\Support\Media;
 use App\Support\Seo;
+use Carbon\CarbonInterface;
 use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Throwable;
 
 /**
  * /sitemap.xml: every page a search engine should know about, with the
@@ -22,16 +26,16 @@ class SitemapController extends Controller
         $products = Product::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get()
             ->filter->isCustomizable();
         $gifts = GiftPage::shown()->get();
-        $newest = $products->max('updated_at');
+        $newest = $this->newest($products->concat($gifts));
 
         $urls = collect([
             ['loc' => route('home'), 'lastmod' => $newest],
             ['loc' => route('designs.index'), 'lastmod' => $newest],
-            ['loc' => route('gifts.index'), 'lastmod' => $gifts->max('updated_at')],
+            ['loc' => route('gifts.index'), 'lastmod' => $this->newest($gifts)],
         ]);
 
         foreach ($gifts as $page) {
-            $urls->push(['loc' => $page->url(), 'lastmod' => $page->updated_at]);
+            $urls->push(['loc' => $page->url(), 'lastmod' => $this->changed($page)]);
         }
         if (Wrapping::where('is_active', true)->exists()) {
             $urls->push(['loc' => route('wrappings.index')]);
@@ -45,7 +49,7 @@ class SitemapController extends Controller
         foreach ($products as $product) {
             $urls->push([
                 'loc' => route('products.customize', $product->slug),
-                'lastmod' => $product->updated_at,
+                'lastmod' => $this->changed($product),
                 'image' => Media::url($product->catalogImage()),
             ]);
         }
@@ -56,5 +60,28 @@ class SitemapController extends Controller
                 $u,
             ))])
             ->header('Content-Type', 'application/xml; charset=UTF-8');
+    }
+
+    /**
+     * When a row was last touched, read past the model's date casting: a row
+     * whose timestamp was never set (or holds MySQL's zero date) must not
+     * bring the whole sitemap down.
+     */
+    private function changed(object $record): ?CarbonInterface
+    {
+        try {
+            $raw = $record->getRawOriginal('updated_at') ?: $record->getRawOriginal('created_at');
+            $date = filled($raw) ? Carbon::parse((string) $raw) : null;
+        } catch (Throwable) {
+            return null;
+        }
+
+        return $date && $date->year > 1971 ? $date : null;
+    }
+
+    /** @param Collection<int, object> $records */
+    private function newest(Collection $records): ?CarbonInterface
+    {
+        return $records->map(fn (object $r) => $this->changed($r))->filter()->max();
     }
 }
