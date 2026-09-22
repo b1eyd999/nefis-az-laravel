@@ -25,7 +25,8 @@
   .pay-account{ display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-top:.75rem;
     border:1px solid var(--line); border-radius:.75rem; padding:.8rem 1rem; background:var(--cream-2); }
   .pay-account .who{ font-size:.8125rem; color:var(--cocoa-soft); margin-bottom:.25rem; }
-  .pay-account .num{ font-weight:700; font-size:1.05rem; letter-spacing:.04em; font-variant-numeric:tabular-nums; word-break:break-all; }
+  /* breaks only between the groups of digits, so the number reads and copies by eye */
+  .pay-account .num{ font-weight:700; font-size:clamp(.95rem, 4.4vw, 1.05rem); letter-spacing:.04em; font-variant-numeric:tabular-nums; overflow-wrap:break-word; }
   .pay-copy{ flex:none; width:2.4rem; height:2.4rem; border-radius:.6rem; border:1px solid var(--line); background:var(--paper); color:var(--cocoa); font-size:1rem; }
   .pay-copy:hover{ border-color:var(--gold); color:var(--gold-deep); }
   .pay-copy.done{ border-color:#16a34a; color:#16a34a; }
