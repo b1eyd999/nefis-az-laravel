@@ -38,8 +38,11 @@ class SeoTest extends TestCase
 
     public function test_the_gift_pages_are_there_from_the_start_and_linked_everywhere(): void
     {
-        $this->assertSame(13, GiftPage::inLocale('az')->count());
-        $this->assertSame(13, GiftPage::inLocale('ru')->count());
+        $this->assertSame(19, GiftPage::inLocale('az')->count());
+        $this->assertSame(19, GiftPage::inLocale('ru')->count());
+        // every Azerbaijani page has its Russian twin and the other way round
+        $this->assertSame(0, GiftPage::inLocale('ru')->whereNull('alt_of')->count());
+        $this->assertSame(19, GiftPage::inLocale('az')->whereHas('alternates')->count());
 
         $html = $this->get(route('home'))->assertOk()
             ->assertSee('Hər Münasibətə Fərdi Hədiyyə')
@@ -283,21 +286,21 @@ class SeoTest extends TestCase
         $this->get('/admin/gift-pages')->assertOk()->assertSee('Hədiyyə səhifələri');
 
         Livewire::test(CreateGiftPage::class)
-            ->fillForm(['menu_label' => 'Müəllimə', 'title' => 'Müəllimə hədiyyə', 'slug' => 'Müəllimə hədiyyə'])
+            ->fillForm(['menu_label' => 'Babaya', 'title' => 'Babaya hədiyyə', 'slug' => 'Babaya hədiyyə'])
             ->call('create')
             ->assertHasFormErrors(['slug' => 'regex']);
 
         Livewire::test(CreateGiftPage::class)
-            ->fillForm(['menu_label' => 'Müəllimə', 'emoji' => '📚', 'title' => 'Müəllimə hədiyyə', 'slug' => 'muellime',
-                'intro' => 'Müəllimlər günü üçün.', 'body' => "## Nə vermək olar?\n\nŞəkilli qutu.",
+            ->fillForm(['menu_label' => 'Babaya', 'emoji' => '🧓', 'title' => 'Babaya hədiyyə', 'slug' => 'babaya',
+                'intro' => 'Baba üçün hədiyyə.', 'body' => "## Nə vermək olar?\n\nŞəkilli qutu.",
                 'faq' => [['q' => 'Nə vaxt?', 'a' => 'Oktyabrda.']], 'products' => [$box->id], 'is_active' => true])
             ->call('create')
             ->assertHasNoFormErrors();
 
-        $this->get(route('gifts.show', 'muellime'))->assertOk()
-            ->assertSee('<title>Müəllimə hədiyyə | Nefis</title>', false)
-            ->assertSee('Müəllimlər günü üçün.')
+        $this->get(route('gifts.show', 'babaya'))->assertOk()
+            ->assertSee('<title>Babaya hədiyyə | Nefis</title>', false)
+            ->assertSee('Baba üçün hədiyyə.')
             ->assertSee(route('products.customize', 'muellim'));
-        $this->get(route('home'))->assertSee('Müəllimə hədiyyə');
+        $this->get(route('home'))->assertSee('Babaya hədiyyə');
     }
 }
