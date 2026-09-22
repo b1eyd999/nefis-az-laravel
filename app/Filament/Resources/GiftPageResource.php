@@ -46,6 +46,24 @@ class GiftPageResource extends Resource
                             ->required()
                             ->maxLength(40),
                         Forms\Components\TextInput::make('emoji')->label('Emoji')->placeholder('🎂')->maxLength(8),
+                        Forms\Components\Select::make('locale')
+                            ->label('Dil')
+                            ->options(GiftPage::LOCALES)
+                            ->default('az')
+                            ->required()
+                            ->live()
+                            ->helperText('Rus dilindəki səhifələr nefis.az/podarki/ ünvanında olur.'),
+                        Forms\Components\Select::make('alt_of')
+                            ->label('Azərbaycanca variantı')
+                            ->options(fn () => GiftPage::where('locale', 'az')->orderBy('sort_order')->pluck('menu_label', 'id'))
+                            ->searchable()
+                            ->visible(fn (Forms\Get $get) => $get('locale') === 'ru')
+                            ->helperText('Google bilsin ki, bu, həmin səhifənin rusca variantıdır. Dizaynları da ondan götürür.'),
+                        Forms\Components\TextInput::make('link_text')
+                            ->label('Link yazısı')
+                            ->placeholder('Ad günü hədiyyəsi')
+                            ->helperText('Menyuda və düymələrdə görünən tam ifadə. Boş qalsa, qısa addan yığılır.')
+                            ->maxLength(80),
                         Forms\Components\TextInput::make('title')
                             ->label('Başlıq (H1)')
                             ->placeholder('Ad günü üçün fərdi hədiyyə')
@@ -55,7 +73,7 @@ class GiftPageResource extends Resource
                             ->columnSpanFull(),
                         Forms\Components\TextInput::make('slug')
                             ->label('Link')
-                            ->prefix('nefis.az/hediyye/')
+                            ->prefix(fn (Forms\Get $get) => 'nefis.az/' . ($get('locale') === 'ru' ? 'podarki/' : 'hediyye/'))
                             ->placeholder('ad-gunu')
                             ->helperText('Yalnız kiçik latın hərfləri, rəqəmlər və "-". Səhifə Google-a düşəndən sonra dəyişməyin.')
                             ->required()
@@ -114,7 +132,7 @@ class GiftPageResource extends Resource
                             ->multiple()
                             ->preload()
                             ->searchable()
-                            ->helperText('Boş qalsa, bütün dizaynlar göstərilir.'),
+                            ->helperText('Boş qalsa, azərbaycanca variantın dizaynları, o da yoxdursa bütün dizaynlar göstərilir.'),
                     ]),
                 Forms\Components\Section::make()
                     ->schema([
@@ -134,9 +152,14 @@ class GiftPageResource extends Resource
                     ->description(fn (GiftPage $record) => $record->title)
                     ->weight('bold')
                     ->searchable(['menu_label', 'title']),
+                Tables\Columns\TextColumn::make('locale')
+                    ->label('Dil')
+                    ->formatStateUsing(fn (string $state) => GiftPage::LOCALES[$state] ?? $state)
+                    ->badge()
+                    ->color(fn (string $state) => $state === 'ru' ? 'warning' : 'success'),
                 Tables\Columns\TextColumn::make('slug')
                     ->label('Link')
-                    ->formatStateUsing(fn (string $state) => '/hediyye/' . $state)
+                    ->formatStateUsing(fn (GiftPage $record) => ($record->locale === 'ru' ? '/podarki/' : '/hediyye/') . $record->slug)
                     ->url(fn (GiftPage $record) => $record->url(), shouldOpenInNewTab: true)
                     ->color('gray')
                     ->visibleFrom('md'),
@@ -149,6 +172,9 @@ class GiftPageResource extends Resource
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order')
+            ->filters([
+                Tables\Filters\SelectFilter::make('locale')->label('Dil')->options(GiftPage::LOCALES),
+            ])
             ->actions([
                 Tables\Actions\Action::make('view')->label('Bax')->icon('heroicon-o-eye')->color('gray')
                     ->url(fn (GiftPage $record) => $record->url())->openUrlInNewTab(),

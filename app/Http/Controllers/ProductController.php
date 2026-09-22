@@ -22,7 +22,7 @@ class ProductController extends Controller
             ->get()
             ->groupBy('category');
 
-        $gifts = GiftPage::shown()->get();
+        $gifts = GiftPage::shown()->inLocale('az')->get();
 
         return view('designs.index', compact('designs', 'gifts'));
     }

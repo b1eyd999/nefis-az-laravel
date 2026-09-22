@@ -27,7 +27,7 @@ class HomeController extends Controller
         $autoplay = Setting::get(Setting::HERO_AUTOPLAY) === '1';
         $interval = max(2, (int) Setting::get(Setting::HERO_INTERVAL));
 
-        $gifts = GiftPage::shown()->get();
+        $gifts = GiftPage::shown()->inLocale('az')->get();
 
         return view('welcome', compact('products', 'designCount', 'slides', 'autoplay', 'interval', 'gifts'));
     }

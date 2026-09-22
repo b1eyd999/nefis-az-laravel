@@ -38,7 +38,8 @@ class SeoTest extends TestCase
 
     public function test_the_gift_pages_are_there_from_the_start_and_linked_everywhere(): void
     {
-        $this->assertSame(13, GiftPage::count());
+        $this->assertSame(13, GiftPage::inLocale('az')->count());
+        $this->assertSame(13, GiftPage::inLocale('ru')->count());
 
         $html = $this->get(route('home'))->assertOk()
             ->assertSee('Hər Münasibətə Fərdi Hədiyyə')
@@ -83,6 +84,57 @@ class SeoTest extends TestCase
             ->assertSee(route('products.customize', 'love-story-vol-1'))
             ->assertSee(route('products.customize', 'kinder-vol-1'))
             ->assertSee('Qutu 4.90 ₼-dan');
+    }
+
+    public function test_the_russian_pages_speak_russian_and_are_paired_with_their_twins(): void
+    {
+        $love = $this->box('Love Story', 'love-story-vol-1', 6.5);
+        $this->box('Kinder', 'kinder-vol-1');
+        GiftPage::inLocale('az')->where('slug', 'sevgiliye')->first()->products()->sync([$love->id]);
+
+        $ru = route('gifts.show.ru', 'devushke');
+        $az = route('gifts.show', 'sevgiliye');
+
+        $html = $this->get($ru)->assertOk()
+            ->assertSee('<html lang="ru">', false)
+            ->assertSee('<h1>Подарок девушке — шоколад с вашим фото</h1>', false)
+            ->assertSee('<link rel="canonical" href="' . $ru . '">', false)
+            ->assertSee('<h2>Что подарить девушке?</h2>', false)
+            ->assertSee('Подходящие дизайны')
+            ->assertSee('Коробка от 6.50 ₼')   // 6.50 is the design's price below
+            ->assertSee('Доставка по Баку и регионам')
+            // the designs come from the Azerbaijani twin, so they are picked in one place
+            ->assertSee(route('products.customize', 'love-story-vol-1'))
+            ->assertDontSee(route('products.customize', 'kinder-vol-1'))
+            ->getContent();
+
+        $this->assertStringContainsString('<link rel="alternate" hreflang="az" href="' . $az . '">', $html);
+        $this->assertStringContainsString('<link rel="alternate" hreflang="ru" href="' . $ru . '">', $html);
+        $this->assertStringContainsString('<link rel="alternate" hreflang="x-default" href="' . $az . '">', $html);
+
+        // …and the Azerbaijani page points back at the Russian one.
+        $this->get($az)->assertOk()
+            ->assertSee('<html lang="az">', false)
+            ->assertSee('<link rel="alternate" hreflang="ru" href="' . $ru . '">', false)
+            ->assertSee('href="' . $ru . '"', false);
+
+        $this->get(route('gifts.index.ru'))->assertOk()
+            ->assertSee('<h1>Идеи подарков</h1>', false)
+            ->assertSee('Подарок на день рождения')
+            ->assertSee('href="' . route('gifts.show.ru', 'vmesto-cvetov') . '"', false);
+
+        // Each address belongs to one language only.
+        $this->get('/podarki/ad-gunu')->assertNotFound();
+        $this->get('/hediyye/devushke')->assertNotFound();
+
+        // The Azerbaijani pages stay Azerbaijani, with the Russian hub in the footer.
+        $this->get(route('home'))->assertOk()
+            ->assertSee('href="' . route('gifts.index.ru') . '"', false)
+            ->assertDontSee('Подарок на день рождения');
+
+        $this->get('/sitemap.xml')->assertOk()
+            ->assertSee(route('gifts.show.ru', 'na-den-rozhdeniya'))
+            ->assertSee(route('gifts.index.ru'));
     }
 
     public function test_a_hidden_page_is_gone_everywhere(): void

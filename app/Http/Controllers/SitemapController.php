@@ -33,6 +33,8 @@ class SitemapController extends Controller
         $products = $this->guard(fn () => Product::where('is_active', true)
             ->orderBy('sort_order')->orderBy('name')->get()->filter->isCustomizable()) ?? collect();
         $gifts = $this->guard(fn () => GiftPage::shown()->get()) ?? collect();
+        $ruGifts = $gifts->where('locale', 'ru');
+        $gifts = $gifts->where('locale', 'az');
         $newest = $this->newest($products->concat($gifts));
 
         $this->add(fn () => [route('home'), $newest]);
@@ -41,6 +43,12 @@ class SitemapController extends Controller
 
         foreach ($gifts as $page) {
             $this->add(fn () => [$page->url(), $this->changed($page)]);
+        }
+        if ($ruGifts->isNotEmpty()) {
+            $this->add(fn () => [GiftPage::hubUrl('ru'), $this->newest($ruGifts)]);
+            foreach ($ruGifts as $page) {
+                $this->add(fn () => [$page->url(), $this->changed($page)]);
+            }
         }
         if ($this->guard(fn () => Wrapping::where('is_active', true)->exists())) {
             $this->add(fn () => [route('wrappings.index')]);

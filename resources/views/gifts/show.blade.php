@@ -1,13 +1,24 @@
 @extends('layouts.app')
 
+@php $w = $page->words(); @endphp
+
+@section('lang', $page->locale)
 @section('title', $page->metaTitle())
 @section('meta_description', $page->metaDescription())
+
+@if($alternate)
+  @push('head')
+    <link rel="alternate" hreflang="{{ $page->locale }}" href="{{ \App\Support\Seo::canonical($page->url()) }}">
+    <link rel="alternate" hreflang="{{ $alternate->locale }}" href="{{ \App\Support\Seo::canonical($alternate->url()) }}">
+    <link rel="alternate" hreflang="x-default" href="{{ \App\Support\Seo::canonical($page->locale === 'az' ? $page->url() : $alternate->url()) }}">
+  @endpush
+@endif
 
 @push('jsonld')
   {{ \App\Support\Seo::jsonLd(['@graph' => array_values(array_filter([
       \App\Support\Seo::breadcrumbs([
-          ['Ana səhifə', route('home')],
-          ['Hədiyyə fikirləri', route('gifts.index')],
+          [$w['home'], route('home')],
+          [$w['hub'], \App\Models\GiftPage::hubUrl($page->locale)],
           [$page->menu_label, $page->url()],
       ]),
       $page->questions() ? \App\Support\Seo::faq($page->questions()) : null,
@@ -39,10 +50,14 @@
 
   <section class="page-hero">
     <div class="wrap">
-      <nav class="crumbs" aria-label="Səhifənin yeri">
-        <a href="{{ route('home') }}">Ana səhifə</a><span aria-hidden="true">›</span>
-        <a href="{{ route('gifts.index') }}">Hədiyyə fikirləri</a><span aria-hidden="true">›</span>
+      <nav class="crumbs" aria-label="{{ $w['hub'] }}">
+        <a href="{{ route('home') }}">{{ $w['home'] }}</a><span aria-hidden="true">›</span>
+        <a href="{{ \App\Models\GiftPage::hubUrl($page->locale) }}">{{ $w['hub'] }}</a><span aria-hidden="true">›</span>
         <span aria-current="page">{{ $page->menu_label }}</span>
+        @if($alternate)
+          <span aria-hidden="true">·</span>
+          <a href="{{ $alternate->url() }}" lang="{{ $alternate->locale }}" hreflang="{{ $alternate->locale }}">{{ $w['other_lang'] }}</a>
+        @endif
       </nav>
       <span class="eyebrow">{{ $page->emoji }} {{ $page->eyebrow ?: $page->menu_label }}</span>
       <h1>{{ $page->title }}</h1>
@@ -50,15 +65,15 @@
         <p class="lede">{{ $page->intro }}</p>
       @endif
       <div class="gift-facts">
-        @if($from)<span>Qutu {{ \App\Support\Price::format($from) }}-dan</span>@endif
-        <span>Öz şəkliniz və sözləriniz</span>
-        <span>Bakıda və bölgələrə çatdırılma</span>
+        @if($from)<span>{{ str_replace(':price', \App\Support\Price::format($from), $w['fromPrice']) }}</span>@endif
+        <span>{{ $w['yours'] }}</span>
+        <span>{{ $w['delivery'] }}</span>
       </div>
       <div class="gift-actions">
-        <a href="#designs" class="btn btn-primary">Dizayn seç
+        <a href="#designs" class="btn btn-primary">{{ $w['pick'] }}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
-        <a href="{{ route('home') }}#how" class="btn btn-ghost">Necə işləyir?</a>
+        <a href="{{ route('home') }}#how" class="btn btn-ghost">{{ $w['how'] }}</a>
       </div>
     </div>
   </section>
@@ -67,9 +82,9 @@
     <section id="designs" style="padding-top:1rem;">
       <div class="wrap">
         <div class="section-head center reveal">
-          <span class="eyebrow" style="justify-content:center;">{{ $products->count() }} dizayn</span>
-          <h2>Bu münasibətə uyğun dizaynlar</h2>
-          <p class="lede" style="margin-inline:auto;">Birini seçin, şəklinizi yükləyin və sözlərinizi yazın — qutunun necə görünəcəyini dərhal görəcəksiniz.</p>
+          <span class="eyebrow" style="justify-content:center;">{{ $page->designCount($products->count()) }}</span>
+          <h2>{{ $w['designs'] }}</h2>
+          <p class="lede" style="margin-inline:auto;">{{ $w['lede'] }}</p>
         </div>
         <div class="cards-grid">
           @foreach($products as $product)
@@ -104,8 +119,8 @@
     <section id="faq">
       <div class="wrap">
         <div class="section-head center reveal">
-          <span class="eyebrow" style="justify-content:center;">Suallar</span>
-          <h2>Tez-tez soruşulan suallar</h2>
+          <span class="eyebrow" style="justify-content:center;">{{ $w['faq'] }}</span>
+          <h2>{{ $w['faqTitle'] }}</h2>
         </div>
         <div class="faq-list reveal">
           @foreach($page->questions() as $i => $f)
@@ -122,14 +137,14 @@
   <section class="tinted gift-end">
     <div class="wrap">
       @if($others->isNotEmpty())
-        <h2>Başqa hədiyyə fikirləri</h2>
+        <h2>{{ $w['others'] }}</h2>
         <div class="occ-chips">
           @foreach($others as $other)
             <a class="occ-chip" href="{{ $other->url() }}">{{ $other->emoji }} {{ $other->linkText() }}</a>
           @endforeach
         </div>
       @endif
-      <a href="{{ route('designs.index') }}" class="btn btn-primary">Bütün dizaynlara bax
+      <a href="{{ route('designs.index') }}" class="btn btn-primary">{{ $w['all'] }}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </a>
     </div>

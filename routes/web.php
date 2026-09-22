@@ -28,9 +28,11 @@ Route::get('/i/{path}', [MediaController::class, 'show'])
 
 Route::get('/dizaynlar', [ProductController::class, 'index'])->name('designs.index');
 
-// Gift ideas by occasion, written for search (ad günü, sevgiliyə, 8 Mart…), and the map of the site.
+// Gift ideas by occasion, written for search, in Azerbaijani and in Russian.
 Route::get('/hediyye', [GiftPageController::class, 'index'])->name('gifts.index');
 Route::get('/hediyye/{giftPage:slug}', [GiftPageController::class, 'show'])->name('gifts.show');
+Route::get('/podarki', [GiftPageController::class, 'index'])->defaults('locale', 'ru')->name('gifts.index.ru');
+Route::get('/podarki/{giftPage:slug}', [GiftPageController::class, 'show'])->defaults('locale', 'ru')->name('gifts.show.ru');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/qablasdirma', [WrappingController::class, 'index'])->name('wrappings.index');
 Route::get('/mektub', [LetterController::class, 'create'])->name('letters.create');

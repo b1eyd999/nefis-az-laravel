@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="az">
+<html lang="@yield('lang', 'az')">
 <head>
 <meta charset="UTF-8">
 {{-- Runs before any styles paint, so a visitor who chose a theme never sees
@@ -48,6 +48,7 @@
 <meta name="twitter:description" content="{!! $seoDescription !!}">
 <meta name="twitter:image" content="{!! $seoImage ?: e(asset('images/og-nefis.jpg')) !!}">
 {{ \App\Support\Seo::verificationTags() }}
+@stack('head')
 @stack('jsonld')
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%AB%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -598,6 +599,8 @@
   .prose h3{ font-size:1.2rem; margin:1.75rem 0 .5rem; }
   .prose p{ margin:.85rem 0; }
   .prose ul, .prose ol{ margin:.85rem 0; padding-left:1.35rem; }
+  .prose ul{ list-style:disc; }
+  .prose ol{ list-style:decimal; }
   .prose li{ margin:.4rem 0; }
   .prose li::marker{ color:var(--gold); }
   .prose strong{ color:var(--cocoa); }
@@ -644,7 +647,8 @@
 @php $navWraps = \App\Models\Wrapping::where('is_active', true)->exists(); @endphp
 @php $navLetters = \App\Support\Letter::enabled(); @endphp
 @php $navLive = \App\Support\LiveMaterials::enabled(); @endphp
-@php $navGifts = \App\Models\GiftPage::shown()->get(['id', 'slug', 'menu_label', 'emoji']); @endphp
+@php $navGifts = \App\Models\GiftPage::shown()->inLocale('az')->get(); @endphp
+@php $navRu = \App\Models\GiftPage::shown()->inLocale('ru')->exists(); @endphp
 
 <a href="#main" class="skip-link">Əsas məzmuna keç</a>
 
@@ -786,6 +790,7 @@
             <a href="{{ route('gifts.show', $gift->slug) }}">{{ $gift->linkText() }}</a>
           @endforeach
           <a href="{{ route('gifts.index') }}">Hamısı →</a>
+          @if($navRu)<a href="{{ route('gifts.index.ru') }}" lang="ru">На русском</a>@endif
         </div>
       @endif
       <div class="footer-col">
