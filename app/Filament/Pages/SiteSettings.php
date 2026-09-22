@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -42,7 +43,6 @@ class SiteSettings extends Page implements HasForms
         $this->form->fill([
             'maintenance' => Setting::get(Setting::MAINTENANCE) === '1',
             'maintenance_message' => Setting::get(Setting::MAINTENANCE_MESSAGE),
-            'shares' => Setting::profitShares(),
             'payment_limit' => (int) Setting::get(Setting::PAYMENT_LIMIT),
             'payment_window_hours' => (int) Setting::get(Setting::PAYMENT_WINDOW_HOURS),
             'payment_note' => Setting::get(Setting::PAYMENT_NOTE),
@@ -72,19 +72,22 @@ class SiteSettings extends Page implements HasForms
                             ->label('Ödəniş səhifəsindəki yazı')->rows(2)->maxLength(300)->columnSpanFull(),
                     ])
                     ->columns(2),
+                // Shares are given with the role now, one per staff member.
                 Forms\Components\Section::make('Mənfəətin bölgüsü')
-                    ->description('Xalis mənfəət bu paylarla bölünür ("Balans" səhifəsində görünür). Faizlərin cəmi 100 olmalıdır.')
+                    ->description('Pay hər menecerə "İstifadəçilər" bölməsində, rol verəndə təyin olunur. Menecer öz payını "Balansım" səhifəsində görür.')
                     ->schema([
-                        Forms\Components\Repeater::make('shares')
-                            ->label('')
-                            ->schema([
-                                Forms\Components\TextInput::make('name')->label('Kim')->required()->maxLength(60),
-                                Forms\Components\TextInput::make('percent')->label('Pay')->numeric()->minValue(0)->maxValue(100)->suffix('%')->required(),
-                            ])
-                            ->columns(2)
-                            ->defaultItems(3)
-                            ->addActionLabel('Pay əlavə et')
-                            ->reorderable(false),
+                        Forms\Components\Placeholder::make('shares_now')
+                            ->label('Hazırkı paylar')
+                            ->content(function () {
+                                $holders = User::shareholders();
+                                if ($holders->isEmpty()) {
+                                    return 'Hələ heç kimə pay verilməyib.';
+                                }
+                                $pct = fn (float $v) => rtrim(rtrim(number_format($v, 2, '.', ''), '0'), '.') . '%';
+
+                                return $holders->map(fn (User $u) => $u->name . ' — ' . $pct($u->profit_percent))->implode(', ')
+                                    . ' · cəmi ' . $pct((float) $holders->sum('profit_percent'));
+                            }),
                     ]),
             ]);
     }
@@ -92,20 +95,12 @@ class SiteSettings extends Page implements HasForms
     public function save(): void
     {
         $data = $this->form->getState();
-        $shares = array_values(array_map(fn ($s) => ['name' => trim($s['name']), 'percent' => round((float) $s['percent'], 2)], $data['shares'] ?? []));
-        $sum = array_sum(array_column($shares, 'percent'));
-        if ($shares && abs($sum - 100) > 0.05) {
-            Notification::make()->danger()->title('Payların cəmi 100% olmalıdır')->body('İndi: ' . rtrim(rtrim(number_format($sum, 2, '.', ''), '0'), '.') . '%')->send();
-
-            return;
-        }
 
         Setting::put(Setting::PAYMENT_LIMIT, (int) $data['payment_limit']);
         Setting::put(Setting::PAYMENT_WINDOW_HOURS, (int) $data['payment_window_hours']);
         Setting::put(Setting::PAYMENT_NOTE, $data['payment_note'] ?? '');
         Setting::put(Setting::MAINTENANCE, (bool) $data['maintenance']);
         Setting::put(Setting::MAINTENANCE_MESSAGE, $data['maintenance_message']);
-        Setting::put(Setting::PROFIT_SHARES, json_encode($shares, JSON_UNESCAPED_UNICODE));
 
         Notification::make()->success()
             ->title($data['maintenance'] ? 'Saxlanıldı — sayt müştərilər üçün bağlıdır' : 'Saxlanıldı')

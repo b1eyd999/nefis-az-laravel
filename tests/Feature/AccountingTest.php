@@ -135,25 +135,19 @@ class AccountingTest extends TestCase
         $this->assertSame(150.0, $this->paper()->fresh()->stock);
         $this->assertSame(10.0, $this->paper()->fresh()->pack_price);
 
-        // Shares must add up to 100; the switch closes the site.
+        // The switch closes the site, and saving leaves the older share list alone.
         Livewire::test(SiteSettings::class)
-            ->fillForm(['maintenance' => true, 'maintenance_message' => 'Bağlıyıq', 'shares' => [
-                ['name' => 'Mən', 'percent' => 50], ['name' => 'Aysel', 'percent' => 30],
-            ]])
-            ->call('save');
-        $this->assertSame('0', Setting::get(Setting::MAINTENANCE), 'refused: 80 %');
-
-        Livewire::test(SiteSettings::class)
-            ->fillForm(['maintenance' => true, 'maintenance_message' => 'Bağlıyıq', 'shares' => [
-                ['name' => 'Mən', 'percent' => 50], ['name' => 'Aysel', 'percent' => 25], ['name' => 'Kamran', 'percent' => 25],
-            ]])
-            ->call('save');
+            ->fillForm(['maintenance' => true, 'maintenance_message' => 'Bağlıyıq'])
+            ->call('save')
+            ->assertHasNoFormErrors();
         $this->assertSame('1', Setting::get(Setting::MAINTENANCE));
-        $this->assertSame(['Mən', 'Aysel', 'Kamran'], array_column(Setting::profitShares(), 'name'));
+        $this->assertCount(3, Setting::profitShares());
 
         $manager = User::factory()->create(['role' => User::MANAGER]);
-        foreach (['/admin/balance', '/admin/materials', '/admin/expenses', '/admin/settings'] as $url) {
+        foreach (['/admin/materials', '/admin/expenses', '/admin/settings'] as $url) {
             $this->actingAs($manager)->get($url)->assertForbidden();
         }
+        // The balance page opens for a manager, but only on their own share.
+        $this->actingAs($manager)->get('/admin/balance')->assertOk()->assertSee('Balansım')->assertDontSee('Kassa');
     }
 }

@@ -6,6 +6,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -59,6 +60,12 @@ class User extends Authenticatable implements FilamentUser
         return $this->isAdmin() || $this->role === self::MANAGER;
     }
 
+    /** Staff with a share of the profit, as the admin handed it out. */
+    public static function shareholders(): Collection
+    {
+        return static::query()->where('profit_percent', '>', 0)->orderByDesc('profit_percent')->orderBy('name')->get();
+    }
+
     public function roleLabel(): string
     {
         return self::ROLES[$this->role] ?? $this->role;
@@ -104,6 +111,8 @@ class User extends Authenticatable implements FilamentUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            // Set by the admin with the role, never from a form the user fills in.
+            'profit_percent' => 'float',
         ];
     }
 }

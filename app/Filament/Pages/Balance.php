@@ -16,10 +16,6 @@ class Balance extends Page
 
     protected static ?string $navigationGroup = 'Mühasibatlıq';
 
-    protected static ?string $navigationLabel = 'Balans';
-
-    protected static ?string $title = 'Balans';
-
     protected static ?int $navigationSort = 1;
 
     protected static string $view = 'filament.pages.balance';
@@ -33,9 +29,26 @@ class Balance extends Page
 
     public string $period = 'month';
 
+    /** The admin sees the books; a manager sees their own share of them. */
     public static function canAccess(): bool
     {
-        return (bool) auth()->user()?->isAdmin();
+        return (bool) auth()->user()?->isStaff();
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return auth()->user()?->isAdmin() ? 'Balans' : 'Balansım';
+    }
+
+    public function getTitle(): string
+    {
+        return static::getNavigationLabel();
+    }
+
+    /** The signed-in manager's line of the profit split, if they have one. */
+    public function mine(): ?array
+    {
+        return collect($this->report['shares'])->firstWhere('user_id', auth()->id());
     }
 
     /** @return array{0: ?Carbon, 1: ?Carbon} */

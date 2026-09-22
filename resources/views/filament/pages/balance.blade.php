@@ -33,6 +33,23 @@
     </span>
   </div>
 
+  @unless(auth()->user()->isAdmin())
+    @php $mine = $this->mine(); @endphp
+    <div class="bl-grid">
+      <div class="bl-card net">
+        <div class="k">Sizin payınız{{ $mine ? ' · ' . rtrim(rtrim(number_format($mine['percent'], 2, '.', ''), '0'), '.') . '%' : '' }}</div>
+        <div class="v {{ ($mine['amount'] ?? 0) < 0 ? 'bl-neg' : '' }}">{{ $fmt($mine['amount'] ?? 0) }}</div>
+        <div class="s">{{ $r['orders'] }} sifarişin xalis mənfəətindən</div>
+      </div>
+    </div>
+    <p class="bl-note">
+      @if($mine)
+        Payınız xalis mənfəətdən hesablanır: satış − şokoladın və materialın maya dəyəri − xərclər. Ləğv edilmiş sifarişlər sayılmır.
+      @else
+        Sizə hələ mənfəətdən pay verilməyib. Payı admin "İstifadəçilər" bölməsində rolla birlikdə verir.
+      @endif
+    </p>
+  @else
   <div class="bl-grid">
     <div class="bl-card">
       <div class="k">Gəlir (satış)</div>
@@ -70,7 +87,7 @@
           <div class="v {{ $share['amount'] < 0 ? 'bl-neg' : '' }}">{{ $fmt($share['amount']) }}</div>
         </div>
       @empty
-        <p class="bl-note">Pay bölgüsü "Tənzimləmələr"də qurulur.</p>
+        <p class="bl-note">Pay "İstifadəçilər" bölməsində, rol verəndə təyin olunur.</p>
       @endforelse
     </div>
   </div>
@@ -111,4 +128,5 @@
     Ləğv edilmiş sifarişlər sayılmır və onların materialı anbara qayıdır. Şokoladın maya dəyəri — sifariş anında marketdəki qiyməti (endirim varsa endirimli),
     materialın — o anda bir vahidin qiyməti. Anbara alış mənfəətdən çıxılmır: material qutulara sərf olunduqca xərcə çevrilir.
   </p>
+  @endunless
 </x-filament-panels::page>

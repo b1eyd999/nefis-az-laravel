@@ -7,6 +7,7 @@ use App\Models\Material;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Models\StockMovement;
+use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
@@ -150,10 +151,13 @@ class Accounting
         $gross = $revenue - $chocolate - $materials;
         $net = $gross - $expenses;
 
-        $shares = collect(Setting::profitShares())->map(fn ($s) => [
-            'name' => $s['name'], 'percent' => (float) $s['percent'],
-            'amount' => round($net * (float) $s['percent'] / 100, 2),
-        ])->all();
+        // Each staff member's share, as the admin gave it with the role. Until
+        // anyone has one, the older list of names from the settings stands.
+        $holders = User::shareholders();
+        $shares = ($holders->isNotEmpty()
+            ? $holders->map(fn (User $u) => ['user_id' => $u->id, 'name' => $u->name, 'percent' => $u->profit_percent])
+            : collect(Setting::profitShares())->map(fn ($s) => ['user_id' => null, 'name' => $s['name'], 'percent' => (float) $s['percent']])
+        )->map(fn ($s) => $s + ['amount' => round($net * $s['percent'] / 100, 2)])->values()->all();
 
         return [
             'orders' => $rows->count(),

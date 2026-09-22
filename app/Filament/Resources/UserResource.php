@@ -38,9 +38,39 @@ class UserResource extends Resource
 
     public const ROLE_HELP = [
         User::CUSTOMER => 'Saytda sifariş verir; admin panelinə girə bilməz.',
-        User::MANAGER => 'Admin panelinə girir və yalnız sifarişləri görür, statusunu dəyişir.',
+        User::MANAGER => 'Admin panelinə girir, sifarişləri və öz balansını görür, statusu dəyişir.',
         User::ADMIN => 'Hər şeyə: dizaynlar, səhnələr, şokoladlar, sifarişlər, istifadəçilər.',
     ];
+
+    /**
+     * The share of the net profit the admin gives a manager or admin. All the
+     * shares together can never pass 100 %.
+     */
+    public static function percentField(): Forms\Components\TextInput
+    {
+        return Forms\Components\TextInput::make('profit_percent')
+            ->label('Mənfəətdən pay')
+            ->numeric()->minValue(0)->maxValue(100)->step(0.01)->suffix('%')->default(0)
+            ->visible(fn (Forms\Get $get) => in_array($get('role'), [User::MANAGER, User::ADMIN], true))
+            ->helperText(function (?User $record) {
+                $given = (float) User::where('id', '!=', $record?->id ?? 0)->sum('profit_percent');
+
+                return 'Başqalarına verilib: ' . rtrim(rtrim(number_format($given, 2, '.', ''), '0'), '.') . '%. Menecer öz balansını "Balans"da görür.';
+            })
+            ->rule(fn (?User $record) => function (string $attribute, $value, Closure $fail) use ($record) {
+                $given = (float) User::where('id', '!=', $record?->id ?? 0)->sum('profit_percent');
+                if ($given + (float) $value > 100.001) {
+                    $fail('Payların cəmi 100%-dən çox ola bilməz — başqalarına artıq ' . rtrim(rtrim(number_format($given, 2, '.', ''), '0'), '.') . '% verilib.');
+                }
+            });
+    }
+
+    /** Saves the role and the share together; a customer has no share. */
+    public static function applyRole(User $user, string $role, $percent): void
+    {
+        $user->role = $role;
+        $user->forceFill(['profit_percent' => $role === User::CUSTOMER ? 0 : round((float) $percent, 2)])->save();
+    }
 
     public static function form(Form $form): Form
     {
@@ -61,7 +91,9 @@ class UserResource extends Resource
                             ->label('')
                             ->options(User::ROLES)
                             ->descriptions(self::ROLE_HELP)
+                            ->live()
                             ->required(),
+                        self::percentField(),
                     ]),
             ]);
     }
@@ -84,6 +116,10 @@ class UserResource extends Resource
                     ->color(fn (?string $state) => match ($state) {
                         User::ADMIN => 'danger', User::MANAGER => 'warning', default => 'gray',
                     }),
+                Tables\Columns\TextColumn::make('profit_percent')
+                    ->label('Pay')
+                    ->formatStateUsing(fn ($state) => (float) $state > 0 ? rtrim(rtrim(number_format((float) $state, 2, '.', ''), '0'), '.') . '%' : '—')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('orders_count')
                     ->label('Sifariş')
                     ->counts('orders')
@@ -101,18 +137,21 @@ class UserResource extends Resource
                 Tables\Actions\Action::make('role')
                     ->label('Rol ver')
                     ->icon('heroicon-o-shield-check')
-                    ->fillForm(fn (User $u) => ['role' => $u->role])
+                    ->fillForm(fn (User $u) => ['role' => $u->role, 'profit_percent' => $u->profit_percent])
                     ->form([
                         Forms\Components\Radio::make('role')
                             ->label('Rol')
                             ->options(User::ROLES)
                             ->descriptions(self::ROLE_HELP)
+                            ->live()
                             ->required(),
+                        self::percentField(),
                     ])
                     ->action(function (User $u, array $data, Tables\Actions\Action $action) {
                         self::guardRoleChange($u, $data['role'], fn () => $action->halt());
-                        $u->update(['role' => $data['role']]);
-                        Notification::make()->success()->title($u->name . ': ' . User::ROLES[$data['role']])->send();
+                        self::applyRole($u, $data['role'], $data['profit_percent'] ?? 0);
+                        $share = $u->profit_percent > 0 ? ' · pay ' . rtrim(rtrim(number_format($u->profit_percent, 2, '.', ''), '0'), '.') . '%' : '';
+                        Notification::make()->success()->title($u->name . ': ' . User::ROLES[$data['role']] . $share)->send();
                     }),
                 Tables\Actions\EditAction::make()->label('Bax'),
             ])
@@ -127,7 +166,8 @@ class UserResource extends Resource
                         foreach ($records as $u) {
                             self::guardRoleChange($u, $data['role'], fn () => $action->halt());
                         }
-                        $records->each->update(['role' => $data['role']]);
+                        // Everyone keeps their share, except whoever becomes a customer.
+                        $records->each(fn (User $u) => self::applyRole($u, $data['role'], $u->profit_percent));
                         Notification::make()->success()->title($records->count() . ' istifadəçi: ' . User::ROLES[$data['role']])->send();
                     })
                     ->deselectRecordsAfterCompletion(),
