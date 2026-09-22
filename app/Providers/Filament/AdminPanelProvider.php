@@ -37,6 +37,13 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::HEAD_END,
                 fn (): string => '<meta name="referrer" content="no-referrer">',
             )
+            // Filament keeps the sidebar open by default, so on a phone every
+            // first visit opened on the menu covering the page. On a narrow
+            // screen each page now starts with it closed (☰ opens it).
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => '<script>try{if(matchMedia("(max-width: 1023px)").matches)localStorage.setItem("isOpen","false")}catch(e){}</script>',
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
@@ -45,7 +52,6 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

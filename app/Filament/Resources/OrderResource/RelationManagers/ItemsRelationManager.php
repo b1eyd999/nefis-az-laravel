@@ -19,8 +19,11 @@ class ItemsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('id')
             ->columns([
+                // On a phone only "what the customer sent" stays, with the rest summed up at its
+                // top (see filament.order-item-fields): side by side it all ran off the screen.
                 Tables\Columns\TextColumn::make('product.name')
                     ->label('Məhsul')
+                    ->visibleFrom('md')
                     // The name was kept on the order line for when the design is gone.
                     ->getStateUsing(fn ($record) => $record->product?->name ?? $record->product_name ?? 'Silinmiş məhsul'),
                 Tables\Columns\ImageColumn::make('product.template_image')
@@ -28,7 +31,8 @@ class ItemsRelationManager extends RelationManager
                     // A letter bought on its own has no box: its photo stands in.
                     ->getStateUsing(fn ($record) => $record->product ? Media::url($record->product->catalogImage()) : $record->letterPhotoUrl())
                     ->square()
-                    ->size(80),
+                    ->size(80)
+                    ->visibleFrom('md'),
                 // The photos and captions under the names the customer filled
                 // them in, as on the design's page.
                 Tables\Columns\ViewColumn::make('fields')
@@ -38,16 +42,20 @@ class ItemsRelationManager extends RelationManager
                     ->label('Şokolad')
                     ->description(fn ($record) => $record->chocolate_price ? Price::format($record->chocolate_price) : null)
                     ->placeholder('—')
-                    ->wrap(),
+                    ->wrap()
+                    ->visibleFrom('md'),
                 Tables\Columns\TextColumn::make('wrapping_name')
                     ->label('Qablaşdırma')
                     ->description(fn ($record) => $record->wrapping_price ? Price::format($record->wrapping_price) : null)
                     ->placeholder('—')
-                    ->wrap(),
+                    ->wrap()
+                    ->visibleFrom('md'),
                 Tables\Columns\TextColumn::make('quantity')
-                    ->label('Say'),
+                    ->label('Say')
+                    ->visibleFrom('md'),
                 Tables\Columns\TextColumn::make('price')
                     ->label('Qiymət')
+                    ->visibleFrom('md')
                     // The box and the bar each, then the line's total.
                     ->getStateUsing(fn ($record) => $record->unitPrice() > 0 ? Price::format($record->unitPrice() * $record->quantity) : '—')
                     ->description(fn ($record) => ($record->chocolate_price || $record->wrapping_price)

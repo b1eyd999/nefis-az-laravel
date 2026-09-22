@@ -137,30 +137,37 @@ class ChocolateResource extends Resource
                     ->label('Marka')
                     ->placeholder(ChocolateBrand::OTHER)
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    // On a phone: the bar, its price on the site and the switch — the rest from a tablet up.
+                    ->visibleFrom('md'),
                 Tables\Columns\TextColumn::make('market.name')
                     ->label('Market')
                     ->badge()
                     ->placeholder('Marketsiz')
-                    ->sortable(),
+                    ->sortable()
+                    ->visibleFrom('md'),
                 Tables\Columns\TextColumn::make('weight_g')
                     ->label('Çəki')
                     ->formatStateUsing(fn (Chocolate $r) => $r->weightLabel() ?? '—')
-                    ->sortable(),
+                    ->sortable()
+                    ->visibleFrom('lg'),
                 Tables\Columns\TextColumn::make('base_price')
                     ->label('Orijinal')
                     ->formatStateUsing(fn ($state) => Price::format($state))
-                    ->sortable(),
+                    ->sortable()
+                    ->visibleFrom('md'),
                 Tables\Columns\TextColumn::make('sale_price')
                     ->label('Endirim')
                     ->formatStateUsing(fn (Chocolate $r) => $r->sale_price ? Price::format($r->sale_price) . ($r->sale_percent ? '  −' . $r->sale_percent . '%' : '') : null)
                     ->placeholder('—')
                     ->badge()
-                    ->color('success'),
+                    ->color('success')
+                    ->visibleFrom('lg'),
                 Tables\Columns\TextColumn::make('markup_percent')
                     ->label('Əlavə')
                     ->formatStateUsing(fn (Chocolate $r) => $r->markup() . '%' . ($r->markup_percent === null ? ' (ümumi)' : ''))
-                    ->placeholder(fn () => Setting::get(Setting::CHOCOLATE_MARKUP) . '% (ümumi)'),
+                    ->placeholder(fn () => Setting::get(Setting::CHOCOLATE_MARKUP) . '% (ümumi)')
+                    ->visibleFrom('lg'),
                 Tables\Columns\TextColumn::make('price')
                     ->label('Saytda')
                     ->getStateUsing(fn (Chocolate $r) => Price::format($r->price()))

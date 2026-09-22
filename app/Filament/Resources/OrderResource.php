@@ -122,14 +122,19 @@ class OrderResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Müştəri')
-                    ->searchable(),
+                    ->searchable()
+                    ->wrap(),   // two lines on a phone rather than pushing the status off the screen
+                // On a phone: number, customer, amount, status — the rest from a tablet up.
                 Tables\Columns\TextColumn::make('contact_phone')
-                    ->label('Telefon'),
+                    ->label('Telefon')
+                    ->visibleFrom('md'),
                 Tables\Columns\TextColumn::make('items_count')
                     ->label('Məhsul sayı')
-                    ->counts('items'),
+                    ->counts('items')
+                    ->visibleFrom('lg'),
                 Tables\Columns\TextColumn::make('delivery_name')
                     ->label('Çatdırılma')
+                    ->visibleFrom('lg')
                     ->placeholder('—')
                     ->description(fn (Order $r) => $r->delivery_type ? $r->deliverySummary() : null)
                     ->wrap(),
@@ -145,11 +150,13 @@ class OrderResource extends Resource
                         'success' => 'completed',
                         'danger' => 'cancelled',
                     ])
-                    ->formatStateUsing(fn (string $state): string => self::STATUSES[$state] ?? $state),
+                    ->formatStateUsing(fn (string $state): string => self::STATUSES[$state] ?? $state)
+                    ->wrap(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Tarix')
                     ->dateTime('d.m.Y H:i')
-                    ->sortable(),
+                    ->sortable()
+                    ->visibleFrom('md'),
             ])
             ->modifyQueryUsing(fn ($query) => $query->with('items'))
             ->defaultSort('created_at', 'desc')

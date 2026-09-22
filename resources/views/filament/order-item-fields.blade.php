@@ -1,8 +1,23 @@
 {{-- What the customer sent for one order line, laid out like the form they
      filled in: each field's name above what they gave. Inline styles, because
      the panel's stylesheet only carries the classes Filament itself uses. --}}
-@php $fields = $getRecord()->fields(); @endphp
-<div style="display:flex; flex-direction:column; gap:.85rem; padding:.5rem 0; min-width:16rem; max-width:26rem;">
+@php $fields = $getRecord()->fields(); $line = $getRecord(); @endphp
+<div class="oi-root" style="display:flex; flex-direction:column; gap:.85rem; padding:.5rem 0; min-width:16rem; max-width:26rem;">
+  {{-- On a phone the other columns are hidden: the line's name, count, price, bar and paper here instead. --}}
+  <style>.oi-phone{ display:none; } @media (max-width: 767px){ .oi-phone{ display:block; } .oi-root{ min-width:0 !important; max-width:calc(100vw - 4.5rem) !important; white-space:normal; } }</style>
+  <div class="oi-phone" style="border-bottom:1px solid rgba(128,128,128,.3); padding-bottom:.6rem;">
+    <div style="font-weight:700; font-size:.95rem; white-space:normal;">{{ $line->product?->name ?? $line->product_name ?? 'Silinmiş məhsul' }}</div>
+    <div style="font-size:.85rem; opacity:.85; margin-top:.2rem;">
+      {{ $line->quantity }} ədəd
+      @if($line->unitPrice() > 0) · <b>{{ \App\Support\Price::format($line->unitPrice() * $line->quantity) }}</b> @endif
+    </div>
+    @if($line->chocolate_name)
+      <div style="font-size:.85rem; margin-top:.2rem; white-space:normal;">🍫 {{ $line->chocolate_name }}@if($line->chocolate_price) · {{ \App\Support\Price::format($line->chocolate_price) }}@endif</div>
+    @endif
+    @if($line->wrapping_name)
+      <div style="font-size:.85rem; margin-top:.2rem; white-space:normal;">🎁 {{ $line->wrapping_name }}@if($line->wrapping_price) · {{ \App\Support\Price::format($line->wrapping_price) }}@endif</div>
+    @endif
+  </div>
   @if($fields['photos'])
     <div style="display:flex; flex-wrap:wrap; gap:.85rem;">
       @foreach($fields['photos'] as $photo)
