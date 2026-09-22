@@ -449,6 +449,28 @@
   .angle-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
   .angle-thumb:hover{ opacity:1; }
   .angle-thumb.active{ opacity:1; border-color:var(--gold); }
+
+  /* A wrapped gift box in 3D (partials/gift-box, painted by js/gift-box.js).
+     The face is 969×1895 like the boxes; the side and top are 15 % deep. */
+  .gift{ position:relative; perspective:1300px; padding:1.25rem 0 2.1rem; }
+  .gift-3d{ position:relative; width:60%; margin-inline:auto; aspect-ratio:969/1895; transform-style:preserve-3d;
+    transform:rotateY(-24deg) rotateX(8deg); transition:transform .7s var(--ease); }
+  .gift:hover .gift-3d{ transform:rotateY(-12deg) rotateX(5deg); }
+  .gift-front{ position:absolute; inset:0; width:100%; height:100%; border-radius:2px; display:block; }
+  .gift-side, .gift-top{ position:absolute; background-color:#d9cbb8; background-repeat:repeat; overflow:hidden; }
+  .gift-side{ top:0; left:100%; width:15%; height:100%; transform-origin:left center; transform:rotateY(90deg); }
+  .gift-top{ left:0; bottom:100%; width:100%; height:7.67%; transform-origin:center bottom; transform:rotateX(-90deg); }
+  .gift-side::after, .gift-top::after{ content:''; position:absolute; inset:0; }
+  .gift-side::after{ background:linear-gradient(90deg, rgba(0,0,0,.34), rgba(0,0,0,.5)); }
+  .gift-top::after{ background:rgba(255,255,255,.12); }
+  /* the ribbon carries on round the side and over the top */
+  .gift-side i{ position:absolute; left:0; right:0; top:40.1%; height:3.84%; background:var(--rb, transparent); }
+  .gift-top i{ position:absolute; top:0; bottom:0; left:46.25%; width:7.5%; background:var(--rb, transparent); }
+  .gift.twine .gift-side i{ top:41.2%; height:1.6%; background:repeating-linear-gradient(0deg, var(--rb) 0 40%, transparent 40% 60%, var(--rb) 60% 100%); }
+  .gift.twine .gift-top i{ left:48.4%; width:3.2%; background:repeating-linear-gradient(90deg, var(--rb) 0 40%, transparent 40% 60%, var(--rb) 60% 100%); }
+  .gift-shadow{ position:absolute; left:16%; right:6%; bottom:.9rem; height:1.5rem; border-radius:50%;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,.5), rgba(0,0,0,0) 70%); filter:blur(5px); z-index:-1; }
+  @media (prefers-reduced-motion: reduce){ .gift-3d{ transition:none; } }
   .customize-panel{ display:flex; flex-direction:column; gap:1.5rem; }
   .photo-guide{
     display:flex; align-items:center; gap:.875rem; background:var(--paper); border:1px solid var(--line);
@@ -502,6 +524,7 @@
 </style>
 </head>
 <body>
+@php $navWraps = \App\Models\Wrapping::where('is_active', true)->exists(); @endphp
 
 <a href="#main" class="skip-link">Əsas məzmuna keç</a>
 
@@ -516,7 +539,7 @@
   <div class="wrap">
     <a href="{{ route('home') }}" class="brand"><img src="/images/logo.svg" alt="Nefis"></a>
     <nav class="primary">
-      <a href="{{ route('designs.index') }}">Dizaynlar</a>
+      <a href="{{ route('designs.index') }}">Dizaynlar</a>@if($navWraps)<a href="{{ route('wrappings.index') }}">Qablaşdırma</a>@endif
       <a href="{{ route('home') }}#how">Necə İşləyir</a>
       <a href="{{ route('home') }}#faq">Suallar</a>
       @auth
@@ -554,7 +577,7 @@
 
 <div class="mobile-nav" id="mobile-nav">
   <button class="close-btn" id="menu-close" aria-label="Bağla">✕</button>
-  <a href="{{ route('designs.index') }}">Dizaynlar</a>
+  <a href="{{ route('designs.index') }}">Dizaynlar</a>@if($navWraps)<a href="{{ route('wrappings.index') }}">Qablaşdırma</a>@endif
   <a href="{{ route('home') }}#how">Necə İşləyir</a>
   <a href="{{ route('home') }}#faq">Suallar</a>
   <a href="{{ route('cart.index') }}">Səbət</a>
@@ -586,7 +609,7 @@
       </div>
       <div class="footer-col">
         <h4>Naviqasiya</h4>
-        <a href="{{ route('designs.index') }}">Dizaynlar</a>
+        <a href="{{ route('designs.index') }}">Dizaynlar</a>@if($navWraps)<a href="{{ route('wrappings.index') }}">Qablaşdırma</a>@endif
         <a href="{{ route('home') }}#how">Necə İşləyir</a>
         <a href="{{ route('home') }}#faq">Suallar</a>
       </div>

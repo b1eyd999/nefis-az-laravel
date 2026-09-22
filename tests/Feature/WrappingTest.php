@@ -84,6 +84,23 @@ class WrappingTest extends TestCase
         $this->assertStringContainsString('data-ribbon="twine"', $html);
     }
 
+    public function test_the_wraps_have_a_page_of_their_own_in_the_menu(): void
+    {
+        // No wraps yet: no menu item.
+        $this->get(route('home'))->assertOk()->assertDontSee(route('wrappings.index'), false);
+
+        $this->wrap('Ürəklər', 2);
+        $this->wrap('Kraft', 3, ['ribbon' => Wrapping::TWINE, 'ribbon_color' => '#D8B27A']);
+
+        $this->get(route('home'))->assertSee('>Qablaşdırma</a>', false);
+        $html = $this->get(route('wrappings.index'))->assertOk()
+            ->assertSee(['Qablaşdırma', 'Ürəklər', 'Kraft', 'Kəndir (cut)', 'Dizayn seç'])
+            ->assertSee('js/gift-box.js', false)
+            ->getContent();
+        $this->assertSame(2, substr_count($html, 'class="wr-card"'));
+        $this->assertStringContainsString('data-ribbon="twine"', $html);
+    }
+
     public function test_the_wrap_goes_into_the_price_and_the_order(): void
     {
         $box = $this->box();

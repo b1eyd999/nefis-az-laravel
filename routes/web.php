@@ -12,6 +12,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SceneEditorController;
+use App\Http\Controllers\WrappingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -22,6 +23,7 @@ Route::get('/i/{path}', [MediaController::class, 'show'])
     ->name('media');
 
 Route::get('/dizaynlar', [ProductController::class, 'index'])->name('designs.index');
+Route::get('/qablasdirma', [WrappingController::class, 'index'])->name('wrappings.index');
 
 // Address lookups for the checkout map (OpenStreetMap), asked through the site.
 Route::middleware('throttle:40,1')->prefix('xerite')->name('map.')->group(function () {

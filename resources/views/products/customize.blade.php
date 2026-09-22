@@ -42,9 +42,11 @@
     background:var(--gold); color:#fff; font-size:.7rem; display:grid; place-items:center; }
   .wrap-swatch:has(input:focus-visible) .sw{ outline:2px solid var(--gold); outline-offset:2px; }
   .wrap-swatch .nm{ font-size:.72rem; line-height:1.25; text-align:center; color:var(--cocoa-soft); }
-  .wrap-toggle{ position:absolute; left:50%; bottom:.9rem; transform:translateX(-50%); z-index:3; padding:.5rem 1rem; border-radius:999px;
-    border:1px solid rgba(255,255,255,.35); background:rgba(26,18,14,.72); color:#fff; font-size:.85rem; font-weight:600; backdrop-filter:blur(6px); }
-  .wrap-toggle[hidden]{ display:none; }
+  .wrap-preview{ border:1px solid var(--line); border-radius:.9rem; padding:.5rem .75rem 1rem; background:radial-gradient(ellipse at 50% 30%, var(--cream-2), transparent 70%); }
+  .wrap-preview[hidden]{ display:none; }
+  .wrap-preview .gift{ max-width:15rem; margin-inline:auto; }
+  .wrap-preview-name{ text-align:center; font-size:.85rem; font-weight:600; color:var(--cocoa); margin:0; }
+
   .choc-brands{ display:flex; flex-wrap:wrap; gap:.4rem; margin:.6rem 0 .25rem; }
   .choc-brand{
     position:relative; white-space:nowrap;
@@ -125,9 +127,6 @@
           <canvas id="preview-canvas"></canvas>
           @if($photoSlots->isNotEmpty())
             <div class="drop-hint" id="drop-hint">Öncə sağdan şəklinizi yükləyin</div>
-          @endif
-          @if($wrappings->isNotEmpty())
-            <button type="button" class="wrap-toggle" id="wrap-toggle" hidden>🎁 Qablaşdırmada</button>
           @endif
           @if(count($viewData) > 1)
             <button type="button" class="angle-arrow prev" id="angle-prev" aria-label="Əvvəlki görünüş">‹</button>
@@ -303,6 +302,11 @@
                 </div>
               </div>
             @endforeach
+            {{-- The box as it will be handed over, in the paper just picked. --}}
+            <div class="wrap-preview" id="wrap-preview" hidden>
+              @include('partials.gift-box', ['wrap' => null])
+              <p class="wrap-preview-name" id="wrap-preview-name"></p>
+            </div>
           </div>
         @endif
 
@@ -339,6 +343,7 @@
 <script src="{{ asset('js/box-render.js') }}"></script>
 <script src="{{ asset('js/scene-render.js') }}"></script>
 <script src="{{ asset('js/wrap-render.js') }}"></script>
+<script src="{{ asset('js/gift-box.js') }}"></script>
 <script>
 (function(){
   "use strict";
@@ -494,65 +499,16 @@
     return mockupCanvas;
   }
 
-  /* ---------- gift wrap ---------- */
-  /* Once the customer picks a paper, every view shows the box wrapped in it;
-     the button on the preview flips back to their own design. */
-  var wrap = { picked: false, show: false, img: null, ribbon: 'satin', color: null, scale: 0.5, avg: null };
-  var wrapCanvas = document.createElement('canvas');
-  var wrapToggle = document.getElementById('wrap-toggle');
-  var lastDesign = mockupCanvas;
-
-  function wrappedBox(){
-    var a = currentAngle();
-    wrapCanvas.width = a.tw;
-    wrapCanvas.height = a.th;
-    NefisWrap.draw(wrapCanvas.getContext('2d'), a.tw, a.th, wrap.img, { ribbon: wrap.ribbon, color: wrap.color, scale: wrap.scale });
-    return wrapCanvas;
-  }
-  function showingWrap(){ return wrap.picked && wrap.show && typeof NefisWrap !== 'undefined'; }
-  function designNow(){ return (lastDesign = showingWrap() ? wrappedBox() : renderMockup()); }
-  /* The sides of the rendered box take the paper's colour, not the design's. */
-  function boxColorNow(a){ return showingWrap() ? (wrap.avg || a.boxColor) : a.boxColor; }
-  function syncWrapToggle(){
-    if (!wrapToggle) return;
-    wrapToggle.hidden = !wrap.picked;
-    wrapToggle.textContent = wrap.show ? '🖼 Dizaynı göstər' : '🎁 Qablaşdırmada göstər';
-  }
-  if (wrapToggle) {
-    wrapToggle.addEventListener('click', function(){ wrap.show = !wrap.show; syncWrapToggle(); draw(); });
-  }
-  function pickWrap(input){
-    if (!input || !input.value) {
-      wrap.picked = false; wrap.show = false;
-      syncWrapToggle(); draw();
-      return;
-    }
-    wrap.picked = true; wrap.show = true;
-    wrap.ribbon = input.dataset.ribbon || 'satin';
-    wrap.color = input.dataset.color || null;
-    wrap.scale = parseFloat(input.dataset.scale) || 0.5;
-    var img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = function(){ if (wrap.img === img) { wrap.avg = NefisWrap.averageColor(img); draw(); } };
-    img.src = input.dataset.pattern;
-    wrap.img = img;
-    wrap.avg = null;
-    syncWrapToggle(); draw();
-  }
-  document.querySelectorAll('input[name="wrapping_id"]').forEach(function(r){
-    r.addEventListener('change', function(){ if (r.checked) pickWrap(r); });
-  });
-
   function draw(){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     var a = currentAngle();
 
     if (a.scene) {
       /* The owner's mockup: the box design corner-pinned onto a rendered box. */
-      NefisScene.drawScene(ctx, a.scene, designNow(), sceneImage, sceneCache, { boxColor: boxColorNow(a) });
+      NefisScene.drawScene(ctx, a.scene, renderMockup(), sceneImage, sceneCache, { boxColor: a.boxColor });
     } else if (a.bg) {
       if (bgReady) ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-      var mockup = designNow();
+      var mockup = renderMockup();
       var box = a.boxArea, cb = a.contentBox;
       var scale = box.w / cb.w;
       /* Undo the art's own rotation inside its template canvas, scale it to the
@@ -566,7 +522,7 @@
       ctx.drawImage(mockup, 0, 0, a.tw, a.th);
       ctx.restore();
     } else {
-      ctx.drawImage(designNow(), 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(renderMockup(), 0, 0, canvas.width, canvas.height);
     }
     scheduleThumbs();
   }
@@ -581,7 +537,7 @@
     thumbTimer = setTimeout(drawThumbs, 250);
   }
   function drawThumbs(){
-    var design = lastDesign;
+    var design = mockupCanvas;
     if (!design.width) return;
     thumbCanvases.forEach(function(tc){
       var i = Number(tc.parentNode.dataset.angle), a = ANGLES[i];
@@ -592,7 +548,7 @@
       var tctx = tc.getContext('2d');
       tctx.clearRect(0, 0, tc.width, tc.height);
       if (a.scene) {
-        NefisScene.drawScene(tctx, NefisScene.scaled(a.scene, s), design, sceneImage, thumbCaches[i] || (thumbCaches[i] = {}), { boxColor: boxColorNow(a) });
+        NefisScene.drawScene(tctx, NefisScene.scaled(a.scene, s), design, sceneImage, thumbCaches[i] || (thumbCaches[i] = {}), { boxColor: a.boxColor });
       } else {
         tctx.drawImage(design, 0, 0, tc.width, tc.height);
       }
@@ -780,10 +736,6 @@
 
   loadAngle(0);
 
-  // Back from a failed add with a wrap chosen: show the box wrapped again.
-  var chosenWrap = document.querySelector('input[name="wrapping_id"]:checked');
-  if (chosenWrap && chosenWrap.value) pickWrap(chosenWrap);
-
   if (anglePrev) {
     anglePrev.addEventListener('click', function(){
       loadAngle((activeAngle - 1 + ANGLES.length) % ANGLES.length);
@@ -858,7 +810,6 @@
   }
 
   function startDrag(clientX, clientY){
-    if (showingWrap()) return false;
     var slot = slotAtPoint(toMockupCoords(clientX, clientY));
     if (slot < 0) return false;
     dragSlot = slot;
@@ -929,6 +880,24 @@
     block.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 
+})();
+
+/* Gift wrap: the picked paper, shown on a box of its own under the swatches. */
+(function(){
+  var preview = document.getElementById('wrap-preview');
+  if (!preview) return;
+  var box = preview.querySelector('.gift');
+  var name = document.getElementById('wrap-preview-name');
+  function show(r){
+    if (!r || !r.value) { preview.hidden = true; return; }
+    preview.hidden = false;
+    name.textContent = r.dataset.name + ' · +' + r.dataset.price.replace(/\.00$/, '') + ' ₼';
+    NefisGift.paint(box, { pattern: r.dataset.pattern, ribbon: r.dataset.ribbon, color: r.dataset.color, scale: parseFloat(r.dataset.scale) || 0.5 });
+  }
+  document.querySelectorAll('input[name="wrapping_id"]').forEach(function(r){
+    r.addEventListener('change', function(){ if (r.checked) show(r); });
+  });
+  show(document.querySelector('input[name="wrapping_id"]:checked'));
 })();
 
 /* The running price: the box, the chosen bar, times how many. */

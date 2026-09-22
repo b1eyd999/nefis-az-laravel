@@ -133,7 +133,7 @@
 </section>
 @endsection
 
-@section('scripts')
+@section('page_script')
 <script>
 (function(){
   var copy = document.getElementById('pay-copy');
