@@ -255,6 +255,18 @@ class SeoTest extends TestCase
         $this->assertStringContainsString('4.90 ₼-dan', $product['description']);
     }
 
+    public function test_a_design_with_its_own_words_uses_them_everywhere(): void
+    {
+        $box = $this->box('Milka', 'milka');
+        $box->update(['description' => 'Milka üslubunda bənövşəyi dizayn, Alp dağları fonunda birgə şəkliniz.']);
+
+        $this->get(route('products.customize', 'milka'))->assertOk()
+            ->assertSee('<meta name="description" content="Milka üslubunda bənövşəyi dizayn, Alp dağları fonunda birgə şəkliniz. Şəklinizi və sözlərinizi əlavə edin — Bakıda çatdırılma.">', false);
+
+        // …and on the card, instead of the category name it used to repeat
+        $this->get(route('home'))->assertOk()->assertSee('Milka üslubunda bənövşəyi dizayn');
+    }
+
     public function test_the_catalogue_cards_are_links_search_engines_can_follow(): void
     {
         $this->box('Love Story', 'love-story-vol-1');
