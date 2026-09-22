@@ -7,6 +7,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CoverController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LetterController;
+use App\Http\Controllers\LivePhotoController;
 use App\Http\Controllers\MapController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\OrderController;
@@ -27,6 +28,11 @@ Route::get('/dizaynlar', [ProductController::class, 'index'])->name('designs.ind
 Route::get('/qablasdirma', [WrappingController::class, 'index'])->name('wrappings.index');
 Route::get('/mektub', [LetterController::class, 'create'])->name('letters.create');
 Route::post('/mektub', [LetterController::class, 'store'])->name('letters.store');
+
+// Live photos: the page a box's QR code opens, and the tracking data the admin's browser makes.
+Route::get('/canli/{code}', [LivePhotoController::class, 'show'])->where('code', '[a-z0-9]{4,16}')->name('live.show');
+Route::get('/canli/{code}/video', [LivePhotoController::class, 'video'])->where('code', '[a-z0-9]{4,16}')->name('live.video');
+Route::post('/canli-hazirla/{livePhoto}', [LivePhotoController::class, 'storeMind'])->middleware('auth')->name('live.mind');
 
 // Address lookups for the checkout map (OpenStreetMap), asked through the site.
 Route::middleware('throttle:40,1')->prefix('xerite')->name('map.')->group(function () {

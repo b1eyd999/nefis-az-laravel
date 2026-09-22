@@ -32,6 +32,9 @@ class OrderItem extends Model
         'letter_text',
         'letter_photo',
         'letter_price',
+        // A live photo (AR): the customer's video, until the owner moves it to Yandex Disk.
+        'ar_video',
+        'ar_price',
     ];
 
     protected function casts(): array
@@ -44,6 +47,7 @@ class OrderItem extends Model
             'chocolate_price' => 'float',
             'wrapping_price' => 'float',
             'letter_price' => 'float',
+            'ar_price' => 'float',
             'price' => 'float',
         ];
     }
@@ -52,7 +56,17 @@ class OrderItem extends Model
     public function unitPrice(): float
     {
         return (float) ($this->price ?? 0) + (float) ($this->chocolate_price ?? 0) + (float) ($this->wrapping_price ?? 0)
-            + (float) ($this->letter_price ?? 0);
+            + (float) ($this->letter_price ?? 0) + (float) ($this->ar_price ?? 0);
+    }
+
+    public function arVideoUrl(): ?string
+    {
+        return $this->ar_video ? \App\Support\Media::url($this->ar_video) : null;
+    }
+
+    public function livePhotos(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(LivePhoto::class);
     }
 
     public function hasLetter(): bool

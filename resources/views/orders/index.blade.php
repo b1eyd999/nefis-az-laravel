@@ -60,6 +60,9 @@
                   @if($item->wrapping_name)
                     <p style="margin-top:.2rem;">🎁 Qablaşdırma: {{ $item->wrapping_name }}</p>
                   @endif
+                  @if($item->ar_price !== null)
+                    <p style="margin-top:.2rem;">🎬 Canlı video (AR)</p>
+                  @endif
                   @if($item->hasLetter() && ! $item->isLetterOnly())
                     <p style="margin-top:.2rem;">💌 Polaroid məktub</p>
                   @endif

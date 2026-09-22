@@ -14,7 +14,8 @@ class Cart
      *             'photo_labels' => string[], 'text_labels' => array{label: string, fixed: bool, repeat: bool}[],
      *             'chocolate' => ?array{id: int, name: string, price: float},
      *             'wrapping' => ?array{id: int, name: string, price: float},
-     *             'letter' => ?array{text: ?string, photo: ?string, price: float}]
+     *             'letter' => ?array{text: ?string, photo: ?string, price: float},
+     *             'ar' => ?array{video: string, price: float}]
      * A Polaroid letter ordered on its own is a line with 'kind' => 'letter' and no product.
      */
     public static function items(): array
@@ -28,7 +29,7 @@ class Cart
     }
 
     public static function add(int $productId, array $photoPaths, array $customTexts, int $quantity = 1,
-        array $photoLabels = [], array $textLabels = [], ?array $chocolate = null, ?array $wrapping = null, ?array $letter = null): void
+        array $photoLabels = [], array $textLabels = [], ?array $chocolate = null, ?array $wrapping = null, ?array $letter = null, ?array $ar = null): void
     {
         $items = self::items();
         $items[] = [
@@ -42,6 +43,7 @@ class Cart
             'chocolate' => $chocolate,
             'wrapping' => $wrapping,
             'letter' => $letter,
+            'ar' => $ar,
         ];
         Session::put(self::KEY, $items);
     }
@@ -71,7 +73,8 @@ class Cart
     public static function unitPrice(array $item, ?\App\Models\Product $product): float
     {
         return (float) ($product?->price ?? 0) + (float) ($item['chocolate']['price'] ?? 0)
-            + (float) ($item['wrapping']['price'] ?? 0) + (float) ($item['letter']['price'] ?? 0);
+            + (float) ($item['wrapping']['price'] ?? 0) + (float) ($item['letter']['price'] ?? 0)
+            + (float) ($item['ar']['price'] ?? 0);
     }
 
     public static function remove(string $id): void

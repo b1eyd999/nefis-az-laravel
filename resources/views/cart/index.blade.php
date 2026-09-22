@@ -57,6 +57,9 @@
               @if(! empty($item['wrapping']))
                 <p style="margin-top:.2rem;">🎁 Qablaşdırma: {{ $item['wrapping']['name'] }} &middot; {{ \App\Support\Price::format($item['wrapping']['price']) }}</p>
               @endif
+              @if(! empty($item['ar']))
+                <p style="margin-top:.2rem;">🎬 Canlı video (AR) &middot; {{ \App\Support\Price::format($item['ar']['price']) }}</p>
+              @endif
               @if(! empty($item['letter']))
                 <p style="margin-top:.2rem;">💌 {{ $isLetter ? '' : 'Polaroid məktub · ' }}{{ \Illuminate\Support\Str::limit(str_replace("\n", ' ', $item['letter']['text'] ?? ''), 60) ?: 'şəkilli' }}
                   @unless($isLetter) &middot; {{ \App\Support\Price::format($item['letter']['price']) }} @endunless</p>

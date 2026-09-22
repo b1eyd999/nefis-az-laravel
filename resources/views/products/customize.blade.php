@@ -349,6 +349,26 @@
           </div>
         @endif
 
+        @if(\App\Models\Setting::get(\App\Models\Setting::AR_ENABLED) === '1')
+          {{-- A live photo: the customer's video plays over the box when a phone's camera sees it. --}}
+          @php $arOn = (bool) old('ar_on'); @endphp
+          <div class="letter-block" id="ar-block">
+            <label class="letter-toggle">
+              <input type="checkbox" name="ar_on" value="1" id="ar-on" @checked($arOn)>
+              <span>🎬 Canlı video (AR) — qutu telefonda canlanır</span>
+              <b>+{{ \App\Support\Price::format((float) \App\Models\Setting::get(\App\Models\Setting::AR_PRICE)) }}</b>
+            </label>
+            <div id="ar-fields" @unless($arOn) hidden @endunless style="margin-top:.8rem;">
+              <p class="slot-hint" style="margin:0 0 .6rem;">Qutuya QR kod çap edirik. Hədiyyəni alan QR kodu oxudub telefonu qutunun şəklinə tutanda, sizin videonuz şəklin üstündə oynayır — tətbiq yükləmədən.</p>
+              <label class="letter-file">
+                <input type="file" name="ar_video" id="ar-video" accept="video/mp4,video/quicktime,video/webm,video/*">
+                <span id="ar-video-name">🎬 Video seçin (MP4/MOV, 18 MB-a qədər)</span>
+              </label>
+              <p class="slot-hint">Ən yaxşısı 10–30 saniyəlik, şaquli çəkilmiş video.</p>
+            </div>
+          </div>
+        @endif
+
         <div>
           <label for="quantity">Say</label>
           <input type="number" id="quantity" name="quantity" value="1" min="1" max="20" style="max-width:7rem;">
@@ -359,6 +379,9 @@
             <div><span>Qutu</span><span>{{ $product->price ? \App\Support\Price::format($product->price) : 'sorğu ilə' }}</span></div>
             @if($chocolates->isNotEmpty())
               <div><span id="sum-choc-name" class="sum-name">Şokolad</span><span id="sum-choc">seçilməyib</span></div>
+            @endif
+            @if(\App\Models\Setting::get(\App\Models\Setting::AR_ENABLED) === '1')
+              <div id="sum-ar-row" data-price="{{ (float) \App\Models\Setting::get(\App\Models\Setting::AR_PRICE) }}" hidden><span>Canlı video (AR)</span><span>{{ \App\Support\Price::format((float) \App\Models\Setting::get(\App\Models\Setting::AR_PRICE)) }}</span></div>
             @endif
             @if(\App\Support\Letter::enabled())
               <div id="sum-letter-row" data-price="{{ \App\Support\Letter::price() }}" hidden><span>Polaroid məktub</span><span id="sum-letter">{{ \App\Support\Price::format(\App\Support\Letter::price()) }}</span></div>
@@ -967,6 +990,21 @@
   });
 })();
 
+/* The live photo: switched on, the video field opens. */
+(function(){
+  var on = document.getElementById('ar-on');
+  if (!on) return;
+  var fields = document.getElementById('ar-fields');
+  var file = document.getElementById('ar-video');
+  var name = document.getElementById('ar-video-name');
+  var label = name.textContent;
+  on.addEventListener('change', function(){ fields.hidden = !on.checked; });
+  file.addEventListener('change', function(){
+    var f = file.files && file.files[0];
+    name.textContent = f ? '🎬 ' + f.name + (f.size > 18 * 1024 * 1024 ? ' — 18 MB-dan böyükdür!' : '') : label;
+  });
+})();
+
 /* The running price: the box, the chosen bar, times how many. */
 (function(){
   var sum = document.getElementById('price-sum');
@@ -995,10 +1033,14 @@
     var letterRow = document.getElementById('sum-letter-row');
     var letter = letterOn && letterOn.checked && letterRow ? parseFloat(letterRow.dataset.price) || 0 : 0;
     if (letterRow) letterRow.hidden = !(letterOn && letterOn.checked);
-    var each = box + choc + wrap + letter;
+    var arOn = document.getElementById('ar-on');
+    var arRow = document.getElementById('sum-ar-row');
+    var ar = arOn && arOn.checked && arRow ? parseFloat(arRow.dataset.price) || 0 : 0;
+    if (arRow) arRow.hidden = !(arOn && arOn.checked);
+    var each = box + choc + wrap + letter + ar;
     totalOut.textContent = each > 0 ? fmt(each * n) + (n > 1 ? ' (' + n + ' × ' + fmt(each) + ')' : '') : '—';
   }
-  document.querySelectorAll('input[name="chocolate_id"], input[name="wrapping_id"], #letter-on').forEach(function(r){ r.addEventListener('change', update); });
+  document.querySelectorAll('input[name="chocolate_id"], input[name="wrapping_id"], #letter-on, #ar-on').forEach(function(r){ r.addEventListener('change', update); });
   qty.addEventListener('input', update);
   update();
 })();

@@ -77,6 +77,35 @@ class YandexDisk
         return new UploadedFile($tmp, 'poster.' . $ext, $info['mime'], null, true);
     }
 
+    /**
+     * What a public link points at: its type, name, size and MIME type.
+     *
+     * @throws RuntimeException with a message for the owner
+     */
+    public static function meta(string $link): array
+    {
+        if (! self::isPublicLink($link)) {
+            throw new RuntimeException('Bu Yandex Disk linki deyil. Link belə görünməlidir: https://disk.yandex.ru/i/…');
+        }
+
+        return self::api('', ['public_key' => trim($link), 'fields' => 'type,name,size,mime_type,media_type']);
+    }
+
+    /**
+     * A download address for the file behind a public link, good for a while,
+     * so a browser can stream it from Yandex without this site carrying it.
+     */
+    public static function href(string $link): ?string
+    {
+        return \Illuminate\Support\Facades\Cache::remember('ydx:href:' . sha1($link), now()->addMinutes(30), function () use ($link) {
+            try {
+                return self::api('/download', ['public_key' => trim($link)])['href'] ?? null;
+            } catch (RuntimeException $e) {
+                return null;
+            }
+        });
+    }
+
     private static function api(string $path, array $query): array
     {
         try {

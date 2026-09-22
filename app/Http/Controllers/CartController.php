@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Chocolate;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\TextSlot;
 use App\Models\Wrapping;
 use App\Support\Cart;
@@ -58,6 +59,12 @@ class CartController extends Controller
             $rules += Letter::rules();
         }
 
+        // And a live photo (AR): the customer's video, played over the box through a phone.
+        $withAr = Setting::get(Setting::AR_ENABLED) === '1' && $request->boolean('ar_on');
+        if ($withAr) {
+            $rules['ar_video'] = ['required', 'file', 'mimetypes:video/mp4,video/quicktime,video/webm,video/x-m4v', 'max:18432'];
+        }
+
         // A textarea sends CRLF; a line break is one character, as the customer counted it.
         $request->merge(['custom_texts' => array_map(
             fn ($t) => is_string($t) ? str_replace("\r\n", "\n", $t) : $t,
@@ -86,6 +93,9 @@ class CartController extends Controller
             'chocolate_id.required' => 'Qutunun içinə şokolad seçin.',
             'chocolate_id.exists' => 'Seçdiyiniz şokolad artıq yoxdur, başqasını seçin.',
             'wrapping_id.exists' => 'Seçdiyiniz qablaşdırma artıq yoxdur, başqasını seçin.',
+            'ar_video.required' => 'Canlı video üçün videonu yükləyin, ya da bu seçimi söndürün.',
+            'ar_video.mimetypes' => 'Video MP4, MOV və ya WEBM olmalıdır.',
+            'ar_video.max' => 'Video 18 MB-dan böyük ola bilməz — qısaldın və ya sıxın.',
         ] + Letter::messages(), $this->slotAttributeNames($product));
 
         if ($withLetter && ! $request->filled('letter_text') && ! $request->hasFile('letter_photo')) {
@@ -121,7 +131,8 @@ class CartController extends Controller
 
         Cart::add($product->id, $paths, $texts, (int) $request->input('quantity', 1),
             OrderItem::photoLabelsFor($product), OrderItem::textLabelsFor($product), $chocolate, $wrapping,
-            $withLetter ? Letter::fromRequest($request) : null);
+            $withLetter ? Letter::fromRequest($request) : null,
+            $withAr ? ['video' => $request->file('ar_video')->store('cart-videos', 'public'), 'price' => round((float) Setting::get(Setting::AR_PRICE), 2)] : null);
 
         return redirect()->route('cart.index')->with('status', 'Məhsul səbətə əlavə olundu.');
     }

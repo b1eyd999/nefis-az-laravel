@@ -231,6 +231,9 @@
             @if(! empty($item['wrapping']))
               <p style="margin-top:.2rem;">🎁 Qablaşdırma: {{ $item['wrapping']['name'] }}</p>
             @endif
+            @if(! empty($item['ar']))
+              <p style="margin-top:.2rem;">🎬 Canlı video (AR)</p>
+            @endif
             @if(! empty($item['letter']) && ! $isLetter)
               <p style="margin-top:.2rem;">💌 Polaroid məktub</p>
             @endif

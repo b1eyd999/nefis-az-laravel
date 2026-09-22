@@ -99,6 +99,8 @@ class CheckoutController extends Controller
                 'letter_text' => $item['letter']['text'] ?? null,
                 'letter_photo' => $item['letter']['photo'] ?? null,
                 'letter_price' => isset($item['letter']) ? ($item['letter']['price'] ?? 0) : null,
+                'ar_video' => $item['ar']['video'] ?? null,
+                'ar_price' => isset($item['ar']) ? ($item['ar']['price'] ?? 0) : null,
             ]);
         }
 

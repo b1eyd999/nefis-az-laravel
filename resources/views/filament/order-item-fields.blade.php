@@ -50,7 +50,25 @@
     </div>
   @endif
 
-  @if(! $fields['photos'] && ! $fields['texts'] && ! $item->hasLetter())
+  @if($item->ar_price !== null)
+    <div style="border:1px dashed rgba(124,58,237,.6); border-radius:.75rem; padding:.6rem .75rem;">
+      <div style="font-size:.8rem; font-weight:700; margin-bottom:.45rem;">🎬 Canlı video (AR)</div>
+      @if($video = $item->arVideoUrl())
+        <video src="{{ $video }}" controls preload="metadata" style="width:100%; max-width:16rem; border-radius:.5rem; display:block;"></video>
+        <a href="{{ $video }}" download style="font-size:.75rem; text-decoration:underline;">Videonu yüklə</a>
+      @endif
+      <div style="font-size:.78rem; opacity:.75; margin:.4rem 0;">Videonu Yandex Diskə qoyun, sonra canlı şəkli yaradın.</div>
+      @php $live = $item->livePhotos()->latest('id')->first(); @endphp
+      @if($live)
+        <a href="{{ \App\Filament\Resources\LivePhotoResource::getUrl('edit', ['record' => $live]) }}" style="font-size:.85rem; font-weight:600; text-decoration:underline;">
+          Canlı şəkil: {{ $live->title }} {{ filled($live->target_mind) ? '✓ hazır' : '— hazırlanmayıb' }}</a>
+      @else
+        <a href="{{ \App\Filament\Resources\LivePhotoResource::getUrl('create') }}?order_item={{ $item->id }}" style="font-size:.85rem; font-weight:600; text-decoration:underline;">＋ AR yarat</a>
+      @endif
+    </div>
+  @endif
+
+  @if(! $fields['photos'] && ! $fields['texts'] && ! $item->hasLetter() && $item->ar_price === null)
     <span style="opacity:.6;">—</span>
   @endif
 </div>

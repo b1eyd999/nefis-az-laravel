@@ -58,8 +58,15 @@ class Setting extends Model
     /** JSON: the letter page's wording and the Polaroid's look (see App\Support\Letter::PAGE_DEFAULTS). */
     public const LETTER_PAGE = 'letter_page';
 
+    /** Live photos (AR) offered with a box: on sale or not, and the price. */
+    public const AR_ENABLED = 'ar_enabled';
+
+    public const AR_PRICE = 'ar_price';
+
     /** What each setting is until the owner changes it. */
     public const DEFAULTS = [
+        self::AR_ENABLED => '0',
+        self::AR_PRICE => '5',
         self::LETTER_ENABLED => '1',
         self::LETTER_PRICE => '3',
         self::LETTER_MAX => '180',

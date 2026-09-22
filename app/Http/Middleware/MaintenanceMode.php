@@ -15,8 +15,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class MaintenanceMode
 {
-    /** What stays open while the site is closed. */
-    private const OPEN = ['admin', 'admin/*', 'login', 'logout', 'livewire/*', 'filament/*', 'up'];
+    /** What stays open while the site is closed — live photos too: their QR codes are printed on boxes out there. */
+    private const OPEN = ['admin', 'admin/*', 'login', 'logout', 'livewire/*', 'filament/*', 'up', 'canli/*'];
 
     public function handle(Request $request, Closure $next): Response
     {
