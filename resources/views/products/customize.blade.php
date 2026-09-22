@@ -45,6 +45,19 @@
   .wrap-preview{ border:1px solid var(--line); border-radius:.9rem; padding:.5rem .75rem 1rem; background:radial-gradient(ellipse at 50% 30%, var(--cream-2), transparent 70%); }
   .wrap-preview[hidden]{ display:none; }
   .wrap-preview{ cursor:zoom-in; }
+  .letter-block{ border:1px solid var(--line); border-radius:.9rem; padding:.75rem .85rem; }
+  .letter-toggle{ display:flex; align-items:center; gap:.6rem; margin:0; cursor:pointer; font-weight:600; font-size:.9rem; }
+  .letter-toggle input{ width:1.15rem; height:1.15rem; flex:none; accent-color:var(--gold); }
+  .letter-toggle span{ flex:1; }
+  .letter-toggle b{ font-size:.85rem; color:var(--gold-deep); }
+  .letter-fields{ display:grid; grid-template-columns:7.5rem 1fr; gap:1rem; margin-top:.9rem; align-items:start; }
+  .letter-fields[hidden]{ display:none; }
+  .letter-mini .polaroid{ max-width:7.5rem; }
+  .letter-inputs{ display:flex; flex-direction:column; gap:.5rem; min-width:0; }
+  .letter-file{ display:block; border:1.5px dashed var(--ring); border-radius:.7rem; padding:.6rem; text-align:center; cursor:pointer;
+    font-weight:600; font-size:.85rem; margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .letter-file:hover{ border-color:var(--gold); }
+  .letter-file input{ display:none; }
   .wrap-preview-name small{ display:block; font-weight:500; font-size:.72rem; color:var(--cocoa-faint); margin-top:.15rem; }
   .wrap-preview .gift{ max-width:15rem; margin-inline:auto; }
   .wrap-preview-name{ text-align:center; font-size:.85rem; font-weight:600; color:var(--cocoa); margin:0; }
@@ -312,16 +325,43 @@
           </div>
         @endif
 
+        @if(\App\Support\Letter::enabled())
+          {{-- A Polaroid letter inside the box: a photo, a few words, or both. --}}
+          @php $letterOn = (bool) old('letter_on'); @endphp
+          <div class="letter-block" id="letter-block">
+            <label class="letter-toggle">
+              <input type="checkbox" name="letter_on" value="1" id="letter-on" @checked($letterOn)>
+              <span>💌 Qutunun içinə polaroid məktub qoy</span>
+              <b>+{{ \App\Support\Price::format(\App\Support\Letter::price()) }}</b>
+            </label>
+            <div class="letter-fields" id="letter-fields" @unless($letterOn) hidden @endunless>
+              <div class="letter-mini">@include('partials.polaroid', ['id' => 'letter-preview', 'text' => old('letter_text')])</div>
+              <div class="letter-inputs">
+                <label class="letter-file">
+                  <input type="file" name="letter_photo" id="letter-photo" accept="image/*">
+                  <span id="letter-photo-name">📷 Şəkil (istəyə görə)</span>
+                </label>
+                <textarea name="letter_text" id="letter-text" rows="3" maxlength="{{ \App\Support\Letter::maxLength() }}"
+                          placeholder="Məktubun mətni (istəyə görə)">{{ old('letter_text') }}</textarea>
+                <p class="slot-hint">Şəkil olmasa, mətn polaroidin içində yazılır.</p>
+              </div>
+            </div>
+          </div>
+        @endif
+
         <div>
           <label for="quantity">Say</label>
           <input type="number" id="quantity" name="quantity" value="1" min="1" max="20" style="max-width:7rem;">
         </div>
 
-        @if($product->price || $chocolates->isNotEmpty() || $wrappings->isNotEmpty())
+        @if($product->price || $chocolates->isNotEmpty() || $wrappings->isNotEmpty() || \App\Support\Letter::enabled())
           <div class="price-sum" id="price-sum" data-box="{{ (float) $product->price }}">
             <div><span>Qutu</span><span>{{ $product->price ? \App\Support\Price::format($product->price) : 'sorğu ilə' }}</span></div>
             @if($chocolates->isNotEmpty())
               <div><span id="sum-choc-name" class="sum-name">Şokolad</span><span id="sum-choc">seçilməyib</span></div>
+            @endif
+            @if(\App\Support\Letter::enabled())
+              <div id="sum-letter-row" data-price="{{ \App\Support\Letter::price() }}" hidden><span>Polaroid məktub</span><span id="sum-letter">{{ \App\Support\Price::format(\App\Support\Letter::price()) }}</span></div>
             @endif
             @if($wrappings->isNotEmpty())
               <div id="sum-wrap-row" hidden><span id="sum-wrap-name" class="sum-name">Qablaşdırma</span><span id="sum-wrap">—</span></div>
@@ -346,6 +386,7 @@
 <script src="{{ asset('js/scene-render.js') }}"></script>
 <script src="{{ asset('js/wrap-render.js') }}"></script>
 <script src="{{ asset('js/gift-box.js') }}"></script>
+<script src="{{ asset('js/polaroid.js') }}"></script>
 <script>
 (function(){
   "use strict";
@@ -911,6 +952,21 @@
   show(document.querySelector('input[name="wrapping_id"]:checked'));
 })();
 
+/* The Polaroid letter: switched on, its fields open and the Polaroid follows them. */
+(function(){
+  var on = document.getElementById('letter-on');
+  if (!on) return;
+  var fields = document.getElementById('letter-fields');
+  var file = document.getElementById('letter-photo');
+  var name = document.getElementById('letter-photo-name');
+  NefisPolaroid.bind(document.getElementById('letter-preview'), file, document.getElementById('letter-text'));
+  on.addEventListener('change', function(){ fields.hidden = !on.checked; });
+  file.addEventListener('change', function(){
+    var f = file.files && file.files[0];
+    name.textContent = f ? '📷 ' + f.name : '📷 Şəkil (istəyə görə)';
+  });
+})();
+
 /* The running price: the box, the chosen bar, times how many. */
 (function(){
   var sum = document.getElementById('price-sum');
@@ -935,10 +991,14 @@
     var n = Math.max(1, parseInt(qty.value, 10) || 1);
     if (chocOut) chocOut.textContent = picked ? fmt(choc) : 'seçilməyib';
     if (chocName) chocName.textContent = picked ? picked.dataset.name : 'Şokolad';
-    var each = box + choc + wrap;
+    var letterOn = document.getElementById('letter-on');
+    var letterRow = document.getElementById('sum-letter-row');
+    var letter = letterOn && letterOn.checked && letterRow ? parseFloat(letterRow.dataset.price) || 0 : 0;
+    if (letterRow) letterRow.hidden = !(letterOn && letterOn.checked);
+    var each = box + choc + wrap + letter;
     totalOut.textContent = each > 0 ? fmt(each * n) + (n > 1 ? ' (' + n + ' × ' + fmt(each) + ')' : '') : '—';
   }
-  document.querySelectorAll('input[name="chocolate_id"], input[name="wrapping_id"]').forEach(function(r){ r.addEventListener('change', update); });
+  document.querySelectorAll('input[name="chocolate_id"], input[name="wrapping_id"], #letter-on').forEach(function(r){ r.addEventListener('change', update); });
   qty.addEventListener('input', update);
   update();
 })();

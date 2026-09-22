@@ -46,6 +46,9 @@ class SiteSettings extends Page implements HasForms
             'payment_limit' => (int) Setting::get(Setting::PAYMENT_LIMIT),
             'payment_window_hours' => (int) Setting::get(Setting::PAYMENT_WINDOW_HOURS),
             'payment_note' => Setting::get(Setting::PAYMENT_NOTE),
+            'letter_enabled' => Setting::get(Setting::LETTER_ENABLED) === '1',
+            'letter_price' => (float) Setting::get(Setting::LETTER_PRICE),
+            'letter_max' => (int) Setting::get(Setting::LETTER_MAX),
         ]);
     }
 
@@ -72,6 +75,16 @@ class SiteSettings extends Page implements HasForms
                             ->label('Ödəniş səhifəsindəki yazı')->rows(2)->maxLength(300)->columnSpanFull(),
                     ])
                     ->columns(2),
+                Forms\Components\Section::make('Polaroid məktub')
+                    ->description('Şəkil və mətnlə polaroid kimi çap olunan məktub: qutunun içinə və ya ayrıca satılır ("/mektub" səhifəsi).')
+                    ->schema([
+                        Forms\Components\Toggle::make('letter_enabled')->label('Satışda olsun')->live()->columnSpanFull(),
+                        Forms\Components\TextInput::make('letter_price')
+                            ->label('Qiymət')->numeric()->minValue(0)->step(0.01)->suffix('₼')->required(),
+                        Forms\Components\TextInput::make('letter_max')
+                            ->label('Mətn ən çox')->numeric()->minValue(20)->maxValue(1000)->suffix('simvol')->required(),
+                    ])
+                    ->columns(2),
                 // Shares are given with the role now, one per staff member.
                 Forms\Components\Section::make('Mənfəətin bölgüsü')
                     ->description('Pay hər menecerə "İstifadəçilər" bölməsində, rol verəndə təyin olunur. Menecer öz payını "Balansım" səhifəsində görür.')
@@ -96,6 +109,9 @@ class SiteSettings extends Page implements HasForms
     {
         $data = $this->form->getState();
 
+        Setting::put(Setting::LETTER_ENABLED, (bool) $data['letter_enabled']);
+        Setting::put(Setting::LETTER_PRICE, round((float) $data['letter_price'], 2));
+        Setting::put(Setting::LETTER_MAX, (int) $data['letter_max']);
         Setting::put(Setting::PAYMENT_LIMIT, (int) $data['payment_limit']);
         Setting::put(Setting::PAYMENT_WINDOW_HOURS, (int) $data['payment_window_hours']);
         Setting::put(Setting::PAYMENT_NOTE, $data['payment_note'] ?? '');

@@ -407,6 +407,9 @@
   }
   .cart-row .thumb{ width:5.5rem; height:5.5rem; border-radius:.7rem; overflow:hidden; flex:none; position:relative; background:var(--cream-2); }
   .cart-row .thumb img{ width:100%; height:100%; object-fit:cover; }
+  .cart-row .thumb:has(.thumb-polaroid){ background:none; overflow:visible; display:grid; place-items:center; }
+  .thumb-polaroid{ width:4.3rem; }
+  .thumb-polaroid .polaroid{ max-width:4.3rem; }
   .cart-row .thumb .thumb-more{
     position:absolute; right:.25rem; bottom:.25rem; background:rgba(20,12,6,.85); color:var(--on-band);
     font-size:.6875rem; font-weight:700; padding:.1rem .4rem; border-radius:999px;
@@ -471,6 +474,31 @@
   .gift-shadow{ position:absolute; left:16%; right:6%; bottom:.9rem; height:1.5rem; border-radius:50%;
     background:radial-gradient(ellipse at center, rgba(0,0,0,.5), rgba(0,0,0,0) 70%); filter:blur(5px); z-index:-1; }
   @media (prefers-reduced-motion: reduce){ .gift-3d{ transition:none; } }
+
+  /* A Polaroid letter (partials/polaroid): a white frame deeper at the bottom, the photo
+     warmed and vignetted like instant film, the words handwritten. Sizes follow its width. */
+  .polaroid{ container-type:inline-size; position:relative; display:block; margin:0 auto; width:100%; max-width:19rem;
+    padding:6% 6% 0; border-radius:2px; transform:rotate(-2.5deg); color:#2b2622;
+    background:#fbfaf6 linear-gradient(135deg, rgba(0,0,0,.015), transparent 40%, rgba(0,0,0,.035));
+    box-shadow:0 1px 1px rgba(0,0,0,.06), 0 18px 34px -14px rgba(0,0,0,.55); }
+  .pol-photo{ position:relative; display:block; aspect-ratio:1/1; overflow:hidden; background:#26211d; }
+  .pol-photo img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    filter:contrast(1.06) saturate(1.15) sepia(.14) brightness(1.03) hue-rotate(-6deg); }
+  .pol-photo img[hidden]{ display:none; }
+  .pol-photo::before{ content:''; position:absolute; inset:0; z-index:1; pointer-events:none; mix-blend-mode:screen;
+    background:linear-gradient(120deg, rgba(255,160,80,.22), transparent 38%), linear-gradient(300deg, rgba(120,180,255,.1), transparent 45%); }
+  .pol-photo::after{ content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
+    background:radial-gradient(ellipse at center, transparent 58%, rgba(0,0,0,.35)); }
+  .polaroid.no-photo .pol-photo{ background:#f4efe4; }
+  .polaroid.no-photo .pol-photo::before, .polaroid.no-photo .pol-photo::after{ display:none; }
+  .pol-note, .pol-text{ font-family:'Caveat', 'Segoe Script', cursive; font-weight:600; color:#2b2622; white-space:pre-line;
+    word-break:break-word; text-align:center; line-height:1.08; }
+  .pol-note{ position:absolute; inset:0; z-index:2; display:grid; place-items:center; padding:10%; font-size:1.5rem; font-size:9.5cqw; }
+  .pol-note:empty{ display:none; }
+  .pol-text{ display:block; min-height:26cqw; padding:3cqw 3cqw 5cqw; font-size:1.3rem; font-size:8.5cqw; }
+  .polaroid.pol-m .pol-text{ font-size:6.4cqw; } .polaroid.pol-l .pol-text{ font-size:5cqw; }
+  .polaroid.pol-m .pol-note{ font-size:7.2cqw; } .polaroid.pol-l .pol-note{ font-size:5.6cqw; }
+  .pol-note.is-placeholder{ color:#b3aa9c; }
 
   /* The gift box viewer: all six sides, turned by hand (js/gift-box.js). */
   html.gv-open{ overflow:hidden; }
@@ -552,6 +580,7 @@
 </head>
 <body>
 @php $navWraps = \App\Models\Wrapping::where('is_active', true)->exists(); @endphp
+@php $navLetters = \App\Support\Letter::enabled(); @endphp
 
 <a href="#main" class="skip-link">Əsas məzmuna keç</a>
 
@@ -566,7 +595,7 @@
   <div class="wrap">
     <a href="{{ route('home') }}" class="brand"><img src="/images/logo.svg" alt="Nefis"></a>
     <nav class="primary">
-      <a href="{{ route('designs.index') }}">Dizaynlar</a>@if($navWraps)<a href="{{ route('wrappings.index') }}">Qablaşdırma</a>@endif
+      <a href="{{ route('designs.index') }}">Dizaynlar</a>@if($navWraps)<a href="{{ route('wrappings.index') }}">Qablaşdırma</a>@endif @if($navLetters)<a href="{{ route('letters.create') }}">Polaroid məktub</a>@endif
       <a href="{{ route('home') }}#how">Necə İşləyir</a>
       <a href="{{ route('home') }}#faq">Suallar</a>
       @auth
@@ -604,7 +633,7 @@
 
 <div class="mobile-nav" id="mobile-nav">
   <button class="close-btn" id="menu-close" aria-label="Bağla">✕</button>
-  <a href="{{ route('designs.index') }}">Dizaynlar</a>@if($navWraps)<a href="{{ route('wrappings.index') }}">Qablaşdırma</a>@endif
+  <a href="{{ route('designs.index') }}">Dizaynlar</a>@if($navWraps)<a href="{{ route('wrappings.index') }}">Qablaşdırma</a>@endif @if($navLetters)<a href="{{ route('letters.create') }}">Polaroid məktub</a>@endif
   <a href="{{ route('home') }}#how">Necə İşləyir</a>
   <a href="{{ route('home') }}#faq">Suallar</a>
   <a href="{{ route('cart.index') }}">Səbət</a>
@@ -636,7 +665,7 @@
       </div>
       <div class="footer-col">
         <h4>Naviqasiya</h4>
-        <a href="{{ route('designs.index') }}">Dizaynlar</a>@if($navWraps)<a href="{{ route('wrappings.index') }}">Qablaşdırma</a>@endif
+        <a href="{{ route('designs.index') }}">Dizaynlar</a>@if($navWraps)<a href="{{ route('wrappings.index') }}">Qablaşdırma</a>@endif @if($navLetters)<a href="{{ route('letters.create') }}">Polaroid məktub</a>@endif
         <a href="{{ route('home') }}#how">Necə İşləyir</a>
         <a href="{{ route('home') }}#faq">Suallar</a>
       </div>

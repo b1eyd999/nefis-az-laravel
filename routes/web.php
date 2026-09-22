@@ -6,6 +6,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CoverController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LetterController;
 use App\Http\Controllers\MapController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\OrderController;
@@ -24,6 +25,8 @@ Route::get('/i/{path}', [MediaController::class, 'show'])
 
 Route::get('/dizaynlar', [ProductController::class, 'index'])->name('designs.index');
 Route::get('/qablasdirma', [WrappingController::class, 'index'])->name('wrappings.index');
+Route::get('/mektub', [LetterController::class, 'create'])->name('letters.create');
+Route::post('/mektub', [LetterController::class, 'store'])->name('letters.store');
 
 // Address lookups for the checkout map (OpenStreetMap), asked through the site.
 Route::middleware('throttle:40,1')->prefix('xerite')->name('map.')->group(function () {

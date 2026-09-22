@@ -25,7 +25,8 @@ class ItemsRelationManager extends RelationManager
                     ->getStateUsing(fn ($record) => $record->product?->name ?? $record->product_name ?? 'Silinmiş məhsul'),
                 Tables\Columns\ImageColumn::make('product.template_image')
                     ->label('Qutu dizaynı')
-                    ->getStateUsing(fn ($record) => Media::url($record->product?->catalogImage()))
+                    // A letter bought on its own has no box: its photo stands in.
+                    ->getStateUsing(fn ($record) => $record->product ? Media::url($record->product->catalogImage()) : $record->letterPhotoUrl())
                     ->square()
                     ->size(80),
                 // The photos and captions under the names the customer filled

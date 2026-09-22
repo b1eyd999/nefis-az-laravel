@@ -28,6 +28,10 @@ class OrderItem extends Model
         'wrapping_id',
         'wrapping_name',
         'wrapping_price',
+        // A Polaroid letter: inside the box, or the whole line when ordered alone.
+        'letter_text',
+        'letter_photo',
+        'letter_price',
     ];
 
     protected function casts(): array
@@ -39,14 +43,32 @@ class OrderItem extends Model
             'text_labels' => 'array',
             'chocolate_price' => 'float',
             'wrapping_price' => 'float',
+            'letter_price' => 'float',
             'price' => 'float',
         ];
     }
 
-    /** One box with its bar and wrap, as ordered. */
+    /** One box with its bar, wrap and letter, as ordered. */
     public function unitPrice(): float
     {
-        return (float) ($this->price ?? 0) + (float) ($this->chocolate_price ?? 0) + (float) ($this->wrapping_price ?? 0);
+        return (float) ($this->price ?? 0) + (float) ($this->chocolate_price ?? 0) + (float) ($this->wrapping_price ?? 0)
+            + (float) ($this->letter_price ?? 0);
+    }
+
+    public function hasLetter(): bool
+    {
+        return $this->letter_price !== null || filled($this->letter_text) || filled($this->letter_photo);
+    }
+
+    /** A Polaroid letter ordered on its own: no box on this line. */
+    public function isLetterOnly(): bool
+    {
+        return $this->product_id === null && $this->hasLetter();
+    }
+
+    public function letterPhotoUrl(): ?string
+    {
+        return $this->letter_photo ? \App\Support\Media::url($this->letter_photo) : null;
     }
 
     /** The photo fields' names, as the customer page shows them ("1. Şəkil"). */

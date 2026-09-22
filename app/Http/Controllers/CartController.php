@@ -8,9 +8,11 @@ use App\Models\Product;
 use App\Models\TextSlot;
 use App\Models\Wrapping;
 use App\Support\Cart;
+use App\Support\Letter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CartController extends Controller
@@ -23,7 +25,7 @@ class CartController extends Controller
 
                 return $item;
             })
-            ->filter(fn (array $item) => $item['product'] !== null)
+            ->filter(fn (array $item) => $item['product'] !== null || Cart::isLetter($item))
             ->values();
 
         return view('cart.index', compact('items'));
@@ -49,6 +51,12 @@ class CartController extends Controller
 
         // Gift wrap is a choice, never a must.
         $rules['wrapping_id'] = ['nullable', Rule::exists('wrappings', 'id')->where('is_active', true)];
+
+        // So is a Polaroid letter inside the box: a photo, words, or both.
+        $withLetter = Letter::enabled() && $request->boolean('letter_on');
+        if ($withLetter) {
+            $rules += Letter::rules();
+        }
 
         // A textarea sends CRLF; a line break is one character, as the customer counted it.
         $request->merge(['custom_texts' => array_map(
@@ -78,7 +86,11 @@ class CartController extends Controller
             'chocolate_id.required' => 'Qutunun içinə şokolad seçin.',
             'chocolate_id.exists' => 'Seçdiyiniz şokolad artıq yoxdur, başqasını seçin.',
             'wrapping_id.exists' => 'Seçdiyiniz qablaşdırma artıq yoxdur, başqasını seçin.',
-        ], $this->slotAttributeNames($product));
+        ] + Letter::messages(), $this->slotAttributeNames($product));
+
+        if ($withLetter && ! $request->filled('letter_text') && ! $request->hasFile('letter_photo')) {
+            throw ValidationException::withMessages(['letter_text' => 'Məktub üçün şəkil və ya mətn əlavə edin, ya da məktubu söndürün.']);
+        }
 
         // The bar as it is now: its name and price stay with the order.
         $chocolate = null;
@@ -108,7 +120,8 @@ class CartController extends Controller
         }
 
         Cart::add($product->id, $paths, $texts, (int) $request->input('quantity', 1),
-            OrderItem::photoLabelsFor($product), OrderItem::textLabelsFor($product), $chocolate, $wrapping);
+            OrderItem::photoLabelsFor($product), OrderItem::textLabelsFor($product), $chocolate, $wrapping,
+            $withLetter ? Letter::fromRequest($request) : null);
 
         return redirect()->route('cart.index')->with('status', 'Məhsul səbətə əlavə olundu.');
     }

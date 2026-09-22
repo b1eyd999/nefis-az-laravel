@@ -48,8 +48,18 @@ class Setting extends Model
 
     public const HERO_INTERVAL = 'hero_interval';
 
+    /** Polaroid letters: on sale or not, their price, and how many characters they take. */
+    public const LETTER_ENABLED = 'letter_enabled';
+
+    public const LETTER_PRICE = 'letter_price';
+
+    public const LETTER_MAX = 'letter_max';
+
     /** What each setting is until the owner changes it. */
     public const DEFAULTS = [
+        self::LETTER_ENABLED => '1',
+        self::LETTER_PRICE => '3',
+        self::LETTER_MAX => '180',
         self::HERO_AUTOPLAY => '1',
         self::HERO_INTERVAL => '6',
         self::TOP_BRANDS => '["Milka","Alpen Gold"]',

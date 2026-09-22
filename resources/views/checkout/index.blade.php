@@ -203,10 +203,12 @@
 
     <div class="cart-list">
       @foreach($items as $item)
-        @php $texts = array_filter($item['custom_texts'] ?? []); @endphp
+        @php $texts = array_filter($item['custom_texts'] ?? []); $isLetter = \App\Support\Cart::isLetter($item); @endphp
         <div class="cart-row">
           <div class="thumb">
-            @if(! empty($item['photo_paths']))
+            @if($isLetter)
+              <div class="thumb-polaroid">@include('partials.polaroid', ['photo' => \App\Support\Media::url($item['letter']['photo'] ?? null), 'text' => $item['letter']['text'] ?? null])</div>
+            @elseif(! empty($item['photo_paths']))
               <img src="{{ \App\Support\Media::url($item['photo_paths'][0]) }}" alt="Yüklənmiş şəkil">
               @if(count($item['photo_paths']) > 1)
                 <span class="thumb-more">+{{ count($item['photo_paths']) - 1 }}</span>
@@ -216,7 +218,7 @@
             @endif
           </div>
           <div class="info">
-            <h3>{{ $item['product']->name }}</h3>
+            <h3>{{ $isLetter ? 'Polaroid məktub' : $item['product']->name }}</h3>
             <p>
               @if($texts) "{{ implode('" · "', $texts) }}" &middot; @endif
               {{ $item['quantity'] }} ədəd
@@ -228,6 +230,9 @@
             @endif
             @if(! empty($item['wrapping']))
               <p style="margin-top:.2rem;">🎁 Qablaşdırma: {{ $item['wrapping']['name'] }}</p>
+            @endif
+            @if(! empty($item['letter']) && ! $isLetter)
+              <p style="margin-top:.2rem;">💌 Polaroid məktub</p>
             @endif
           </div>
         </div>

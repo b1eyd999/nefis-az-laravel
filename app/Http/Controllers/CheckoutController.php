@@ -24,7 +24,7 @@ class CheckoutController extends Controller
 
                 return $item;
             })
-            ->filter(fn (array $item) => $item['product'] !== null)
+            ->filter(fn (array $item) => $item['product'] !== null || Cart::isLetter($item))
             ->values();
 
         if ($items->isEmpty()) {
@@ -40,7 +40,8 @@ class CheckoutController extends Controller
     public function store(Request $request): RedirectResponse
     {
         // A cart can outlive the designs it was filled from.
-        $items = array_filter(Cart::items(), fn (array $item) => Product::whereKey($item['product_id'])->exists());
+        $items = array_filter(Cart::items(), fn (array $item) => Cart::isLetter($item)
+            || Product::whereKey($item['product_id'])->exists());
 
         if (empty($items)) {
             return redirect()->route('cart.index');
@@ -60,6 +61,21 @@ class CheckoutController extends Controller
         ]);
 
         foreach ($items as $item) {
+            if (Cart::isLetter($item)) {
+                $order->items()->create([
+                    'product_id' => null,
+                    'product_name' => 'Polaroid məktub',
+                    'customer_photos' => [],
+                    'custom_texts' => [],
+                    'quantity' => $item['quantity'],
+                    'letter_text' => $item['letter']['text'] ?? null,
+                    'letter_photo' => $item['letter']['photo'] ?? null,
+                    'letter_price' => $item['letter']['price'] ?? 0,
+                ]);
+
+                continue;
+            }
+
             $product = Product::find($item['product_id']);
 
             $order->items()->create([
@@ -80,6 +96,9 @@ class CheckoutController extends Controller
                 'wrapping_id' => $item['wrapping']['id'] ?? null,
                 'wrapping_name' => $item['wrapping']['name'] ?? null,
                 'wrapping_price' => $item['wrapping']['price'] ?? null,
+                'letter_text' => $item['letter']['text'] ?? null,
+                'letter_photo' => $item['letter']['photo'] ?? null,
+                'letter_price' => isset($item['letter']) ? ($item['letter']['price'] ?? 0) : null,
             ]);
         }
 

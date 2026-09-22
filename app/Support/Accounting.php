@@ -28,7 +28,7 @@ class Accounting
     public static function consume(Order $order): void
     {
         DB::transaction(function () use ($order) {
-            $boxes = (int) $order->items()->sum('quantity');
+            $boxes = (int) $order->items()->whereNotNull('product_id')->sum('quantity');
             $total = 0.0;
             foreach (Material::used()->lockForUpdate()->get() as $m) {
                 $qty = round($m->per_box * $boxes, 3);
@@ -129,7 +129,7 @@ class Accounting
             $revenue = $goods + $delivery;
 
             return [
-                'order' => $o, 'boxes' => (int) $o->items->sum('quantity'),
+                'order' => $o, 'boxes' => (int) $o->items->whereNotNull('product_id')->sum('quantity'),
                 'revenue' => $revenue, 'goods' => $goods, 'delivery' => $delivery,
                 'chocolate' => $chocolate, 'materials' => $materials,
                 'profit' => $revenue - $chocolate - $materials,

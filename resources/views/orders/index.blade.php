@@ -40,7 +40,13 @@
                 $texts = collect($item->fields()['texts'])->reject(fn ($t) => $t['fixed'] || $t['value'] === '')->pluck('value')->all();
               @endphp
               <div class="cart-row" style="background:var(--cream); margin-bottom:.5rem;">
-                <div class="thumb">@if($photo)<img src="{{ \App\Support\Media::url($photo) }}" alt="Yüklənmiş şəkil">@endif</div>
+                <div class="thumb">
+                  @if($item->isLetterOnly())
+                    <div class="thumb-polaroid">@include('partials.polaroid', ['photo' => $item->letterPhotoUrl(), 'text' => $item->letter_text])</div>
+                  @elseif($photo)
+                    <img src="{{ \App\Support\Media::url($photo) }}" alt="Yüklənmiş şəkil">
+                  @endif
+                </div>
                 <div class="info">
                   <h3>{{ $item->product->name ?? $item->product_name ?? 'Silinmiş məhsul' }}</h3>
                   <p>
@@ -53,6 +59,9 @@
                   @endif
                   @if($item->wrapping_name)
                     <p style="margin-top:.2rem;">🎁 Qablaşdırma: {{ $item->wrapping_name }}</p>
+                  @endif
+                  @if($item->hasLetter() && ! $item->isLetterOnly())
+                    <p style="margin-top:.2rem;">💌 Polaroid məktub</p>
                   @endif
                 </div>
               </div>
