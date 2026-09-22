@@ -52,6 +52,9 @@
               @if(! empty($item['chocolate']))
                 <p style="margin-top:.2rem;">🍫 {{ $item['chocolate']['name'] }} &middot; {{ \App\Support\Price::format($item['chocolate']['price']) }}</p>
               @endif
+              @if(! empty($item['wrapping']))
+                <p style="margin-top:.2rem;">🎁 Qablaşdırma: {{ $item['wrapping']['name'] }} &middot; {{ \App\Support\Price::format($item['wrapping']['price']) }}</p>
+              @endif
             </div>
             <form method="POST" action="{{ route('cart.remove', $item['id']) }}">
               @csrf

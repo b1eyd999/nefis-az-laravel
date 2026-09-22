@@ -6,6 +6,7 @@ use App\Models\Chocolate;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\TextSlot;
+use App\Models\Wrapping;
 use App\Support\Cart;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -46,6 +47,9 @@ class CartController extends Controller
             $rules["photos.$index"] = ['required', 'image', 'max:8192'];
         }
 
+        // Gift wrap is a choice, never a must.
+        $rules['wrapping_id'] = ['nullable', Rule::exists('wrappings', 'id')->where('is_active', true)];
+
         // A textarea sends CRLF; a line break is one character, as the customer counted it.
         $request->merge(['custom_texts' => array_map(
             fn ($t) => is_string($t) ? str_replace("\r\n", "\n", $t) : $t,
@@ -73,6 +77,7 @@ class CartController extends Controller
             'quantity.max' => 'Say 1 ilə 20 arasında olmalıdır.',
             'chocolate_id.required' => 'Qutunun içinə şokolad seçin.',
             'chocolate_id.exists' => 'Seçdiyiniz şokolad artıq yoxdur, başqasını seçin.',
+            'wrapping_id.exists' => 'Seçdiyiniz qablaşdırma artıq yoxdur, başqasını seçin.',
         ], $this->slotAttributeNames($product));
 
         // The bar as it is now: its name and price stay with the order.
@@ -81,6 +86,13 @@ class CartController extends Controller
             $bar = Chocolate::findOrFail($request->input('chocolate_id'));
             $chocolate = ['id' => $bar->id, 'name' => trim($bar->name . ' ' . ($bar->weightLabel() ? '(' . $bar->weightLabel() . ')' : '')),
                 'price' => $bar->price(), 'cost' => $bar->shopPrice()];
+        }
+
+        // The wrap as it is now, likewise.
+        $wrapping = null;
+        if ($request->filled('wrapping_id')) {
+            $wrap = Wrapping::findOrFail($request->input('wrapping_id'));
+            $wrapping = ['id' => $wrap->id, 'name' => $wrap->name, 'price' => $wrap->price];
         }
 
         $paths = [];
@@ -96,7 +108,7 @@ class CartController extends Controller
         }
 
         Cart::add($product->id, $paths, $texts, (int) $request->input('quantity', 1),
-            OrderItem::photoLabelsFor($product), OrderItem::textLabelsFor($product), $chocolate);
+            OrderItem::photoLabelsFor($product), OrderItem::textLabelsFor($product), $chocolate, $wrapping);
 
         return redirect()->route('cart.index')->with('status', 'Məhsul səbətə əlavə olundu.');
     }

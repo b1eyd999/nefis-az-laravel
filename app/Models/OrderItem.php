@@ -24,6 +24,10 @@ class OrderItem extends Model
         'chocolate_name',
         'chocolate_price',
         'chocolate_cost',
+        // The gift wrap, as it was when ordered.
+        'wrapping_id',
+        'wrapping_name',
+        'wrapping_price',
     ];
 
     protected function casts(): array
@@ -34,14 +38,15 @@ class OrderItem extends Model
             'photo_labels' => 'array',
             'text_labels' => 'array',
             'chocolate_price' => 'float',
+            'wrapping_price' => 'float',
             'price' => 'float',
         ];
     }
 
-    /** One box with its bar, as ordered. */
+    /** One box with its bar and wrap, as ordered. */
     public function unitPrice(): float
     {
-        return (float) ($this->price ?? 0) + (float) ($this->chocolate_price ?? 0);
+        return (float) ($this->price ?? 0) + (float) ($this->chocolate_price ?? 0) + (float) ($this->wrapping_price ?? 0);
     }
 
     /** The photo fields' names, as the customer page shows them ("1. Şəkil"). */

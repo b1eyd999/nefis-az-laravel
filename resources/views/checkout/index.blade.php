@@ -226,6 +226,9 @@
             @if(! empty($item['chocolate']))
               <p style="margin-top:.2rem;">🍫 {{ $item['chocolate']['name'] }}</p>
             @endif
+            @if(! empty($item['wrapping']))
+              <p style="margin-top:.2rem;">🎁 Qablaşdırma: {{ $item['wrapping']['name'] }}</p>
+            @endif
           </div>
         </div>
       @endforeach

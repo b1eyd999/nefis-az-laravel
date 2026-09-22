@@ -38,14 +38,22 @@ class ItemsRelationManager extends RelationManager
                     ->description(fn ($record) => $record->chocolate_price ? Price::format($record->chocolate_price) : null)
                     ->placeholder('—')
                     ->wrap(),
+                Tables\Columns\TextColumn::make('wrapping_name')
+                    ->label('Qablaşdırma')
+                    ->description(fn ($record) => $record->wrapping_price ? Price::format($record->wrapping_price) : null)
+                    ->placeholder('—')
+                    ->wrap(),
                 Tables\Columns\TextColumn::make('quantity')
                     ->label('Say'),
                 Tables\Columns\TextColumn::make('price')
                     ->label('Qiymət')
                     // The box and the bar each, then the line's total.
                     ->getStateUsing(fn ($record) => $record->unitPrice() > 0 ? Price::format($record->unitPrice() * $record->quantity) : '—')
-                    ->description(fn ($record) => $record->chocolate_price
-                        ? 'qutu ' . ($record->price ? Price::format($record->price) : '—') . ' + şokolad ' . Price::format($record->chocolate_price) . ($record->quantity > 1 ? ' × ' . $record->quantity : '')
+                    ->description(fn ($record) => ($record->chocolate_price || $record->wrapping_price)
+                        ? 'qutu ' . ($record->price ? Price::format($record->price) : '—')
+                            . ($record->chocolate_price ? ' + şokolad ' . Price::format($record->chocolate_price) : '')
+                            . ($record->wrapping_price ? ' + qablaşdırma ' . Price::format($record->wrapping_price) : '')
+                            . ($record->quantity > 1 ? ' × ' . $record->quantity : '')
                         : null),
             ])
             ->actions([

@@ -7,6 +7,7 @@ use App\Models\DesignLayer;
 use App\Models\Product;
 use App\Models\ProductAngle;
 use App\Models\Scene;
+use App\Models\Wrapping;
 use App\Support\Media;
 
 class ProductController extends Controller
@@ -39,7 +40,10 @@ class ProductController extends Controller
         // The bar that goes inside: chosen here, priced with the owner's markup.
         $chocolates = Chocolate::shown()->get()->map->toCustomer()->values();
 
-        return view('products.customize', compact('product', 'viewData', 'chocolates'));
+        // Gift wraps, cheapest first; the page groups them by price.
+        $wrappings = Wrapping::shown()->get()->map->toCustomer()->values();
+
+        return view('products.customize', compact('product', 'viewData', 'chocolates', 'wrappings'));
     }
 
     /**

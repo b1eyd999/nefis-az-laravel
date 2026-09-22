@@ -21,6 +21,30 @@
   .slot-hint{ font-size:.8125rem; color:var(--cocoa-soft); margin-top:.5rem; }
   .angle-thumb canvas{ width:100%; height:100%; object-fit:cover; display:block; }
   textarea.text-input{ resize:vertical; }
+  .wrap-block{ display:flex; flex-direction:column; gap:.6rem; }
+  .wrap-none{ display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.6rem .85rem; margin:0;
+    border:1.5px solid var(--line); border-radius:.8rem; background:var(--paper); cursor:pointer; font-weight:600; font-size:.875rem; position:relative; }
+  .wrap-none b{ font-size:.8rem; color:var(--cocoa-soft); font-weight:600; }
+  .wrap-none input, .wrap-swatch input{ position:absolute; opacity:0; pointer-events:none; }
+  .wrap-none:has(input:checked){ border-color:var(--gold); box-shadow:0 0 0 3px var(--ring); }
+  .wrap-group{ border:1px solid var(--line); border-radius:.9rem; padding:.9rem .75rem .8rem; position:relative; margin-top:.35rem; }
+  .wrap-price{ position:absolute; top:-.7rem; right:.8rem; background:var(--gold); color:#fff; font-weight:800; font-size:.8rem;
+    padding:.15rem .6rem; border-radius:999px; }
+  .wrap-swatches{ display:grid; grid-template-columns:repeat(auto-fill, minmax(4.6rem, 1fr)); gap:.6rem; }
+  .wrap-swatch{ position:relative; display:flex; flex-direction:column; align-items:center; gap:.3rem; margin:0; cursor:pointer; font-weight:400; }
+  .wrap-swatch .sw{ position:relative; width:100%; aspect-ratio:3/4; border-radius:.6rem; background-size:60px auto; background-repeat:repeat;
+    border:2px solid transparent; box-shadow:0 2px 8px rgba(0,0,0,.18); overflow:hidden; transition:transform .15s, border-color .15s; }
+  .wrap-swatch .sw i{ position:absolute; left:50%; top:0; bottom:0; width:12%; transform:translateX(-50%); background:var(--rb); opacity:.95; }
+  .wrap-swatch .sw i::after{ content:''; position:absolute; left:-350%; right:-350%; top:42%; height:9%; background:var(--rb); }
+  .wrap-swatch:hover .sw{ transform:translateY(-2px); }
+  .wrap-swatch:has(input:checked) .sw{ border-color:var(--gold); box-shadow:0 0 0 3px var(--ring), 0 2px 8px rgba(0,0,0,.18); }
+  .wrap-swatch:has(input:checked)::after{ content:'✓'; position:absolute; top:.3rem; right:.3rem; width:1.2rem; height:1.2rem; border-radius:50%;
+    background:var(--gold); color:#fff; font-size:.7rem; display:grid; place-items:center; }
+  .wrap-swatch:has(input:focus-visible) .sw{ outline:2px solid var(--gold); outline-offset:2px; }
+  .wrap-swatch .nm{ font-size:.72rem; line-height:1.25; text-align:center; color:var(--cocoa-soft); }
+  .wrap-toggle{ position:absolute; left:50%; bottom:.9rem; transform:translateX(-50%); z-index:3; padding:.5rem 1rem; border-radius:999px;
+    border:1px solid rgba(255,255,255,.35); background:rgba(26,18,14,.72); color:#fff; font-size:.85rem; font-weight:600; backdrop-filter:blur(6px); }
+  .wrap-toggle[hidden]{ display:none; }
   .choc-brands{ display:flex; flex-wrap:wrap; gap:.4rem; margin:.6rem 0 .25rem; }
   .choc-brand{
     position:relative; white-space:nowrap;
@@ -101,6 +125,9 @@
           <canvas id="preview-canvas"></canvas>
           @if($photoSlots->isNotEmpty())
             <div class="drop-hint" id="drop-hint">Öncə sağdan şəklinizi yükləyin</div>
+          @endif
+          @if($wrappings->isNotEmpty())
+            <button type="button" class="wrap-toggle" id="wrap-toggle" hidden>🎁 Qablaşdırmada</button>
           @endif
           @if(count($viewData) > 1)
             <button type="button" class="angle-arrow prev" id="angle-prev" aria-label="Əvvəlki görünüş">‹</button>
@@ -250,16 +277,48 @@
           </div>
         @endif
 
+        @if($wrappings->isNotEmpty())
+          {{-- Gift wrap: swatches of paper, grouped by price. Picking one shows the box wrapped in it. --}}
+          <div class="wrap-block" id="wrap-block">
+            <label>Hədiyyə qablaşdırması</label>
+            <label class="wrap-none">
+              <input type="radio" name="wrapping_id" value="" data-price="0" data-name="" @checked(! old('wrapping_id'))>
+              <span>Qablaşdırmasız</span><b>pulsuz</b>
+            </label>
+            @foreach($wrappings->groupBy(fn ($w) => number_format($w['price'], 2, '.', '')) as $price => $group)
+              <div class="wrap-group">
+                <div class="wrap-price">+{{ \App\Support\Price::format((float) $price) }}</div>
+                <div class="wrap-swatches">
+                  @foreach($group as $w)
+                    <label class="wrap-swatch" title="{{ $w['name'] }}">
+                      <input type="radio" name="wrapping_id" value="{{ $w['id'] }}" data-price="{{ $w['price'] }}" data-name="{{ $w['name'] }}"
+                             data-pattern="{{ $w['pattern'] }}" data-ribbon="{{ $w['ribbon'] }}" data-color="{{ $w['color'] }}" data-scale="{{ $w['scale'] }}"
+                             @checked((string) old('wrapping_id') === (string) $w['id'])>
+                      <span class="sw" style="background-image:url('{{ $w['pattern'] }}')">
+                        @if($w['ribbon'] !== 'none')<i style="--rb: {{ $w['color'] }}"></i>@endif
+                      </span>
+                      <span class="nm">{{ $w['name'] }}</span>
+                    </label>
+                  @endforeach
+                </div>
+              </div>
+            @endforeach
+          </div>
+        @endif
+
         <div>
           <label for="quantity">Say</label>
           <input type="number" id="quantity" name="quantity" value="1" min="1" max="20" style="max-width:7rem;">
         </div>
 
-        @if($product->price || $chocolates->isNotEmpty())
+        @if($product->price || $chocolates->isNotEmpty() || $wrappings->isNotEmpty())
           <div class="price-sum" id="price-sum" data-box="{{ (float) $product->price }}">
             <div><span>Qutu</span><span>{{ $product->price ? \App\Support\Price::format($product->price) : 'sorğu ilə' }}</span></div>
             @if($chocolates->isNotEmpty())
               <div><span id="sum-choc-name" class="sum-name">Şokolad</span><span id="sum-choc">seçilməyib</span></div>
+            @endif
+            @if($wrappings->isNotEmpty())
+              <div id="sum-wrap-row" hidden><span id="sum-wrap-name" class="sum-name">Qablaşdırma</span><span id="sum-wrap">—</span></div>
             @endif
             <div class="total"><span>Cəmi</span><span id="sum-total">—</span></div>
           </div>
@@ -279,6 +338,7 @@
 @endif
 <script src="{{ asset('js/box-render.js') }}"></script>
 <script src="{{ asset('js/scene-render.js') }}"></script>
+<script src="{{ asset('js/wrap-render.js') }}"></script>
 <script>
 (function(){
   "use strict";
@@ -434,16 +494,65 @@
     return mockupCanvas;
   }
 
+  /* ---------- gift wrap ---------- */
+  /* Once the customer picks a paper, every view shows the box wrapped in it;
+     the button on the preview flips back to their own design. */
+  var wrap = { picked: false, show: false, img: null, ribbon: 'satin', color: null, scale: 0.5, avg: null };
+  var wrapCanvas = document.createElement('canvas');
+  var wrapToggle = document.getElementById('wrap-toggle');
+  var lastDesign = mockupCanvas;
+
+  function wrappedBox(){
+    var a = currentAngle();
+    wrapCanvas.width = a.tw;
+    wrapCanvas.height = a.th;
+    NefisWrap.draw(wrapCanvas.getContext('2d'), a.tw, a.th, wrap.img, { ribbon: wrap.ribbon, color: wrap.color, scale: wrap.scale });
+    return wrapCanvas;
+  }
+  function showingWrap(){ return wrap.picked && wrap.show && typeof NefisWrap !== 'undefined'; }
+  function designNow(){ return (lastDesign = showingWrap() ? wrappedBox() : renderMockup()); }
+  /* The sides of the rendered box take the paper's colour, not the design's. */
+  function boxColorNow(a){ return showingWrap() ? (wrap.avg || a.boxColor) : a.boxColor; }
+  function syncWrapToggle(){
+    if (!wrapToggle) return;
+    wrapToggle.hidden = !wrap.picked;
+    wrapToggle.textContent = wrap.show ? '🖼 Dizaynı göstər' : '🎁 Qablaşdırmada göstər';
+  }
+  if (wrapToggle) {
+    wrapToggle.addEventListener('click', function(){ wrap.show = !wrap.show; syncWrapToggle(); draw(); });
+  }
+  function pickWrap(input){
+    if (!input || !input.value) {
+      wrap.picked = false; wrap.show = false;
+      syncWrapToggle(); draw();
+      return;
+    }
+    wrap.picked = true; wrap.show = true;
+    wrap.ribbon = input.dataset.ribbon || 'satin';
+    wrap.color = input.dataset.color || null;
+    wrap.scale = parseFloat(input.dataset.scale) || 0.5;
+    var img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function(){ if (wrap.img === img) { wrap.avg = NefisWrap.averageColor(img); draw(); } };
+    img.src = input.dataset.pattern;
+    wrap.img = img;
+    wrap.avg = null;
+    syncWrapToggle(); draw();
+  }
+  document.querySelectorAll('input[name="wrapping_id"]').forEach(function(r){
+    r.addEventListener('change', function(){ if (r.checked) pickWrap(r); });
+  });
+
   function draw(){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     var a = currentAngle();
 
     if (a.scene) {
       /* The owner's mockup: the box design corner-pinned onto a rendered box. */
-      NefisScene.drawScene(ctx, a.scene, renderMockup(), sceneImage, sceneCache, { boxColor: a.boxColor });
+      NefisScene.drawScene(ctx, a.scene, designNow(), sceneImage, sceneCache, { boxColor: boxColorNow(a) });
     } else if (a.bg) {
       if (bgReady) ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-      var mockup = renderMockup();
+      var mockup = designNow();
       var box = a.boxArea, cb = a.contentBox;
       var scale = box.w / cb.w;
       /* Undo the art's own rotation inside its template canvas, scale it to the
@@ -457,7 +566,7 @@
       ctx.drawImage(mockup, 0, 0, a.tw, a.th);
       ctx.restore();
     } else {
-      ctx.drawImage(renderMockup(), 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(designNow(), 0, 0, canvas.width, canvas.height);
     }
     scheduleThumbs();
   }
@@ -472,7 +581,7 @@
     thumbTimer = setTimeout(drawThumbs, 250);
   }
   function drawThumbs(){
-    var design = mockupCanvas;
+    var design = lastDesign;
     if (!design.width) return;
     thumbCanvases.forEach(function(tc){
       var i = Number(tc.parentNode.dataset.angle), a = ANGLES[i];
@@ -483,7 +592,7 @@
       var tctx = tc.getContext('2d');
       tctx.clearRect(0, 0, tc.width, tc.height);
       if (a.scene) {
-        NefisScene.drawScene(tctx, NefisScene.scaled(a.scene, s), design, sceneImage, thumbCaches[i] || (thumbCaches[i] = {}), { boxColor: a.boxColor });
+        NefisScene.drawScene(tctx, NefisScene.scaled(a.scene, s), design, sceneImage, thumbCaches[i] || (thumbCaches[i] = {}), { boxColor: boxColorNow(a) });
       } else {
         tctx.drawImage(design, 0, 0, tc.width, tc.height);
       }
@@ -671,6 +780,10 @@
 
   loadAngle(0);
 
+  // Back from a failed add with a wrap chosen: show the box wrapped again.
+  var chosenWrap = document.querySelector('input[name="wrapping_id"]:checked');
+  if (chosenWrap && chosenWrap.value) pickWrap(chosenWrap);
+
   if (anglePrev) {
     anglePrev.addEventListener('click', function(){
       loadAngle((activeAngle - 1 + ANGLES.length) % ANGLES.length);
@@ -745,6 +858,7 @@
   }
 
   function startDrag(clientX, clientY){
+    if (showingWrap()) return false;
     var slot = slotAtPoint(toMockupCoords(clientX, clientY));
     if (slot < 0) return false;
     dragSlot = slot;
@@ -830,13 +944,21 @@
   function update(){
     var picked = document.querySelector('input[name="chocolate_id"]:checked');
     var choc = picked ? parseFloat(picked.dataset.price) || 0 : 0;
+    var wrapPick = document.querySelector('input[name="wrapping_id"]:checked');
+    var wrap = wrapPick && wrapPick.value ? parseFloat(wrapPick.dataset.price) || 0 : 0;
+    var wrapRow = document.getElementById('sum-wrap-row');
+    if (wrapRow) {
+      wrapRow.hidden = !(wrapPick && wrapPick.value);
+      document.getElementById('sum-wrap-name').textContent = wrapPick && wrapPick.value ? 'Qablaşdırma: ' + wrapPick.dataset.name : 'Qablaşdırma';
+      document.getElementById('sum-wrap').textContent = fmt(wrap);
+    }
     var n = Math.max(1, parseInt(qty.value, 10) || 1);
     if (chocOut) chocOut.textContent = picked ? fmt(choc) : 'seçilməyib';
     if (chocName) chocName.textContent = picked ? picked.dataset.name : 'Şokolad';
-    var each = box + choc;
+    var each = box + choc + wrap;
     totalOut.textContent = each > 0 ? fmt(each * n) + (n > 1 ? ' (' + n + ' × ' + fmt(each) + ')' : '') : '—';
   }
-  document.querySelectorAll('input[name="chocolate_id"]').forEach(function(r){ r.addEventListener('change', update); });
+  document.querySelectorAll('input[name="chocolate_id"], input[name="wrapping_id"]').forEach(function(r){ r.addEventListener('change', update); });
   qty.addEventListener('input', update);
   update();
 })();

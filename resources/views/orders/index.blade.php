@@ -51,6 +51,9 @@
                   @if($item->chocolate_name)
                     <p style="margin-top:.2rem;">🍫 {{ $item->chocolate_name }}</p>
                   @endif
+                  @if($item->wrapping_name)
+                    <p style="margin-top:.2rem;">🎁 Qablaşdırma: {{ $item->wrapping_name }}</p>
+                  @endif
                 </div>
               </div>
             @endforeach

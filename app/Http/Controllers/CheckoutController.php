@@ -77,6 +77,9 @@ class CheckoutController extends Controller
                 'chocolate_price' => $item['chocolate']['price'] ?? null,
                 // What the bar costs the owner — for the books.
                 'chocolate_cost' => $item['chocolate']['cost'] ?? null,
+                'wrapping_id' => $item['wrapping']['id'] ?? null,
+                'wrapping_name' => $item['wrapping']['name'] ?? null,
+                'wrapping_price' => $item['wrapping']['price'] ?? null,
             ]);
         }
 
