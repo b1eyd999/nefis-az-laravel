@@ -20,7 +20,7 @@
 @php
   $seoTitle = trim($__env->yieldContent('title', 'Nefis — Şəkilli Şokolad Qutuları və Fərdi Hədiyyələr'));
   $seoDescription = trim($__env->yieldContent('meta_description', 'Öz şəkliniz və sözlərinizlə fərdi şokolad qutusu — ad günü, sevgiliyə, 8 Mart və hər münasibətə unudulmaz hədiyyə. Bakıda və bütün Azərbaycanda çatdırılma.'));
-  $seoUrl = trim($__env->yieldContent('canonical', url()->current()));
+  $seoUrl = e(\App\Support\Seo::canonical());
   $seoImage = trim($__env->yieldContent('og_image'));
 @endphp
 <title>{!! $seoTitle !!}</title>

@@ -156,6 +156,22 @@ class SeoTest extends TestCase
         }
     }
 
+    public function test_the_site_answers_on_www_but_never_names_itself_that_way(): void
+    {
+        $this->box('Love Story', 'love-story-vol-1');
+
+        // The server sends www. visitors to the plain address; a page reached
+        // that way must still point search engines at the one address.
+        $this->get('http://www.nefis.az/dizaynlar')->assertOk()
+            ->assertSee('<link rel="canonical" href="http://nefis.az/dizaynlar">', false)
+            ->assertSee('<meta property="og:url" content="http://nefis.az/dizaynlar">', false);
+
+        $this->get('http://www.nefis.az/sitemap.xml')->assertOk()->assertDontSee('www.nefis.az');
+
+        $htaccess = file_get_contents(public_path('.htaccess'));
+        $this->assertStringContainsString('RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]', $htaccess);
+    }
+
     public function test_a_design_page_tells_search_engines_what_it_sells(): void
     {
         $this->box('Frame & Player', 'frame-player', 4.9);

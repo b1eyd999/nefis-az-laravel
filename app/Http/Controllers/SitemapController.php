@@ -8,6 +8,7 @@ use App\Models\Wrapping;
 use App\Support\Letter;
 use App\Support\LiveMaterials;
 use App\Support\Media;
+use App\Support\Seo;
 use Illuminate\Http\Response;
 
 /**
@@ -50,7 +51,10 @@ class SitemapController extends Controller
         }
 
         return response()
-            ->view('sitemap', ['urls' => $urls])
+            ->view('sitemap', ['urls' => $urls->map(fn (array $u) => array_map(
+                fn ($v) => is_string($v) ? Seo::canonical($v) : $v,
+                $u,
+            ))])
             ->header('Content-Type', 'application/xml; charset=UTF-8');
     }
 }

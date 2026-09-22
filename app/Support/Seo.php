@@ -20,6 +20,16 @@ class Seo
         Setting::SEO_BING => 'msvalidate.01',
     ];
 
+    /**
+     * The one address a page is named by. The site answers on www.nefis.az
+     * too (the server redirects it), so the "www." never belongs in a
+     * canonical link, a sitemap or a link preview.
+     */
+    public static function canonical(?string $url = null): string
+    {
+        return preg_replace('#^(https?://)www\.#i', '$1', $url ?? url()->current());
+    }
+
     public static function jsonLd(array $data): HtmlString
     {
         $json = json_encode(
