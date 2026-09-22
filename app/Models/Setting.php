@@ -43,8 +43,15 @@ class Setting extends Model
     /** What the customer is told on the payment page. */
     public const PAYMENT_NOTE = 'payment_note';
 
+    /** The home page's slides: whether they turn by themselves, and how often (seconds). */
+    public const HERO_AUTOPLAY = 'hero_autoplay';
+
+    public const HERO_INTERVAL = 'hero_interval';
+
     /** What each setting is until the owner changes it. */
     public const DEFAULTS = [
+        self::HERO_AUTOPLAY => '1',
+        self::HERO_INTERVAL => '6',
         self::TOP_BRANDS => '["Milka","Alpen Gold"]',
         self::PAYMENT_LIMIT => '5',
         self::PAYMENT_WINDOW_HOURS => '24',

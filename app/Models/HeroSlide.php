@@ -1,0 +1,75 @@
+<?php
+
+namespace App\Models;
+
+use App\Support\Media;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+
+/** One slide of the home page's opening banner. */
+class HeroSlide extends Model
+{
+    protected $fillable = [
+        'eyebrow', 'title', 'text', 'button1_label', 'button1_url', 'button2_label', 'button2_url',
+        'badges', 'image', 'image_fit', 'ribbon', 'is_active', 'sort_order',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'badges' => 'array',
+            'is_active' => 'boolean',
+        ];
+    }
+
+    protected static function booted(): void
+    {
+        static::deleted(function (HeroSlide $slide) {
+            if ($slide->image) {
+                Storage::disk('public')->delete($slide->image);
+            }
+        });
+    }
+
+    public function scopeShown(Builder $query): Builder
+    {
+        return $query->where('is_active', true)->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function imageUrl(): ?string
+    {
+        return Media::url($this->image);
+    }
+
+    /**
+     * Where a button goes: a page of the site ("/dizaynlar"), a place on the
+     * home page ("#collections") or another site. Anything else is dropped.
+     */
+    public static function href(?string $url): ?string
+    {
+        $url = trim((string) $url);
+        if ($url === '') {
+            return null;
+        }
+        if (str_starts_with($url, '#') || str_starts_with($url, '/')) {
+            return $url;
+        }
+
+        return preg_match('#^https?://#i', $url) ? $url : null;
+    }
+
+    /** The home page's banner before any slide existed, for a table left empty. */
+    public static function fallback(): self
+    {
+        return new self([
+            'eyebrow' => 'Nefis Şokolad Evi',
+            'title' => "Hər Hədiyyə\nBir Xatirəyə Dönsün.",
+            'text' => 'Öz şəklinizi, öz sözünüzü seçin — biz onu sevdiklərinizə hədiyyə edəcəyiniz ən nəfis şokolad qutusuna çeviririk.',
+            'button1_label' => 'İndi Sifariş Ver', 'button1_url' => '#collections',
+            'button2_label' => 'Dizaynlara Bax', 'button2_url' => '/dizaynlar',
+            'badges' => ['Premium Şokolad', '100% Fərdi Dizayn', 'Sürətli Çatdırılma'],
+            'ribbon' => 'Fərdi Hədiyyə',
+        ]);
+    }
+}
