@@ -14,7 +14,8 @@ class EditLivePhoto extends EditRecord
 
     protected function beforeSave(): void
     {
-        if (trim((string) ($this->data['video_url'] ?? '')) !== $this->record->video_url) {
+        $link = trim((string) ($this->data['video_url'] ?? ''));
+        if ($link !== '' && $link !== $this->record->video_url) {
             $this->checkVideoLink();
         }
     }
@@ -22,6 +23,12 @@ class EditLivePhoto extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('push')->label('Videonu Yandex-ə köçür')->icon('heroicon-o-cloud-arrow-up')->color('warning')
+                ->visible(fn () => $this->record->videoPlace() === 'hosting')
+                ->action(function () {
+                    LivePhotoResource::pushNow($this->record);
+                    $this->refreshFormData(['video_url']);
+                }),
             Actions\Action::make('open')->label('Səhifəni aç')->icon('heroicon-o-arrow-top-right-on-square')->color('gray')
                 ->url(fn () => $this->record->url())->openUrlInNewTab(),
             Actions\DeleteAction::make(),

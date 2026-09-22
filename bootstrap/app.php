@@ -15,5 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [\App\Http\Middleware\MaintenanceMode::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // More than the hosting takes in one sending (a long video): a plain
+        // page that says so, rather than an error — no session exists yet here.
+        $exceptions->render(function (\Illuminate\Http\Exceptions\PostTooLargeException $e) {
+            return response()->view('errors.too-large', [], 413);
+        });
     })->create();

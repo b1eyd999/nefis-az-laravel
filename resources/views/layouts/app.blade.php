@@ -586,6 +586,7 @@
 <body>
 @php $navWraps = \App\Models\Wrapping::where('is_active', true)->exists(); @endphp
 @php $navLetters = \App\Support\Letter::enabled(); @endphp
+@php $navLive = \App\Support\LiveMaterials::enabled(); @endphp
 
 <a href="#main" class="skip-link">Əsas məzmuna keç</a>
 
@@ -601,7 +602,7 @@
     <a href="{{ route('home') }}" class="brand"><img src="/images/logo.svg" alt="Nefis"></a>
     <nav class="primary" aria-label="Əsas menyu">
       {{-- Everything for sale under one word, so the bar stays short however many there are. --}}
-      @if($navWraps || $navLetters)
+      @if($navWraps || $navLetters || $navLive)
         <div class="nav-drop">
           <button type="button" aria-expanded="false" aria-haspopup="true">
             Məhsullar
@@ -614,6 +615,9 @@
             @endif
             @if($navLetters)
               <a class="nav-item" href="{{ route('letters.create') }}"><span class="ni-ico">💌</span><span><b>{{ \App\Support\Letter::text('menu') }}</b><small>Şəkil və sözlərlə polaroid</small></span></a>
+            @endif
+            @if($navLive)
+              <a class="nav-item" href="{{ route('live.create') }}"><span class="ni-ico">🎬</span><span><b>Canlı şəkil</b><small>Telefonda canlanan şəkil (AR)</small></span></a>
             @endif
           </div>
         </div>
@@ -668,6 +672,7 @@
     <a href="{{ route('designs.index') }}">🍫 Dizaynlar</a>
     @if($navWraps)<a href="{{ route('wrappings.index') }}">🎁 Qablaşdırma</a>@endif
     @if($navLetters)<a href="{{ route('letters.create') }}">💌 {{ \App\Support\Letter::text('menu') }}</a>@endif
+    @if($navLive)<a href="{{ route('live.create') }}">🎬 Canlı şəkil</a>@endif
   </div>
   <div class="mn-group">
     <span class="mn-head">Məlumat</span>
@@ -706,7 +711,7 @@
       </div>
       <div class="footer-col">
         <h4>Naviqasiya</h4>
-        <a href="{{ route('designs.index') }}">Dizaynlar</a>@if($navWraps)<a href="{{ route('wrappings.index') }}">Qablaşdırma</a>@endif @if($navLetters)<a href="{{ route('letters.create') }}">{{ \App\Support\Letter::text('menu') }}</a>@endif
+        <a href="{{ route('designs.index') }}">Dizaynlar</a>@if($navWraps)<a href="{{ route('wrappings.index') }}">Qablaşdırma</a>@endif @if($navLetters)<a href="{{ route('letters.create') }}">{{ \App\Support\Letter::text('menu') }}</a>@endif @if($navLive)<a href="{{ route('live.create') }}">Canlı şəkil</a>@endif
         <a href="{{ route('home') }}#how">Necə İşləyir</a>
         <a href="{{ route('home') }}#faq">Suallar</a>
       </div>
@@ -810,6 +815,21 @@
     });
   });
 })();
+
+/* The hosting takes at most 30 MB a sending: say so here, before the page's
+   own work (and the customer's wait) rather than show a server error after. */
+document.addEventListener('submit', function(e){
+  var form = e.target;
+  if (!form || form.enctype !== 'multipart/form-data') return;
+  var total = 0;
+  Array.prototype.forEach.call(form.querySelectorAll('input[type=file]'), function(i){
+    Array.prototype.forEach.call(i.files || [], function(f){ total += f.size; });
+  });
+  if (total <= 27 * 1048576) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  alert('Yüklədiyiniz fayllar birlikdə ' + (total / 1048576).toFixed(1) + ' MB-dır — 27 MB-dan çox ola bilməz. Videonu qısaldın və ya şəkilləri kiçildin.');
+}, true);
 </script>
 @yield('page_script')
 </body>

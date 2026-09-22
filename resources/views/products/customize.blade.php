@@ -349,22 +349,25 @@
           </div>
         @endif
 
-        @if(\App\Models\Setting::get(\App\Models\Setting::AR_ENABLED) === '1')
-          {{-- A live photo: the customer's video plays over the box when a phone's camera sees it. --}}
+        @if(\App\Support\LiveMaterials::enabled())
+          {{-- A live photo: the customer's video plays over the box when a phone's camera sees it.
+               The box's own design becomes the picture the camera looks for, made ready on sending. --}}
           @php $arOn = (bool) old('ar_on'); @endphp
           <div class="letter-block" id="ar-block">
             <label class="letter-toggle">
               <input type="checkbox" name="ar_on" value="1" id="ar-on" @checked($arOn)>
-              <span>🎬 Canlı video (AR) — qutu telefonda canlanır</span>
-              <b>+{{ \App\Support\Price::format((float) \App\Models\Setting::get(\App\Models\Setting::AR_PRICE)) }}</b>
+              <span>🎬 Canlı şəkil (AR) — qutu telefonda canlanır</span>
+              <b>+{{ \App\Support\Price::format(\App\Support\LiveMaterials::price()) }}</b>
             </label>
             <div id="ar-fields" @unless($arOn) hidden @endunless style="margin-top:.8rem;">
               <p class="slot-hint" style="margin:0 0 .6rem;">Qutuya QR kod çap edirik. Hədiyyəni alan QR kodu oxudub telefonu qutunun şəklinə tutanda, sizin videonuz şəklin üstündə oynayır — tətbiq yükləmədən.</p>
               <label class="letter-file">
                 <input type="file" name="ar_video" id="ar-video" accept="video/mp4,video/quicktime,video/webm,video/*">
-                <span id="ar-video-name">🎬 Video seçin (MP4/MOV, 18 MB-a qədər)</span>
+                <span id="ar-video-name">🎬 Video seçin (MP4/MOV, {{ \App\Support\LiveMaterials::VIDEO_MB }} MB-a qədər)</span>
               </label>
-              <p class="slot-hint">Ən yaxşısı 10–30 saniyəlik, şaquli çəkilmiş video.</p>
+              <p class="slot-hint">Ən yaxşısı 10–30 saniyəlik, şaquli çəkilmiş video. Qutunun dizaynı kamera üçün özü hazırlanır — "Səbətə at" basanda bir neçə saniyə çəkir.</p>
+              <input type="file" name="ar_photo" id="ar-photo" hidden>
+              <input type="file" name="ar_mind" id="ar-mind" hidden>
             </div>
           </div>
         @endif
@@ -380,8 +383,8 @@
             @if($chocolates->isNotEmpty())
               <div><span id="sum-choc-name" class="sum-name">Şokolad</span><span id="sum-choc">seçilməyib</span></div>
             @endif
-            @if(\App\Models\Setting::get(\App\Models\Setting::AR_ENABLED) === '1')
-              <div id="sum-ar-row" data-price="{{ (float) \App\Models\Setting::get(\App\Models\Setting::AR_PRICE) }}" hidden><span>Canlı video (AR)</span><span>{{ \App\Support\Price::format((float) \App\Models\Setting::get(\App\Models\Setting::AR_PRICE)) }}</span></div>
+            @if(\App\Support\LiveMaterials::enabled())
+              <div id="sum-ar-row" data-price="{{ \App\Support\LiveMaterials::price() }}" hidden><span>Canlı şəkil (AR)</span><span>{{ \App\Support\Price::format(\App\Support\LiveMaterials::price()) }}</span></div>
             @endif
             @if(\App\Support\Letter::enabled())
               <div id="sum-letter-row" data-price="{{ \App\Support\Letter::price() }}" hidden><span>Polaroid məktub</span><span id="sum-letter">{{ \App\Support\Price::format(\App\Support\Letter::price()) }}</span></div>
@@ -410,6 +413,9 @@
 <script src="{{ asset('js/wrap-render.js') }}"></script>
 <script src="{{ asset('js/gift-box.js') }}"></script>
 <script src="{{ asset('js/polaroid.js') }}"></script>
+@if(\App\Support\LiveMaterials::enabled())
+<script src="{{ asset('js/live-target.js') }}"></script>
+@endif
 <script>
 (function(){
   "use strict";
@@ -564,6 +570,15 @@
 
     return mockupCanvas;
   }
+
+  /* The flat design as it is printed — the picture a live photo's camera looks for. */
+  window.nefisDesign = function(){
+    var c = document.createElement('canvas');
+    var m = renderMockup();
+    c.width = m.width; c.height = m.height;
+    c.getContext('2d').drawImage(m, 0, 0);
+    return c;
+  };
 
   function draw(){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -990,18 +1005,49 @@
   });
 })();
 
-/* The live photo: switched on, the video field opens. */
+/* The live photo: switched on, the video field opens. On sending, the box's
+   design is drawn, prepared for the camera and sent along with the video. */
 (function(){
   var on = document.getElementById('ar-on');
   if (!on) return;
+  var MAX = {{ \App\Support\LiveMaterials::VIDEO_MB }} * 1024 * 1024;
+  var form = document.getElementById('customize-form');
   var fields = document.getElementById('ar-fields');
   var file = document.getElementById('ar-video');
   var name = document.getElementById('ar-video-name');
+  var photo = document.getElementById('ar-photo');
+  var mind = document.getElementById('ar-mind');
+  var btn = document.getElementById('add-to-cart-btn');
   var label = name.textContent;
-  on.addEventListener('change', function(){ fields.hidden = !on.checked; });
+  function toggle(){
+    fields.hidden = !on.checked;
+    file.required = on.checked;
+    if (on.checked) NefisLive.preload().catch(function(){});
+  }
+  on.addEventListener('change', toggle);
+  toggle();
   file.addEventListener('change', function(){
     var f = file.files && file.files[0];
-    name.textContent = f ? '🎬 ' + f.name + (f.size > 18 * 1024 * 1024 ? ' — 18 MB-dan böyükdür!' : '') : label;
+    name.textContent = f ? '🎬 ' + f.name + (f.size > MAX ? ' — {{ \App\Support\LiveMaterials::VIDEO_MB }} MB-dan böyükdür!' : '') : label;
+  });
+
+  form.addEventListener('submit', function(e){
+    if (e.defaultPrevented || !on.checked || form.dataset.live) return;
+    var f = file.files && file.files[0];
+    if (f && f.size > MAX) { e.preventDefault(); file.focus(); name.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    e.preventDefault();
+    var text = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Canlı şəkil hazırlanır…';
+    var go = function(){ form.dataset.live = '1'; btn.textContent = 'Göndərilir…'; form.submit(); };
+    var design;
+    try { design = window.nefisDesign(); } catch (err) { go(); return; }
+    NefisLive.toBlob(NefisLive.flatten(design, 2000), 'image/jpeg', 0.9)
+      .then(function(b){ NefisLive.attach(photo, b, 'design.jpg'); })
+      .then(function(){ return NefisLive.compile(design, function(p){ btn.textContent = 'Canlı şəkil hazırlanır… ' + p + '%'; }); })
+      .then(function(blob){ NefisLive.attach(mind, blob, 'target.mind'); })
+      /* Whatever this browser could not do, the shop does by hand. */
+      .then(go, go);
   });
 })();
 

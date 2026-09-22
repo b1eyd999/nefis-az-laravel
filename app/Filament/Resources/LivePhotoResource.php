@@ -8,6 +8,7 @@ use App\Models\LivePhoto;
 use App\Support\YandexDisk;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -44,11 +45,13 @@ class LivePhotoResource extends Resource
                         Forms\Components\TextInput::make('video_url')
                             ->label('Video — Yandex Disk linki')
                             ->placeholder('https://disk.yandex.ru/i/…')
-                            ->helperText('Videonu Yandex Diskə yükləyin, "Paylaş" edin və linki bura yapışdırın. Video hostinqdə saxlanmır.')
-                            ->required()
+                            ->helperText(fn (?LivePhoto $record) => $record?->videoPlace() === 'hosting'
+                                ? 'Müştərinin videosu hələ hostinqdədir — Yandex Disk qoşulanda özü köçəcək.'
+                                : 'Videonu Yandex Diskə yükləyin, "Paylaş" edin və linki bura yapışdırın. Video hostinqdə saxlanmır.')
+                            ->required(fn (?LivePhoto $record) => blank($record?->video_path))
                             ->maxLength(500)
                             ->rule(fn () => function (string $attribute, $value, \Closure $fail) {
-                                if (! YandexDisk::isPublicLink($value)) {
+                                if (filled($value) && ! YandexDisk::isPublicLink($value)) {
                                     $fail('Bu Yandex Disk linki deyil. Link belə görünməlidir: https://disk.yandex.ru/i/…');
                                 }
                             }),
@@ -81,6 +84,9 @@ class LivePhotoResource extends Resource
                     ->description(fn (LivePhoto $l) => $l->url()),
                 Tables\Columns\IconColumn::make('ready')->label('Hazır')->boolean()
                     ->getStateUsing(fn (LivePhoto $l) => filled($l->target_mind)),
+                Tables\Columns\TextColumn::make('video_place')->label('Video')
+                    ->getStateUsing(fn (LivePhoto $l) => match ($l->videoPlace()) { 'yandex' => 'Yandex Disk', 'hosting' => 'Hostinqdə', default => '—' })
+                    ->badge()->color(fn (string $state) => $state === 'Yandex Disk' ? 'success' : 'warning'),
                 Tables\Columns\TextColumn::make('views')->label('Baxış')->sortable(),
                 Tables\Columns\TextColumn::make('orderItem.order_id')->label('Sifariş')
                     ->formatStateUsing(fn ($state) => $state ? '#' . $state : null)->placeholder('—'),
@@ -90,11 +96,28 @@ class LivePhotoResource extends Resource
             ->actions([
                 Tables\Actions\Action::make('open')->label('Aç')->icon('heroicon-o-arrow-top-right-on-square')
                     ->url(fn (LivePhoto $l) => $l->url())->openUrlInNewTab(),
+                Tables\Actions\Action::make('push')->label('Yandex-ə köçür')->icon('heroicon-o-cloud-arrow-up')->color('warning')
+                    ->visible(fn (LivePhoto $l) => $l->videoPlace() === 'hosting')
+                    ->action(fn (LivePhoto $l) => static::pushNow($l)),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->emptyStateHeading('Hələ canlı şəkil yoxdur')
             ->emptyStateDescription('Şəkil və video əlavə edin — QR kodu qutuya çap edin, müştəri telefonu tutanda şəkil canlanacaq.');
+    }
+
+    /** Moves one customer's video to Yandex Disk now, telling the owner how it went. */
+    public static function pushNow(LivePhoto $live): void
+    {
+        if (! YandexDisk::hasToken()) {
+            Notification::make()->warning()->title('Yandex Disk qoşulmayıb')->body('"Canlı şəkillər" siyahısında "Yandex Diski qoşun" düyməsini basın.')->send();
+
+            return;
+        }
+        @set_time_limit(600);
+        $live->pushVideo()
+            ? Notification::make()->success()->title('Video Yandex Diskə köçdü')->send()
+            : Notification::make()->danger()->title('Köçürmək alınmadı')->body('Bir az sonra yenidən yoxlayın.')->send();
     }
 
     public static function getPages(): array

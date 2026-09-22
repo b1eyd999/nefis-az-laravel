@@ -11,7 +11,7 @@ class OrderController extends Controller
     {
         $orders = $request->user()
             ->orders()
-            ->with('items.product')
+            ->with(['items.product', 'items.livePhotos'])
             ->latest()
             ->get();
 

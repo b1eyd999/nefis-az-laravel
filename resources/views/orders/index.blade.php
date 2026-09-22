@@ -36,7 +36,8 @@
             </div>
             @foreach($order->items as $item)
               @php
-                $photo = ($item->customer_photos ?? [])[0] ?? $item->customer_photo ?? $item->product?->catalogImage();
+                $live = $item->ar_price !== null ? $item->livePhotos->sortByDesc('id')->first() : null;
+                $photo = ($item->customer_photos ?? [])[0] ?? $item->customer_photo ?? $item->product?->catalogImage() ?? $live?->target_image;
                 $texts = collect($item->fields()['texts'])->reject(fn ($t) => $t['fixed'] || $t['value'] === '')->pluck('value')->all();
               @endphp
               <div class="cart-row" style="background:var(--cream); margin-bottom:.5rem;">
@@ -61,7 +62,11 @@
                     <p style="margin-top:.2rem;">🎁 Qablaşdırma: {{ $item->wrapping_name }}</p>
                   @endif
                   @if($item->ar_price !== null)
-                    <p style="margin-top:.2rem;">🎬 Canlı video (AR)</p>
+                    <p style="margin-top:.2rem;">🎬 Canlı şəkil (AR)
+                      @if($live && ! $order->awaitsPayment() && $order->status !== 'cancelled')
+                        &middot; <a href="{{ $live->url() }}" target="_blank" rel="noopener" style="text-decoration:underline;">{{ $live->isReady() ? 'Canlı şəklə bax' : 'hazırlanır' }}</a>
+                      @endif
+                    </p>
                   @endif
                   @if($item->hasLetter() && ! $item->isLetterOnly())
                     <p style="margin-top:.2rem;">💌 Polaroid məktub</p>

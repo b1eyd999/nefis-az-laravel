@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Support\Media;
+use App\Support\YandexDisk;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -14,7 +16,7 @@ use Illuminate\Support\Str;
  */
 class LivePhoto extends Model
 {
-    protected $fillable = ['title', 'target_image', 'target_mind', 'video_url', 'order_item_id', 'is_active'];
+    protected $fillable = ['title', 'target_image', 'target_mind', 'video_url', 'video_path', 'order_item_id', 'is_active'];
 
     protected function casts(): array
     {
@@ -41,8 +43,86 @@ class LivePhoto extends Model
             }
         });
 
-        // The video stays where it is, on Yandex Disk.
-        static::deleted(fn (LivePhoto $live) => Storage::disk('public')->delete(array_filter([$live->target_image, $live->target_mind])));
+        // A video on Yandex Disk stays there; one still waiting on the hosting goes.
+        static::deleted(fn (LivePhoto $live) => Storage::disk('public')->delete(array_filter([$live->target_image, $live->target_mind, $live->video_path])));
+    }
+
+    /**
+     * The live photo a customer ordered, made the moment the order is placed:
+     * their picture, the tracking data their browser made from it and their
+     * video, which is then handed to Yandex Disk.
+     *
+     * @param  array{video: string, image: ?string, mind: ?string}  $ar
+     */
+    public static function makeFor(OrderItem $item, array $ar): self
+    {
+        $disk = Storage::disk('public');
+        // Without a picture of its own (an old browser), the box's first photo stands in.
+        $image = $ar['image'] ?? null;
+        $borrowed = $image === null ? (($item->customer_photos ?? [])[0] ?? null) : null;
+
+        $live = static::create([
+            'title' => 'Sifariş #' . $item->order_id . ' — ' . ($item->product_name ?? 'Canlı şəkil'),
+            'target_image' => '',
+            'video_path' => $ar['video'],
+            'order_item_id' => $item->id,
+            'is_active' => true,
+        ]);
+
+        $dir = 'live/' . $live->id . '/';
+        $moves = [];
+        foreach (['target_image' => $image, 'target_mind' => $ar['mind'] ?? null, 'video_path' => $ar['video']] as $column => $path) {
+            if ($path && $disk->exists($path)) {
+                $to = $dir . basename($path);
+                $disk->move($path, $to);
+                $moves[$column] = $to;
+            }
+        }
+        if ($borrowed && $disk->exists($borrowed)) {
+            $moves['target_image'] = $dir . 'photo-' . basename($borrowed);
+            $disk->copy($borrowed, $moves['target_image']);
+        }
+        $live->forceFill($moves)->saveQuietly();
+
+        return $live;
+    }
+
+    /**
+     * Hands a video still on the hosting to the owner's Yandex Disk and
+     * deletes it here. Leaves it be (to try again later) when that fails.
+     */
+    public function pushVideo(): bool
+    {
+        $disk = Storage::disk('public');
+        if ($this->video_url || ! $this->video_path || ! YandexDisk::hasToken() || ! $disk->exists($this->video_path)) {
+            return false;
+        }
+
+        $name = ($this->orderItem ? 'sifaris-' . $this->orderItem->order_id . '-' : '') . $this->code
+            . '.' . (pathinfo($this->video_path, PATHINFO_EXTENSION) ?: 'mp4');
+        try {
+            $link = YandexDisk::upload($disk->path($this->video_path), $name);
+        } catch (\RuntimeException $e) {
+            Log::warning('Live photo video not moved to Yandex Disk', ['live_photo' => $this->id, 'error' => $e->getMessage()]);
+
+            return false;
+        }
+
+        $local = $this->video_path;
+        $this->forceFill(['video_url' => $link, 'video_path' => null])->saveQuietly();
+        $disk->delete($local);
+
+        return true;
+    }
+
+    /** Where the video is now: 'yandex', 'hosting' (waiting to be moved) or null. */
+    public function videoPlace(): ?string
+    {
+        return match (true) {
+            filled($this->video_url) => 'yandex',
+            filled($this->video_path) => 'hosting',
+            default => null,
+        };
     }
 
     public function orderItem(): BelongsTo
@@ -52,7 +132,7 @@ class LivePhoto extends Model
 
     public function isReady(): bool
     {
-        return $this->is_active && filled($this->target_mind);
+        return $this->is_active && filled($this->target_mind) && $this->videoPlace() !== null;
     }
 
     /** Where the QR code leads. */
@@ -66,7 +146,7 @@ class LivePhoto extends Model
         return Media::url($this->target_image);
     }
 
-    /** The video goes through this site only as a redirect to Yandex Disk. */
+    /** The video goes through this site only as a redirect (to Yandex Disk, once it is there). */
     public function videoUrl(): string
     {
         return route('live.video', $this->code);

@@ -2,7 +2,10 @@
 
 namespace App\Support;
 
+use App\Models\Setting;
+use GuzzleHttp\Psr7\Utils;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -104,6 +107,126 @@ class YandexDisk
                 return null;
             }
         });
+    }
+
+    /* ---------- the owner's own disk: where customers' videos are put ---------- */
+
+    private const DISK = 'https://cloud-api.yandex.net/v1/disk';
+
+    public static function hasToken(): bool
+    {
+        return self::token() !== null;
+    }
+
+    /** The owner's OAuth token, kept encrypted in the settings. */
+    public static function token(): ?string
+    {
+        $stored = Setting::get(Setting::YANDEX_TOKEN);
+        if (blank($stored)) {
+            return null;
+        }
+        try {
+            return Crypt::decryptString($stored);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    public static function saveToken(?string $token): void
+    {
+        $token = trim((string) $token);
+        Setting::put(Setting::YANDEX_TOKEN, $token === '' ? '' : Crypt::encryptString($token));
+    }
+
+    /**
+     * Whose disk the token opens, and how much room is left — to show the owner it works.
+     *
+     * @return array{name: string, free_gb: float}
+     *
+     * @throws RuntimeException with a message for the owner
+     */
+    public static function account(?string $token = null): array
+    {
+        $info = self::disk('get', '/', [], $token);
+
+        return [
+            'name' => (string) ($info['user']['display_name'] ?? $info['user']['login'] ?? '—'),
+            'free_gb' => round(max(0, ($info['total_space'] ?? 0) - ($info['used_space'] ?? 0)) / 1073741824, 1),
+        ];
+    }
+
+    /**
+     * Puts a file on the owner's disk, in the videos' folder, shares it and
+     * returns its public link ("https://disk.yandex.ru/i/…").
+     *
+     * @throws RuntimeException with a message for the owner
+     */
+    public static function upload(string $localPath, string $name): string
+    {
+        if (! is_file($localPath)) {
+            throw new RuntimeException('Fayl hostinqdə tapılmadı.');
+        }
+        $folder = trim(str_replace(['\\', '/'], ' ', (string) Setting::get(Setting::YANDEX_FOLDER)));
+        $folder = 'disk:/' . ($folder !== '' ? $folder : 'Nefis');
+        $path = $folder . '/' . $name;
+
+        self::disk('put', '/resources', ['path' => $folder], null, [409]);   // 409: the folder is already there
+        $href = self::disk('get', '/resources/upload', ['path' => $path, 'overwrite' => 'true'])['href'] ?? null;
+        if (! $href) {
+            throw new RuntimeException('Yandex Disk yükləmə ünvanı vermədi.');
+        }
+
+        $stream = fopen($localPath, 'rb');
+        try {
+            $sent = Http::timeout(600)->withBody(Utils::streamFor($stream), 'application/octet-stream')->put($href);
+        } catch (\Throwable $e) {
+            throw new RuntimeException('Videonu Yandex Diskə yükləmək alınmadı: ' . $e->getMessage());
+        } finally {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }
+        if (! in_array($sent->status(), [201, 202], true)) {
+            throw new RuntimeException('Yandex Disk videonu qəbul etmədi (' . $sent->status() . ').');
+        }
+
+        self::disk('put', '/resources/publish', ['path' => $path]);
+        $link = self::disk('get', '/resources', ['path' => $path, 'fields' => 'public_url'])['public_url'] ?? null;
+        if (! $link) {
+            throw new RuntimeException('Yandex Disk video üçün link vermədi.');
+        }
+
+        return $link;
+    }
+
+    private static function disk(string $method, string $path, array $query, ?string $token = null, array $fine = []): array
+    {
+        $token ??= self::token();
+        if (! $token) {
+            throw new RuntimeException('Yandex Disk qoşulmayıb: tokeni "Canlı şəkillər" bölməsində əlavə edin.');
+        }
+        try {
+            $request = Http::timeout(20)->acceptJson()->withHeaders(['Authorization' => 'OAuth ' . $token]);
+            $url = self::DISK . $path . ($query ? '?' . http_build_query($query) : '');
+            $response = $method === 'put' ? $request->put($url) : $request->get($url);
+        } catch (\Throwable $e) {
+            throw new RuntimeException('Yandex Disk cavab vermədi. Bir az sonra yenidən yoxlayın.');
+        }
+
+        if (in_array($response->status(), $fine, true)) {
+            return [];
+        }
+        if ($response->status() === 401) {
+            throw new RuntimeException('Yandex Disk tokeni qəbul etmədi — yeni token alıb yenidən əlavə edin.');
+        }
+        if ($response->status() === 507) {
+            throw new RuntimeException('Yandex Diskdə yer qalmayıb.');
+        }
+        if (! $response->successful()) {
+            throw new RuntimeException('Yandex Disk cavab vermədi (' . $response->status() . '). Bir az sonra yenidən yoxlayın.');
+        }
+
+        return $response->json() ?? [];
     }
 
     private static function api(string $path, array $query): array

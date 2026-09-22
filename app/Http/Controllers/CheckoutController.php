@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DeliveryMethod;
+use App\Models\LivePhoto;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\PaymentAccount;
@@ -24,7 +25,7 @@ class CheckoutController extends Controller
 
                 return $item;
             })
-            ->filter(fn (array $item) => $item['product'] !== null || Cart::isLetter($item))
+            ->filter(fn (array $item) => $item['product'] !== null || Cart::isExtra($item))
             ->values();
 
         if ($items->isEmpty()) {
@@ -40,7 +41,7 @@ class CheckoutController extends Controller
     public function store(Request $request): RedirectResponse
     {
         // A cart can outlive the designs it was filled from.
-        $items = array_filter(Cart::items(), fn (array $item) => Cart::isLetter($item)
+        $items = array_filter(Cart::items(), fn (array $item) => Cart::isExtra($item)
             || Product::whereKey($item['product_id'])->exists());
 
         if (empty($items)) {
@@ -60,7 +61,22 @@ class CheckoutController extends Controller
             'note' => $request->input('note'),
         ]);
 
+        $lives = [];
         foreach ($items as $item) {
+            if (Cart::isLive($item)) {
+                $line = $order->items()->create([
+                    'product_id' => null,
+                    'product_name' => 'Canlı şəkil',
+                    'customer_photos' => [],
+                    'custom_texts' => [],
+                    'quantity' => 1,
+                    'ar_price' => $item['ar']['price'] ?? 0,
+                ]);
+                $lives[] = LivePhoto::makeFor($line, $item['ar']);
+
+                continue;
+            }
+
             if (Cart::isLetter($item)) {
                 $order->items()->create([
                     'product_id' => null,
@@ -78,7 +94,7 @@ class CheckoutController extends Controller
 
             $product = Product::find($item['product_id']);
 
-            $order->items()->create([
+            $line = $order->items()->create([
                 'product_id' => $product->id,
                 'product_name' => $product->name,
                 'customer_photos' => $item['photo_paths'],
@@ -99,9 +115,21 @@ class CheckoutController extends Controller
                 'letter_text' => $item['letter']['text'] ?? null,
                 'letter_photo' => $item['letter']['photo'] ?? null,
                 'letter_price' => isset($item['letter']) ? ($item['letter']['price'] ?? 0) : null,
-                'ar_video' => $item['ar']['video'] ?? null,
                 'ar_price' => isset($item['ar']) ? ($item['ar']['price'] ?? 0) : null,
             ]);
+            if (! empty($item['ar'])) {
+                $lives[] = LivePhoto::makeFor($line, $item['ar']);
+            }
+        }
+
+        // The customers' videos go on to Yandex Disk once the page has been answered.
+        if ($lives) {
+            defer(function () use ($lives) {
+                @set_time_limit(600);
+                foreach ($lives as $live) {
+                    $live->pushVideo();
+                }
+            });
         }
 
         // The boxes' materials come out of stock now.

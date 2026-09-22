@@ -30,6 +30,8 @@ Route::get('/mektub', [LetterController::class, 'create'])->name('letters.create
 Route::post('/mektub', [LetterController::class, 'store'])->name('letters.store');
 
 // Live photos: the page a box's QR code opens, and the tracking data the admin's browser makes.
+Route::get('/canli-sekil', [LivePhotoController::class, 'create'])->name('live.create');
+Route::post('/canli-sekil', [LivePhotoController::class, 'store'])->name('live.store');
 Route::get('/canli/{code}', [LivePhotoController::class, 'show'])->where('code', '[a-z0-9]{4,16}')->name('live.show');
 Route::get('/canli/{code}/video', [LivePhotoController::class, 'video'])->where('code', '[a-z0-9]{4,16}')->name('live.video');
 Route::post('/canli-hazirla/{livePhoto}', [LivePhotoController::class, 'storeMind'])->middleware('auth')->name('live.mind');

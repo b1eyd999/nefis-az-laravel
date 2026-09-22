@@ -15,8 +15,9 @@ class Cart
      *             'chocolate' => ?array{id: int, name: string, price: float},
      *             'wrapping' => ?array{id: int, name: string, price: float},
      *             'letter' => ?array{text: ?string, photo: ?string, price: float},
-     *             'ar' => ?array{video: string, price: float}]
-     * A Polaroid letter ordered on its own is a line with 'kind' => 'letter' and no product.
+     *             'ar' => ?array{video: string, image: ?string, mind: ?string, price: float}]
+     * A Polaroid letter ordered on its own is a line with 'kind' => 'letter' and no product;
+     * a live photo ordered on its own, 'kind' => 'live'.
      */
     public static function items(): array
     {
@@ -67,6 +68,33 @@ class Cart
     public static function isLetter(array $item): bool
     {
         return ($item['kind'] ?? 'box') === 'letter';
+    }
+
+    /** A live photo bought on its own: the customer's picture and video, no box. */
+    public static function addLive(array $ar): void
+    {
+        $items = self::items();
+        $items[] = [
+            'id' => Str::uuid()->toString(),
+            'kind' => 'live',
+            'product_id' => null,
+            'photo_paths' => [],
+            'custom_texts' => [],
+            'quantity' => 1,
+            'ar' => $ar,
+        ];
+        Session::put(self::KEY, $items);
+    }
+
+    public static function isLive(array $item): bool
+    {
+        return ($item['kind'] ?? 'box') === 'live';
+    }
+
+    /** A line without a box: a letter or a live photo on its own. */
+    public static function isExtra(array $item): bool
+    {
+        return self::isLetter($item) || self::isLive($item);
     }
 
     /** One of a line: the box, the bar inside it, the paper around it and the letter in it. */

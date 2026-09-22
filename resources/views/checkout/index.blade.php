@@ -203,10 +203,12 @@
 
     <div class="cart-list">
       @foreach($items as $item)
-        @php $texts = array_filter($item['custom_texts'] ?? []); $isLetter = \App\Support\Cart::isLetter($item); @endphp
+        @php $texts = array_filter($item['custom_texts'] ?? []); $isLetter = \App\Support\Cart::isLetter($item); $isLive = \App\Support\Cart::isLive($item); @endphp
         <div class="cart-row">
           <div class="thumb">
-            @if($isLetter)
+            @if($isLive)
+              <img src="{{ \App\Support\Media::url($item['ar']['image'] ?? null) }}" alt="Canlı şəkil">
+            @elseif($isLetter)
               <div class="thumb-polaroid">@include('partials.polaroid', ['photo' => \App\Support\Media::url($item['letter']['photo'] ?? null), 'text' => $item['letter']['text'] ?? null])</div>
             @elseif(! empty($item['photo_paths']))
               <img src="{{ \App\Support\Media::url($item['photo_paths'][0]) }}" alt="Yüklənmiş şəkil">
@@ -218,7 +220,7 @@
             @endif
           </div>
           <div class="info">
-            <h3>{{ $isLetter ? 'Polaroid məktub' : $item['product']->name }}</h3>
+            <h3>{{ $isLive ? 'Canlı şəkil' : ($isLetter ? 'Polaroid məktub' : $item['product']->name) }}</h3>
             <p>
               @if($texts) "{{ implode('" · "', $texts) }}" &middot; @endif
               {{ $item['quantity'] }} ədəd
@@ -231,8 +233,8 @@
             @if(! empty($item['wrapping']))
               <p style="margin-top:.2rem;">🎁 Qablaşdırma: {{ $item['wrapping']['name'] }}</p>
             @endif
-            @if(! empty($item['ar']))
-              <p style="margin-top:.2rem;">🎬 Canlı video (AR)</p>
+            @if(! empty($item['ar']) && ! $isLive)
+              <p style="margin-top:.2rem;">🎬 Canlı şəkil (AR)</p>
             @endif
             @if(! empty($item['letter']) && ! $isLetter)
               <p style="margin-top:.2rem;">💌 Polaroid məktub</p>

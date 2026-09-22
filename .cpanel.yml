@@ -24,3 +24,5 @@ deployment:
     # Chocolate bars and their prices (promotions included) from Araz Market.
     # A failure only reports; the bars keep their last prices.
     - cd $APPPATH && $PHPBIN artisan chocolates:sync 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
+    # Customers' live-photo videos that could not reach Yandex Disk yet.
+    - cd $APPPATH && $PHPBIN artisan live:push 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
