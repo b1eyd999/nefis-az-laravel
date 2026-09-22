@@ -236,7 +236,8 @@ class YandexDisk
         try {
             $request = Http::timeout(20)->acceptJson()->withHeaders(['Authorization' => 'OAuth ' . $token]);
             $url = self::DISK . $path . ($query ? '?' . http_build_query($query) : '');
-            $response = $method === 'put' ? $request->put($url) : $request->get($url);
+            // Yandex refuses a PUT that carries a body (Laravel's put() would send "[]").
+            $response = $method === 'put' ? $request->send('PUT', $url) : $request->get($url);
         } catch (\Throwable $e) {
             throw new RuntimeException('Yandex Disk cavab vermədi. Bir az sonra yenidən yoxlayın.');
         }

@@ -215,6 +215,10 @@ class LivePhotoTest extends TestCase
         Http::fake(function ($request) {
             $url = urldecode($request->url());
             $d = &$this->disk;
+            // As Yandex does: the API's PUTs take no body.
+            if ($request->method() === 'PUT' && str_contains($url, 'cloud-api.yandex.net') && $request->body() !== '') {
+                return Http::response(['error' => 'FieldValidationError', 'message' => 'Запрос не должен содержать данных.'], 400);
+            }
             if (str_contains($url, '/resources/upload')) {
                 return Http::response(['href' => 'https://uploader1.disk.yandex.net/upload/abc', 'method' => 'PUT']);
             }
