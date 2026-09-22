@@ -91,8 +91,12 @@ class LivePhoto extends Model
      * Hands a video still on the hosting to the owner's Yandex Disk and
      * deletes it here. Leaves it be (to try again later) when that fails.
      */
+    /** Why the last move to Yandex Disk did not happen, for the owner. */
+    public ?string $pushError = null;
+
     public function pushVideo(): bool
     {
+        $this->pushError = null;
         $disk = Storage::disk('public');
         if ($this->video_url || ! $this->video_path || ! YandexDisk::hasToken() || ! $disk->exists($this->video_path)) {
             return false;
@@ -103,7 +107,9 @@ class LivePhoto extends Model
         try {
             $link = YandexDisk::upload($disk->path($this->video_path), $name);
         } catch (\RuntimeException $e) {
-            Log::warning('Live photo video not moved to Yandex Disk', ['live_photo' => $this->id, 'error' => $e->getMessage()]);
+            // At error level: the hosting's log keeps nothing quieter.
+            Log::error('Live photo video not moved to Yandex Disk', ['live_photo' => $this->id, 'error' => $e->getMessage()]);
+            $this->pushError = $e->getMessage();
 
             return false;
         }

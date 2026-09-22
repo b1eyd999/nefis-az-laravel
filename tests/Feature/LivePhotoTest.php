@@ -17,6 +17,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Sleep;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -200,22 +201,104 @@ class LivePhotoTest extends TestCase
     }
 
     /** The owner's own disk: making the folder, the upload, sharing and the public link. */
-    private function fakeOwnerDisk(): void
-    {
-        Http::fake(function ($request) {
-            $url = $request->url();
+    /** What the fake owner's disk holds: filled in by the upload, the sharing and Yandex's processing. */
+    private array $disk = [];
 
-            return match (true) {
-                str_contains($url, '/resources/upload') => Http::response(['href' => 'https://uploader1.disk.yandex.net/upload/abc', 'method' => 'PUT']),
-                str_starts_with($url, 'https://uploader1.disk.yandex.net') => Http::response('', 201),
-                str_contains($url, '/resources/publish') => Http::response(['href' => 'https://cloud-api.yandex.net/v1/disk/resources?path=x']),
-                str_contains($url, 'fields=public_url') => Http::response(['public_url' => 'https://yadi.sk/i/customerVid1']),
-                str_contains($url, '/v1/disk/resources?') && $request->method() === 'PUT' => Http::response(['href' => 'x'], 201),
-                parse_url($url, PHP_URL_PATH) === '/v1/disk/' => Http::response(['user' => ['display_name' => 'Nefis Şokolad'], 'total_space' => 10737418240, 'used_space' => 1073741824]),
-                str_contains($url, 'public/resources/download') => Http::response(['href' => 'https://downloader.disk.yandex.ru/disk/customer.mp4']),
-                default => Http::response([], 404),
-            };
+    /**
+     * The owner's own disk: making the folder, the upload, Yandex taking a big
+     * file in for a while ($slow checks answer "not there yet"), sharing, the link.
+     */
+    private function fakeOwnerDisk(int $slow = 0, array $start = []): void
+    {
+        Sleep::fake();
+        $this->disk = $start + ['size' => null, 'shared' => false, 'uploads' => 0, 'slow' => $slow];
+        Http::fake(function ($request) {
+            $url = urldecode($request->url());
+            $d = &$this->disk;
+            if (str_contains($url, '/resources/upload')) {
+                return Http::response(['href' => 'https://uploader1.disk.yandex.net/upload/abc', 'method' => 'PUT']);
+            }
+            if (str_starts_with($url, 'https://uploader1.disk.yandex.net')) {
+                $d['uploads']++;
+                $d['pending'] = strlen($request->body());
+
+                return Http::response('', 202);   // accepted, still being taken in
+            }
+            if (str_contains($url, 'fields=size,public_url')) {
+                if (isset($d['pending']) && $d['slow']-- <= 0) {
+                    $d['size'] = $d['pending'];
+                    unset($d['pending']);
+                }
+
+                return $d['size'] === null ? Http::response(['error' => 'DiskNotFoundError'], 404)
+                    : Http::response(['size' => $d['size'], 'public_url' => $d['shared'] ? 'https://yadi.sk/i/customerVid1' : null]);
+            }
+            if (str_contains($url, '/resources/publish')) {
+                if ($d['size'] === null) {
+                    return Http::response(['error' => 'DiskNotFoundError', 'message' => 'Не удалось найти запрошенный ресурс.'], 404);
+                }
+                $d['shared'] = true;
+
+                return Http::response(['href' => 'x']);
+            }
+            if (str_contains($url, 'fields=public_url')) {
+                return Http::response(['public_url' => $d['shared'] ? 'https://yadi.sk/i/customerVid1' : null]);
+            }
+            if (str_contains($url, '/v1/disk/resources?') && $request->method() === 'PUT') {
+                return Http::response(['href' => 'x'], 201);
+            }
+            if (parse_url($url, PHP_URL_PATH) === '/v1/disk/') {
+                return Http::response(['user' => ['display_name' => 'Nefis Şokolad'], 'total_space' => 10737418240, 'used_space' => 1073741824]);
+            }
+            if (str_contains($url, 'public/resources/download')) {
+                return Http::response(['href' => 'https://downloader.disk.yandex.ru/disk/customer.mp4']);
+            }
+
+            return Http::response([], 404);
         });
+    }
+
+    private function waitingLive(int $kb = 300): LivePhoto
+    {
+        Storage::disk('public')->put('live/9/film.mp4', str_repeat('v', $kb * 1024));
+
+        return LivePhoto::create(['title' => 'X', 'target_image' => 'live/pic.png', 'video_path' => 'live/9/film.mp4', 'is_active' => true]);
+    }
+
+    public function test_a_big_video_is_shared_once_yandex_has_taken_it_in(): void
+    {
+        $this->fakeOwnerDisk(slow: 3);
+        \App\Support\YandexDisk::saveToken('y0_owner_token');
+        $live = $this->waitingLive();
+
+        $this->assertTrue($live->pushVideo());
+        $this->assertSame(['https://yadi.sk/i/customerVid1', null, 1], [$live->video_url, $live->video_path, $this->disk['uploads']]);
+        Storage::disk('public')->assertMissing('live/9/film.mp4');
+        Sleep::assertSleptTimes(3);
+    }
+
+    public function test_a_video_already_on_the_disk_is_only_shared(): void
+    {
+        $live = $this->waitingLive();
+        $this->fakeOwnerDisk(start: ['size' => 300 * 1024]);   // uploaded by an earlier try, never shared
+        \App\Support\YandexDisk::saveToken('y0_owner_token');
+
+        $this->artisan('live:push')->expectsOutputToContain('moved to Yandex Disk: 1 of 1')->assertSuccessful();
+        $this->assertSame(0, $this->disk['uploads']);
+        $this->assertSame('https://yadi.sk/i/customerVid1', $live->fresh()->video_url);
+    }
+
+    public function test_the_reason_a_move_failed_is_told(): void
+    {
+        $live = $this->waitingLive();
+        \App\Support\YandexDisk::saveToken('y0_owner_token');
+        Http::fake(['cloud-api.yandex.net/*' => Http::response(['error' => 'DiskPathDoesntExistsError', 'message' => 'Указанного пути не существует.'], 409)]);
+
+        $this->artisan('live:push')
+            ->expectsOutputToContain('Live photo #' . $live->id . ': Yandex Disk cavab vermədi (409')
+            ->expectsOutputToContain('moved to Yandex Disk: 0 of 1')
+            ->assertSuccessful();
+        $this->assertSame('hosting', $live->fresh()->videoPlace());
     }
 
     private function mind(): UploadedFile

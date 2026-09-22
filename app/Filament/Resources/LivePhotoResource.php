@@ -117,7 +117,7 @@ class LivePhotoResource extends Resource
         @set_time_limit(600);
         $live->pushVideo()
             ? Notification::make()->success()->title('Video Yandex Diskə köçdü')->send()
-            : Notification::make()->danger()->title('Köçürmək alınmadı')->body('Bir az sonra yenidən yoxlayın.')->send();
+            : Notification::make()->danger()->title('Köçürmək alınmadı')->body($live->pushError ?? 'Bir az sonra yenidən yoxlayın.')->persistent()->send();
     }
 
     public static function getPages(): array

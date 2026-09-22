@@ -7,6 +7,8 @@ use GuzzleHttp\Psr7\Utils;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Sleep;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
@@ -170,7 +172,41 @@ class YandexDisk
         $folder = 'disk:/' . ($folder !== '' ? $folder : 'Nefis');
         $path = $folder . '/' . $name;
 
+        $size = filesize($localPath);
         self::disk('put', '/resources', ['path' => $folder], null, [409]);   // 409: the folder is already there
+
+        // Already there from an earlier try (the upload went through, the sharing did not): only share it.
+        $there = self::disk('get', '/resources', ['path' => $path, 'fields' => 'size,public_url'], null, [404]);
+        if ((int) ($there['size'] ?? -1) !== $size) {
+            self::put($path, $localPath);
+            // A big file is still being taken in when the upload answers (202): wait until it is on the disk.
+            for ($try = 0; $try < 45; $try++) {
+                $there = self::disk('get', '/resources', ['path' => $path, 'fields' => 'size,public_url'], null, [404]);
+                if ((int) ($there['size'] ?? -1) === $size) {
+                    break;
+                }
+                Sleep::for(2)->seconds();
+            }
+            if ((int) ($there['size'] ?? -1) !== $size) {
+                throw new RuntimeException('Yandex Disk videonu hələ emal edir — bir az sonra yenidən köçürün.');
+            }
+        }
+
+        if (filled($there['public_url'] ?? null)) {
+            return $there['public_url'];
+        }
+        self::disk('put', '/resources/publish', ['path' => $path]);
+        $link = self::disk('get', '/resources', ['path' => $path, 'fields' => 'public_url'])['public_url'] ?? null;
+        if (! $link) {
+            throw new RuntimeException('Yandex Disk video üçün link vermədi.');
+        }
+
+        return $link;
+    }
+
+    /** Sends the file itself to the address Yandex Disk hands out for it. */
+    private static function put(string $path, string $localPath): void
+    {
         $href = self::disk('get', '/resources/upload', ['path' => $path, 'overwrite' => 'true'])['href'] ?? null;
         if (! $href) {
             throw new RuntimeException('Yandex Disk yükləmə ünvanı vermədi.');
@@ -189,14 +225,6 @@ class YandexDisk
         if (! in_array($sent->status(), [201, 202], true)) {
             throw new RuntimeException('Yandex Disk videonu qəbul etmədi (' . $sent->status() . ').');
         }
-
-        self::disk('put', '/resources/publish', ['path' => $path]);
-        $link = self::disk('get', '/resources', ['path' => $path, 'fields' => 'public_url'])['public_url'] ?? null;
-        if (! $link) {
-            throw new RuntimeException('Yandex Disk video üçün link vermədi.');
-        }
-
-        return $link;
     }
 
     private static function disk(string $method, string $path, array $query, ?string $token = null, array $fine = []): array
@@ -223,7 +251,8 @@ class YandexDisk
             throw new RuntimeException('Yandex Diskdə yer qalmayıb.');
         }
         if (! $response->successful()) {
-            throw new RuntimeException('Yandex Disk cavab vermədi (' . $response->status() . '). Bir az sonra yenidən yoxlayın.');
+            throw new RuntimeException('Yandex Disk cavab vermədi (' . $response->status() . ': ' . $path . ' — '
+                . Str::limit((string) ($response->json('message') ?? $response->json('error') ?? ''), 120) . ').');
         }
 
         return $response->json() ?? [];

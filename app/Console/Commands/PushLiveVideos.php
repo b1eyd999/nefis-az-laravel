@@ -31,7 +31,14 @@ class PushLiveVideos extends Command
         }
 
         @set_time_limit(0);
-        $moved = $waiting->filter(fn (LivePhoto $live) => $live->pushVideo())->count();
+        $moved = $waiting->filter(function (LivePhoto $live) {
+            if ($live->pushVideo()) {
+                return true;
+            }
+            $this->warn("Live photo #{$live->id}: " . ($live->pushError ?? 'the video file is not on the hosting.'));
+
+            return false;
+        })->count();
         $this->info("Live-photo videos moved to Yandex Disk: {$moved} of {$waiting->count()}.");
 
         return self::SUCCESS;
