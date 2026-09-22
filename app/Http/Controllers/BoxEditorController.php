@@ -191,7 +191,9 @@ class BoxEditorController extends Controller
                     'shadow_blur' => (int) round($t['shadow_blur'] ?? 0),
                     'shadow_x' => (int) round($t['shadow_x'] ?? 0),
                     'shadow_y' => (int) round($t['shadow_y'] ?? 0),
-                    'max_lines' => $t['max_lines'], 'max_length' => $t['max_length'],
+                    // The owner's own wording always fits the slot it is written in.
+                    'max_lines' => $t['max_lines'],
+                    'max_length' => min(255, max((int) $t['max_length'], mb_strlen((string) ($t['default_value'] ?? '')))),
                     'link_key' => $t['link_key'] ?? null,
                     'sort_order' => $order,
                 ]);

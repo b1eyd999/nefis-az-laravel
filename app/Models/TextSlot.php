@@ -54,6 +54,15 @@ class TextSlot extends Model
         return $this->kind === self::KIND_TIME;
     }
 
+    /**
+     * How long the customer's text may be. Never shorter than the design's
+     * own wording: a customer who leaves it as it is must not be turned away.
+     */
+    public function limit(): int
+    {
+        return max(1, (int) $this->max_length, mb_strlen((string) $this->default_value));
+    }
+
     public function slotable(): MorphTo
     {
         return $this->morphTo();

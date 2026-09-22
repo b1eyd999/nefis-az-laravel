@@ -187,14 +187,14 @@
                 @php $value = old('custom_texts.' . $index, $slot->default_value); @endphp
                 <textarea class="text-input" id="text-input-{{ $index }}" name="custom_texts[{{ $index }}]"
                           @if($slot->link_key) data-link="{{ $slot->link_key }}" data-link-lead @endif
-                          maxlength="{{ $slot->max_length }}"
+                          maxlength="{{ $slot->limit() }}"
                           rows="{{ min(4, max(2, substr_count((string) $value, "\n") + 1)) }}"
                           placeholder="{{ $slot->placeholder ?: 'Məs. Ad Soyad və ya qısa mesaj' }}">{{ $value }}</textarea>
                 <p class="slot-hint">Yeni sətir üçün Enter basın.</p>
               @else
                 <input type="text" class="text-input" id="text-input-{{ $index }}" name="custom_texts[{{ $index }}]"
                        @if($slot->link_key) data-link="{{ $slot->link_key }}" data-link-lead @endif
-                       maxlength="{{ $slot->max_length }}"
+                       maxlength="{{ $slot->limit() }}"
                        placeholder="{{ $slot->placeholder ?: 'Məs. Ad Soyad və ya qısa mesaj' }}"
                        value="{{ old('custom_texts.' . $index, $slot->default_value) }}">
               @endif

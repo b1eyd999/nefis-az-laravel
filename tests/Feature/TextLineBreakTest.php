@@ -59,6 +59,29 @@ class TextLineBreakTest extends TestCase
         $this->assertSame("Birinci sətir\nİkinci sətir", $item->custom_texts[0]);
     }
 
+    public function test_the_designs_own_wording_is_never_too_long_for_its_slot(): void
+    {
+        // The owner's sentence is 65 characters; the slot was left at 60.
+        $wording = 'Samalyotdur, amma ancaq yanacaqdoldurma məntəqələrində eniş edir.';
+        $box = $this->box(2, $wording);
+        $box->textSlots()->first()->update(['max_length' => 60]);
+        $user = User::factory()->create();
+
+        $this->get(route('products.customize', $box->slug))->assertSee('maxlength="65"', false);
+
+        // Left as it is, it goes into the cart…
+        $this->actingAs($user)->post(route('cart.add'), ['product_id' => $box->id, 'custom_texts' => [$wording]])
+            ->assertSessionHasNoErrors();
+
+        // …a line break counts once even though the browser sends two characters…
+        $this->actingAs($user)->post(route('cart.add'), ['product_id' => $box->id,
+            'custom_texts' => [str_replace('ancaq ', "ancaq\r\n", $wording)]])->assertSessionHasNoErrors();
+
+        // …and anything longer is refused in Azerbaijani.
+        $this->actingAs($user)->post(route('cart.add'), ['product_id' => $box->id, 'custom_texts' => [$wording . ' Bəli!']])
+            ->assertSessionHasErrors(['custom_texts.0' => 'Mesaj 65 simvoldan uzun ola bilməz.']);
+    }
+
     public function test_a_one_line_slot_stays_a_plain_field(): void
     {
         $box = $this->box(1, 'Leaving');
