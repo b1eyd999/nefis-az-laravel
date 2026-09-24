@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\Setting;
 use App\Models\User;
 use App\Support\Contact;
+use App\Support\CustomerNotice;
 use App\Support\Telegram;
 use App\Support\Seo;
 use Filament\Actions;
@@ -64,6 +65,7 @@ class SiteSettings extends Page implements HasActions, HasForms
             'delivery_slots' => Setting::get(Setting::DELIVERY_SLOTS),
             'chocolate_min_g' => (int) Setting::get(Setting::CHOCOLATE_MIN_G),
             'chocolate_max_g' => (int) Setting::get(Setting::CHOCOLATE_MAX_G),
+            'notify_email' => Setting::get(Setting::NOTIFY_EMAIL) === '1',
             'telegram_token' => Telegram::token(),
             'telegram_chat' => Telegram::chat(),
         ]);
@@ -84,6 +86,23 @@ class SiteSettings extends Page implements HasActions, HasForms
                     } catch (\RuntimeException $e) {
                         Notification::make()->danger()->title($e->getMessage())->send();
                     }
+                }),
+            Actions\Action::make('testEmail')
+                ->label('Test e-poçtu')
+                ->icon('heroicon-o-envelope')
+                ->color('gray')
+                ->action(function () {
+                    $to = trim((string) auth()->user()?->email);
+                    if ($to === '') {
+                        Notification::make()->danger()->title('Hesabınızda e-poçt yoxdur')->send();
+
+                        return;
+                    }
+                    $error = CustomerNotice::test($to);
+                    $error === null
+                        ? Notification::make()->success()->title('Göndərildi — ' . $to . ' ünvanına baxın')
+                            ->body('Gəlmədisə, spam qovluğunu da yoxlayın.')->persistent()->send()
+                        : Notification::make()->danger()->title('Göndərilmədi')->body($error)->persistent()->send();
                 }),
             Actions\Action::make('testMessage')
                 ->label('Telegram: test mesajı')
@@ -158,6 +177,14 @@ class SiteSettings extends Page implements HasActions, HasForms
                     ])
                     ->columns(2)
                     ->collapsible(),
+                Forms\Components\Section::make('Müştəri bildirişləri')
+                    ->description('Sifarişin statusu dəyişən kimi müştəriyə e-poçt gedir: nə baş verdiyi, çatdırılma günü və sifarişin linki. '
+                        . 'WhatsApp isə əl ilə: sifariş siyahısında "WhatsApp-a yaz" düyməsi hazır mətnlə müştərinin söhbətini açır.')
+                    ->schema([
+                        Forms\Components\Toggle::make('notify_email')
+                            ->label('Status dəyişəndə müştəriyə e-poçt göndər')
+                            ->helperText('Yuxarıdakı "Test e-poçtu" düyməsi ilə yoxlaya bilərsiniz.'),
+                    ]),
                 Forms\Components\Section::make('Telegram bildirişləri')
                     ->description('Sifariş gələn kimi Telegram-a mesaj gəlir. Bot sizindir: Telegram-da @BotFather-ə "/newbot" yazıb bot yaradın, verdiyi tokeni bura yapışdırın, sonra öz botunuza "/start" yazıb "Chat-ı tap" düyməsini basın.')
                     ->schema([
@@ -230,6 +257,7 @@ class SiteSettings extends Page implements HasActions, HasForms
         Setting::put(Setting::DELIVERY_SLOTS, trim((string) ($data['delivery_slots'] ?? '')));
         Setting::put(Setting::CHOCOLATE_MIN_G, max(1, (int) ($data['chocolate_min_g'] ?? 90)));
         Setting::put(Setting::CHOCOLATE_MAX_G, max((int) ($data['chocolate_min_g'] ?? 90), (int) ($data['chocolate_max_g'] ?? 105)));
+        Setting::put(Setting::NOTIFY_EMAIL, ! empty($data['notify_email']));
         Telegram::saveToken($data['telegram_token'] ?? '');
         Setting::put(Setting::TELEGRAM_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['telegram_chat'] ?? '')));
 

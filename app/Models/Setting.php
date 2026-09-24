@@ -107,6 +107,9 @@ class Setting extends Model
     /** Google Analytics measurement id (G-XXXXXXX); empty means no counter on the site. */
     public const SEO_ANALYTICS = 'seo_google_analytics';
 
+    /** Whether a customer is written to by e-mail when his order moves on. */
+    public const NOTIFY_EMAIL = 'notify_customer_email';
+
     /** What each setting is until the owner changes it. */
     public const DEFAULTS = [
         self::AR_ENABLED => '1',
@@ -130,6 +133,7 @@ class Setting extends Model
         self::DELIVERY_SLOTS => "10:00 — 14:00
 14:00 — 18:00
 18:00 — 21:00",
+        self::NOTIFY_EMAIL => '1',
         self::MAINTENANCE => '0',
         self::MAINTENANCE_MESSAGE => 'Saytda texniki işlər aparılır. Tezliklə qayıdacağıq!',
         self::PROFIT_SHARES => '[{"name":"Sahibkar","percent":33.34},{"name":"Menecer 1","percent":33.33},{"name":"Menecer 2","percent":33.33}]',

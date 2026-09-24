@@ -6,9 +6,11 @@ use App\Filament\Resources\OrderResource\Pages;
 use App\Filament\Resources\OrderResource\RelationManagers;
 use App\Models\DeliveryMethod;
 use App\Models\Order;
+use App\Support\CustomerNotice;
 use App\Support\Price;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Actions\Action as NotificationAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -146,10 +148,21 @@ class OrderResource extends Resource
                 if ($data['status'] === $record->status) {
                     return;
                 }
+                CustomerNotice::$sent = null;
                 $record->forceFill(['status' => $data['status']])->save();
+
+                $whatsapp = CustomerNotice::whatsapp($record);
                 Notification::make()->success()
                     ->title('Status dəyişdi')
-                    ->body('Sifariş #' . $record->id . ' — ' . self::STATUSES[$data['status']])
+                    ->body('Sifariş #' . $record->id . ' — ' . self::STATUSES[$data['status']]
+                        . (CustomerNotice::$sent ? '. Müştəriyə e-poçt göndərildi.' : ''))
+                    ->actions(array_filter([
+                        $whatsapp ? NotificationAction::make('whatsapp')
+                            ->label('WhatsApp-a yaz')
+                            ->url($whatsapp, shouldOpenInNewTab: true)
+                            ->button() : null,
+                    ]))
+                    ->persistent()
                     ->send();
             });
     }
@@ -238,6 +251,14 @@ class OrderResource extends Resource
                             Notification::make()->success()->title('Ödəniş təsdiqləndi')->send();
                         }),
                     self::statusAction('status_change'),
+                    // The same words, but by hand, for a customer who reads
+                    // WhatsApp sooner than his mail.
+                    Tables\Actions\Action::make('whatsapp')
+                        ->label('WhatsApp-a yaz')
+                        ->icon('heroicon-o-chat-bubble-left-right')
+                        ->color('success')
+                        ->url(fn (Order $record) => CustomerNotice::whatsapp($record), shouldOpenInNewTab: true)
+                        ->visible(fn (Order $record) => filled(CustomerNotice::whatsapp($record))),
                     Tables\Actions\EditAction::make(),
                 ]),
             ])

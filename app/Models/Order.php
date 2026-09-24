@@ -97,6 +97,10 @@ class Order extends Model
             } elseif ($was === 'cancelled' && $order->status !== 'cancelled') {
                 Accounting::consume($order);
             }
+
+            // Wherever the status was changed from — the list, the order's own
+            // page, the payment flow — the customer hears about it here.
+            \App\Support\CustomerNotice::email($order);
         });
     }
 
