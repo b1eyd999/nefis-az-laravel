@@ -6,9 +6,9 @@
 @section('content')
 <section class="page-hero">
   <div class="wrap-narrow">
-    <span class="eyebrow">Xoş Gəlmisiniz</span>
-    <h1>Qeydiyyatdan Keçin</h1>
-    <p class="lede" style="margin-inline:auto;">Fərdi şokolad qutunuzu sifariş etmək üçün hesab yaradın.</p>
+    <span class="eyebrow">{{ __('Xoş Gəlmisiniz') }}</span>
+    <h1>{{ __('Qeydiyyatdan Keçin') }}</h1>
+    <p class="lede" style="margin-inline:auto;">{{ __('Fərdi şokolad qutunuzu sifariş etmək üçün hesab yaradın.') }}</p>
   </div>
 </section>
 
@@ -28,29 +28,29 @@
       <form method="POST" action="{{ lroute('register') }}">
         @csrf
         <div class="field">
-          <label for="name">Ad Soyad</label>
+          <label for="name">{{ __('Ad Soyad') }}</label>
           <input type="text" id="name" name="name" value="{{ old('name') }}" required autofocus>
         </div>
         <div class="field">
-          <label for="email">E-poçt</label>
+          <label for="email">{{ __('E-poçt') }}</label>
           <input type="email" id="email" name="email" value="{{ old('email') }}" required>
         </div>
         <div class="field">
-          <label for="phone">Telefon (istəyə bağlı)</label>
+          <label for="phone">{{ __('Telefon (istəyə bağlı)') }}</label>
           <input type="tel" id="phone" name="phone" value="{{ old('phone') }}" placeholder="+994 XX XXX XX XX">
         </div>
         <div class="field">
-          <label for="password">Şifrə</label>
+          <label for="password">{{ __('Şifrə') }}</label>
           <input type="password" id="password" name="password" required>
         </div>
         <div class="field">
-          <label for="password_confirmation">Şifrəni Təkrarlayın</label>
+          <label for="password_confirmation">{{ __('Şifrəni Təkrarlayın') }}</label>
           <input type="password" id="password_confirmation" name="password_confirmation" required>
         </div>
-        <button type="submit" class="btn btn-primary btn-block">Qeydiyyatdan Keç</button>
+        <button type="submit" class="btn btn-primary btn-block">{{ __('Qeydiyyatdan Keç') }}</button>
       </form>
 
-      <p class="foot-link">Artıq hesabınız var? <a href="{{ lroute('login') }}">Daxil olun</a></p>
+      <p class="foot-link">{{ __('Artıq hesabınız var?') }} <a href="{{ lroute('login') }}">{{ __('Daxil olun') }}</a></p>
     </div>
   </div>
 </section>

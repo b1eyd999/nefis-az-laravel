@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Səbət — Nefis Şokolad Evi')
+@section('title', __('Səbət') . ' — Nefis Şokolad Evi')
 @section('robots', 'noindex, nofollow')
 
 @section('content')
 <section class="page-hero" style="padding-bottom:0;">
   <div class="wrap">
-    <span class="eyebrow" style="justify-content:center;">Səbətiniz</span>
-    <h1>Sifariş Səbəti</h1>
+    <span class="eyebrow" style="justify-content:center;">{{ __('Səbətiniz') }}</span>
+    <h1>{{ __('Sifariş Səbəti') }}</h1>
   </div>
 </section>
 
@@ -20,9 +20,9 @@
     @if($items->isEmpty())
       <div class="cart-empty">
         <div class="ico">🛍️</div>
-        <p>Səbətiniz hələ boşdur.</p>
+        <p>{{ __('Səbətiniz hələ boşdur.') }}</p>
         <div style="margin-top:1.5rem;">
-          <a href="{{ lroute('designs.index') }}" class="btn btn-primary">Dizaynlara Bax</a>
+          <a href="{{ lroute('designs.index') }}" class="btn btn-primary">{{ __('Dizaynlara Bax') }}</a>
         </div>
       </div>
     @else
@@ -45,7 +45,7 @@
               @endif
             </div>
             <div class="info">
-              <h3>{{ $isLive ? 'Canlı şəkil' : ($isLetter ? 'Polaroid məktub' : $item['product']->name) }}</h3>
+              <h3>{{ $isLive ? __('Canlı şəkil') : ($isLetter ? __('Polaroid məktub') : $item['product']->name) }}</h3>
               <p>
                 @if($texts) "{{ implode('" · "', $texts) }}" &middot; @endif
                 {{ $item['quantity'] }} ədəd
@@ -61,19 +61,19 @@
                 <p style="margin-top:.2rem;">🎁 Qablaşdırma: {{ $item['wrapping']['name'] }} &middot; {{ \App\Support\Price::format($item['wrapping']['price']) }}</p>
               @endif
               @if($isLive)
-                <p style="margin-top:.2rem;">🎬 Şəkil və video — QR kodla çap olunur</p>
+                <p style="margin-top:.2rem;">🎬 {{ __('Şəkil və video — QR kodla çap olunur') }}</p>
               @elseif(! empty($item['ar']))
                 <p style="margin-top:.2rem;">🎬 Canlı şəkil (AR) &middot; {{ \App\Support\Price::format($item['ar']['price']) }}</p>
               @endif
               @if(! empty($item['letter']))
-                <p style="margin-top:.2rem;">💌 {{ $isLetter ? '' : 'Polaroid məktub · ' }}{{ \Illuminate\Support\Str::limit(str_replace("\n", ' ', $item['letter']['text'] ?? ''), 60) ?: 'şəkilli' }}
+                <p style="margin-top:.2rem;">💌 {{ $isLetter ? '' : __('Polaroid məktub') . ' · ' }}{{ \Illuminate\Support\Str::limit(str_replace("\n", ' ', $item['letter']['text'] ?? ''), 60) ?: 'şəkilli' }}
                   @unless($isLetter) &middot; {{ \App\Support\Price::format($item['letter']['price']) }} @endunless</p>
               @endif
             </div>
             <form method="POST" action="{{ lroute('cart.remove', $item['id']) }}">
               @csrf
               @method('DELETE')
-              <button type="submit" class="remove-btn">Sil</button>
+              <button type="submit" class="remove-btn">{{ __('Sil') }}</button>
             </form>
           </div>
         @endforeach
@@ -81,13 +81,13 @@
 
       <div class="cart-summary">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-          <span style="font-weight:700; font-size:1.125rem;">Cəmi</span>
+          <span style="font-weight:700; font-size:1.125rem;">{{ __('Cəmi') }}</span>
           <span style="font-weight:700; font-size:1.125rem; color:var(--gold-deep);">
             @php $total = $items->sum(fn($i) => \App\Support\Cart::unitPrice($i, $i['product']) * $i['quantity']); @endphp
-            {{ $total > 0 ? \App\Support\Price::format($total) : 'Qiymət sorğu ilə' }}
+            {{ $total > 0 ? \App\Support\Price::format($total) : __('Qiymət sorğu ilə') }}
           </span>
         </div>
-        <a href="{{ lroute('checkout.index') }}" class="btn btn-primary btn-block">Sifarişi Tamamla</a>
+        <a href="{{ lroute('checkout.index') }}" class="btn btn-primary btn-block">{{ __('Sifarişi Tamamla') }}</a>
       </div>
     @endif
   </div>

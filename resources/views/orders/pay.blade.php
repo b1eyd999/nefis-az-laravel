@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Ödəniş — Sifariş #' . $order->id . ' — Nefis Şokolad Evi')
+@section('title', __('Ödəniş') . ' — ' . __('Sifariş') . ' #' . $order->id . ' — Nefis Şokolad Evi')
 @section('robots', 'noindex, nofollow')
 
 @section('page_style')
@@ -43,8 +43,8 @@
 @section('content')
 <section class="page-hero" style="padding-bottom:0;">
   <div class="wrap">
-    <span class="eyebrow" style="justify-content:center;">Ödəniş</span>
-    <h1>Sifariş #{{ $order->id }}</h1>
+    <span class="eyebrow" style="justify-content:center;">{{ __('Ödəniş') }}</span>
+    <h1>{{ __('Sifariş') }} #{{ $order->id }}</h1>
   </div>
 </section>
 
@@ -61,19 +61,19 @@
     <div class="pay-grid">
       <div class="pay-card">
         <div class="pay-total">
-          <span>Ödəniləcək məbləğ</span>
+          <span>{{ __('Ödəniləcək məbləğ') }}</span>
           <b>{{ \App\Support\Price::format($order->total()) }}</b>
         </div>
         <ol class="pay-steps">
-          <li>Aşağıdakı hesablardan birini seçin və məbləği köçürün.</li>
-          <li>Çeki (qəbzi) bu səhifədə yükləyin.</li>
-          <li>Ödənişi yoxlayıb sifarişinizi təsdiqləyirik.</li>
+          <li>{{ __('Aşağıdakı hesablardan birini seçin və məbləği köçürün.') }}</li>
+          <li>{{ __('Çeki (qəbzi) bu səhifədə yükləyin.') }}</li>
+          <li>{{ __('Ödənişi yoxlayıb sifarişinizi təsdiqləyirik.') }}</li>
         </ol>
       </div>
 
       @if($offered)
         <div class="pay-card">
-          <label>Ödəniş üsulu</label>
+          <label>{{ __('Ödəniş üsulu') }}</label>
           <div class="pay-methods">
             @foreach($offered as $type => $account)
               <form method="POST" action="{{ lroute('orders.pay.method', $order) }}">
@@ -96,7 +96,7 @@
                 <div class="num" id="pay-number">{{ $order->paymentAccount->formatted() }}</div>
                 @if($order->paymentAccount->note)<div class="who" style="margin:.35rem 0 0;">{{ $order->paymentAccount->note }}</div>@endif
               </div>
-              <button type="button" class="pay-copy" id="pay-copy" aria-label="Nömrəni kopyala" title="Kopyala">⧉</button>
+              <button type="button" class="pay-copy" id="pay-copy" aria-label="{{ __('Nömrəni kopyala') }}" title="{{ __('Kopyala') }}">⧉</button>
             </div>
           @endif
 
@@ -104,31 +104,31 @@
         </div>
       @else
         <div class="pay-card">
-          <p class="pay-note">Ödəniş hesabları hazırda əlçatan deyil. Sifarişiniz qeydə alınıb — sizinlə əlaqə saxlayacağıq.</p>
+          <p class="pay-note">{{ __('Ödəniş hesabları hazırda əlçatan deyil. Sifarişiniz qeydə alınıb — sizinlə əlaqə saxlayacağıq.') }}</p>
         </div>
       @endif
 
       <div class="pay-card">
-        <label>Çek (qəbz)</label>
+        <label>{{ __('Çek (qəbz)') }}</label>
         @if($order->payment_receipt)
-          <p class="pay-sent" style="margin:.6rem 0 .9rem;">Çek göndərilib{{ $order->receipt_at ? ' — ' . $order->receipt_at->format('d.m.Y H:i') : '' }}. Yoxlanılır.</p>
+          <p class="pay-sent" style="margin:.6rem 0 .9rem;">{{ __('Çek göndərilib') }}{{ $order->receipt_at ? ' — ' . $order->receipt_at->format('d.m.Y H:i') : '' }}. Yoxlanılır.</p>
         @endif
         <form method="POST" action="{{ lroute('orders.pay.receipt', $order) }}" enctype="multipart/form-data">
           @csrf
           <label class="pay-file">
             <input type="file" name="receipt" id="receipt-input" accept="image/*,application/pdf" required>
-            <span>📄 Çeki seçmək üçün klikləyin</span>
+            <span>📄 {{ __('Çeki seçmək üçün klikləyin') }}</span>
             <span class="name" id="receipt-name"></span>
           </label>
           <button type="submit" class="btn btn-primary btn-block" style="margin-top:1rem;">
-            {{ $order->payment_receipt ? 'Çeki yenilə' : 'Çeki göndər' }}
+            {{ $order->payment_receipt ? __('Çeki yenilə') : __('Çeki göndər') }}
           </button>
         </form>
-        <p class="pay-note">Şəkil (PNG, JPG, WEBP) və ya PDF, 8 MB-a qədər.</p>
+        <p class="pay-note">{{ __('Şəkil (PNG, JPG, WEBP) və ya PDF, 8 MB-a qədər.') }}</p>
       </div>
 
       <div style="text-align:center;">
-        <a href="{{ lroute('orders.index') }}" style="font-size:.9rem; text-decoration:underline; color:var(--cocoa-soft);">Sifarişlərim</a>
+        <a href="{{ lroute('orders.index') }}" style="font-size:.9rem; text-decoration:underline; color:var(--cocoa-soft);">{{ __('Sifarişlərim') }}</a>
       </div>
     </div>
   </div>

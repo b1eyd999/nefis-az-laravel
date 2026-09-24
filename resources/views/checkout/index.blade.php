@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Sifarişi Tamamla — Nefis Şokolad Evi')
+@section('title', __('Sifarişi Tamamla') . ' — Nefis Şokolad Evi')
 @section('robots', 'noindex, nofollow')
 
 {{-- The map services check where their requests come from. --}}
@@ -87,7 +87,7 @@
       g.querySelectorAll('input, select').forEach(function(el){ el.disabled = !on; el.required = on && !el.hasAttribute('data-optional'); });
     });
     var price = picked ? parseFloat(picked.dataset.price) || 0 : 0;
-    document.getElementById('sum-delivery').textContent = picked ? (price > 0 ? fmt(price) : 'Pulsuz') : 'seçilməyib';
+    document.getElementById('sum-delivery').textContent = picked ? (price > 0 ? fmt(price) : @json(__('Pulsuz'))) : @json(__('seçilməyib'));
     var total = items + price;
     document.getElementById('sum-grand').textContent = total > 0 ? fmt(total) : '—';
   }
@@ -113,9 +113,9 @@
   function inBaku(a, b){ return a >= bounds.south && a <= bounds.north && b >= bounds.west && b <= bounds.east; }
 
   function picked(a, b){
-    if (!inBaku(a, b)) { say('Bu yer Bakıdan kənardadır — qapıya çatdırılma yalnız Bakı daxilindədir.', 'err'); return; }
+    if (!inBaku(a, b)) { say(@json(__('Bu yer Bakıdan kənardadır — qapıya çatdırılma yalnız Bakı daxilindədir.')), 'err'); return; }
     lat.value = a.toFixed(7); lng.value = b.toFixed(7);
-    say('Yer seçildi. Ünvanı yoxlayın, mənzil və mərtəbəni əlavə edin.', 'ok');
+    say(@json(__('Yer seçildi. Ünvanı yoxlayın, mənzil və mərtəbəni əlavə edin.')), 'ok');
     picker.reverse(a, b).then(function(text){
       if (text && !typedByHand) { address.value = text; }
     });
@@ -130,7 +130,7 @@
       reverseUrl: box.dataset.reverse, searchUrl: box.dataset.search,
       onPick: picked
     }).then(function(p){ picker = p; setTimeout(p.refresh, 50); return p; })
-      .catch(function(){ mapFailed = true; box.hidden = true; say('Xəritə açılmadı — ünvanı aşağıda yazın.', 'err'); });
+      .catch(function(){ mapFailed = true; box.hidden = true; say(@json(__('Xəritə açılmadı — ünvanı aşağıda yazın.')), 'err'); });
     return loading;
   }
 
@@ -146,7 +146,7 @@
     found = list;
     results.innerHTML = list.length
       ? list.map(function(r, i){ return '<li data-i="' + i + '">' + r.label.replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }) + '</li>'; }).join('')
-      : '<li class="none">Heç nə tapılmadı</li>';
+      : '<li class="none">' + @json(__('Heç nə tapılmadı')) + '</li>';
     results.hidden = false;
   }
   function runSearch(){
@@ -169,16 +169,16 @@
   document.addEventListener('click', function(e){ if (!e.target.closest('.map-search')) results.hidden = true; });
 
   document.getElementById('map-locate').addEventListener('click', function(){
-    if (!navigator.geolocation) { say('Brauzeriniz yerinizi göstərə bilmir.', 'err'); return; }
-    say('Yeriniz müəyyən edilir…');
+    if (!navigator.geolocation) { say(@json(__('Brauzeriniz yerinizi göstərə bilmir.')), 'err'); return; }
+    say(@json(__('Yeriniz müəyyən edilir…')));
     (ensure() || Promise.resolve()).then(function(){
       navigator.geolocation.getCurrentPosition(function(pos){
         var a = pos.coords.latitude, b = pos.coords.longitude;
-        if (!inBaku(a, b)) { say('Siz Bakıdan kənardasınız — yeri xəritədə əl ilə seçin.', 'err'); return; }
+        if (!inBaku(a, b)) { say(@json(__('Siz Bakıdan kənardasınız — yeri xəritədə əl ilə seçin.')), 'err'); return; }
         typedByHand = false;
         picker.place(a, b, true);
         picked(a, b);
-      }, function(){ say('Yerinizə icazə verilmədi — xəritədə özünüz seçin.', 'err'); }, { enableHighAccuracy: true, timeout: 10000 });
+      }, function(){ say(@json(__('Yerinizə icazə verilmədi — xəritədə özünüz seçin.')), 'err'); }, { enableHighAccuracy: true, timeout: 10000 });
     });
   });
 
@@ -186,7 +186,7 @@
     var door = document.querySelector('input[name="delivery_method_id"]:checked');
     if (door && door.dataset.type === 'door' && !mapFailed && !lat.value) {
       e.preventDefault();
-      say('Çatdırılma yerini xəritədə seçin.', 'err');
+      say(@json(__('Çatdırılma yerini xəritədə seçin.')), 'err');
       box.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   });
@@ -197,9 +197,9 @@
 @section('content')
 <section class="page-hero" style="padding-bottom:0;">
   <div class="wrap">
-    <span class="eyebrow" style="justify-content:center;">Son Addım</span>
-    <h1>Sifarişi Tamamlayın</h1>
-    <p class="lede" style="margin-inline:auto;">Sifarişiniz göndəriləcək, biz tezliklə sizinlə əlaqə saxlayıb təsdiqləyəcəyik.</p>
+    <span class="eyebrow" style="justify-content:center;">{{ __('Son Addım') }}</span>
+    <h1>{{ __('Sifarişi Tamamlayın') }}</h1>
+    <p class="lede" style="margin-inline:auto;">{{ __('Sifarişiniz göndəriləcək, biz tezliklə sizinlə əlaqə saxlayıb təsdiqləyəcəyik.') }}</p>
   </div>
 </section>
 
@@ -221,11 +221,11 @@
         <div class="cart-row">
           <div class="thumb">
             @if($isLive)
-              <img src="{{ \App\Support\Media::url($item['ar']['image'] ?? null) }}" alt="Canlı şəkil">
+              <img src="{{ \App\Support\Media::url($item['ar']['image'] ?? null) }}" alt="{{ __('Canlı şəkil') }}">
             @elseif($isLetter)
               <div class="thumb-polaroid">@include('partials.polaroid', ['photo' => \App\Support\Media::url($item['letter']['photo'] ?? null), 'text' => $item['letter']['text'] ?? null])</div>
             @elseif(! empty($item['photo_paths']))
-              <img src="{{ \App\Support\Media::url($item['photo_paths'][0]) }}" alt="Yüklənmiş şəkil">
+              <img src="{{ \App\Support\Media::url($item['photo_paths'][0]) }}" alt="{{ __('Yüklənmiş şəkil') }}">
               @if(count($item['photo_paths']) > 1)
                 <span class="thumb-more">+{{ count($item['photo_paths']) - 1 }}</span>
               @endif
@@ -234,10 +234,10 @@
             @endif
           </div>
           <div class="info">
-            <h3>{{ $isLive ? 'Canlı şəkil' : ($isLetter ? 'Polaroid məktub' : $item['product']->name) }}</h3>
+            <h3>{{ $isLive ? __('Canlı şəkil') : ($isLetter ? __('Polaroid məktub') : $item['product']->name) }}</h3>
             <p>
               @if($texts) "{{ implode('" · "', $texts) }}" &middot; @endif
-              {{ $item['quantity'] }} ədəd
+              {{ __(':count ədəd', ['count' => $item['quantity']]) }}
               @php $unit = \App\Support\Cart::unitPrice($item, $item['product']); @endphp
               @if($unit > 0) &middot; {{ \App\Support\Price::format($unit * $item['quantity']) }} @endif
             </p>
@@ -245,13 +245,13 @@
               <p style="margin-top:.2rem;">🍫 {{ $item['chocolate']['name'] }}</p>
             @endif
             @if(! empty($item['wrapping']))
-              <p style="margin-top:.2rem;">🎁 Qablaşdırma: {{ $item['wrapping']['name'] }}</p>
+              <p style="margin-top:.2rem;">🎁 {{ __('Qablaşdırma') }}: {{ $item['wrapping']['name'] }}</p>
             @endif
             @if(! empty($item['ar']) && ! $isLive)
-              <p style="margin-top:.2rem;">🎬 Canlı şəkil (AR)</p>
+              <p style="margin-top:.2rem;">🎬 {{ __('Canlı şəkil (AR)') }}</p>
             @endif
             @if(! empty($item['letter']) && ! $isLetter)
-              <p style="margin-top:.2rem;">💌 Polaroid məktub</p>
+              <p style="margin-top:.2rem;">💌 {{ __('Polaroid məktub') }}</p>
             @endif
           </div>
         </div>
@@ -264,7 +264,7 @@
         @if($methods->isNotEmpty())
           {{-- How it reaches the customer; each way asks for what it needs. --}}
           <div class="field">
-            <label>Çatdırılma üsulu</label>
+            <label>{{ __('Çatdırılma üsulu') }}</label>
             <div class="dlv-grid">
               @foreach($methods as $m)
                 <label class="dlv-card">
@@ -272,7 +272,7 @@
                          @checked((string) old('delivery_method_id', $methods->count() === 1 ? $m->id : null) === (string) $m->id)>
                   <span class="dlv-top">
                     <b>{{ $m->name }}</b>
-                    <span>{{ $m->price > 0 ? \App\Support\Price::format($m->price) : 'Pulsuz' }}</span>
+                    <span>{{ $m->price > 0 ? \App\Support\Price::format($m->price) : __('Pulsuz') }}</span>
                   </span>
                   @if($m->description)<span class="dlv-desc">{{ $m->description }}</span>@endif
                 </label>
@@ -282,11 +282,11 @@
 
           <div class="dlv-fields" data-for="post" hidden>
             <div class="field">
-              <label for="recipient_name">Ad və soyad</label>
+              <label for="recipient_name">{{ __('Ad və soyad') }}</label>
               <input type="text" id="recipient_name" name="recipient_name" value="{{ old('recipient_name', auth()->user()->name) }}" placeholder="Məs. Aysel Məmmədova">
             </div>
             <div class="field">
-              <label for="postal_index">Poçt şöbəsinin indeksi</label>
+              <label for="postal_index">{{ __('Poçt şöbəsinin indeksi') }}</label>
               <input type="text" id="postal_index" name="postal_index" value="{{ old('postal_index') }}" placeholder="Məs. AZ1000" maxlength="8" autocapitalize="characters">
             </div>
           </div>
@@ -294,15 +294,15 @@
           <div class="dlv-fields" data-for="door" hidden>
             {{-- The spot on the map; the address fills itself in from it. --}}
             <div class="field">
-              <label>Çatdırılma yeri (xəritədə seçin)</label>
+              <label>{{ __('Çatdırılma yeri (xəritədə seçin)') }}</label>
               <div class="map-tools">
                 <div class="map-search">
-                  <input type="search" id="map-q" placeholder="Ünvan və ya yer axtarın…" autocomplete="off" data-optional>
+                  <input type="search" id="map-q" placeholder="{{ __('Ünvan və ya yer axtarın…') }}" autocomplete="off" data-optional>
                   <ul class="map-results" id="map-results" hidden></ul>
                 </div>
-                <button type="button" class="map-btn" id="map-locate" title="Olduğum yeri göstər">
+                <button type="button" class="map-btn" id="map-locate" title="{{ __('Olduğum yeri göstər') }}">
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>
-                  <span>Mənim yerim</span>
+                  <span>{{ __('Mənim yerim') }}</span>
                 </button>
               </div>
               <div class="map-box" id="dlv-map"
@@ -310,12 +310,12 @@
                    data-bounds='@json(\App\Models\DeliveryMethod::BAKU_BOUNDS)'
                    data-center='@json(\App\Models\DeliveryMethod::BAKU_CENTER)'
                    data-reverse="{{ route('map.reverse') }}" data-search="{{ route('map.search') }}"></div>
-              <p class="map-hint" id="map-hint">Xəritəyə toxunun və ya işarəni sürüşdürün — ünvan özü yazılacaq.</p>
+              <p class="map-hint" id="map-hint">{{ __('Xəritəyə toxunun və ya işarəni sürüşdürün — ünvan özü yazılacaq.') }}</p>
               <input type="hidden" name="delivery_lat" id="delivery_lat" value="{{ old('delivery_lat') }}" data-optional>
               <input type="hidden" name="delivery_lng" id="delivery_lng" value="{{ old('delivery_lng') }}" data-optional>
             </div>
             <div class="field">
-              <label for="delivery_address">Ünvan (yalnız Bakı)</label>
+              <label for="delivery_address">{{ __('Ünvan (yalnız Bakı)') }}</label>
               <input type="text" id="delivery_address" name="delivery_address" value="{{ old('delivery_address') }}" placeholder="Küçə, ev — mənzil və mərtəbəni əlavə edin">
             </div>
           </div>
@@ -324,9 +324,9 @@
           @if($metro)
             <div class="dlv-fields" data-for="metro" hidden>
               <div class="field">
-                <label for="metro_station">Metro stansiyası</label>
+                <label for="metro_station">{{ __('Metro stansiyası') }}</label>
                 <select id="metro_station" name="metro_station">
-                  <option value="">Stansiyanı seçin</option>
+                  <option value="">{{ __('Stansiyanı seçin') }}</option>
                   @foreach($metro->stations() as $station)
                     <option value="{{ $station }}" @selected(old('metro_station') === $station)>{{ $station }}</option>
                   @endforeach
@@ -336,7 +336,7 @@
           @endif
         @else
           <div class="field">
-            <label for="delivery_address">Çatdırılma Ünvanı</label>
+            <label for="delivery_address">{{ __('Çatdırılma Ünvanı') }}</label>
             <input type="text" id="delivery_address" name="delivery_address" value="{{ old('delivery_address') }}" required placeholder="Şəhər, rayon, ünvan">
           </div>
         @endif
@@ -347,7 +347,7 @@
           $slots = \App\Support\DeliveryTime::slots();
         @endphp
         <div class="field when">
-          <label for="delivery_date">Çatdırılma tarixi və vaxtı</label>
+          <label for="delivery_date">{{ __('Çatdırılma tarixi və vaxtı') }}</label>
           <p class="when-note">{{ \App\Support\DeliveryTime::notice() }}</p>
           <input type="date" id="delivery_date" name="delivery_date" required
                  value="{{ old('delivery_date', $earliest->toDateString()) }}"
@@ -365,23 +365,23 @@
         </div>
 
         <div class="field">
-          <label for="contact_phone">Telefon nömrəsi</label>
+          <label for="contact_phone">{{ __('Telefon nömrəsi') }}</label>
           <input type="tel" id="contact_phone" name="contact_phone" value="{{ old('contact_phone', auth()->user()->phone) }}" required placeholder="+994 XX XXX XX XX">
         </div>
         <div class="field">
-          <label for="note">Əlavə Qeyd (istəyə bağlı)</label>
+          <label for="note">{{ __('Əlavə Qeyd (istəyə bağlı)') }}</label>
           <textarea id="note" name="note" rows="3">{{ old('note') }}</textarea>
         </div>
 
         <div class="dlv-sum" id="dlv-sum" data-items="{{ $itemsTotal }}">
-          <div><span>Məhsullar</span><span>{{ $itemsTotal > 0 ? \App\Support\Price::format($itemsTotal) : '—' }}</span></div>
+          <div><span>{{ __('Məhsullar') }}</span><span>{{ $itemsTotal > 0 ? \App\Support\Price::format($itemsTotal) : '—' }}</span></div>
           @if($methods->isNotEmpty())
-            <div><span>Çatdırılma</span><span id="sum-delivery">seçilməyib</span></div>
+            <div><span>{{ __('Çatdırılma') }}</span><span id="sum-delivery">{{ __('seçilməyib') }}</span></div>
           @endif
-          <div class="total"><span>Cəmi</span><span id="sum-grand">{{ $itemsTotal > 0 ? \App\Support\Price::format($itemsTotal) : '—' }}</span></div>
+          <div class="total"><span>{{ __('Cəmi') }}</span><span id="sum-grand">{{ $itemsTotal > 0 ? \App\Support\Price::format($itemsTotal) : '—' }}</span></div>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block">Sifarişi Göndər</button>
+        <button type="submit" class="btn btn-primary btn-block">{{ __('Sifarişi Göndər') }}</button>
       </form>
     </div>
   </div>
