@@ -78,6 +78,9 @@ class Setting extends Model
 
     public const SEO_BING = 'seo_bing_verification';
 
+    /** Google Analytics measurement id (G-XXXXXXX); empty means no counter on the site. */
+    public const SEO_ANALYTICS = 'seo_google_analytics';
+
     /** What each setting is until the owner changes it. */
     public const DEFAULTS = [
         self::AR_ENABLED => '1',

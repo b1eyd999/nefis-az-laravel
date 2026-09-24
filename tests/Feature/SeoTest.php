@@ -267,6 +267,23 @@ class SeoTest extends TestCase
         $this->get(route('home'))->assertOk()->assertSee('Milka üslubunda bənövşəyi dizayn');
     }
 
+    public function test_the_visitor_counter_runs_when_the_owner_has_set_one(): void
+    {
+        // The deploy switched it on with the owner's own measurement id.
+        $this->assertSame('G-PCXS029TE7', Setting::get(Setting::SEO_ANALYTICS));
+
+        $this->get(route('home'))->assertOk()
+            ->assertSee('googletagmanager.com/gtag/js?id=G-PCXS029TE7', false)
+            ->assertSee("gtag('config', 'G-PCXS029TE7');", false);
+
+        // Pasting the whole snippet, or a stray one, leaves only the id.
+        $this->assertSame('G-ABC1234567', \App\Support\Seo::measurementId('<script async src="https://www.googletagmanager.com/gtag/js?id=G-ABC1234567"></script>'));
+        $this->assertSame('', \App\Support\Seo::measurementId('</script><script>alert(1)</script>'));
+
+        Setting::put(Setting::SEO_ANALYTICS, '');
+        $this->get(route('home'))->assertOk()->assertDontSee('googletagmanager', false);
+    }
+
     public function test_the_catalogue_cards_are_links_search_engines_can_follow(): void
     {
         $this->box('Love Story', 'love-story-vol-1');

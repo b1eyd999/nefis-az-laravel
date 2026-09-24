@@ -51,6 +51,7 @@ class SiteSettings extends Page implements HasForms
             'seo_google' => Setting::get(Setting::SEO_GOOGLE),
             'seo_yandex' => Setting::get(Setting::SEO_YANDEX),
             'seo_bing' => Setting::get(Setting::SEO_BING),
+            'seo_analytics' => Setting::get(Setting::SEO_ANALYTICS),
         ]);
     }
 
@@ -83,6 +84,12 @@ class SiteSettings extends Page implements HasForms
                         Forms\Components\TextInput::make('seo_google')->label('Google (google-site-verification)')->maxLength(300),
                         Forms\Components\TextInput::make('seo_yandex')->label('Yandex (yandex-verification)')->maxLength(300),
                         Forms\Components\TextInput::make('seo_bing')->label('Bing (msvalidate.01)')->maxLength(300),
+                        Forms\Components\TextInput::make('seo_analytics')
+                            ->label('Google Analytics (ölçmə ID-si)')
+                            ->placeholder('G-XXXXXXXXXX')
+                            ->helperText('Saytın ziyarətçilərini saymaq üçün. Analytics-dən "G-" ilə başlayan ID-ni (və ya bütün kodu) yapışdırın. Boş qalsa, sayğac işləmir.')
+                            ->maxLength(500)
+                            ->columnSpan(3),
                     ])
                     ->columns(3)
                     ->collapsible(),
@@ -118,6 +125,7 @@ class SiteSettings extends Page implements HasForms
         Setting::put(Setting::SEO_GOOGLE, Seo::cleanCode($data['seo_google'] ?? ''));
         Setting::put(Setting::SEO_YANDEX, Seo::cleanCode($data['seo_yandex'] ?? ''));
         Setting::put(Setting::SEO_BING, Seo::cleanCode($data['seo_bing'] ?? ''));
+        Setting::put(Setting::SEO_ANALYTICS, Seo::measurementId($data['seo_analytics'] ?? ''));
 
         Notification::make()->success()
             ->title($data['maintenance'] ? 'Saxlanıldı — sayt müştərilər üçün bağlıdır' : 'Saxlanıldı')

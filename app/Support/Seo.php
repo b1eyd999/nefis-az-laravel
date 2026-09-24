@@ -113,6 +113,38 @@ class Seo
     }
 
     /**
+     * Google Analytics, when the owner has set a measurement id. Left out
+     * while developing, so local visits never reach his numbers.
+     */
+    public static function analyticsTag(): HtmlString
+    {
+        $id = self::measurementId(Setting::get(Setting::SEO_ANALYTICS));
+
+        if ($id === '' || app()->isLocal()) {
+            return new HtmlString('');
+        }
+
+        return new HtmlString(<<<HTML
+        <script async src="https://www.googletagmanager.com/gtag/js?id={$id}"></script>
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '{$id}');
+        </script>
+        HTML);
+    }
+
+    /**
+     * The measurement id alone, whether the owner pasted just it or the whole
+     * snippet Google shows (G-… for Analytics 4, GT-… for a tag, UA-… old).
+     */
+    public static function measurementId(?string $value): string
+    {
+        return preg_match('/\b(G|GT|UA)-[A-Z0-9-]{4,20}\b/i', (string) $value, $m) ? strtoupper($m[0]) : '';
+    }
+
+    /**
      * The code alone, whether the owner pasted just it or the whole tag
      * (<meta name="google-site-verification" content="abc…" />).
      */
