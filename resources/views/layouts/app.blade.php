@@ -618,6 +618,8 @@
   .footer-col h4{ color:var(--on-band); font-size:.8125rem; letter-spacing:.06em; text-transform:uppercase; margin-bottom:1rem; font-weight:700; }
   .footer-col a{ display:block; padding:.3rem 0; font-size:.9375rem; transition:color .25s; }
   .footer-col a:hover{ color:var(--on-band); }
+  .footer-col .f-phone{ font-family:var(--serif); font-size:1.25rem; color:var(--on-band); }
+  .footer-col .f-hours{ display:block; padding:.5rem 0; font-size:.8125rem; opacity:.75; }
   .footer-bottom{ display:flex; flex-direction:column; gap:.75rem; padding-top:1.75rem; font-size:.8125rem; }
   @media (min-width:600px){ .footer-bottom{ flex-direction:row; justify-content:space-between; } }
 
@@ -743,6 +745,13 @@
     @if($navLetters)<a href="{{ route('letters.create') }}">💌 {{ \App\Support\Letter::text('menu') }}</a>@endif
     @if($navLive)<a href="{{ route('live.create') }}">🎬 Canlı şəkil</a>@endif
   </div>
+  @if(\App\Support\Contact::has())
+    <div class="mn-group">
+      <span class="mn-head">Əlaqə</span>
+      <a href="tel:{{ \App\Support\Contact::dial() }}">📞 {{ \App\Support\Contact::display() }}</a>
+      <a href="{{ \App\Support\Contact::whatsapp() }}" target="_blank" rel="noopener">💬 WhatsApp</a>
+    </div>
+  @endif
   <div class="mn-group">
     <span class="mn-head">Məlumat</span>
     <a href="{{ route('home') }}#how">Necə İşləyir</a>
@@ -796,7 +805,14 @@
       @endif
       <div class="footer-col">
         <h4>Əlaqə</h4>
+        @if(\App\Support\Contact::has())
+          <a href="tel:{{ \App\Support\Contact::dial() }}" class="f-phone">{{ \App\Support\Contact::display() }}</a>
+          <a href="{{ \App\Support\Contact::whatsapp() }}" target="_blank" rel="noopener">WhatsApp</a>
+        @endif
         <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener">Instagram</a>
+        @if(\App\Support\Contact::hours())
+          <span class="f-hours">{{ \App\Support\Contact::hours() }}</span>
+        @endif
       </div>
     </div>
     <div class="footer-bottom">

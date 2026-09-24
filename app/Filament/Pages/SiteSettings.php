@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\Contact;
 use App\Support\Seo;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -52,6 +53,8 @@ class SiteSettings extends Page implements HasForms
             'seo_yandex' => Setting::get(Setting::SEO_YANDEX),
             'seo_bing' => Setting::get(Setting::SEO_BING),
             'seo_analytics' => Setting::get(Setting::SEO_ANALYTICS),
+            'contact_phone' => Setting::get(Setting::CONTACT_PHONE),
+            'contact_hours' => Setting::get(Setting::CONTACT_HOURS),
         ]);
     }
 
@@ -76,6 +79,21 @@ class SiteSettings extends Page implements HasForms
                             ->helperText('Bu müddət keçdikcə sayğac özü boşalır.'),
                         Forms\Components\Textarea::make('payment_note')
                             ->label('Ödəniş səhifəsindəki yazı')->rows(2)->maxLength(300)->columnSpanFull(),
+                    ])
+                    ->columns(2),
+                Forms\Components\Section::make('Əlaqə')
+                    ->description('Saytın aşağısında və mobil menyuda görünür. Nömrə həm zəng, həm də WhatsApp üçün işlədilir.')
+                    ->schema([
+                        Forms\Components\TextInput::make('contact_phone')
+                            ->label('Telefon (WhatsApp)')
+                            ->tel()
+                            ->placeholder('+994 99 230 80 50')
+                            ->helperText('Ölkə kodu ilə yazın. Boş qalsa, saytda yalnız Instagram göstərilir.')
+                            ->maxLength(30),
+                        Forms\Components\TextInput::make('contact_hours')
+                            ->label('İş saatları')
+                            ->placeholder('Hər gün 10:00 — 20:00')
+                            ->maxLength(80),
                     ])
                     ->columns(2),
                 Forms\Components\Section::make('Axtarış sistemləri (SEO)')
@@ -126,6 +144,8 @@ class SiteSettings extends Page implements HasForms
         Setting::put(Setting::SEO_YANDEX, Seo::cleanCode($data['seo_yandex'] ?? ''));
         Setting::put(Setting::SEO_BING, Seo::cleanCode($data['seo_bing'] ?? ''));
         Setting::put(Setting::SEO_ANALYTICS, Seo::measurementId($data['seo_analytics'] ?? ''));
+        Setting::put(Setting::CONTACT_PHONE, Contact::clean($data['contact_phone'] ?? ''));
+        Setting::put(Setting::CONTACT_HOURS, trim((string) ($data['contact_hours'] ?? '')));
 
         Notification::make()->success()
             ->title($data['maintenance'] ? 'Saxlanıldı — sayt müştərilər üçün bağlıdır' : 'Saxlanıldı')

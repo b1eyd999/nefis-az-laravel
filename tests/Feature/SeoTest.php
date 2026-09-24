@@ -284,6 +284,26 @@ class SeoTest extends TestCase
         $this->get(route('home'))->assertOk()->assertDontSee('googletagmanager', false);
     }
 
+    public function test_the_shop_can_be_phoned_and_google_is_told_the_number(): void
+    {
+        $this->assertSame('+994992308050', Setting::get(Setting::CONTACT_PHONE));
+
+        $html = $this->get(route('home'))->assertOk()
+            ->assertSee('href="tel:+994992308050"', false)
+            ->assertSee('+994 99 230 80 50')                      // written the way people read it
+            ->assertSee('href="https://wa.me/994992308050"', false)
+            ->assertSee('Hər gün 10:00 — 20:00')
+            ->getContent();
+
+        $store = collect($this->jsonLd($html))->flatMap(fn ($b) => $b['@graph'] ?? [$b])->firstWhere('@type', 'OnlineStore');
+        $this->assertSame('+994992308050', $store['telephone']);
+        $this->assertSame('+994992308050', $store['contactPoint']['telephone']);
+
+        // Cleared, the site simply stops offering a phone.
+        Setting::put(Setting::CONTACT_PHONE, '');
+        $this->get(route('home'))->assertOk()->assertDontSee('wa.me', false)->assertSee('Instagram');
+    }
+
     public function test_the_catalogue_cards_are_links_search_engines_can_follow(): void
     {
         $this->box('Love Story', 'love-story-vol-1');

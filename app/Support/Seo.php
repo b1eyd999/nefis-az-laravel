@@ -44,9 +44,10 @@ class Seo
     public static function organization(): array
     {
         $home = url('/');
+        $phone = Contact::has() ? Contact::dial() : null;
 
         return ['@graph' => [
-            [
+            array_filter([
                 '@type' => 'OnlineStore',
                 '@id' => $home . '#store',
                 'name' => 'Nefis Şokolad Evi',
@@ -58,8 +59,15 @@ class Seo
                 'areaServed' => ['@type' => 'Country', 'name' => 'Azərbaycan'],
                 'address' => ['@type' => 'PostalAddress', 'addressLocality' => 'Bakı', 'addressCountry' => 'AZ'],
                 'currenciesAccepted' => 'AZN',
+                'telephone' => $phone,
+                'contactPoint' => $phone ? [
+                    '@type' => 'ContactPoint',
+                    'contactType' => 'customer service',
+                    'telephone' => $phone,
+                    'availableLanguage' => ['az', 'ru'],
+                ] : null,
                 'sameAs' => [self::INSTAGRAM],
-            ],
+            ]),
             [
                 '@type' => 'WebSite',
                 '@id' => $home . '#website',

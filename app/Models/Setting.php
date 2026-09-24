@@ -78,6 +78,11 @@ class Setting extends Model
 
     public const SEO_BING = 'seo_bing_verification';
 
+    /** How customers reach the shop: the phone (WhatsApp too) and when it is answered. */
+    public const CONTACT_PHONE = 'contact_phone';
+
+    public const CONTACT_HOURS = 'contact_hours';
+
     /** Google Analytics measurement id (G-XXXXXXX); empty means no counter on the site. */
     public const SEO_ANALYTICS = 'seo_google_analytics';
 
@@ -97,6 +102,7 @@ class Setting extends Model
         self::PAYMENT_NOTE => 'Köçürmədən sonra çeki (qəbzi) buraya yükləyin. Ödənişi 1 saat ərzində yoxlayıb sifarişinizi təsdiqləyirik.',
         self::CHOCOLATE_MARKUP => '30',
         self::CHOCOLATE_FROM_SALE => '0',
+        self::CONTACT_HOURS => 'Hər gün 10:00 — 20:00',
         self::MAINTENANCE => '0',
         self::MAINTENANCE_MESSAGE => 'Saytda texniki işlər aparılır. Tezliklə qayıdacağıq!',
         self::PROFIT_SHARES => '[{"name":"Sahibkar","percent":33.34},{"name":"Menecer 1","percent":33.33},{"name":"Menecer 2","percent":33.33}]',
