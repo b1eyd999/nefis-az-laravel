@@ -61,9 +61,9 @@ SVG;
 @once
   <div class="pg-modal" id="photo-guide-modal" hidden>
     <div class="pg-sheet" role="dialog" aria-modal="true" aria-labelledby="pg-title">
-      <button type="button" class="pg-close" id="photo-guide-close" aria-label="Bağla">×</button>
-      <h3 id="pg-title">Şəkil necə olmalıdır?</h3>
-      <p class="pg-lead">Şəkil qutunun üzərinə çap olunur, ona görə üz aydın görünməlidir.</p>
+      <button type="button" class="pg-close" id="photo-guide-close" aria-label="{{ __('Bağla') }}">×</button>
+      <h3 id="pg-title">{{ __('Şəkil necə olmalıdır?') }}</h3>
+      <p class="pg-lead">{{ __('Şəkil qutunun üzərinə çap olunur, ona görə üz aydın görünməlidir.') }}</p>
 
       <div class="pg-grid">
         <figure class="pg-case is-good">
@@ -75,7 +75,7 @@ SVG;
             </svg>
             <span class="pg-mark">✓</span>
           </div>
-          <figcaption><b>Belə olsun</b><br>Düz kameraya baxın: üz şəklin mərkəzində, çiyinlər görünsün, arxa fon sadə olsun.</figcaption>
+          <figcaption><b>{{ __('Belə olsun') }}</b><br>{{ __('Düz kameraya baxın: üz şəklin mərkəzində, çiyinlər görünsün, arxa fon sadə olsun.') }}</figcaption>
         </figure>
 
         <figure class="pg-case is-bad">
@@ -83,7 +83,7 @@ SVG;
             <svg viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">{!! $sketchSide !!}</svg>
             <span class="pg-mark">✕</span>
           </div>
-          <figcaption><b>Yandan</b><br>Profildən və ya aşağıdan çəkilmiş şəkildə üz tanınmır.</figcaption>
+          <figcaption><b>{{ __('Yandan') }}</b><br>{{ __('Profildən və ya aşağıdan çəkilmiş şəkildə üz tanınmır.') }}</figcaption>
         </figure>
 
         <figure class="pg-case is-bad">
@@ -91,15 +91,15 @@ SVG;
             <svg viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">{!! $sketchFar !!}</svg>
             <span class="pg-mark">✕</span>
           </div>
-          <figcaption><b>Çox uzaqdan</b><br>Tam boy və ya qarışıq fonda çəkilmiş şəkildə üz kiçik çıxır.</figcaption>
+          <figcaption><b>{{ __('Çox uzaqdan') }}</b><br>{{ __('Tam boy və ya qarışıq fonda çəkilmiş şəkildə üz kiçik çıxır.') }}</figcaption>
         </figure>
       </div>
 
       <ul class="pg-tips">
-        <li>Gündüz işığında və ya pəncərəyə tərəf durub çəkin — kölgə üzə düşməsin.</li>
-        <li>Telefonu göz səviyyəsində tutun.</li>
-        <li>Şəkil aydın olsun: bulanıq və ya ekrandan çəkilmiş şəkil çap olunanda daha pis görünür.</li>
-        <li>Bir neçə nəfər varsa, hamısı kameraya baxsın.</li>
+        <li>{{ __('Gündüz işığında və ya pəncərəyə tərəf durub çəkin — kölgə üzə düşməsin.') }}</li>
+        <li>{{ __('Telefonu göz səviyyəsində tutun.') }}</li>
+        <li>{{ __('Şəkil aydın olsun: bulanıq və ya ekrandan çəkilmiş şəkil çap olunanda daha pis görünür.') }}</li>
+        <li>{{ __('Bir neçə nəfər varsa, hamısı kameraya baxsın.') }}</li>
       </ul>
     </div>
   </div>
@@ -113,8 +113,8 @@ SVG;
       {!! $sketchGood !!}
     </svg>
     <div>
-      <p>Üz şəklin mərkəzində, düz kameraya baxaraq çəkilmiş olsun.</p>
-      <button type="button" class="pg-open" data-photo-guide>Nümunəyə bax</button>
+      <p>{{ __('Üz şəklin mərkəzində, düz kameraya baxaraq çəkilmiş olsun.') }}</p>
+      <button type="button" class="pg-open" data-photo-guide>{{ __('Nümunəyə bax') }}</button>
     </div>
   </div>
 @endif

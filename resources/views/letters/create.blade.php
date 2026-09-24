@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', \App\Support\Letter::text('title') . ' — Nefis Şokolad Evi')
-@section('meta_description', 'Şəkliniz və sözlərinizlə polaroid kimi çap olunan məktub — qutunun içinə və ya ayrıca hədiyyə.')
+@section('meta_description', __('Şəkliniz və sözlərinizlə polaroid kimi çap olunan məktub — qutunun içinə və ya ayrıca hədiyyə.'))
 
 @section('page_style')
   .letter-grid{ display:grid; gap:2.5rem; align-items:center; }
@@ -45,23 +45,23 @@
         <form class="letter-form" method="POST" action="{{ lroute('letters.store') }}" enctype="multipart/form-data">
           @csrf
           <div>
-            <label>Şəkil <span style="font-weight:400; color:var(--cocoa-soft);">(istəyə görə)</span></label>
+            <label>{{ __('Şəkil') }} <span style="font-weight:400; color:var(--cocoa-soft);">({{ __('istəyə görə') }})</span></label>
             <label class="letter-file">
               <input type="file" name="letter_photo" id="letter-photo" accept="image/*">
               <span id="letter-photo-name" data-label="📷 {{ $t['photo_label'] }}">📷 {{ $t['photo_label'] }}</span>
             </label>
-            <button type="button" class="letter-clear" id="letter-clear" hidden>Şəkli sil</button>
+            <button type="button" class="letter-clear" id="letter-clear" hidden>{{ __('Şəkli sil') }}</button>
           </div>
           <div>
-            <label for="letter-text">Mətn <span style="font-weight:400; color:var(--cocoa-soft);">(istəyə görə)</span></label>
+            <label for="letter-text">{{ __('Mətn') }} <span style="font-weight:400; color:var(--cocoa-soft);">({{ __('istəyə görə') }})</span></label>
             <textarea id="letter-text" name="letter_text" rows="4" maxlength="{{ $max }}" placeholder="{{ $t['text_placeholder'] }}">{{ old('letter_text') }}</textarea>
-            <p class="letter-hint">{{ $max }} simvola qədər. {{ $t['hint'] }}</p>
+            <p class="letter-hint">{{ __(':max simvola qədər.', ['max' => $max]) }} {{ $t['hint'] }}</p>
           </div>
           <div>
             <label for="letter-qty">Say</label>
             <input type="number" id="letter-qty" name="quantity" value="{{ old('quantity', 1) }}" min="1" max="20" style="max-width:7rem;">
           </div>
-          <div class="letter-price"><span>Qiymət</span><b>{{ \App\Support\Price::format($price) }}</b></div>
+          <div class="letter-price"><span>{{ __('Qiymət') }}</span><b>{{ \App\Support\Price::format($price) }}</b></div>
           <button type="submit" class="btn btn-primary btn-block">{{ $t['button'] }}</button>
           @if($t['note'])<p class="letter-hint">{{ $t['note'] }}</p>@endif
         </form>

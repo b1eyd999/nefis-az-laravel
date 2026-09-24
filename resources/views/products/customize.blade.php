@@ -3,12 +3,12 @@
 @php
   $seoImage = \App\Support\Media::url($product->catalogImage());
   $seoText = $product->description
-      ? \Illuminate\Support\Str::limit($product->description, 110) . ' Şəklinizi və sözlərinizi əlavə edin — Bakıda çatdırılma.'
-      : '«' . $product->name . '» dizaynında fərdi şokolad qutusu: şəklinizi və sözlərinizi əlavə edin, önizləməni dərhal görün'
+      ? \Illuminate\Support\Str::limit($product->description, 110) . ' ' . __('Şəklinizi və sözlərinizi əlavə edin — Bakıda çatdırılma.')
+      : '«' . $product->name . '» ' . __('dizaynında fərdi şokolad qutusu: şəklinizi və sözlərinizi əlavə edin, önizləməni dərhal görün')
         . ($product->price ? ', ' . \App\Support\Price::format($product->price) . '-dan' : '')
-        . '. Ad günü və sevdiklərinizə hədiyyə — Bakıda çatdırılma.';
+        . '. ' . __('Ad günü və sevdiklərinizə hədiyyə — Bakıda çatdırılma.');
 @endphp
-@section('title', $product->name . ' — şəkilli şokolad qutusu | Nefis')
+@section('title', $product->name . ' — ' . __('şəkilli şokolad qutusu') . ' | Nefis')
 @section('meta_description', $seoText)
 @if($seoImage)
   @section('og_image', $seoImage)
@@ -19,11 +19,11 @@
   {{ \App\Support\Seo::jsonLd(['@graph' => array_values(array_filter([
       array_filter([
           '@type' => 'Product',
-          'name' => $product->name . ' — şəkilli şokolad qutusu',
+          'name' => $product->name . ' — ' . __('şəkilli şokolad qutusu'),
           'image' => $seoImage ? [$seoImage] : null,
           'description' => $seoText,
           'sku' => 'nefis-' . $product->id,
-          'category' => 'Fərdi şokolad qutusu',
+          'category' => __('Fərdi şokolad qutusu'),
           'brand' => ['@type' => 'Brand', 'name' => 'Nefis'],
           'offers' => $product->price ? [
               '@type' => 'Offer',
@@ -36,7 +36,7 @@
           ] : null,
       ]),
       \App\Support\Seo::breadcrumbs([
-          ['Ana səhifə', lroute('home')],
+          [__('Ana səhifə'), lroute('home')],
           ['Dizaynlar', lroute('designs.index')],
           [$product->name, lroute('products.customize', $product->slug)],
       ]),
@@ -157,19 +157,19 @@
 @section('content')
 <section class="page-hero" style="padding-bottom:0;">
   <div class="wrap">
-    <nav class="crumbs" aria-label="Səhifənin yeri">
-      <a href="{{ lroute('home') }}">Ana səhifə</a><span aria-hidden="true">›</span>
+    <nav class="crumbs" aria-label="{{ __('Səhifənin yeri') }}">
+      <a href="{{ lroute('home') }}">{{ __('Ana səhifə') }}</a><span aria-hidden="true">›</span>
       <a href="{{ lroute('designs.index') }}">Dizaynlar</a><span aria-hidden="true">›</span>
       <span aria-current="page">{{ $product->name }}</span>
     </nav>
-    <span class="eyebrow" style="justify-content:center;">Fərdiləşdirmə</span>
+    <span class="eyebrow" style="justify-content:center;">{{ __('Fərdiləşdirmə') }}</span>
     <h1>{{ $product->name }}</h1>
     @if($product->description)
       <p class="lede" style="margin-inline:auto;">{{ $product->description }}</p>
     @endif
     @if($gifts->isNotEmpty())
-      <nav class="occ-chips" style="margin-top:1.25rem;" aria-label="Hədiyyə fikirləri">
-        <span style="width:100%; font-size:.8125rem; color:var(--cocoa-faint);">Bu dizayn bu münasibətlərə uyğundur:</span>
+      <nav class="occ-chips" style="margin-top:1.25rem;" aria-label="{{ __('Hədiyyə fikirləri') }}">
+        <span style="width:100%; font-size:.8125rem; color:var(--cocoa-faint);">{{ __('Bu dizayn bu münasibətlərə uyğundur:') }}</span>
         @foreach($gifts as $gift)
           <a class="occ-chip" href="{{ $gift->url() }}">{{ $gift->emoji }} {{ $gift->menu_label }}</a>
         @endforeach
@@ -199,11 +199,11 @@
         <div class="stage" id="stage" @if($firstScene) style="aspect-ratio: {{ $firstScene['w'] }} / {{ $firstScene['h'] }};" @endif>
           <canvas id="preview-canvas"></canvas>
           @if($photoSlots->isNotEmpty())
-            <div class="drop-hint" id="drop-hint">Öncə <span class="dh-wide">sağdan</span><span class="dh-narrow">aşağıdan</span>&nbsp;şəklinizi yükləyin</div>
+            <div class="drop-hint" id="drop-hint">{{ __('Öncə') }} <span class="dh-wide">{{ __('sağdan') }}</span><span class="dh-narrow">{{ __('aşağıdan') }}</span>&nbsp;{{ __('şəklinizi yükləyin') }}</div>
           @endif
           @if(count($viewData) > 1)
-            <button type="button" class="angle-arrow prev" id="angle-prev" aria-label="Əvvəlki görünüş">‹</button>
-            <button type="button" class="angle-arrow next" id="angle-next" aria-label="Sonrakı görünüş">›</button>
+            <button type="button" class="angle-arrow prev" id="angle-prev" aria-label="{{ __('Əvvəlki görünüş') }}">‹</button>
+            <button type="button" class="angle-arrow next" id="angle-next" aria-label="{{ __('Sonrakı görünüş') }}">›</button>
           @endif
         </div>
         @if(count($viewData) > 1)
@@ -229,25 +229,25 @@
 
         @foreach($photoSlots as $index => $slot)
           <div class="slot-block" data-slot="{{ $index }}">
-            <label>{{ $loop->iteration }}. {{ $slot->label ?: 'Şəkil' }}</label>
+            <label>{{ $loop->iteration }}. {{ $slot->label ?: __('Şəkil') }}</label>
             {{-- Drawn, not described: what the shot has to look like. --}}
             @include('partials.photo-guide', ['small' => true])
             <label class="upload-box" for="photo-input-{{ $index }}">
               <div class="ico">📷</div>
-              <div class="upload-label">Şəkil seçmək üçün klikləyin</div>
+              <div class="upload-label">{{ __('Şəkil seçmək üçün klikləyin') }}</div>
             </label>
             <input type="file" class="photo-input" id="photo-input-{{ $index }}" name="photos[{{ $index }}]"
                    accept="image/*" required style="display:none;">
             <div class="range-row zoom-row" hidden>
-              <span class="lbl">Yaxınlaşdır</span>
+              <span class="lbl">{{ __('Yaxınlaşdır') }}</span>
               <input type="range" class="zoom-range" min="50" max="500" value="100">
             </div>
             <div class="range-row rotate-row" hidden>
-              <span class="lbl">Fırlat</span>
+              <span class="lbl">{{ __('Fırlat') }}</span>
               <input type="range" class="rotate-range" min="-180" max="180" value="0">
-              <button type="button" class="rotate-reset" title="Sıfırla">↺</button>
+              <button type="button" class="rotate-reset" title="{{ __('Sıfırla') }}">↺</button>
             </div>
-            <p class="slot-hint" hidden>Şəkli önizləmədə sürükləyərək mövqeyini dəyişə bilərsiniz.</p>
+            <p class="slot-hint" hidden>{{ __('Şəkli önizləmədə sürükləyərək mövqeyini dəyişə bilərsiniz.') }}</p>
           </div>
         @endforeach
 
@@ -264,13 +264,13 @@
           @else
             @php if ($slot->link_key) $seenLinks[] = $slot->link_key; @endphp
             <div>
-              <label for="text-input-{{ $index }}">{{ $slot->label ?: 'Mətn' }}</label>
+              <label for="text-input-{{ $index }}">{{ $slot->label ?: __('Mətn') }}</label>
               @if($slot->isTime())
                 {{-- Four digits; the colon is put in as the customer types. --}}
                 <input type="text" class="text-input time-input" id="text-input-{{ $index }}" name="custom_texts[{{ $index }}]"
                        @if($slot->link_key) data-link="{{ $slot->link_key }}" data-link-lead @endif
                        inputmode="numeric" maxlength="5" pattern="[0-9]{2}:[0-5][0-9]" required
-                       placeholder="dəq:san (məs. 03:45)" title="dəq:san, məs. 03:45"
+                       placeholder="{{ __('dəq:san (məs. 03:45)') }}" title="{{ __('dəq:san, məs. 03:45') }}"
                        value="{{ old('custom_texts.' . $index, $slot->default_value) }}">
               @elseif($slot->max_lines > 1 || str_contains((string) $slot->default_value, "\n"))
                 {{-- Room for more than one line, so Enter breaks the line here too.
@@ -280,13 +280,13 @@
                           @if($slot->link_key) data-link="{{ $slot->link_key }}" data-link-lead @endif
                           maxlength="{{ $slot->limit() }}"
                           rows="{{ min(4, max(2, substr_count((string) $value, "\n") + 1)) }}"
-                          placeholder="{{ $slot->placeholder ?: 'Məs. Ad Soyad və ya qısa mesaj' }}">{{ $value }}</textarea>
-                <p class="slot-hint">Yeni sətir üçün Enter basın.</p>
+                          placeholder="{{ $slot->placeholder ?: __('Məs. Ad Soyad və ya qısa mesaj') }}">{{ $value }}</textarea>
+                <p class="slot-hint">{{ __('Yeni sətir üçün Enter basın.') }}</p>
               @else
                 <input type="text" class="text-input" id="text-input-{{ $index }}" name="custom_texts[{{ $index }}]"
                        @if($slot->link_key) data-link="{{ $slot->link_key }}" data-link-lead @endif
                        maxlength="{{ $slot->limit() }}"
-                       placeholder="{{ $slot->placeholder ?: 'Məs. Ad Soyad və ya qısa mesaj' }}"
+                       placeholder="{{ $slot->placeholder ?: __('Məs. Ad Soyad və ya qısa mesaj') }}"
                        value="{{ old('custom_texts.' . $index, $slot->default_value) }}">
               @endif
             </div>
@@ -309,16 +309,16 @@
             $openBrand = $picked['brand'] ?? $brands->keys()->first();
           @endphp
           <div class="choc-block" id="choc-block">
-            <label>Qutunun içindəki şokolad</label>
+            <label>{{ __('Qutunun içindəki şokolad') }}</label>
             @if($brands->count() > 1)
-              <div class="choc-brands" aria-label="Marka seçin">
+              <div class="choc-brands" aria-label="{{ __('Marka seçin') }}">
                 @foreach($brands as $brand => $bars)
                   <button type="button" class="choc-brand{{ in_array($brand, $top, true) ? ' top' : '' }}{{ $brand === $openBrand ? ' active' : '' }}{{ $picked && $picked['brand'] === $brand ? ' has-pick' : '' }}"
                           data-brand="{{ $brand }}" aria-pressed="{{ $brand === $openBrand ? 'true' : 'false' }}">{{ $brand }} <span>{{ $bars->count() }}</span></button>
                 @endforeach
               </div>
             @endif
-            <div role="radiogroup" aria-label="Şokolad seçin">
+            <div role="radiogroup" aria-label="{{ __('Şokolad seçin') }}">
               @foreach($brands as $brand => $bars)
                 <div class="choc-group" data-brand="{{ $brand }}" @if($brand !== $openBrand) hidden @endif>
                   <div class="choc-grid">
@@ -344,10 +344,10 @@
         @if($wrappings->isNotEmpty())
           {{-- Gift wrap: swatches of paper, grouped by price. Picking one shows the box wrapped in it. --}}
           <div class="wrap-block" id="wrap-block">
-            <label>Hədiyyə qablaşdırması</label>
+            <label>{{ __('Hədiyyə qablaşdırması') }}</label>
             <label class="wrap-none">
               <input type="radio" name="wrapping_id" value="" data-price="0" data-name="" @checked(! old('wrapping_id'))>
-              <span>Qablaşdırmasız</span><b>pulsuz</b>
+              <span>{{ __('Qablaşdırmasız') }}</span><b>{{ __('pulsuz') }}</b>
             </label>
             @foreach($wrappings->groupBy(fn ($w) => number_format($w['price'], 2, '.', '')) as $price => $group)
               <div class="wrap-group">
@@ -368,7 +368,7 @@
               </div>
             @endforeach
             {{-- The box as it will be handed over, in the paper just picked. --}}
-            <div class="wrap-preview" id="wrap-preview" data-gift-open title="Hər tərəfdən bax" hidden>
+            <div class="wrap-preview" id="wrap-preview" data-gift-open title="{{ __('Hər tərəfdən bax') }}" hidden>
               @include('partials.gift-box', ['wrap' => null])
               <p class="wrap-preview-name" id="wrap-preview-name"></p>
             </div>
@@ -389,11 +389,11 @@
               <div class="letter-inputs">
                 <label class="letter-file">
                   <input type="file" name="letter_photo" id="letter-photo" accept="image/*">
-                  <span id="letter-photo-name">📷 Şəkil (istəyə görə)</span>
+                  <span id="letter-photo-name">📷 {{ __('Şəkil (istəyə görə)') }}</span>
                 </label>
                 <textarea name="letter_text" id="letter-text" rows="3" maxlength="{{ \App\Support\Letter::maxLength() }}"
-                          placeholder="Məktubun mətni (istəyə görə)">{{ old('letter_text') }}</textarea>
-                <p class="slot-hint">Şəkil olmasa, mətn polaroidin içində yazılır.</p>
+                          placeholder="{{ __('Məktubun mətni (istəyə görə)') }}">{{ old('letter_text') }}</textarea>
+                <p class="slot-hint">{{ __('Şəkil olmasa, mətn polaroidin içində yazılır.') }}</p>
               </div>
             </div>
           </div>
@@ -406,14 +406,14 @@
           <div class="letter-block" id="ar-block">
             <label class="letter-toggle">
               <input type="checkbox" name="ar_on" value="1" id="ar-on" @checked($arOn)>
-              <span>🎬 Canlı şəkil (AR) — qutu telefonda canlanır</span>
+              <span>🎬 {{ __('Canlı şəkil (AR) — qutu telefonda canlanır') }}</span>
               <b>+{{ \App\Support\Price::format(\App\Support\LiveMaterials::price()) }}</b>
             </label>
             <div id="ar-fields" @unless($arOn) hidden @endunless style="margin-top:.8rem;">
-              <p class="slot-hint" style="margin:0 0 .6rem;">Qutuya QR kod çap edirik. Hədiyyəni alan QR kodu oxudub telefonu qutunun şəklinə tutanda, sizin videonuz şəklin üstündə oynayır — tətbiq yükləmədən.</p>
+              <p class="slot-hint" style="margin:0 0 .6rem;">{{ __('Qutuya QR kod çap edirik. Hədiyyəni alan QR kodu oxudub telefonu qutunun şəklinə tutanda, sizin videonuz şəklin üstündə oynayır — tətbiq yükləmədən.') }}</p>
               <label class="letter-file">
                 <input type="file" name="ar_video" id="ar-video" accept="video/mp4,video/quicktime,video/webm,video/*">
-                <span id="ar-video-name">🎬 Video seçin (MP4/MOV, {{ \App\Support\LiveMaterials::videoMb() }} MB-a qədər)</span>
+                <span id="ar-video-name">🎬 {{ __('Video seçin (MP4/MOV, :mb MB-a qədər)', ['mb' => \App\Support\LiveMaterials::videoMb()]) }}</span>
               </label>
               <p class="slot-hint">Ən yaxşısı 10–30 saniyəlik, şaquli çəkilmiş video. Qutunun dizaynı kamera üçün özü hazırlanır — "Səbətə at" basanda bir neçə saniyə çəkir.</p>
               <input type="file" name="ar_photo" id="ar-photo" hidden>
@@ -429,25 +429,25 @@
 
         @if($product->price || $chocolates->isNotEmpty() || $wrappings->isNotEmpty() || \App\Support\Letter::enabled())
           <div class="price-sum" id="price-sum" data-box="{{ (float) $product->price }}">
-            <div><span>Qutu</span><span>{{ $product->price ? \App\Support\Price::format($product->price) : 'sorğu ilə' }}</span></div>
+            <div><span>{{ __('Qutu') }}</span><span>{{ $product->price ? \App\Support\Price::format($product->price) : __('sorğu ilə') }}</span></div>
             @if($chocolates->isNotEmpty())
-              <div><span id="sum-choc-name" class="sum-name">Şokolad</span><span id="sum-choc">seçilməyib</span></div>
+              <div><span id="sum-choc-name" class="sum-name">{{ __('Şokolad') }}</span><span id="sum-choc">{{ __('seçilməyib') }}</span></div>
             @endif
             @if(\App\Support\LiveMaterials::enabled())
-              <div id="sum-ar-row" data-price="{{ \App\Support\LiveMaterials::price() }}" hidden><span>Canlı şəkil (AR)</span><span>{{ \App\Support\Price::format(\App\Support\LiveMaterials::price()) }}</span></div>
+              <div id="sum-ar-row" data-price="{{ \App\Support\LiveMaterials::price() }}" hidden><span>{{ __('Canlı şəkil (AR)') }}</span><span>{{ \App\Support\Price::format(\App\Support\LiveMaterials::price()) }}</span></div>
             @endif
             @if(\App\Support\Letter::enabled())
-              <div id="sum-letter-row" data-price="{{ \App\Support\Letter::price() }}" hidden><span>Polaroid məktub</span><span id="sum-letter">{{ \App\Support\Price::format(\App\Support\Letter::price()) }}</span></div>
+              <div id="sum-letter-row" data-price="{{ \App\Support\Letter::price() }}" hidden><span>{{ __('Polaroid məktub') }}</span><span id="sum-letter">{{ \App\Support\Price::format(\App\Support\Letter::price()) }}</span></div>
             @endif
             @if($wrappings->isNotEmpty())
-              <div id="sum-wrap-row" hidden><span id="sum-wrap-name" class="sum-name">Qablaşdırma</span><span id="sum-wrap">—</span></div>
+              <div id="sum-wrap-row" hidden><span id="sum-wrap-name" class="sum-name">{{ __('Qablaşdırma') }}</span><span id="sum-wrap">—</span></div>
             @endif
-            <div class="total"><span>Cəmi</span><span id="sum-total">—</span></div>
+            <div class="total"><span>{{ __('Cəmi') }}</span><span id="sum-total">—</span></div>
           </div>
         @endif
 
         <button type="submit" class="btn btn-primary btn-block" id="add-to-cart-btn"
-                @if($photoSlots->isNotEmpty()) disabled @endif>Səbətə Əlavə Et</button>
+                @if($photoSlots->isNotEmpty()) disabled @endif>{{ __('Səbətə Əlavə Et') }}</button>
       </form>
     </div>
   </div>
@@ -457,8 +457,8 @@
   <section class="tinted">
     <div class="wrap">
       <div class="section-head center">
-        <span class="eyebrow" style="justify-content:center;">Oxşar dizaynlar</span>
-        <h2>Bunlara da baxın</h2>
+        <span class="eyebrow" style="justify-content:center;">{{ __('Oxşar dizaynlar') }}</span>
+        <h2>{{ __('Bunlara da baxın') }}</h2>
       </div>
       <div class="cards-grid">
         {{-- a name of its own: the page's own $product is still needed below --}}
@@ -1043,7 +1043,7 @@
     name.innerHTML = '';
     name.appendChild(document.createTextNode(r.dataset.name + ' · ' + price));
     var hint = document.createElement('small');
-    hint.textContent = 'Hər tərəfdən baxmaq üçün klikləyin';
+    hint.textContent = @json(__('Hər tərəfdən baxmaq üçün klikləyin'));
     name.appendChild(hint);
     /* the viewer reads the wrap from here */
     ['pattern', 'ribbon', 'color', 'scale'].forEach(function(k){ box.dataset[k] = r.dataset[k]; });
@@ -1084,7 +1084,7 @@
   on.addEventListener('change', function(){ fields.hidden = !on.checked; });
   file.addEventListener('change', function(){
     var f = file.files && file.files[0];
-    name.textContent = f ? '📷 ' + f.name : '📷 Şəkil (istəyə görə)';
+    name.textContent = f ? '📷 ' + f.name : '📷 ' + @json(__('Şəkil (istəyə görə)'));
   });
 })();
 
@@ -1111,7 +1111,7 @@
   toggle();
   file.addEventListener('change', function(){
     var f = file.files && file.files[0];
-    name.textContent = f ? '🎬 ' + f.name + (f.size > MAX ? ' — {{ \App\Support\LiveMaterials::videoMb() }} MB-dan böyükdür!' : '') : label;
+    name.textContent = f ? '🎬 ' + f.name + (f.size > MAX ? ' — ' + @json(__(':mb MB-dan böyükdür!', ['mb' => \App\Support\LiveMaterials::videoMb()])) : '') : label;
   });
 
   form.addEventListener('submit', function(e){
@@ -1121,13 +1121,13 @@
     e.preventDefault();
     var text = btn.textContent;
     btn.disabled = true;
-    btn.textContent = 'Canlı şəkil hazırlanır…';
-    var go = function(){ form.dataset.live = '1'; btn.textContent = 'Göndərilir…'; form.submit(); };
+    btn.textContent = @json(__('Canlı şəkil hazırlanır…'));
+    var go = function(){ form.dataset.live = '1'; btn.textContent = @json(__('Göndərilir…')); form.submit(); };
     var design;
     try { design = window.nefisDesign(); } catch (err) { go(); return; }
     NefisLive.toBlob(NefisLive.flatten(design, 2000), 'image/jpeg', 0.9)
       .then(function(b){ NefisLive.attach(photo, b, 'design.jpg'); })
-      .then(function(){ return NefisLive.compile(design, function(p){ btn.textContent = 'Canlı şəkil hazırlanır… ' + p + '%'; }); })
+      .then(function(){ return NefisLive.compile(design, function(p){ btn.textContent = @json(__('Canlı şəkil hazırlanır…')) + ' ' + p + '%'; }); })
       .then(function(blob){ NefisLive.attach(mind, blob, 'target.mind'); })
       /* Whatever this browser could not do, the shop does by hand. */
       .then(go, go);
@@ -1152,12 +1152,12 @@
     var wrapRow = document.getElementById('sum-wrap-row');
     if (wrapRow) {
       wrapRow.hidden = !(wrapPick && wrapPick.value);
-      document.getElementById('sum-wrap-name').textContent = wrapPick && wrapPick.value ? 'Qablaşdırma: ' + wrapPick.dataset.name : 'Qablaşdırma';
+      document.getElementById('sum-wrap-name').textContent = wrapPick && wrapPick.value ? @json(__('Qablaşdırma')) + ': ' + wrapPick.dataset.name : 'Qablaşdırma';
       document.getElementById('sum-wrap').textContent = fmt(wrap);
     }
     var n = Math.max(1, parseInt(qty.value, 10) || 1);
-    if (chocOut) chocOut.textContent = picked ? fmt(choc) : 'seçilməyib';
-    if (chocName) chocName.textContent = picked ? picked.dataset.name : 'Şokolad';
+    if (chocOut) chocOut.textContent = picked ? fmt(choc) : @json(__('seçilməyib'));
+    if (chocName) chocName.textContent = picked ? picked.dataset.name : @json(__('Şokolad'));
     var letterOn = document.getElementById('letter-on');
     var letterRow = document.getElementById('sum-letter-row');
     var letter = letterOn && letterOn.checked && letterRow ? parseFloat(letterRow.dataset.price) || 0 : 0;

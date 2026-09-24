@@ -30,9 +30,9 @@
   <main class="card">
     <img src="/images/logo.svg" alt="Nefis">
     <div class="ico">🍫</div>
-    <h1>Tezliklə qayıdırıq</h1>
+    <h1>{{ __('Tezliklə qayıdırıq') }}</h1>
     <p>{{ $message }}</p>
-    <a href="https://www.instagram.com/nefis.az" target="_blank" rel="noopener">Instagramda yazın</a>
+    <a href="https://www.instagram.com/nefis.az" target="_blank" rel="noopener">{{ __('Instagramda yazın') }}</a>
   </main>
 </body>
 </html>

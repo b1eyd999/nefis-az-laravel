@@ -18,9 +18,9 @@
 <body>
   <div class="box">
     <img src="/images/logo.svg" alt="Nefis" style="height:3rem;">
-    <h1>Fayllar çox böyükdür</h1>
+    <h1>{{ __('Fayllar çox böyükdür') }}</h1>
     <p>Bir göndərişdə 30 MB-a qədər fayl yükləmək olar. Videonu qısaldın və ya sıxın (18 MB-a qədər), sonra yenidən cəhd edin.</p>
-    <a href="javascript:history.back()">← Geri qayıt</a>
+    <a href="javascript:history.back()">← {{ __('Geri qayıt') }}</a>
   </div>
 </body>
 </html>

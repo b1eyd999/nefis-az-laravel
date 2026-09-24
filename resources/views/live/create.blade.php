@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Canlı şəkil — Nefis Şokolad Evi')
-@section('meta_description', 'Şəklinizi canlandırın: QR kodu oxudub telefonu şəklə tutanda üstündə sizin videonuz oynayır — tətbiq yükləmədən.')
+@section('title', __('Canlı şəkil') . ' — Nefis Şokolad Evi')
+@section('meta_description', __('Şəklinizi canlandırın: QR kodu oxudub telefonu şəklə tutanda üstündə sizin videonuz oynayır — tətbiq yükləmədən.'))
 
 @section('page_style')
   .live-grid{ display:grid; gap:2.5rem; align-items:start; }
@@ -48,8 +48,8 @@
   <section class="page-hero" style="padding-bottom:0;">
     <div class="wrap">
       <span class="eyebrow" style="justify-content:center;">Yeni · AR</span>
-      <h1>Canlı şəkil</h1>
-      <p class="lede" style="margin-inline:auto;">Şəklinizi canlandırın: QR kodu oxudub telefonu şəklə tutanda, üstündə sizin videonuz oynayır — heç bir tətbiq yükləmədən.</p>
+      <h1>{{ __('Canlı şəkil') }}</h1>
+      <p class="lede" style="margin-inline:auto;">{{ __('Şəklinizi canlandırın: QR kodu oxudub telefonu şəklə tutanda, üstündə sizin videonuz oynayır — heç bir tətbiq yükləmədən.') }}</p>
     </div>
   </section>
 
@@ -65,41 +65,41 @@
         <div class="live-stage">
           <div class="live-phone" aria-hidden="true">
             <div class="live-screen">
-              <div class="live-pic empty" id="live-pic">Şəkil və video seçin — burada necə canlanacağını görəcəksiniz</div>
-              <span class="live-scan" id="live-scan" hidden>▶ Video şəklin üstündə oynayır</span>
+              <div class="live-pic empty" id="live-pic">{{ __('Şəkil və video seçin — burada necə canlanacağını görəcəksiniz') }}</div>
+              <span class="live-scan" id="live-scan" hidden>▶ {{ __('Video şəklin üstündə oynayır') }}</span>
             </div>
           </div>
-          <p class="live-caption">Telefonda belə görünəcək: kamera şəkli tanıyır və video onun üzərinə düşür.</p>
+          <p class="live-caption">{{ __('Telefonda belə görünəcək: kamera şəkli tanıyır və video onun üzərinə düşür.') }}</p>
         </div>
 
         <form class="live-form" id="live-form" method="POST" action="{{ lroute('live.store') }}" enctype="multipart/form-data">
           @csrf
           <div>
-            <label>1. Canlanacaq şəkil</label>
+            <label>1. {{ __('Canlanacaq şəkil') }}</label>
             <label class="live-file" id="photo-pick">
               <input type="file" name="ar_photo" id="ar-photo" accept="image/*" required>
-              <span id="photo-name">📷 Şəkil seçin</span>
+              <span id="photo-name">📷 {{ __('Şəkil seçin') }}</span>
             </label>
-            <p class="live-hint">Bu şəkil QR kodla birlikdə çap olunur. Aydın, detallı şəkillər kamera tərəfindən daha yaxşı tanınır.</p>
+            <p class="live-hint">{{ __('Bu şəkil QR kodla birlikdə çap olunur. Aydın, detallı şəkillər kamera tərəfindən daha yaxşı tanınır.') }}</p>
           </div>
           <div>
             <label>2. Video</label>
             <label class="live-file" id="video-pick">
               <input type="file" name="ar_video" id="ar-video" accept="video/mp4,video/quicktime,video/webm,video/*" required>
-              <span id="video-name">🎬 Video seçin (MP4/MOV, {{ $maxMb }} MB-a qədər)</span>
+              <span id="video-name">🎬 {{ __('Video seçin (MP4/MOV, :mb MB-a qədər)', ['mb' => $maxMb]) }}</span>
             </label>
-            <p class="live-hint" id="video-hint">Ən yaxşısı 10–30 saniyəlik video. Öz ölçüsündə (məs. 9:16), kəsilmədən oynayır.</p>
+            <p class="live-hint" id="video-hint">{{ __('Ən yaxşısı 10–30 saniyəlik video. Öz ölçüsündə (məs. 9:16), kəsilmədən oynayır.') }}</p>
           </div>
 
           <input type="file" name="ar_mind" id="ar-mind" hidden>
           <div class="live-prep" id="prep" hidden>
-            <span id="prep-text">Şəkil kamera üçün hazırlanır…</span>
+            <span id="prep-text">{{ __('Şəkil kamera üçün hazırlanır…') }}</span>
             <span class="live-bar"><i id="prep-bar"></i></span>
           </div>
-          <p class="live-hint" id="prep-hint" hidden>Hazırlanarkən bu səhifədən çıxmayın.</p>
+          <p class="live-hint" id="prep-hint" hidden>{{ __('Hazırlanarkən bu səhifədən çıxmayın.') }}</p>
 
-          <div class="live-price"><span>Qiymət</span><b>{{ \App\Support\Price::format($price) }}</b></div>
-          <button type="submit" class="btn btn-primary btn-block" id="live-submit">Səbətə at</button>
+          <div class="live-price"><span>{{ __('Qiymət') }}</span><b>{{ \App\Support\Price::format($price) }}</b></div>
+          <button type="submit" class="btn btn-primary btn-block" id="live-submit">{{ __('Səbətə at') }}</button>
 
           {{-- Drawn, because "the camera recognises the picture and the video
                plays over it" is a sentence people read twice. --}}
@@ -113,7 +113,7 @@
                 <circle cx="35" cy="32" r="9" />
                 <path d="M32.5 27.5l6 4.5-6 4.5z" />
               </svg>
-              <span>Şəkli və videonu yükləyirsiniz — qalanını sistem özü hazırlayır.</span>
+              <span>{{ __('Şəkli və videonu yükləyirsiniz — qalanını sistem özü hazırlayır.') }}</span>
             </li>
             <li>
               <svg class="step-art" viewBox="0 0 48 48" aria-hidden="true">
@@ -124,7 +124,7 @@
                 <path d="M7 27h5v5H7z" /><path d="M18 27h5v5h-5z" /><path d="M7 33h5v5H7z" />
                 <path d="M15 27v2" /><path d="M15 33h2v2h-2z" /><path d="M20 35h3v3h-3z" /><path d="M15 38h2" />
               </svg>
-              <span>Şəkli QR kodla birlikdə çap edib sifarişinizlə göndəririk.</span>
+              <span>{{ __('Şəkli QR kodla birlikdə çap edib sifarişinizlə göndəririk.') }}</span>
             </li>
             <li>
               <svg class="step-art" viewBox="0 0 48 48" aria-hidden="true">
@@ -135,7 +135,7 @@
                 <path d="M21 24l-3 3M25 36l-2 3M17 22l-2-2" opacity=".5" />
                 <path d="M40 38l1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z" opacity=".6" />
               </svg>
-              <span>Hədiyyəni alan QR kodu oxudur, telefonu şəklə tutur — video şəklin üstündə oynayır.</span>
+              <span>{{ __('Hədiyyəni alan QR kodu oxudur, telefonu şəklə tutur — video şəklin üstündə oynayır.') }}</span>
             </li>
           </ol>
         </form>
@@ -162,7 +162,7 @@
     pic.innerHTML = '';
     if (!picUrl) {
       pic.className = 'live-pic empty';
-      pic.textContent = 'Şəkil və video seçin — burada necə canlanacağını görəcəksiniz';
+      pic.textContent = @json(__('Şəkil və video seçin — burada necə canlanacağını görəcəksiniz'));
       pic.style.aspectRatio = '';
       scan.hidden = true;
       return;
@@ -200,20 +200,20 @@
         var name = f.name.replace(/\.[^.]+$/, '') + '.jpg';
         if (mine === job && NefisLive.attach(photo, b, name)) photo.files[0].__nefis = true;
         prep.hidden = false; prepHint.hidden = false;
-        prepText.textContent = 'Şəkil kamera üçün hazırlanır…';
+        prepText.textContent = @json(__('Şəkil kamera üçün hazırlanır…'));
         prepBar.style.width = '0%';
         return NefisLive.compile(print, function(p){ if (mine === job) prepBar.style.width = p + '%'; });
       });
     }).then(function(blob){
       if (mine !== job) return;
       NefisLive.attach(mind, blob, 'target.mind');
-      prepText.textContent = '✓ Şəkil kamera üçün hazırdır';
+      prepText.textContent = '✓ ' + @json(__('Şəkil kamera üçün hazırdır'));
       prepBar.style.width = '100%';
       prepHint.hidden = true;
     }).catch(function(){
       if (mine !== job) return;
       /* Not this browser: the shop prepares it by hand instead. */
-      prepText.textContent = 'Şəkil qəbul olundu — kamera üçün biz hazırlayacağıq';
+      prepText.textContent = @json(__('Şəkil qəbul olundu — kamera üçün biz hazırlayacağıq'));
       prepHint.hidden = true;
     });
   });
@@ -228,8 +228,8 @@
     var big = f.size > MAX;
     hint.classList.toggle('bad', big);
     hint.textContent = big
-      ? 'Video ' + (f.size / 1048576).toFixed(1) + ' MB-dır — {{ $maxMb }} MB-dan kiçik olmalıdır. Qısaldın və ya sıxın.'
-      : 'Ən yaxşısı 10–30 saniyəlik video. Öz ölçüsündə (məs. 9:16), kəsilmədən oynayır.';
+      ? 'Video ' + (f.size / 1048576).toFixed(1) + ' ' + @json(__('MB-dır — :mb MB-dan kiçik olmalıdır. Qısaldın və ya sıxın.', ['mb' => $maxMb]))
+      : @json(__('Ən yaxşısı 10–30 saniyəlik video. Öz ölçüsündə (məs. 9:16), kəsilmədən oynayır.'));
     vidUrl = URL.createObjectURL(f);
     preview();
   });
@@ -241,7 +241,7 @@
     if (!job || form.dataset.go) return;
     e.preventDefault();
     submit.disabled = true;
-    submit.textContent = 'Hazırlanır…';
+    submit.textContent = @json(__('Hazırlanır…'));
     var go = function(){ form.dataset.go = '1'; submit.textContent = 'Göndərilir…'; form.submit(); };
     job.then(go, go);
   });

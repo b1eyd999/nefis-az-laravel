@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Hədiyyə qablaşdırması — Nefis Şokolad Evi')
-@section('meta_description', 'Şokolad qutunuzu hədiyyə kağızına büküb lentlə bağlayırıq. Naxışları və qiymətləri burada görün.')
+@section('title', __('Hədiyyə qablaşdırması') . ' — Nefis Şokolad Evi')
+@section('meta_description', __('Şokolad qutunuzu hədiyyə kağızına büküb lentlə bağlayırıq. Naxışları və qiymətləri burada görün.'))
 
 @section('page_style')
   .wr-group{ margin-bottom:3.5rem; }
@@ -30,9 +30,9 @@
 @section('content')
   <section class="page-hero">
     <div class="wrap">
-      <span class="eyebrow">Hədiyyə üçün</span>
-      <h1>Qablaşdırma</h1>
-      <p class="lede">Qutunuzu seçdiyiniz kağıza büküb lentlə bağlayırıq — açılana qədər sürpriz qalsın.</p>
+      <span class="eyebrow">{{ __('Hədiyyə üçün') }}</span>
+      <h1>{{ __('Qablaşdırma') }}</h1>
+      <p class="lede">{{ __('Qutunuzu seçdiyiniz kağıza büküb lentlə bağlayırıq — açılana qədər sürpriz qalsın.') }}</p>
     </div>
   </section>
 
@@ -42,13 +42,13 @@
         <div class="wr-group">
           <div class="wr-head">
             <span class="wr-badge">{{ \App\Support\Price::format((float) $price) }}</span>
-            <h2>{{ $wraps->count() }} naxış</h2>
+            <h2>{{ __(':count naxış', ['count' => $wraps->count()]) }}</h2>
           </div>
           <div class="wr-grid">
             @foreach($wraps as $w)
               <button type="button" class="wr-card" data-gift-open data-name="{{ $w['name'] }}"
                       data-price="{{ \App\Support\Price::format($w['price']) }}" data-ribbon-label="{{ \App\Models\Wrapping::RIBBONS[$w['ribbon']] ?? '' }}"
-                      aria-label="{{ $w['name'] }} — hər tərəfdən bax">
+                      aria-label="{{ $w['name'] }} — {{ __('hər tərəfdən bax') }}">
                 <span class="wr-360">360°</span>
                 @include('partials.gift-box', ['wrap' => $w])
                 <span class="wr-body">
@@ -60,12 +60,12 @@
           </div>
         </div>
       @empty
-        <div class="empty-note"><p>Qablaşdırmalar tezliklə əlavə olunacaq.</p></div>
+        <div class="empty-note"><p>{{ __('Qablaşdırmalar tezliklə əlavə olunacaq.') }}</p></div>
       @endforelse
 
       <div class="wr-cta">
-        <p>Qutuya hər tərəfdən baxmaq üçün üzərinə klikləyin. Qablaşdırmanı dizaynı seçəndə, şokoladdan sonra seçirsiniz.</p>
-        <a href="{{ lroute('designs.index') }}" class="btn btn-primary">Dizayn seç</a>
+        <p>{{ __('Qutuya hər tərəfdən baxmaq üçün üzərinə klikləyin. Qablaşdırmanı dizaynı seçəndə, şokoladdan sonra seçirsiniz.') }}</p>
+        <a href="{{ lroute('designs.index') }}" class="btn btn-primary">{{ __('Dizayn seç') }}</a>
       </div>
     </div>
   </section>
