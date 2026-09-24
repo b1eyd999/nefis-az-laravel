@@ -423,9 +423,13 @@ class LivePhotoTest extends TestCase
         $box = $this->box();
         $this->admin();
         Livewire::test(ListLivePhotos::class)
-            ->callAction('sale', ['enabled' => true, 'price' => 7.5])
+            ->callAction('sale', ['enabled' => true, 'price' => 7.5, 'video_mb' => 15])
             ->assertHasNoActionErrors();
         $this->assertSame(['1', '7.5'], [Setting::get(Setting::AR_ENABLED), Setting::get(Setting::AR_PRICE)]);
+
+        // The owner raises how big a video may be, and the pages say so.
+        $this->assertSame(15, \App\Support\LiveMaterials::videoMb());
+        $this->get(route('live.create'))->assertOk()->assertSee('15 MB-a qədər');
 
         $user = User::factory()->create();
         $this->actingAs($user)->get(route('products.customize', $box->slug))->assertOk()

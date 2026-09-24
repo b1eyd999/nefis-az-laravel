@@ -14,8 +14,44 @@ use Illuminate\Support\Str;
  */
 class LiveMaterials
 {
-    /** The hosting takes files up to 20 MB and 30 MB a request, the box's photos included. */
+    /** What the shop asks for until the owner says otherwise, in MB. */
     public const VIDEO_MB = 18;
+
+    /** The biggest video a customer may send, as the owner set it in the admin. */
+    public static function videoMb(): int
+    {
+        return max(1, (int) Setting::get(Setting::AR_VIDEO_MB) ?: self::VIDEO_MB);
+    }
+
+    /**
+     * What PHP on this server accepts, leaving room for the rest of the form.
+     * The admin will not let the limit above be set any higher than this:
+     * asking for more than the server takes only turns into a failed upload.
+     */
+    public static function hostMb(): int
+    {
+        $upload = self::iniMb('upload_max_filesize');
+        $post = self::iniMb('post_max_size');
+        $limits = array_filter([$upload, $post > 0 ? $post - 2 : 0.0]);
+
+        return $limits === [] ? self::VIDEO_MB : max(1, (int) floor(min($limits)));
+    }
+
+    private static function iniMb(string $key): float
+    {
+        $value = trim((string) ini_get($key));
+        if ($value === '' || $value === '-1') {
+            return 0.0;
+        }
+        $number = (float) $value;
+
+        return match (strtolower(substr($value, -1))) {
+            'g' => $number * 1024,
+            'm' => $number,
+            'k' => $number / 1024,
+            default => $number / 1048576,
+        };
+    }
 
     public static function enabled(): bool
     {
@@ -34,7 +70,7 @@ class LiveMaterials
     public static function rules(bool $photoRequired): array
     {
         return [
-            'ar_video' => ['required', 'file', 'mimetypes:video/mp4,video/quicktime,video/webm,video/x-m4v', 'max:' . self::VIDEO_MB * 1024],
+            'ar_video' => ['required', 'file', 'mimetypes:video/mp4,video/quicktime,video/webm,video/x-m4v', 'max:' . self::videoMb() * 1024],
             'ar_photo' => [$photoRequired ? 'required' : 'nullable', 'image', 'max:10240'],
             'ar_mind' => ['nullable', 'file', 'max:20480'],
         ];
@@ -45,8 +81,8 @@ class LiveMaterials
         return [
             'ar_video.required' => 'Canlı şəkil üçün videonu yükləyin.',
             'ar_video.mimetypes' => 'Video MP4, MOV və ya WEBM olmalıdır.',
-            'ar_video.max' => 'Video ' . self::VIDEO_MB . ' MB-dan böyük ola bilməz — qısaldın və ya sıxın.',
-            'ar_video.uploaded' => 'Video yüklənmədi — ' . self::VIDEO_MB . ' MB-dan kiçik olmalıdır.',
+            'ar_video.max' => 'Video ' . self::videoMb() . ' MB-dan böyük ola bilməz — qısaldın və ya sıxın.',
+            'ar_video.uploaded' => 'Video yüklənmədi — ' . self::videoMb() . ' MB-dan kiçik olmalıdır.',
             'ar_photo.required' => 'Canlanacaq şəkli yükləyin.',
             'ar_photo.image' => 'Şəkil JPG, PNG və ya WEBP olmalıdır.',
             'ar_photo.max' => 'Şəkil 10 MB-dan böyük ola bilməz.',

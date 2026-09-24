@@ -36,7 +36,10 @@
   .live-price{ display:flex; justify-content:space-between; align-items:baseline; border:1px solid var(--line); border-radius:.9rem; padding:.8rem 1rem; }
   .live-price b{ font-size:1.3rem; color:var(--gold-deep); }
   .live-steps{ margin:0; padding:0; list-style:none; display:grid; gap:.7rem; counter-reset:s; }
-  .live-steps li{ display:flex; gap:.75rem; align-items:flex-start; font-size:.9rem; line-height:1.5; }
+  .live-steps li{ display:flex; gap:.75rem; align-items:center; font-size:.9rem; line-height:1.5; }
+  .live-steps .step-art{ flex:none; width:2.75rem; height:2.75rem; fill:none; stroke:currentColor; stroke-width:1.8;
+    stroke-linecap:round; stroke-linejoin:round; color:var(--gold-deep); }
+  @media (max-width: 380px){ .live-steps .step-art{ width:2.25rem; height:2.25rem; } }
   .live-steps li::before{ counter-increment:s; content:counter(s); flex:none; width:1.6rem; height:1.6rem; border-radius:50%; display:flex; align-items:center;
     justify-content:center; background:var(--cream-2); color:var(--gold-deep); font-weight:700; font-size:.8rem; }
 @endsection
@@ -98,10 +101,42 @@
           <div class="live-price"><span>Qiymət</span><b>{{ \App\Support\Price::format($price) }}</b></div>
           <button type="submit" class="btn btn-primary btn-block" id="live-submit">Səbətə at</button>
 
+          {{-- Drawn, because "the camera recognises the picture and the video
+               plays over it" is a sentence people read twice. --}}
           <ol class="live-steps">
-            <li>Şəkli və videonu yükləyirsiniz — qalanını sistem özü hazırlayır.</li>
-            <li>Şəkli QR kodla birlikdə çap edib sifarişinizlə göndəririk.</li>
-            <li>Hədiyyəni alan QR kodu oxudur, telefonu şəklə tutur — video şəklin üstündə oynayır.</li>
+            <li>
+              <svg class="step-art" viewBox="0 0 48 48" aria-hidden="true">
+                <path d="M24 3v11M20 7l4-4 4 4" />
+                <rect x="5" y="16" width="24" height="19" rx="3" />
+                <path d="M9 30l5-6 4 4 3-3 4 5" />
+                <circle cx="12" cy="22" r="1.8" fill="currentColor" stroke="none" />
+                <circle cx="35" cy="32" r="9" />
+                <path d="M32.5 27.5l6 4.5-6 4.5z" />
+              </svg>
+              <span>Şəkli və videonu yükləyirsiniz — qalanını sistem özü hazırlayır.</span>
+            </li>
+            <li>
+              <svg class="step-art" viewBox="0 0 48 48" aria-hidden="true">
+                <path d="M22 18h22v24H22z" opacity=".5" />
+                <path d="M22 18l4-5h14l4 5" opacity=".5" /><path d="M33 13v29" opacity=".5" />
+                <rect x="3" y="8" width="24" height="33" rx="2" fill="var(--paper)" />
+                <path d="M7 21l4-5 3 4 3-3 4 5" />
+                <path d="M7 27h5v5H7z" /><path d="M18 27h5v5h-5z" /><path d="M7 33h5v5H7z" />
+                <path d="M15 27v2" /><path d="M15 33h2v2h-2z" /><path d="M20 35h3v3h-3z" /><path d="M15 38h2" />
+              </svg>
+              <span>Şəkli QR kodla birlikdə çap edib sifarişinizlə göndəririk.</span>
+            </li>
+            <li>
+              <svg class="step-art" viewBox="0 0 48 48" aria-hidden="true">
+                <rect x="2" y="27" width="20" height="15" rx="2" />
+                <path d="M5 38l4-5 3 3 3-4 5 6" />
+                <rect x="23" y="4" width="20" height="30" rx="3" fill="var(--paper)" />
+                <path d="M29 13l9 5.5-9 5.5z" />
+                <path d="M21 24l-3 3M25 36l-2 3M17 22l-2-2" opacity=".5" />
+                <path d="M40 38l1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z" opacity=".6" />
+              </svg>
+              <span>Hədiyyəni alan QR kodu oxudur, telefonu şəklə tutur — video şəklin üstündə oynayır.</span>
+            </li>
           </ol>
         </form>
       </div>

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\LivePhotoResource\Pages;
 
 use App\Filament\Resources\LivePhotoResource;
 use App\Models\Setting;
+use App\Support\LiveMaterials;
 use App\Support\Price;
 use App\Support\YandexDisk;
 use Illuminate\Support\Facades\Artisan;
@@ -73,16 +74,33 @@ class ListLivePhotos extends ListRecords
                     : 'Müştərilər üçün: bağlı')
                 ->icon('heroicon-o-shopping-bag')
                 ->color('gray')
-                ->fillForm(fn () => ['enabled' => Setting::get(Setting::AR_ENABLED) === '1', 'price' => (float) Setting::get(Setting::AR_PRICE)])
+                ->fillForm(fn () => [
+                    'enabled' => Setting::get(Setting::AR_ENABLED) === '1',
+                    'price' => (float) Setting::get(Setting::AR_PRICE),
+                    'video_mb' => LiveMaterials::videoMb(),
+                ])
                 ->form([
                     Forms\Components\Toggle::make('enabled')->label('Canlı şəkil satılsın')
                         ->helperText('Menyuda "Canlı şəkil" səhifəsi və qutu seçəndə "Canlı şəkil (AR)" seçimi. Müştəri şəkli və videonu özü yükləyir.'),
                     Forms\Components\TextInput::make('price')->label('Qiymət')->numeric()->minValue(0)->step(0.01)->suffix('₼')->required(),
+                    // The server has the last word, so the field cannot ask for
+                    // more than PHP accepts — that would only break uploads.
+                    Forms\Components\TextInput::make('video_mb')
+                        ->label('Videonun maksimum ölçüsü')
+                        // Never below what is already in use, so a server that
+                        // reports a smaller ceiling cannot block the form.
+                        ->numeric()->minValue(1)->maxValue(fn () => max(LiveMaterials::hostMb(), LiveMaterials::videoMb()))
+                        ->suffix('MB')
+                        ->helperText(fn () => 'Hostinq hazırda ən çox ' . LiveMaterials::hostMb() . ' MB qəbul edir '
+                            . '(PHP: upload_max_filesize ' . ini_get('upload_max_filesize') . ', post_max_size ' . ini_get('post_max_size') . '). '
+                            . 'Daha böyük video lazımdırsa, cPanel → MultiPHP INI Editor-də həmin iki dəyəri artırın — sonra bu sahədə də artıq yazmaq olar.'),
                 ])
                 ->action(function (array $data) {
                     Setting::put(Setting::AR_ENABLED, (bool) $data['enabled']);
                     Setting::put(Setting::AR_PRICE, round((float) $data['price'], 2));
-                    Notification::make()->success()->title('Saxlanıldı')->send();
+                    Setting::put(Setting::AR_VIDEO_MB, max(1, (int) ($data['video_mb'] ?? LiveMaterials::videoMb())));
+                    Notification::make()->success()->title('Saxlanıldı')
+                        ->body('Video limiti: ' . LiveMaterials::videoMb() . ' MB')->send();
                 }),
             Actions\CreateAction::make()->label('Canlı şəkil yarat'),
         ];

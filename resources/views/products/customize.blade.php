@@ -413,7 +413,7 @@
               <p class="slot-hint" style="margin:0 0 .6rem;">Qutuya QR kod çap edirik. Hədiyyəni alan QR kodu oxudub telefonu qutunun şəklinə tutanda, sizin videonuz şəklin üstündə oynayır — tətbiq yükləmədən.</p>
               <label class="letter-file">
                 <input type="file" name="ar_video" id="ar-video" accept="video/mp4,video/quicktime,video/webm,video/*">
-                <span id="ar-video-name">🎬 Video seçin (MP4/MOV, {{ \App\Support\LiveMaterials::VIDEO_MB }} MB-a qədər)</span>
+                <span id="ar-video-name">🎬 Video seçin (MP4/MOV, {{ \App\Support\LiveMaterials::videoMb() }} MB-a qədər)</span>
               </label>
               <p class="slot-hint">Ən yaxşısı 10–30 saniyəlik, şaquli çəkilmiş video. Qutunun dizaynı kamera üçün özü hazırlanır — "Səbətə at" basanda bir neçə saniyə çəkir.</p>
               <input type="file" name="ar_photo" id="ar-photo" hidden>
@@ -1093,7 +1093,7 @@
 (function(){
   var on = document.getElementById('ar-on');
   if (!on) return;
-  var MAX = {{ \App\Support\LiveMaterials::VIDEO_MB }} * 1024 * 1024;
+  var MAX = {{ \App\Support\LiveMaterials::videoMb() }} * 1024 * 1024;
   var form = document.getElementById('customize-form');
   var fields = document.getElementById('ar-fields');
   var file = document.getElementById('ar-video');
@@ -1111,7 +1111,7 @@
   toggle();
   file.addEventListener('change', function(){
     var f = file.files && file.files[0];
-    name.textContent = f ? '🎬 ' + f.name + (f.size > MAX ? ' — {{ \App\Support\LiveMaterials::VIDEO_MB }} MB-dan böyükdür!' : '') : label;
+    name.textContent = f ? '🎬 ' + f.name + (f.size > MAX ? ' — {{ \App\Support\LiveMaterials::videoMb() }} MB-dan böyükdür!' : '') : label;
   });
 
   form.addEventListener('submit', function(e){

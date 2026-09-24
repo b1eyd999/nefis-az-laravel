@@ -63,6 +63,9 @@ class Setting extends Model
 
     public const AR_PRICE = 'ar_price';
 
+    /** The biggest video a customer may send, in MB (the hosting has its own ceiling). */
+    public const AR_VIDEO_MB = 'ar_video_mb';
+
     /**
      * The owner's Yandex Disk, where customers' videos are put: an OAuth token
      * (kept encrypted — see App\Support\YandexDisk::token()) and the folder.
@@ -114,6 +117,7 @@ class Setting extends Model
     public const DEFAULTS = [
         self::AR_ENABLED => '1',
         self::AR_PRICE => '5',
+        self::AR_VIDEO_MB => '18',
         self::YANDEX_FOLDER => 'Nefis canlı şəkillər',
         self::LETTER_ENABLED => '1',
         self::LETTER_PRICE => '3',

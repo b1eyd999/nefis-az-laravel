@@ -26,7 +26,7 @@ class LivePhotoController extends Controller
     {
         abort_unless(LiveMaterials::enabled(), 404);
 
-        return view('live.create', ['price' => LiveMaterials::price(), 'maxMb' => LiveMaterials::VIDEO_MB]);
+        return view('live.create', ['price' => LiveMaterials::price(), 'maxMb' => LiveMaterials::videoMb()]);
     }
 
     public function store(Request $request): RedirectResponse
