@@ -158,25 +158,30 @@ class GiftPage extends Model
         return $n . ' ' . $word;
     }
 
-    /** The page's own words, in its own language. */
+    /** The page's own words, in the language the page is written in. */
     public function words(): array
     {
-        return $this->locale === 'ru'
-            ? [
-                'home' => 'Главная', 'hub' => 'Идеи подарков', 'designs' => 'Подходящие дизайны',
-                'pick' => 'Выбрать дизайн', 'how' => 'Как это работает?',
-                'lede' => 'Выберите дизайн, загрузите фото и напишите текст — сразу увидите, как будет выглядеть коробка.',
-                'fromPrice' => 'Коробка от :price', 'yours' => 'Ваше фото и ваши слова', 'delivery' => 'Доставка по Баку и регионам',
-                'faq' => 'Вопросы', 'faqTitle' => 'Частые вопросы', 'others' => 'Другие идеи подарков',
-                'all' => 'Все дизайны', 'other_lang' => 'Azərbaycanca',
-            ]
-            : [
-                'home' => 'Ana səhifə', 'hub' => 'Hədiyyə fikirləri', 'designs' => 'Bu münasibətə uyğun dizaynlar',
-                'pick' => 'Dizayn seç', 'how' => 'Necə işləyir?',
-                'lede' => 'Birini seçin, şəklinizi yükləyin və sözlərinizi yazın — qutunun necə görünəcəyini dərhal görəcəksiniz.',
-                'fromPrice' => 'Qutu :price-dan', 'yours' => 'Öz şəkliniz və sözləriniz', 'delivery' => 'Bakıda və bölgələrə çatdırılma',
-                'faq' => 'Suallar', 'faqTitle' => 'Tez-tez soruşulan suallar', 'others' => 'Başqa hədiyyə fikirləri',
-                'all' => 'Bütün dizaynlara bax', 'other_lang' => 'На русском',
+        $was = app()->getLocale();
+        app()->setLocale($this->locale);
+
+        try {
+            return [
+                'home' => __('Ana səhifə'),
+                'hub' => __('Hədiyyə fikirləri'),
+                'designs' => __('Bu münasibətə uyğun dizaynlar'),
+                'pick' => __('Dizayn seç'),
+                'how' => __('Necə işləyir?'),
+                'lede' => __('Birini seçin, şəklinizi yükləyin və sözlərinizi yazın — qutunun necə görünəcəyini dərhal görəcəksiniz.'),
+                'fromPrice' => __('Qutu :price-dan'),
+                'yours' => __('Öz şəkliniz və sözləriniz'),
+                'delivery' => __('Bakıda və bölgələrə çatdırılma'),
+                'faq' => __('Suallar'),
+                'faqTitle' => __('Tez-tez soruşulan suallar'),
+                'others' => __('Başqa hədiyyə fikirləri'),
+                'all' => __('Bütün dizaynlara bax'),
             ];
+        } finally {
+            app()->setLocale($was);
+        }
     }
 }

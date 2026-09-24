@@ -36,10 +36,12 @@
 <meta property="og:type" content="@yield('og_type', 'website')">
 <meta property="og:locale" content="{{ ['az' => 'az_AZ', 'ru' => 'ru_RU', 'en' => 'en_US'][\App\Support\Locale::current()] }}">
 {{-- The same page in the other two languages, for search engines. --}}
+@unless(trim($__env->yieldContent('own_hreflang')))
 @foreach(\App\Support\Locale::published() as $__loc)
 <link rel="alternate" hreflang="{{ $__loc }}" href="{{ \App\Support\Locale::switchUrl($__loc) }}">
 @endforeach
 <link rel="alternate" hreflang="x-default" href="{{ \App\Support\Locale::switchUrl('az') }}">
+@endunless
 <meta property="og:site_name" content="Nefis Şokolad Evi">
 <meta property="og:title" content="{!! $seoTitle !!}">
 <meta property="og:description" content="{!! $seoDescription !!}">

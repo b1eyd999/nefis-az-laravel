@@ -150,6 +150,32 @@ class SeoTest extends TestCase
             ->assertSee(route('ru.gifts.index'));
     }
 
+    public function test_a_gift_page_names_its_twins_in_all_three_languages(): void
+    {
+        Setting::put(Setting::SITE_LANGUAGES, 'az,ru,en');
+
+        $az = route('gifts.show', 'ad-gunu');
+        $ru = route('ru.gifts.show', 'na-den-rozhdeniya');
+        $en = route('en.gifts.show', 'birthday-gift');
+
+        $this->get($en)->assertOk()
+            ->assertSee('<html lang="en">', false)
+            ->assertSee('Birthday gift')
+            ->assertSee('Gift ideas')                             // the page's own furniture
+            ->assertSee('<link rel="alternate" hreflang="az" href="' . $az . '">', false)
+            ->assertSee('<link rel="alternate" hreflang="ru" href="' . $ru . '">', false)
+            ->assertSee('<link rel="alternate" hreflang="x-default" href="' . $az . '">', false);
+
+        // …and the Azerbaijani twin points at both of the others.
+        $this->get($az)->assertOk()
+            ->assertSee('<link rel="alternate" hreflang="en" href="' . $en . '">', false)
+            ->assertSee('<link rel="alternate" hreflang="ru" href="' . $ru . '">', false);
+
+        // The English hub lists them, and the address belongs to one language.
+        $this->get(route('en.gifts.index'))->assertOk()->assertSee('Birthday gift');
+        $this->get('/en/gifts/ad-gunu')->assertNotFound();
+    }
+
     public function test_a_language_still_being_written_is_kept_out_of_search(): void
     {
         // Only Azerbaijani is offered: the other two are reachable, but quietly.

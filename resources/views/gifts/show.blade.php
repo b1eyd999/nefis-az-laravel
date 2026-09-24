@@ -6,13 +6,23 @@
 @section('title', $page->metaTitle())
 @section('meta_description', $page->metaDescription())
 
-@if($alternate)
-  @push('head')
-    <link rel="alternate" hreflang="{{ $page->locale }}" href="{{ \App\Support\Seo::canonical($page->url()) }}">
-    <link rel="alternate" hreflang="{{ $alternate->locale }}" href="{{ \App\Support\Seo::canonical($alternate->url()) }}">
-    <link rel="alternate" hreflang="x-default" href="{{ \App\Support\Seo::canonical($page->locale === 'az' ? $page->url() : $alternate->url()) }}">
-  @endpush
-@endif
+{{-- Its address is a different word in each language, so this page lists its
+     own twins instead of letting the layout guess them. --}}
+@section('own_hreflang', 1)
+@php
+  $__az = $page->locale === 'az' ? $page : ($page->alt ?? null);
+  $__family = collect([$page, $alternate, $__az])->filter()
+      ->merge($__az?->alternates()->where('is_active', true)->get() ?? collect())
+      ->unique('id')->filter->is_active;
+@endphp
+@push('head')
+  @foreach($__family as $__twin)
+    <link rel="alternate" hreflang="{{ $__twin->locale }}" href="{{ \App\Support\Seo::canonical($__twin->url()) }}">
+  @endforeach
+  @if($__az)
+    <link rel="alternate" hreflang="x-default" href="{{ \App\Support\Seo::canonical($__az->url()) }}">
+  @endif
+@endpush
 
 @push('jsonld')
   {{ \App\Support\Seo::jsonLd(['@graph' => array_values(array_filter([
@@ -56,7 +66,7 @@
         <span aria-current="page">{{ $page->menu_label }}</span>
         @if($alternate)
           <span aria-hidden="true">·</span>
-          <a href="{{ $alternate->url() }}" lang="{{ $alternate->locale }}" hreflang="{{ $alternate->locale }}">{{ $w['other_lang'] }}</a>
+          <a href="{{ $alternate->url() }}" lang="{{ $alternate->locale }}" hreflang="{{ $alternate->locale }}">{{ \App\Support\Locale::NAMES[$alternate->locale] ?? $alternate->locale }}</a>
         @endif
       </nav>
       <span class="eyebrow">{{ $page->emoji }} {{ $page->eyebrow ?: $page->menu_label }}</span>

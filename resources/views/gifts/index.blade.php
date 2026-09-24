@@ -8,6 +8,7 @@
 @section('meta_description', __('Kimə və hansı münasibətə hədiyyə axtarırsınız?') . ' ' . $labels . ' — '
     . __('şəkil və sözlərinizlə fərdi şokolad qutusu fikirləri.'))
 
+@section('own_hreflang', 1)
 @if($otherHub)
   @push('head')
     <link rel="alternate" hreflang="{{ $locale }}" href="{{ \App\Support\Seo::canonical(\App\Models\GiftPage::hubUrl($locale)) }}">
