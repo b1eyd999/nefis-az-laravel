@@ -90,4 +90,14 @@ class UsersTest extends TestCase
         Livewire::test(ListUsers::class)->callTableAction('role', $second, ['role' => User::CUSTOMER]);
         $this->assertSame(User::CUSTOMER, $second->fresh()->role);
     }
+
+    public function test_the_panel_offers_a_way_back_to_the_shop(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => User::ADMIN]));
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('admin'));
+
+        $this->get('/admin')->assertOk()
+            ->assertSee('Sayta qayıt')
+            ->assertSee('href="' . url('/') . '"', false);
+    }
 }

@@ -6,6 +6,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\MenuItem;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -44,6 +45,18 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::HEAD_END,
                 fn (): string => '<script>try{if(matchMedia("(max-width: 1023px)").matches)localStorage.setItem("isOpen","false")}catch(e){}</script>',
             )
+            // A way back to the shop: a button in the top bar and the same
+            // line in the account menu, because the panel offers none.
+            ->renderHook(
+                PanelsRenderHook::TOPBAR_END,
+                fn (): string => view('filament.back-to-site')->render(),
+            )
+            ->userMenuItems([
+                MenuItem::make()
+                    ->label('Sayta qayıt')
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->url('/'),
+            ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
