@@ -9,6 +9,7 @@ use App\Models\OrderItem;
 use App\Models\PaymentAccount;
 use App\Models\Product;
 use App\Support\Accounting;
+use App\Support\Analytics;
 use App\Support\Cart;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -34,6 +35,7 @@ class CheckoutController extends Controller
 
         $itemsTotal = $items->sum(fn (array $i) => Cart::unitPrice($i, $i['product']) * $i['quantity']);
         $methods = DeliveryMethod::shown()->get();
+        Analytics::beginCheckout($itemsTotal);
 
         return view('checkout.index', compact('items', 'itemsTotal', 'methods'));
     }
@@ -134,6 +136,9 @@ class CheckoutController extends Controller
 
         // The boxes' materials come out of stock now.
         Accounting::consume($order);
+
+        // Google counts the order on the next page, once.
+        Analytics::purchase($order);
 
         Cart::clear();
 

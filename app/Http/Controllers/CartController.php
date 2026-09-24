@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Support\LiveMaterials;
 use App\Models\TextSlot;
 use App\Models\Wrapping;
+use App\Support\Analytics;
 use App\Support\Cart;
 use App\Support\Letter;
 use Illuminate\Http\RedirectResponse;
@@ -128,10 +129,15 @@ class CartController extends Controller
                 : trim((string) $request->input("custom_texts.$index"));
         }
 
-        Cart::add($product->id, $paths, $texts, (int) $request->input('quantity', 1),
+        $quantity = (int) $request->input('quantity', 1);
+        Cart::add($product->id, $paths, $texts, $quantity,
             OrderItem::photoLabelsFor($product), OrderItem::textLabelsFor($product), $chocolate, $wrapping,
             $withLetter ? Letter::fromRequest($request) : null,
             $withAr ? LiveMaterials::fromRequest($request) : null);
+
+        // The line as it was just added — box, bar, paper, letter and video.
+        $line = Cart::items()[array_key_last(Cart::items())] ?? [];
+        Analytics::addToCart($product, Cart::unitPrice($line, $product), $quantity);
 
         return redirect()->route('cart.index')->with('status', 'Məhsul səbətə əlavə olundu.');
     }
