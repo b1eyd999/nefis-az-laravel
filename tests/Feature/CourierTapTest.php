@@ -91,6 +91,19 @@ class CourierTapTest extends TestCase
         Http::assertSent(fn ($r) => str_contains($r->url(), 'answerCallbackQuery'));
     }
 
+    public function test_without_a_chosen_day_the_card_says_so(): void
+    {
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true, 'result' => ['message_id' => 9, 'chat' => ['id' => -1001234]]])]);
+        $order = $this->order();
+        // An order from before the shop started asking when to deliver.
+        $order->forceFill(['delivery_date' => null, 'delivery_slot' => null])->saveQuietly();
+
+        $order->forceFill(['status' => 'ready'])->save();
+
+        Http::assertSent(fn ($r) => str_contains($r->url(), 'sendMessage')
+            && str_contains((string) $r['text'], 'vaxt seçilməyib'));
+    }
+
     public function test_the_second_courier_is_told_it_is_taken(): void
     {
         Http::fake([

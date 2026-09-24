@@ -254,12 +254,16 @@ class Telegram
 
         $lines = ['📦 <b>Sifariş #' . $order->id . ' hazırdır</b>', ''];
 
+        // The day always stands there, even when the customer chose none, so
+        // a courier never wonders whether it was simply left out.
+        $when = $order->delivery_date
+            ? DeliveryTime::day($order->delivery_date) . ($order->delivery_slot ? ', ' . $order->delivery_slot : '')
+            : 'vaxt seçilməyib — müştəri ilə dəqiqləşdirin';
+
         foreach (array_filter([
             '👤' => $order->recipient_name ?: $order->user?->name,
             '📞' => $order->contact_phone ?: $order->user?->phone,
-            '🗓' => $order->delivery_date
-                ? DeliveryTime::day($order->delivery_date) . ($order->delivery_slot ? ', ' . $order->delivery_slot : '')
-                : null,
+            '🗓' => $when,
             '🚚' => $order->delivery_name,
             '📍' => $order->deliverySummary(),
             '📝' => $order->note,
