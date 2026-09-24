@@ -76,6 +76,11 @@ class GiftPageController extends Controller
                 'letter' => ['Полароид-письмо', 'Письмо с вашим фото и словами — внутрь коробки.'],
                 'live' => ['Живое фото', 'Наводите телефон на фото — и поверх играет ваше видео.'],
             ],
+            'en' => [
+                'wrap' => ['Gift wrapping', 'We wrap the box in patterned paper and tie it with a ribbon.'],
+                'letter' => ['Polaroid letter', 'A letter with your photo and your words, inside the box.'],
+                'live' => ['Live photo', 'Hold a phone over the photo and your video plays on top.'],
+            ],
         ];
 
         return $words[$locale][$key];

@@ -10,7 +10,10 @@ use Illuminate\Support\Facades\Storage;
 /** One slide of the home page's opening banner. */
 class HeroSlide extends Model
 {
+    use \App\Models\Concerns\Translatable;
+
     protected $fillable = [
+        'i18n',
         'eyebrow', 'title', 'text', 'button1_label', 'button1_url', 'button2_label', 'button2_url',
         'badges', 'image', 'image_fit', 'ribbon', 'is_active', 'sort_order',
     ];
@@ -18,6 +21,7 @@ class HeroSlide extends Model
     protected function casts(): array
     {
         return [
+            'i18n' => 'array',
             'badges' => 'array',
             'is_active' => 'boolean',
         ];

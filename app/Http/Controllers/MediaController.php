@@ -19,7 +19,7 @@ class MediaController extends Controller
 
         $href = Media::resolve($path);
 
-        abort_if($href === null, 503, 'Şəkil hazırda əlçatan deyil.');
+        abort_if($href === null, 503, __('Şəkil hazırda əlçatan deyil.'));
 
         return redirect()->away($href, 302, [
             'Cache-Control' => 'public, max-age=600',

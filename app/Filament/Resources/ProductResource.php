@@ -126,6 +126,7 @@ class ProductResource extends Resource
                     ])
                     ->columns(2)
                     ->collapsible(),
+                \App\Filament\Forms\Translations::section(['name' => 'Ad', 'description' => 'Təsvir'], ['description']),
             ]);
     }
 

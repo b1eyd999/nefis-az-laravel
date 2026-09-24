@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 class DeliveryMethod extends Model
 {
+    use \App\Models\Concerns\Translatable;
+
     public const DOOR = 'door';
 
     public const POST = 'post';
@@ -40,7 +42,8 @@ class DeliveryMethod extends Model
 
     public const BAKU_CENTER = ['lat' => 40.4093, 'lng' => 49.8671];
 
-    protected $fillable = ['type', 'name', 'description', 'price', 'is_active', 'sort_order', 'options'];
+    protected $fillable = [
+        'i18n','type', 'name', 'description', 'price', 'is_active', 'sort_order', 'options'];
 
     /** The owner's Google Maps key, if they added one; else the map uses OpenStreetMap. */
     public static function googleMapsKey(): ?string
@@ -60,6 +63,7 @@ class DeliveryMethod extends Model
     protected function casts(): array
     {
         return [
+            'i18n' => 'array',
             'price' => 'float',
             'is_active' => 'boolean',
             'options' => 'array',

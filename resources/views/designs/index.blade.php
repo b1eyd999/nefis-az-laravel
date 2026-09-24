@@ -17,7 +17,7 @@
                   '@type' => 'ListItem',
                   'position' => $i + 1,
                   'url' => lroute('products.customize', $d->slug),
-                  'name' => $d->name,
+                  'name' => $d->tr('name'),
               ])->all(),
       ],
   ]]) }}
@@ -143,13 +143,13 @@
             <div class="designs-grid">
               @foreach($designs[$key] as $design)
                 <a class="d-card" href="{{ $design->isCustomizable() ? lroute('products.customize', $design->slug) : lroute('designs.index') }}"
-                        data-name="{{ $design->name }}"
+                        data-name="{{ $design->tr('name') }}"
                         data-category="{{ $label }}"
                         data-image="{{ \App\Support\Media::url($design->catalogImage()) }}"
                         data-url="{{ $design->isCustomizable() ? lroute('products.customize', $design->slug) : '' }}">
                   <div class="d-card-media">
                     @if($design->isCustomizable())<span class="pill">{{ __('Fərdiləşdir') }}</span>@endif
-                    <img src="{{ \App\Support\Media::url($design->catalogImage()) }}" alt="{{ $design->name }} — {{ __('şəkilli şokolad qutusu') }}" loading="lazy">
+                    <img src="{{ \App\Support\Media::url($design->catalogImage()) }}" alt="{{ $design->tr('name') }} — {{ __('şəkilli şokolad qutusu') }}" loading="lazy">
                   </div>
                   <div class="d-card-body">
                     <h3>{{ $design->name }}</h3>

@@ -83,6 +83,7 @@ class WrappingResource extends Resource
                             ->view('filament.wrapping-preview')
                             ->dehydrated(false),
                     ]),
+                \App\Filament\Forms\Translations::section(['name' => 'Ad']),
             ]);
     }
 

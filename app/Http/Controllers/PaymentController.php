@@ -66,7 +66,7 @@ class PaymentController extends Controller
 
         $request->validate(
             ['receipt' => ['required', 'file', 'mimes:png,jpg,jpeg,webp,pdf', 'max:8192']],
-            ['receipt.required' => 'Ödənişin çekini (qəbzini) yükləyin.', 'receipt.mimes' => 'Şəkil (PNG, JPG, WEBP) və ya PDF yükləyin.']
+            ['receipt.required' => __('Ödənişin çekini (qəbzini) yükləyin.'), 'receipt.mimes' => __('Şəkil (PNG, JPG, WEBP) və ya PDF yükləyin.')]
         );
 
         $file = $request->file('receipt');
@@ -90,6 +90,6 @@ class PaymentController extends Controller
         defer(fn () => Telegram::receipt($order));
 
         return redirect(lroute('orders.index'))
-            ->with('status', 'Çek göndərildi. Ödənişi yoxlayıb sifarişinizi təsdiqləyəcəyik.');
+            ->with('status', __('Çek göndərildi. Ödənişi yoxlayıb sifarişinizi təsdiqləyəcəyik.'));
     }
 }

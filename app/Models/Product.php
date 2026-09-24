@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
+    use \App\Models\Concerns\Translatable;
+
     use HasFactory;
 
     public const CATEGORIES = [
@@ -28,6 +30,7 @@ class Product extends Model
     ];
 
     protected $fillable = [
+        'i18n',
         'name',
         'slug',
         'description',
@@ -62,6 +65,7 @@ class Product extends Model
     protected function casts(): array
     {
         return [
+            'i18n' => 'array',
             'is_active' => 'boolean',
             'price' => 'float',
         ];

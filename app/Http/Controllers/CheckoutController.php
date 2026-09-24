@@ -149,7 +149,7 @@ class CheckoutController extends Controller
 
         return $account
             ? redirect(lroute('orders.pay', $order))
-            : redirect(lroute('orders.index'))->with('status', 'Sifarişiniz qəbul edildi! Tezliklə sizinlə əlaqə saxlayacağıq.');
+            : redirect(lroute('orders.index'))->with('status', __('Sifarişiniz qəbul edildi! Tezliklə sizinlə əlaqə saxlayacağıq.'));
     }
 
     /** The day and the part of the day the box is wanted, or the earliest the shop can do. */
@@ -191,7 +191,7 @@ class CheckoutController extends Controller
         }
 
         $request->validate(['delivery_method_id' => ['required', Rule::exists('delivery_methods', 'id')->where('is_active', true)]],
-            ['delivery_method_id.required' => 'Çatdırılma üsulunu seçin.']);
+            ['delivery_method_id.required' => __('Çatdırılma üsulunu seçin.')]);
         $method = DeliveryMethod::findOrFail($request->input('delivery_method_id'));
 
         $rules = $common + match ($method->type) {
@@ -199,7 +199,7 @@ class CheckoutController extends Controller
                 'recipient_name' => ['required', 'string', 'min:3', 'max:120'],
                 'postal_index' => ['required', 'string', 'max:20', function ($attr, $value, $fail) {
                     if (! DeliveryMethod::normalizeIndex((string) $value)) {
-                        $fail('Poçt indeksi AZ və 4 rəqəm olmalıdır, məs. AZ1000.');
+                        $fail(__('Poçt indeksi AZ və 4 rəqəm olmalıdır, məs. AZ1000.'));
                     }
                 }],
             ],
@@ -212,16 +212,16 @@ class CheckoutController extends Controller
                 'delivery_lat' => ['nullable', 'required_with:delivery_lng', 'numeric'],
                 'delivery_lng' => ['nullable', 'required_with:delivery_lat', 'numeric', function ($attr, $value, $fail) use ($request) {
                     if (! DeliveryMethod::inBaku((float) $request->input('delivery_lat'), (float) $value)) {
-                        $fail('Seçdiyiniz yer Bakıdan kənardadır — qapıya çatdırılma yalnız Bakı daxilindədir.');
+                        $fail(__('Seçdiyiniz yer Bakıdan kənardadır — qapıya çatdırılma yalnız Bakı daxilindədir.'));
                     }
                 }],
             ],
         };
 
         $data = $request->validate($rules, [], [
-            'contact_phone' => 'Telefon', 'recipient_name' => 'Ad və soyad', 'postal_index' => 'Poçt indeksi',
-            'metro_station' => 'Metro stansiyası', 'delivery_address' => 'Ünvan',
-            'delivery_date' => 'Çatdırılma tarixi', 'delivery_slot' => 'Çatdırılma vaxtı',
+            'contact_phone' => 'Telefon', 'recipient_name' => __('Ad və soyad'), 'postal_index' => __('Poçt indeksi'),
+            'metro_station' => __('Metro stansiyası'), 'delivery_address' => 'Ünvan',
+            'delivery_date' => __('Çatdırılma tarixi'), 'delivery_slot' => __('Çatdırılma vaxtı'),
         ]);
 
         $order = self::when($data) + [

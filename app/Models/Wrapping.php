@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Storage;
  */
 class Wrapping extends Model
 {
+    use \App\Models\Concerns\Translatable;
+
     public const SATIN = 'satin';
 
     public const TWINE = 'twine';
@@ -25,11 +27,13 @@ class Wrapping extends Model
         self::NONE => 'Lentsiz',
     ];
 
-    protected $fillable = ['name', 'pattern', 'price', 'ribbon', 'ribbon_color', 'pattern_scale', 'is_active', 'sort_order'];
+    protected $fillable = [
+        'i18n','name', 'pattern', 'price', 'ribbon', 'ribbon_color', 'pattern_scale', 'is_active', 'sort_order'];
 
     protected function casts(): array
     {
         return [
+            'i18n' => 'array',
             'price' => 'float',
             'pattern_scale' => 'float',
             'is_active' => 'boolean',

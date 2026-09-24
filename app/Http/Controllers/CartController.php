@@ -83,23 +83,23 @@ class CartController extends Controller
         }
 
         $request->validate($rules, [
-            'custom_texts.*.regex' => ':attribute dəq:san şəklində olmalıdır, məs. 03:45.',
-            'custom_texts.*.max' => ':attribute :max simvoldan uzun ola bilməz.',
-            'custom_texts.*.required' => ':attribute boş ola bilməz.',
-            'photos.*.required' => ':attribute üçün şəkil yükləyin.',
-            'photos.*.image' => ':attribute şəkil olmalıdır (JPG, PNG və s.).',
-            'photos.*.max' => ':attribute 8 MB-dan böyük ola bilməz.',
-            'quantity.integer' => 'Say tam ədəd olmalıdır.',
-            'quantity.min' => 'Say 1 ilə 20 arasında olmalıdır.',
-            'quantity.max' => 'Say 1 ilə 20 arasında olmalıdır.',
-            'chocolate_id.required' => 'Qutunun içinə şokolad seçin.',
-            'chocolate_id.exists' => 'Seçdiyiniz şokolad artıq yoxdur, başqasını seçin.',
-            'wrapping_id.exists' => 'Seçdiyiniz qablaşdırma artıq yoxdur, başqasını seçin.',
-            'ar_video.required' => 'Canlı video üçün videonu yükləyin, ya da bu seçimi söndürün.',
+            'custom_texts.*.regex' => __(':attribute dəq:san şəklində olmalıdır, məs. 03:45.'),
+            'custom_texts.*.max' => __(':attribute :max simvoldan uzun ola bilməz.'),
+            'custom_texts.*.required' => __(':attribute boş ola bilməz.'),
+            'photos.*.required' => __(':attribute üçün şəkil yükləyin.'),
+            'photos.*.image' => __(':attribute şəkil olmalıdır (JPG, PNG və s.).'),
+            'photos.*.max' => __(':attribute 8 MB-dan böyük ola bilməz.'),
+            'quantity.integer' => __('Say tam ədəd olmalıdır.'),
+            'quantity.min' => __('Say 1 ilə 20 arasında olmalıdır.'),
+            'quantity.max' => __('Say 1 ilə 20 arasında olmalıdır.'),
+            'chocolate_id.required' => __('Qutunun içinə şokolad seçin.'),
+            'chocolate_id.exists' => __('Seçdiyiniz şokolad artıq yoxdur, başqasını seçin.'),
+            'wrapping_id.exists' => __('Seçdiyiniz qablaşdırma artıq yoxdur, başqasını seçin.'),
+            'ar_video.required' => __('Canlı video üçün videonu yükləyin, ya da bu seçimi söndürün.'),
         ] + LiveMaterials::messages() + Letter::messages(), $this->slotAttributeNames($product));
 
         if ($withLetter && ! $request->filled('letter_text') && ! $request->hasFile('letter_photo')) {
-            throw ValidationException::withMessages(['letter_text' => 'Məktub üçün şəkil və ya mətn əlavə edin, ya da məktubu söndürün.']);
+            throw ValidationException::withMessages(['letter_text' => __('Məktub üçün şəkil və ya mətn əlavə edin, ya da məktubu söndürün.')]);
         }
 
         // The bar as it is now: its name and price stay with the order.
@@ -139,7 +139,7 @@ class CartController extends Controller
         $line = Cart::items()[array_key_last(Cart::items())] ?? [];
         Analytics::addToCart($product, Cart::unitPrice($line, $product), $quantity);
 
-        return redirect(lroute('cart.index'))->with('status', 'Məhsul səbətə əlavə olundu.');
+        return redirect(lroute('cart.index'))->with('status', __('Məhsul səbətə əlavə olundu.'));
     }
 
     private function slotAttributeNames(Product $product): array

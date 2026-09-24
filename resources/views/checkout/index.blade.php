@@ -271,10 +271,10 @@
                   <input type="radio" name="delivery_method_id" value="{{ $m->id }}" data-type="{{ $m->type }}" data-price="{{ $m->price }}" required
                          @checked((string) old('delivery_method_id', $methods->count() === 1 ? $m->id : null) === (string) $m->id)>
                   <span class="dlv-top">
-                    <b>{{ $m->name }}</b>
+                    <b>{{ $m->tr('name') }}</b>
                     <span>{{ $m->price > 0 ? \App\Support\Price::format($m->price) : __('Pulsuz') }}</span>
                   </span>
-                  @if($m->description)<span class="dlv-desc">{{ $m->description }}</span>@endif
+                  @if($m->description)<span class="dlv-desc">{{ $m->tr('description') }}</span>@endif
                 </label>
               @endforeach
             </div>

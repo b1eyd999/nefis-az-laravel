@@ -110,6 +110,7 @@ class HeroSlideResource extends Resource
                         Forms\Components\Toggle::make('is_active')->label('Saytda göstər')->default(true),
                         Forms\Components\TextInput::make('sort_order')->label('Sıra nömrəsi')->numeric()->default(0),
                     ])->columns(2),
+                \App\Filament\Forms\Translations::section(['eyebrow' => 'Üst yazı', 'title' => 'Başlıq', 'text' => 'Mətn', 'button1_label' => '1-ci düymə', 'button2_label' => '2-ci düymə'], ['title', 'text']),
             ]);
     }
 

@@ -3,12 +3,12 @@
 @php
   $seoImage = \App\Support\Media::url($product->catalogImage());
   $seoText = $product->description
-      ? \Illuminate\Support\Str::limit($product->description, 110) . ' ' . __('Şəklinizi və sözlərinizi əlavə edin — Bakıda çatdırılma.')
-      : '«' . $product->name . '» ' . __('dizaynında fərdi şokolad qutusu: şəklinizi və sözlərinizi əlavə edin, önizləməni dərhal görün')
+      ? \Illuminate\Support\Str::limit((string) $product->tr('description'), 110) . ' ' . __('Şəklinizi və sözlərinizi əlavə edin — Bakıda çatdırılma.')
+      : '«' . $product->tr('name') . '» ' . __('dizaynında fərdi şokolad qutusu: şəklinizi və sözlərinizi əlavə edin, önizləməni dərhal görün')
         . ($product->price ? ', ' . \App\Support\Price::format($product->price) . '-dan' : '')
         . '. ' . __('Ad günü və sevdiklərinizə hədiyyə — Bakıda çatdırılma.');
 @endphp
-@section('title', $product->name . ' — ' . __('şəkilli şokolad qutusu') . ' | Nefis')
+@section('title', $product->tr('name') . ' — ' . __('şəkilli şokolad qutusu') . ' | Nefis')
 @section('meta_description', $seoText)
 @if($seoImage)
   @section('og_image', $seoImage)
@@ -19,7 +19,7 @@
   {{ \App\Support\Seo::jsonLd(['@graph' => array_values(array_filter([
       array_filter([
           '@type' => 'Product',
-          'name' => $product->name . ' — ' . __('şəkilli şokolad qutusu'),
+          'name' => $product->tr('name') . ' — ' . __('şəkilli şokolad qutusu'),
           'image' => $seoImage ? [$seoImage] : null,
           'description' => $seoText,
           'sku' => 'nefis-' . $product->id,

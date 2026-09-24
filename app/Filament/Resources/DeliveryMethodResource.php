@@ -73,6 +73,7 @@ class DeliveryMethodResource extends Resource
                             ->dehydrateStateUsing(fn ($state) => array_values(array_filter(array_map('trim', preg_split('/\R/', (string) $state)))))
                             ->columnSpanFull(),
                     ])->columns(2),
+                \App\Filament\Forms\Translations::section(['name' => 'Ad', 'description' => 'Təsvir'], ['description']),
             ]);
     }
 

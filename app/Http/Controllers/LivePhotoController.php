@@ -36,7 +36,7 @@ class LivePhotoController extends Controller
 
         Cart::addLive(LiveMaterials::fromRequest($request));
 
-        return redirect(lroute('cart.index'))->with('status', 'Canlı şəkil səbətə əlavə olundu.');
+        return redirect(lroute('cart.index'))->with('status', __('Canlı şəkil səbətə əlavə olundu.'));
     }
 
     public function show(string $code): View
@@ -61,7 +61,7 @@ class LivePhotoController extends Controller
 
         if (filled($live->video_url)) {
             $href = YandexDisk::href($live->video_url);
-            abort_if($href === null, 503, 'Video hazırda əlçatan deyil.');
+            abort_if($href === null, 503, __('Video hazırda əlçatan deyil.'));
 
             return redirect()->away($href, 302, ['Cache-Control' => 'private, max-age=600']);
         }

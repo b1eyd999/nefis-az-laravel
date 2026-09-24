@@ -32,11 +32,11 @@ class LetterController extends Controller
         ]);
         $letter = Letter::fromRequest($request);
         if (! $letter) {
-            throw ValidationException::withMessages(['letter_text' => 'Şəkil və ya mətn əlavə edin.']);
+            throw ValidationException::withMessages(['letter_text' => __('Şəkil və ya mətn əlavə edin.')]);
         }
 
         Cart::addLetter($letter, (int) $request->input('quantity', 1));
 
-        return redirect(lroute('cart.index'))->with('status', 'Polaroid məktub səbətə əlavə olundu.');
+        return redirect(lroute('cart.index'))->with('status', __('Polaroid məktub səbətə əlavə olundu.'));
     }
 }

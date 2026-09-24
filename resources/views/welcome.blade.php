@@ -56,13 +56,13 @@
              @if($many) role="group" aria-roledescription="slide" aria-label="{{ $i + 1 }} / {{ $slides->count() }}" @if($i > 0) aria-hidden="true" @endif @endif>
           <div class="wrap">
             <div>
-              @if($s->eyebrow)<span class="eyebrow hero-in d1">{{ $s->eyebrow }}</span>@endif
+              @if($s->eyebrow)<span class="eyebrow hero-in d1">{{ $s->tr('eyebrow') }}</span>@endif
               @if($i === 0)
-                <h1 class="hero-title hero-in d2">{!! nl2br(e($s->title)) !!}</h1>
+                <h1 class="hero-title hero-in d2">{!! nl2br(e($s->tr('title'))) !!}</h1>
               @else
-                <h2 class="hero-title hero-in d2">{!! nl2br(e($s->title)) !!}</h2>
+                <h2 class="hero-title hero-in d2">{!! nl2br(e($s->tr('title'))) !!}</h2>
               @endif
-              @if($s->text)<p class="lede hero-in d3">{{ $s->text }}</p>@endif
+              @if($s->text)<p class="lede hero-in d3">{{ $s->tr('text') }}</p>@endif
               @php
                 $b1 = \App\Models\HeroSlide::href($s->button1_url);
                 $b2 = \App\Models\HeroSlide::href($s->button2_url);
@@ -72,12 +72,12 @@
                 <div class="hero-ctas hero-in d4">
                   @if($s->button1_label && $b1)
                     <a href="{{ $b1 }}" class="btn btn-primary" @if($ext($b1)) target="_blank" rel="noopener" @endif @if($many && $i > 0) tabindex="-1" @endif>
-                      {{ $s->button1_label }}
+                      {{ $s->tr('button1_label') }}
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg>
                     </a>
                   @endif
                   @if($s->button2_label && $b2)
-                    <a href="{{ $b2 }}" class="btn btn-ghost" @if($ext($b2)) target="_blank" rel="noopener" @endif @if($many && $i > 0) tabindex="-1" @endif>{{ $s->button2_label }}</a>
+                    <a href="{{ $b2 }}" class="btn btn-ghost" @if($ext($b2)) target="_blank" rel="noopener" @endif @if($many && $i > 0) tabindex="-1" @endif>{{ $s->tr('button2_label') }}</a>
                   @endif
                 </div>
               @endif
