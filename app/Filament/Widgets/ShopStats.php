@@ -18,6 +18,10 @@ class ShopStats extends StatsOverviewWidget
 {
     protected static ?int $sort = 1;
 
+    // Drawn with the page: these are three small queries, and a lazy
+    // widget can sit empty if its own request never fires.
+    protected static bool $isLazy = false;
+
     protected int|string|array $columnSpan = 'full';
 
     public static function canView(): bool

@@ -15,6 +15,10 @@ class StockLeft extends TableWidget
 {
     protected static ?int $sort = 3;
 
+    // Drawn with the page: these are three small queries, and a lazy
+    // widget can sit empty if its own request never fires.
+    protected static bool $isLazy = false;
+
     protected int|string|array $columnSpan = 'full';
 
     protected static ?string $heading = 'Anbarda qalıq';

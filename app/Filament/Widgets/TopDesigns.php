@@ -18,6 +18,10 @@ class TopDesigns extends TableWidget
 {
     protected static ?int $sort = 2;
 
+    // Drawn with the page: these are three small queries, and a lazy
+    // widget can sit empty if its own request never fires.
+    protected static bool $isLazy = false;
+
     protected int|string|array $columnSpan = 'full';
 
     protected static ?string $heading = 'Ən çox sifariş olunan dizaynlar (son 3 ay)';
