@@ -197,15 +197,18 @@ class ChocolateResource extends Resource
                     ->falseLabel('Yalnız silinənlər'),
             ])
             ->actions([
-                Tables\Actions\Action::make('source')
-                    ->label('Saytda')
-                    ->icon('heroicon-o-arrow-top-right-on-square')
-                    ->url(fn (Chocolate $r) => $r->source_url, shouldOpenInNewTab: true)
-                    ->visible(fn (Chocolate $r) => filled($r->source_url)),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make()
-                    ->modalDescription('Şokolad gizlənir və marketdən yeniləyəndə geri gəlmir. İstəsəniz "Silinənlər" filtrindən bərpa edə bilərsiniz.'),
-                Tables\Actions\RestoreAction::make()->label('Bərpa et'),
+                // Four buttons in a row took half a phone screen: one ⋮ instead.
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('source')
+                        ->label('Saytda')
+                        ->icon('heroicon-o-arrow-top-right-on-square')
+                        ->url(fn (Chocolate $r) => $r->source_url, shouldOpenInNewTab: true)
+                        ->visible(fn (Chocolate $r) => filled($r->source_url)),
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make()
+                        ->modalDescription('Şokolad gizlənir və marketdən yeniləyəndə geri gəlmir. İstəsəniz "Silinənlər" filtrindən bərpa edə bilərsiniz.'),
+                    Tables\Actions\RestoreAction::make()->label('Bərpa et'),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

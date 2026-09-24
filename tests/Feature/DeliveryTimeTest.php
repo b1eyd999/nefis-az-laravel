@@ -86,6 +86,24 @@ class DeliveryTimeTest extends TestCase
             ->assertSee('14:00 — 18:00');
     }
 
+    public function test_the_admin_carries_the_day_where_a_phone_can_see_it(): void
+    {
+        $this->order()->assertRedirect();
+        $order = Order::firstOrFail();
+        $this->actingAs(User::factory()->create(['role' => User::ADMIN]));
+
+        // The list has no column of its own for it on a phone: the day rides
+        // under the money, and the number under the customer's name.
+        $this->get('/admin/orders')->assertOk()
+            ->assertSee('26.09.2026')
+            ->assertSee('14:00–18:00')        // the slot as one short word, so the row fits
+            ->assertSee('#' . $order->id);
+
+        $this->get('/admin/orders/' . $order->id . '/edit')->assertOk()
+            ->assertSee('Nə vaxta')
+            ->assertSee('26 sentyabr, şənbə, 14:00 — 18:00');
+    }
+
     public function test_the_owner_changes_how_long_a_box_takes(): void
     {
         Setting::put(Setting::DELIVERY_LEAD_DAYS, 5);

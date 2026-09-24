@@ -78,6 +78,15 @@ class OrderResource extends Resource
                 // How it goes out, as the customer chose it at checkout.
                 Forms\Components\Section::make('Çatdırılma')
                     ->schema([
+                        // The day the customer is waiting for: the one thing the
+                        // shop works to, so it stands at the top of the section.
+                        Forms\Components\Placeholder::make('delivery_when')
+                            ->label('Nə vaxta')
+                            ->content(fn (?Order $record) => $record?->delivery_date
+                                ? \App\Support\DeliveryTime::day($record->delivery_date)
+                                    . ($record->delivery_slot ? ', ' . $record->delivery_slot : '')
+                                : 'Seçilməyib')
+                            ->columnSpanFull(),
                         Forms\Components\Placeholder::make('delivery_method')
                             ->label('Üsul')
                             ->content(fn (?Order $record) => $record?->delivery_name
@@ -119,12 +128,16 @@ class OrderResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('id')
                     ->label('№')
-                    ->sortable(),
+                    ->sortable()
+                    ->searchable()
+                    ->visibleFrom('md'),   // on a phone the number is under the name
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Müştəri')
                     ->searchable()
+                    ->weight('bold')
+                    ->description(fn (Order $r) => '#' . $r->id)
                     ->wrap(),   // two lines on a phone rather than pushing the status off the screen
-                // On a phone: number, customer, amount, status — the rest from a tablet up.
+                // On a phone: customer, amount with the day, status — the rest from a tablet up.
                 Tables\Columns\TextColumn::make('contact_phone')
                     ->label('Telefon')
                     ->visibleFrom('md'),
@@ -132,22 +145,22 @@ class OrderResource extends Resource
                     ->label('Məhsul sayı')
                     ->counts('items')
                     ->visibleFrom('lg'),
-                Tables\Columns\TextColumn::make('delivery_date')
-                    ->label('Nə vaxta')
-                    ->formatStateUsing(fn (?string $state, Order $r) => $state
-                        ? \App\Support\DeliveryTime::day($state) . ($r->delivery_slot ? ', ' . $r->delivery_slot : '')
-                        : '—')
-                    ->wrap()
-                    ->visibleFrom('md'),
                 Tables\Columns\TextColumn::make('delivery_name')
                     ->label('Çatdırılma')
                     ->visibleFrom('lg')
                     ->placeholder('—')
                     ->description(fn (Order $r) => $r->delivery_type ? $r->deliverySummary() : null)
                     ->wrap(),
+                // The day the box has to be ready travels under the money, so
+                // a phone shows both without a column of its own.
                 Tables\Columns\TextColumn::make('total')
                     ->label('Məbləğ')
-                    ->getStateUsing(fn (Order $r) => $r->total() > 0 ? Price::format($r->total()) : '—'),
+                    ->getStateUsing(fn (Order $r) => $r->total() > 0 ? Price::format($r->total()) : '—')
+                    ->description(fn (Order $r) => $r->delivery_date
+                        ? new HtmlString(e(\Illuminate\Support\Carbon::parse($r->delivery_date)->format('d.m.Y'))
+                            . ($r->delivery_slot ? '<br>' . e(str_replace(' — ', '–', $r->delivery_slot)) : ''))
+                        : null)
+                    ->wrap(),
                 Tables\Columns\BadgeColumn::make('status')
                     ->label('Status')
                     ->colors([
@@ -173,20 +186,24 @@ class OrderResource extends Resource
                     ->options(self::STATUSES),
             ])
             ->actions([
-                // The receipt is checked, the money is in: the order is on.
-                Tables\Actions\Action::make('confirm_payment')
-                    ->label('Ödənişi təsdiqlə')
-                    ->icon('heroicon-o-check-badge')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->modalDescription(fn (Order $record) => 'Sifariş #' . $record->id . ' — ' . Price::format($record->total())
-                        . ($record->paymentAccount ? ' · ' . $record->paymentAccount->label : ''))
-                    ->visible(fn (Order $record) => in_array($record->status, ['awaiting_payment', 'payment_check'], true))
-                    ->action(function (Order $record) {
-                        $record->forceFill(['status' => 'confirmed', 'payment_confirmed_at' => now()])->save();
-                        Notification::make()->success()->title('Ödəniş təsdiqləndi')->send();
-                    }),
-                Tables\Actions\EditAction::make(),
+                // Behind one ⋮ button: two buttons side by side pushed the
+                // status off a phone screen, and more will be added in time.
+                Tables\Actions\ActionGroup::make([
+                    // The receipt is checked, the money is in: the order is on.
+                    Tables\Actions\Action::make('confirm_payment')
+                        ->label('Ödənişi təsdiqlə')
+                        ->icon('heroicon-o-check-badge')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalDescription(fn (Order $record) => 'Sifariş #' . $record->id . ' — ' . Price::format($record->total())
+                            . ($record->paymentAccount ? ' · ' . $record->paymentAccount->label : ''))
+                        ->visible(fn (Order $record) => in_array($record->status, ['awaiting_payment', 'payment_check'], true))
+                        ->action(function (Order $record) {
+                            $record->forceFill(['status' => 'confirmed', 'payment_confirmed_at' => now()])->save();
+                            Notification::make()->success()->title('Ödəniş təsdiqləndi')->send();
+                        }),
+                    Tables\Actions\EditAction::make(),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

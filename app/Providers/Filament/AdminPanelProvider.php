@@ -56,6 +56,16 @@ class AdminPanelProvider extends PanelProvider
                     . '.fi-wi-stats-overview-stats-ctn .fi-wi-stats-overview-stat-description{font-size:.75rem}'
                     . '}</style>',
             )
+            // Tables on a phone: the tick box in front of every row is for
+            // picking several at a desk, and each cell kept 12px of air on
+            // both sides — together they pushed the last column off screen.
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => '<style>@media (max-width:767px){'
+                    . '.fi-ta-selection-cell{display:none}'
+                    . '.fi-ta-cell .px-3,.fi-ta-header-cell .px-3{padding-left:.5rem;padding-right:.5rem}'
+                    . '}</style>',
+            )
             // A way back to the shop: a button in the top bar and the same
             // line in the account menu, because the panel offers none.
             ->renderHook(

@@ -138,26 +138,32 @@ class ProductResource extends Resource
                     ->getStateUsing(fn (Product $record) => Media::url($record->catalogImage())),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Ad')
-                    ->searchable(),
+                    ->searchable()
+                    ->wrap(),
+                // On a phone: the picture, the name, the price and ⋮ — the rest from a tablet up.
                 Tables\Columns\TextColumn::make('category')
                     ->label('Kateqoriya')
                     ->formatStateUsing(fn (?string $state) => Product::CATEGORIES[$state] ?? '—')
-                    ->badge(),
+                    ->badge()
+                    ->visibleFrom('md'),
                 Tables\Columns\IconColumn::make('template_image')
                     ->label('Fərdiləşir')
                     ->boolean()
-                    ->getStateUsing(fn (Product $record) => $record->isCustomizable()),
+                    ->getStateUsing(fn (Product $record) => $record->isCustomizable())
+                    ->visibleFrom('lg'),
                 Tables\Columns\TextColumn::make('price')
                     ->label('Qiymət')
                     ->formatStateUsing(fn ($state) => $state ? Price::format($state) : 'Sorğu ilə')
                     ->sortable(),
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Aktiv')
-                    ->boolean(),
+                    ->boolean()
+                    ->visibleFrom('md'),
                 Tables\Columns\TextColumn::make('sort_order')
                     ->label('Sıra')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->visibleFrom('lg'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Yaradılıb')
                     ->dateTime('d.m.Y')
@@ -172,11 +178,14 @@ class ProductResource extends Resource
                     ->options(Product::CATEGORIES),
             ])
             ->actions([
-                Tables\Actions\Action::make('editor')
-                    ->label('Redaktor')
-                    ->icon('heroicon-o-paint-brush')
-                    ->url(fn (Product $record) => route('box.edit', $record->slug)),
-                Tables\Actions\EditAction::make(),
+                // Behind one ⋮ button, so the row fits a phone screen.
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('editor')
+                        ->label('Redaktor')
+                        ->icon('heroicon-o-paint-brush')
+                        ->url(fn (Product $record) => route('box.edit', $record->slug)),
+                    Tables\Actions\EditAction::make(),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
