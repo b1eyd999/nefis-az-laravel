@@ -76,7 +76,7 @@
           <label>Ödəniş üsulu</label>
           <div class="pay-methods">
             @foreach($offered as $type => $account)
-              <form method="POST" action="{{ route('orders.pay.method', $order) }}">
+              <form method="POST" action="{{ lroute('orders.pay.method', $order) }}">
                 @csrf
                 <input type="hidden" name="type" value="{{ $type }}">
                 <button type="submit" class="pay-method{{ $order->payment_account_id === $account->id ? ' on' : '' }}">
@@ -113,7 +113,7 @@
         @if($order->payment_receipt)
           <p class="pay-sent" style="margin:.6rem 0 .9rem;">Çek göndərilib{{ $order->receipt_at ? ' — ' . $order->receipt_at->format('d.m.Y H:i') : '' }}. Yoxlanılır.</p>
         @endif
-        <form method="POST" action="{{ route('orders.pay.receipt', $order) }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ lroute('orders.pay.receipt', $order) }}" enctype="multipart/form-data">
           @csrf
           <label class="pay-file">
             <input type="file" name="receipt" id="receipt-input" accept="image/*,application/pdf" required>
@@ -128,7 +128,7 @@
       </div>
 
       <div style="text-align:center;">
-        <a href="{{ route('orders.index') }}" style="font-size:.9rem; text-decoration:underline; color:var(--cocoa-soft);">Sifarişlərim</a>
+        <a href="{{ lroute('orders.index') }}" style="font-size:.9rem; text-decoration:underline; color:var(--cocoa-soft);">Sifarişlərim</a>
       </div>
     </div>
   </div>

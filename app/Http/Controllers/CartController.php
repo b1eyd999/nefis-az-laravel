@@ -139,7 +139,7 @@ class CartController extends Controller
         $line = Cart::items()[array_key_last(Cart::items())] ?? [];
         Analytics::addToCart($product, Cart::unitPrice($line, $product), $quantity);
 
-        return redirect()->route('cart.index')->with('status', 'Məhsul səbətə əlavə olundu.');
+        return redirect(lroute('cart.index'))->with('status', 'Məhsul səbətə əlavə olundu.');
     }
 
     private function slotAttributeNames(Product $product): array

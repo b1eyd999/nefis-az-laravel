@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="@yield('lang', 'az')">
+<html lang="{{ \App\Support\Locale::tag() }}">
 <head>
 <meta charset="UTF-8">
 {{-- Runs before any styles paint, so a visitor who chose a theme never sees
@@ -31,7 +31,12 @@
 <link rel="canonical" href="{!! $seoUrl !!}">
 <meta name="theme-color" content="#3A2617">
 <meta property="og:type" content="@yield('og_type', 'website')">
-<meta property="og:locale" content="az_AZ">
+<meta property="og:locale" content="{{ ['az' => 'az_AZ', 'ru' => 'ru_RU', 'en' => 'en_US'][\App\Support\Locale::current()] }}">
+{{-- The same page in the other two languages, for search engines. --}}
+@foreach(\App\Support\Locale::all() as $__loc)
+<link rel="alternate" hreflang="{{ $__loc }}" href="{{ \App\Support\Locale::switchUrl($__loc) }}">
+@endforeach
+<link rel="alternate" hreflang="x-default" href="{{ \App\Support\Locale::switchUrl('az') }}">
 <meta property="og:site_name" content="Nefis Şokolad Evi">
 <meta property="og:title" content="{!! $seoTitle !!}">
 <meta property="og:description" content="{!! $seoDescription !!}">
@@ -74,7 +79,7 @@
 @php $navLetters = \App\Support\Letter::enabled(); @endphp
 @php $navLive = \App\Support\LiveMaterials::enabled(); @endphp
 @php $navGifts = \App\Models\GiftPage::shown()->inLocale('az')->get(); @endphp
-@php $navRu = \App\Models\GiftPage::shown()->inLocale('ru')->exists(); @endphp
+
 
 <a href="#main" class="skip-link">Əsas məzmuna keç</a>
 
@@ -89,7 +94,7 @@
 
 <header id="site-header">
   <div class="wrap">
-    <a href="{{ route('home') }}" class="brand"><img src="/images/logo.svg" alt="Nefis"></a>
+    <a href="{{ lroute('home') }}" class="brand"><img src="/images/logo.svg" alt="Nefis"></a>
     <nav class="primary" aria-label="Əsas menyu">
       {{-- Everything for sale under one word, so the bar stays short however many there are. --}}
       @if($navWraps || $navLetters || $navLive || $navGifts->isNotEmpty())
@@ -99,33 +104,45 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
           </button>
           <div class="nav-panel">
-            <a class="nav-item" href="{{ route('designs.index') }}"><span class="ni-ico">🍫</span><span><b>Dizaynlar</b><small>Fərdi şokolad qutuları</small></span></a>
+            <a class="nav-item" href="{{ lroute('designs.index') }}"><span class="ni-ico">🍫</span><span><b>Dizaynlar</b><small>Fərdi şokolad qutuları</small></span></a>
             @if($navGifts->isNotEmpty())
-              <a class="nav-item" href="{{ route('gifts.index') }}"><span class="ni-ico">🎉</span><span><b>Hədiyyə fikirləri</b><small>{{ $navGifts->take(3)->pluck('menu_label')->implode(', ') }}…</small></span></a>
+              <a class="nav-item" href="{{ lroute('gifts.index') }}"><span class="ni-ico">🎉</span><span><b>Hədiyyə fikirləri</b><small>{{ $navGifts->take(3)->pluck('menu_label')->implode(', ') }}…</small></span></a>
             @endif
             @if($navWraps)
-              <a class="nav-item" href="{{ route('wrappings.index') }}"><span class="ni-ico">🎁</span><span><b>Qablaşdırma</b><small>Hədiyyə kağızı və lent</small></span></a>
+              <a class="nav-item" href="{{ lroute('wrappings.index') }}"><span class="ni-ico">🎁</span><span><b>Qablaşdırma</b><small>Hədiyyə kağızı və lent</small></span></a>
             @endif
             @if($navLetters)
-              <a class="nav-item" href="{{ route('letters.create') }}"><span class="ni-ico">💌</span><span><b>{{ \App\Support\Letter::text('menu') }}</b><small>Şəkil və sözlərlə polaroid</small></span></a>
+              <a class="nav-item" href="{{ lroute('letters.create') }}"><span class="ni-ico">💌</span><span><b>{{ \App\Support\Letter::text('menu') }}</b><small>Şəkil və sözlərlə polaroid</small></span></a>
             @endif
             @if($navLive)
-              <a class="nav-item" href="{{ route('live.create') }}"><span class="ni-ico">🎬</span><span><b>Canlı şəkil</b><small>Telefonda canlanan şəkil (AR)</small></span></a>
+              <a class="nav-item" href="{{ lroute('live.create') }}"><span class="ni-ico">🎬</span><span><b>Canlı şəkil</b><small>Telefonda canlanan şəkil (AR)</small></span></a>
             @endif
           </div>
         </div>
       @else
-        <a href="{{ route('designs.index') }}">Dizaynlar</a>
+        <a href="{{ lroute('designs.index') }}">Dizaynlar</a>
       @endif
-      <a href="{{ route('home') }}#how">Necə İşləyir</a>
-      <a href="{{ route('home') }}#faq">Suallar</a>
+      <a href="{{ lroute('home') }}#how">Necə İşləyir</a>
+      <a href="{{ lroute('home') }}#faq">Suallar</a>
     </nav>
     <div class="header-actions">
       <button type="button" class="icon-btn theme-btn" id="theme-toggle" aria-label="Qaranlıq rejim" title="Qaranlıq / işıqlı rejim">
         <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
       </button>
-      <a href="{{ route('cart.index') }}" class="icon-btn" aria-label="Səbət">
+      {{-- The same page in another language: one tap, nothing else changes. --}}
+      <div class="nav-drop lang-drop">
+        <button type="button" class="icon-btn lang-btn" aria-expanded="false" aria-haspopup="true" aria-label="{{ __('Dil') }}">
+          {{ \App\Support\Locale::SHORT[\App\Support\Locale::current()] }}
+        </button>
+        <div class="nav-panel right lang-panel">
+          @foreach(\App\Support\Locale::NAMES as $__code => $__name)
+            <a class="nav-item{{ \App\Support\Locale::is($__code) ? ' is-on' : '' }}" hreflang="{{ $__code }}"
+               href="{{ \App\Support\Locale::switchUrl($__code) }}"><span class="ni-ico">{{ \App\Support\Locale::SHORT[$__code] }}</span><span><b>{{ $__name }}</b></span></a>
+          @endforeach
+        </div>
+      </div>
+      <a href="{{ lroute('cart.index') }}" class="icon-btn" aria-label="Səbət">
         🛍️
         @if(($cartCount ?? 0) > 0)
           <span class="badge">{{ $cartCount }}</span>
@@ -139,7 +156,7 @@
           </button>
           <div class="nav-panel right">
             <div class="nav-who">{{ auth()->user()->name }}</div>
-            <a class="nav-item" href="{{ route('orders.index') }}"><span class="ni-ico">📦</span><span><b>Sifarişlərim</b></span></a>
+            <a class="nav-item" href="{{ lroute('orders.index') }}"><span class="ni-ico">📦</span><span><b>Sifarişlərim</b></span></a>
             @if(auth()->user()->isStaff())
               <a class="nav-item" href="{{ url('/admin') }}"><span class="ni-ico">⚙️</span><span><b>Admin panel</b></span></a>
             @endif
@@ -150,8 +167,8 @@
           </div>
         </div>
       @else
-        <a href="{{ route('login') }}" class="btn btn-ghost header-cta">Giriş</a>
-        <a href="{{ route('register') }}" class="btn btn-primary header-cta">Qeydiyyat</a>
+        <a href="{{ lroute('login') }}" class="btn btn-ghost header-cta">Giriş</a>
+        <a href="{{ lroute('register') }}" class="btn btn-primary header-cta">Qeydiyyat</a>
       @endauth
       <button class="icon-btn menu-btn" id="menu-open" aria-label="Menyu"><span></span></button>
     </div>
@@ -162,11 +179,11 @@
   <button class="close-btn" id="menu-close" aria-label="Bağla">✕</button>
   <div class="mn-group">
     <span class="mn-head">Məhsullar</span>
-    <a href="{{ route('designs.index') }}">🍫 Dizaynlar</a>
-    @if($navGifts->isNotEmpty())<a href="{{ route('gifts.index') }}">🎉 Hədiyyə fikirləri</a>@endif
-    @if($navWraps)<a href="{{ route('wrappings.index') }}">🎁 Qablaşdırma</a>@endif
-    @if($navLetters)<a href="{{ route('letters.create') }}">💌 {{ \App\Support\Letter::text('menu') }}</a>@endif
-    @if($navLive)<a href="{{ route('live.create') }}">🎬 Canlı şəkil</a>@endif
+    <a href="{{ lroute('designs.index') }}">🍫 Dizaynlar</a>
+    @if($navGifts->isNotEmpty())<a href="{{ lroute('gifts.index') }}">🎉 Hədiyyə fikirləri</a>@endif
+    @if($navWraps)<a href="{{ lroute('wrappings.index') }}">🎁 Qablaşdırma</a>@endif
+    @if($navLetters)<a href="{{ lroute('letters.create') }}">💌 {{ \App\Support\Letter::text('menu') }}</a>@endif
+    @if($navLive)<a href="{{ lroute('live.create') }}">🎬 Canlı şəkil</a>@endif
   </div>
   @if(\App\Support\Contact::has())
     <div class="mn-group">
@@ -177,21 +194,21 @@
   @endif
   <div class="mn-group">
     <span class="mn-head">Məlumat</span>
-    <a href="{{ route('home') }}#how">Necə İşləyir</a>
-    <a href="{{ route('home') }}#faq">Suallar</a>
+    <a href="{{ lroute('home') }}#how">Necə İşləyir</a>
+    <a href="{{ lroute('home') }}#faq">Suallar</a>
   </div>
   <div class="mn-group">
     <span class="mn-head">Hesab</span>
-    <a href="{{ route('cart.index') }}">Səbət</a>
+    <a href="{{ lroute('cart.index') }}">Səbət</a>
     @auth
-      <a href="{{ route('orders.index') }}">Sifarişlərim</a>
+      <a href="{{ lroute('orders.index') }}">Sifarişlərim</a>
       @if(auth()->user()->isStaff())
         <a href="{{ url('/admin') }}">Admin panel</a>
       @endif
       <form method="POST" action="{{ route('logout') }}"><button type="submit">Çıxış</button></form>
     @else
-      <a href="{{ route('login') }}">Giriş</a>
-      <a href="{{ route('register') }}">Qeydiyyat</a>
+      <a href="{{ lroute('login') }}">Giriş</a>
+      <a href="{{ lroute('register') }}">Qeydiyyat</a>
     @endauth
   </div>
 </div>
@@ -212,18 +229,17 @@
       </div>
       <div class="footer-col">
         <h4>Naviqasiya</h4>
-        <a href="{{ route('designs.index') }}">Dizaynlar</a>@if($navWraps)<a href="{{ route('wrappings.index') }}">Qablaşdırma</a>@endif @if($navLetters)<a href="{{ route('letters.create') }}">{{ \App\Support\Letter::text('menu') }}</a>@endif @if($navLive)<a href="{{ route('live.create') }}">Canlı şəkil</a>@endif
-        <a href="{{ route('home') }}#how">Necə İşləyir</a>
-        <a href="{{ route('home') }}#faq">Suallar</a>
+        <a href="{{ lroute('designs.index') }}">Dizaynlar</a>@if($navWraps)<a href="{{ lroute('wrappings.index') }}">Qablaşdırma</a>@endif @if($navLetters)<a href="{{ lroute('letters.create') }}">{{ \App\Support\Letter::text('menu') }}</a>@endif @if($navLive)<a href="{{ lroute('live.create') }}">Canlı şəkil</a>@endif
+        <a href="{{ lroute('home') }}#how">Necə İşləyir</a>
+        <a href="{{ lroute('home') }}#faq">Suallar</a>
       </div>
       @if($navGifts->isNotEmpty())
         <div class="footer-col">
           <h4>Hədiyyə fikirləri</h4>
           @foreach($navGifts->take(7) as $gift)
-            <a href="{{ route('gifts.show', $gift->slug) }}">{{ $gift->linkText() }}</a>
+            <a href="{{ lroute('gifts.show', $gift->slug) }}">{{ $gift->linkText() }}</a>
           @endforeach
-          <a href="{{ route('gifts.index') }}">Hamısı →</a>
-          @if($navRu)<a href="{{ route('gifts.index.ru') }}" lang="ru">На русском</a>@endif
+          <a href="{{ lroute('gifts.index') }}">Hamısı →</a>
         </div>
       @endif
       <div class="footer-col">

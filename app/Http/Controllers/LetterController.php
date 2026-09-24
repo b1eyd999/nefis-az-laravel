@@ -37,6 +37,6 @@ class LetterController extends Controller
 
         Cart::addLetter($letter, (int) $request->input('quantity', 1));
 
-        return redirect()->route('cart.index')->with('status', 'Polaroid məktub səbətə əlavə olundu.');
+        return redirect(lroute('cart.index'))->with('status', 'Polaroid məktub səbətə əlavə olundu.');
     }
 }

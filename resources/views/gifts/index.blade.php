@@ -24,7 +24,7 @@
 @push('jsonld')
   {{ \App\Support\Seo::jsonLd(['@graph' => [
       \App\Support\Seo::breadcrumbs([
-          [$ru ? 'Главная' : 'Ana səhifə', route('home')],
+          [$ru ? 'Главная' : 'Ana səhifə', lroute('home')],
           [$ru ? 'Идеи подарков' : 'Hədiyyə fikirləri', \App\Models\GiftPage::hubUrl($locale)],
       ]),
       [
@@ -42,7 +42,7 @@
   <section class="page-hero">
     <div class="wrap">
       <nav class="crumbs" aria-label="{{ $ru ? 'Идеи подарков' : 'Hədiyyə fikirləri' }}">
-        <a href="{{ route('home') }}">{{ $ru ? 'Главная' : 'Ana səhifə' }}</a><span aria-hidden="true">›</span>
+        <a href="{{ lroute('home') }}">{{ $ru ? 'Главная' : 'Ana səhifə' }}</a><span aria-hidden="true">›</span>
         <span aria-current="page">{{ $ru ? 'Идеи подарков' : 'Hədiyyə fikirləri' }}</span>
         @if($otherHub)
           <span aria-hidden="true">·</span>

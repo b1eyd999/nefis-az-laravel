@@ -25,7 +25,7 @@
         </div>
       @endif
 
-      <form method="POST" action="{{ route('register') }}">
+      <form method="POST" action="{{ lroute('register') }}">
         @csrf
         <div class="field">
           <label for="name">Ad Soyad</label>
@@ -50,7 +50,7 @@
         <button type="submit" class="btn btn-primary btn-block">Qeydiyyatdan Keç</button>
       </form>
 
-      <p class="foot-link">Artıq hesabınız var? <a href="{{ route('login') }}">Daxil olun</a></p>
+      <p class="foot-link">Artıq hesabınız var? <a href="{{ lroute('login') }}">Daxil olun</a></p>
     </div>
   </div>
 </section>

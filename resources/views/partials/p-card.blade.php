@@ -1,5 +1,5 @@
 {{-- A design on a catalogue card: its picture, name, price and the way to fill it in. --}}
-@php $link = $product->isCustomizable() ? route('products.customize', $product->slug) : route('designs.index'); @endphp
+@php $link = $product->isCustomizable() ? lroute('products.customize', $product->slug) : lroute('designs.index'); @endphp
 <div class="p-card reveal">
   <a href="{{ $link }}" class="p-card-media">
     @if($product->tag)<span class="tag">{{ $product->tag }}</span>@endif

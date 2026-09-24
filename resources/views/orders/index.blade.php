@@ -22,7 +22,7 @@
         <div class="ico">📦</div>
         <p>Hələ heç bir sifarişiniz yoxdur.</p>
         <div style="margin-top:1.5rem;">
-          <a href="{{ route('designs.index') }}" class="btn btn-primary">Dizaynlara Bax</a>
+          <a href="{{ lroute('designs.index') }}" class="btn btn-primary">Dizaynlara Bax</a>
         </div>
       </div>
     @else
@@ -88,7 +88,7 @@
               <p style="font-weight:700; margin-top:.35rem;">Cəmi: {{ \App\Support\Price::format($order->total()) }}</p>
             @endif
             @if($order->awaitsPayment())
-              <a href="{{ route('orders.pay', $order) }}" class="btn btn-primary" style="margin-top:.75rem;">
+              <a href="{{ lroute('orders.pay', $order) }}" class="btn btn-primary" style="margin-top:.75rem;">
                 {{ $order->payment_receipt ? 'Ödəniş səhifəsi' : 'Ödənişi tamamla' }}
               </a>
             @endif

@@ -22,7 +22,7 @@
         <div class="ico">🛍️</div>
         <p>Səbətiniz hələ boşdur.</p>
         <div style="margin-top:1.5rem;">
-          <a href="{{ route('designs.index') }}" class="btn btn-primary">Dizaynlara Bax</a>
+          <a href="{{ lroute('designs.index') }}" class="btn btn-primary">Dizaynlara Bax</a>
         </div>
       </div>
     @else
@@ -70,7 +70,7 @@
                   @unless($isLetter) &middot; {{ \App\Support\Price::format($item['letter']['price']) }} @endunless</p>
               @endif
             </div>
-            <form method="POST" action="{{ route('cart.remove', $item['id']) }}">
+            <form method="POST" action="{{ lroute('cart.remove', $item['id']) }}">
               @csrf
               @method('DELETE')
               <button type="submit" class="remove-btn">Sil</button>
@@ -87,7 +87,7 @@
             {{ $total > 0 ? \App\Support\Price::format($total) : 'Qiymət sorğu ilə' }}
           </span>
         </div>
-        <a href="{{ route('checkout.index') }}" class="btn btn-primary btn-block">Sifarişi Tamamla</a>
+        <a href="{{ lroute('checkout.index') }}" class="btn btn-primary btn-block">Sifarişi Tamamla</a>
       </div>
     @endif
   </div>

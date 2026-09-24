@@ -6,8 +6,8 @@
 @push('jsonld')
   {{ \App\Support\Seo::jsonLd(['@graph' => [
       \App\Support\Seo::breadcrumbs([
-          ['Ana səhifə', route('home')],
-          ['Dizaynlar', route('designs.index')],
+          ['Ana səhifə', lroute('home')],
+          ['Dizaynlar', lroute('designs.index')],
       ]),
       [
           '@type' => 'ItemList',
@@ -16,7 +16,7 @@
               ->map(fn ($d, $i) => [
                   '@type' => 'ListItem',
                   'position' => $i + 1,
-                  'url' => route('products.customize', $d->slug),
+                  'url' => lroute('products.customize', $d->slug),
                   'name' => $d->name,
               ])->all(),
       ],
@@ -142,11 +142,11 @@
             </div>
             <div class="designs-grid">
               @foreach($designs[$key] as $design)
-                <a class="d-card" href="{{ $design->isCustomizable() ? route('products.customize', $design->slug) : route('designs.index') }}"
+                <a class="d-card" href="{{ $design->isCustomizable() ? lroute('products.customize', $design->slug) : lroute('designs.index') }}"
                         data-name="{{ $design->name }}"
                         data-category="{{ $label }}"
                         data-image="{{ \App\Support\Media::url($design->catalogImage()) }}"
-                        data-url="{{ $design->isCustomizable() ? route('products.customize', $design->slug) : '' }}">
+                        data-url="{{ $design->isCustomizable() ? lroute('products.customize', $design->slug) : '' }}">
                   <div class="d-card-media">
                     @if($design->isCustomizable())<span class="pill">Fərdiləşdir</span>@endif
                     <img src="{{ \App\Support\Media::url($design->catalogImage()) }}" alt="{{ $design->name }} — şəkilli şokolad qutusu" loading="lazy">
@@ -173,11 +173,11 @@
           adı və sözlərinizi yazın — qutunun necə görünəcəyini elə saytda, sifarişdən əvvəl görürsünüz.</p>
         <p>Sonra qutunun içindəki şokoladı seçirsiniz (Milka, Alpen Gold və digər 90–105 qramlıq plitkalar).
           İstəsəniz qutunu hədiyyə kağızına bükürük, içinə polaroid məktub qoyuruq, yaxud
-          <a href="{{ route('live.create') }}">canlı şəkil</a> əlavə edirik — telefonu şəklə tutanda videonuz oynayır.</p>
+          <a href="{{ lroute('live.create') }}">canlı şəkil</a> əlavə edirik — telefonu şəklə tutanda videonuz oynayır.</p>
         <h2>Hansı dizaynı kimə?</h2>
         <p>Cütlüklər üçün "Love story" və "Love is…", uşaqlar üçün Kinder və Barbie, maşın sevənlər üçün "Avtomobil",
           zarafat üçün Netflix, Google və Spotify üslubunda dizaynlar var. Ailə şəkli üçün isə "Family Frame" uyğundur.
-          Münasibətə görə seçmək istəyirsinizsə, <a href="{{ route('gifts.index') }}">hədiyyə fikirlərinə</a> baxın.</p>
+          Münasibətə görə seçmək istəyirsinizsə, <a href="{{ lroute('gifts.index') }}">hədiyyə fikirlərinə</a> baxın.</p>
         <p>Sifariş adətən 1–3 iş günü ərzində hazırlanır: Bakıda ünvana çatdırırıq, bölgələrə poçtla göndəririk.</p>
       </article>
     </div>

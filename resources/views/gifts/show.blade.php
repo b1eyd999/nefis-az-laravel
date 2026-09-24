@@ -17,7 +17,7 @@
 @push('jsonld')
   {{ \App\Support\Seo::jsonLd(['@graph' => array_values(array_filter([
       \App\Support\Seo::breadcrumbs([
-          [$w['home'], route('home')],
+          [$w['home'], lroute('home')],
           [$w['hub'], \App\Models\GiftPage::hubUrl($page->locale)],
           [$page->menu_label, $page->url()],
       ]),
@@ -28,7 +28,7 @@
           'itemListElement' => $products->values()->map(fn ($p, $i) => [
               '@type' => 'ListItem',
               'position' => $i + 1,
-              'url' => route('products.customize', $p->slug),
+              'url' => lroute('products.customize', $p->slug),
               'name' => $p->name,
           ])->all(),
       ] : null,
@@ -51,7 +51,7 @@
   <section class="page-hero">
     <div class="wrap">
       <nav class="crumbs" aria-label="{{ $w['hub'] }}">
-        <a href="{{ route('home') }}">{{ $w['home'] }}</a><span aria-hidden="true">›</span>
+        <a href="{{ lroute('home') }}">{{ $w['home'] }}</a><span aria-hidden="true">›</span>
         <a href="{{ \App\Models\GiftPage::hubUrl($page->locale) }}">{{ $w['hub'] }}</a><span aria-hidden="true">›</span>
         <span aria-current="page">{{ $page->menu_label }}</span>
         @if($alternate)
@@ -73,7 +73,7 @@
         <a href="#designs" class="btn btn-primary">{{ $w['pick'] }}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
-        <a href="{{ route('home') }}#how" class="btn btn-ghost">{{ $w['how'] }}</a>
+        <a href="{{ lroute('home') }}#how" class="btn btn-ghost">{{ $w['how'] }}</a>
       </div>
     </div>
   </section>
@@ -144,7 +144,7 @@
           @endforeach
         </div>
       @endif
-      <a href="{{ route('designs.index') }}" class="btn btn-primary">{{ $w['all'] }}
+      <a href="{{ lroute('designs.index') }}" class="btn btn-primary">{{ $w['all'] }}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </a>
     </div>

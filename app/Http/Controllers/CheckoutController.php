@@ -32,7 +32,7 @@ class CheckoutController extends Controller
             ->values();
 
         if ($items->isEmpty()) {
-            return redirect()->route('cart.index');
+            return redirect(lroute('cart.index'));
         }
 
         $itemsTotal = $items->sum(fn (array $i) => Cart::unitPrice($i, $i['product']) * $i['quantity']);
@@ -49,7 +49,7 @@ class CheckoutController extends Controller
             || Product::whereKey($item['product_id'])->exists());
 
         if (empty($items)) {
-            return redirect()->route('cart.index');
+            return redirect(lroute('cart.index'));
         }
 
         $delivery = $this->validateDelivery($request);
@@ -148,8 +148,8 @@ class CheckoutController extends Controller
         Cart::clear();
 
         return $account
-            ? redirect()->route('orders.pay', $order)
-            : redirect()->route('orders.index')->with('status', 'Sifarişiniz qəbul edildi! Tezliklə sizinlə əlaqə saxlayacağıq.');
+            ? redirect(lroute('orders.pay', $order))
+            : redirect(lroute('orders.index'))->with('status', 'Sifarişiniz qəbul edildi! Tezliklə sizinlə əlaqə saxlayacağıq.');
     }
 
     /** The day and the part of the day the box is wanted, or the earliest the shop can do. */

@@ -232,7 +232,7 @@
       </div>
       @if(($designCount ?? 0) > $products->count())
         <div class="collections-foot reveal">
-          <a href="{{ route('designs.index') }}" class="btn btn-ghost">
+          <a href="{{ lroute('designs.index') }}" class="btn btn-ghost">
             Bütün {{ $designCount }} dizayna bax
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </a>
@@ -263,7 +263,7 @@
         </div>
         @if($gifts->count() > 8)
           <div class="collections-foot reveal">
-            <a href="{{ route('gifts.index') }}" class="btn btn-ghost">Bütün hədiyyə fikirləri
+            <a href="{{ lroute('gifts.index') }}" class="btn btn-ghost">Bütün hədiyyə fikirləri
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
             </a>
           </div>

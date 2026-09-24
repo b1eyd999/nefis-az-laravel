@@ -27,7 +27,7 @@
         </div>
       @endif
 
-      <form method="POST" action="{{ route('login') }}">
+      <form method="POST" action="{{ lroute('login') }}">
         @csrf
         <div class="field">
           <label for="email">E-poçt</label>
@@ -44,7 +44,7 @@
         <button type="submit" class="btn btn-primary btn-block">Daxil Ol</button>
       </form>
 
-      <p class="foot-link">Hesabınız yoxdur? <a href="{{ route('register') }}">Qeydiyyatdan keçin</a></p>
+      <p class="foot-link">Hesabınız yoxdur? <a href="{{ lroute('register') }}">Qeydiyyatdan keçin</a></p>
     </div>
   </div>
 </section>

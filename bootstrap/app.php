@@ -13,6 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // The owner's maintenance switch; staff and the admin panel stay open.
         $middleware->web(append: [\App\Http\Middleware\MaintenanceMode::class]);
+        // Which language a page is written in comes from its address.
+        $middleware->alias(['locale' => \App\Http\Middleware\SetLocale::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // More than the hosting takes in one sending (a long video): a plain

@@ -65,7 +65,7 @@
 
       <div class="wr-cta">
         <p>Qutuya hər tərəfdən baxmaq üçün üzərinə klikləyin. Qablaşdırmanı dizaynı seçəndə, şokoladdan sonra seçirsiniz.</p>
-        <a href="{{ route('designs.index') }}" class="btn btn-primary">Dizayn seç</a>
+        <a href="{{ lroute('designs.index') }}" class="btn btn-primary">Dizayn seç</a>
       </div>
     </div>
   </section>

@@ -521,6 +521,12 @@
   }
   .photo-guide svg{ flex:none; }
   .photo-guide p{ margin:0; font-size:.8125rem; color:var(--cocoa-soft); line-height:1.4; }
+  /* The language switcher in the top bar. */
+  .lang-btn{ font-size:.8125rem; font-weight:700; letter-spacing:.04em; }
+  .lang-panel{ min-width:11rem; }
+  .lang-panel .nav-item.is-on{ color:var(--gold-deep); font-weight:700; }
+  .lang-panel .ni-ico{ font-size:.75rem; font-weight:700; letter-spacing:.04em; opacity:.7; }
+
   .photo-guide svg{ color:var(--gold-deep); }
   .photo-guide .pg-open{
     margin-top:.35rem; background:none; border:0; padding:0; font:inherit; font-size:.8125rem; font-weight:600;

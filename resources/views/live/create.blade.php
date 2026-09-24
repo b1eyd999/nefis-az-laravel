@@ -72,7 +72,7 @@
           <p class="live-caption">Telefonda belə görünəcək: kamera şəkli tanıyır və video onun üzərinə düşür.</p>
         </div>
 
-        <form class="live-form" id="live-form" method="POST" action="{{ route('live.store') }}" enctype="multipart/form-data">
+        <form class="live-form" id="live-form" method="POST" action="{{ lroute('live.store') }}" enctype="multipart/form-data">
           @csrf
           <div>
             <label>1. Canlanacaq şəkil</label>

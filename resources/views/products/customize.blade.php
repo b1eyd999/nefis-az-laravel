@@ -27,7 +27,7 @@
           'brand' => ['@type' => 'Brand', 'name' => 'Nefis'],
           'offers' => $product->price ? [
               '@type' => 'Offer',
-              'url' => route('products.customize', $product->slug),
+              'url' => lroute('products.customize', $product->slug),
               'priceCurrency' => 'AZN',
               'price' => number_format((float) $product->price, 2, '.', ''),
               'availability' => 'https://schema.org/InStock',
@@ -36,9 +36,9 @@
           ] : null,
       ]),
       \App\Support\Seo::breadcrumbs([
-          ['Ana səhifə', route('home')],
-          ['Dizaynlar', route('designs.index')],
-          [$product->name, route('products.customize', $product->slug)],
+          ['Ana səhifə', lroute('home')],
+          ['Dizaynlar', lroute('designs.index')],
+          [$product->name, lroute('products.customize', $product->slug)],
       ]),
   ]))]) }}
 @endpush
@@ -158,8 +158,8 @@
 <section class="page-hero" style="padding-bottom:0;">
   <div class="wrap">
     <nav class="crumbs" aria-label="Səhifənin yeri">
-      <a href="{{ route('home') }}">Ana səhifə</a><span aria-hidden="true">›</span>
-      <a href="{{ route('designs.index') }}">Dizaynlar</a><span aria-hidden="true">›</span>
+      <a href="{{ lroute('home') }}">Ana səhifə</a><span aria-hidden="true">›</span>
+      <a href="{{ lroute('designs.index') }}">Dizaynlar</a><span aria-hidden="true">›</span>
       <span aria-current="page">{{ $product->name }}</span>
     </nav>
     <span class="eyebrow" style="justify-content:center;">Fərdiləşdirmə</span>
@@ -223,7 +223,7 @@
         @endif
       </div>
 
-      <form class="customize-panel" method="POST" action="{{ route('cart.add') }}" enctype="multipart/form-data" id="customize-form">
+      <form class="customize-panel" method="POST" action="{{ lroute('cart.add') }}" enctype="multipart/form-data" id="customize-form">
         @csrf
         <input type="hidden" name="product_id" value="{{ $product->id }}">
 

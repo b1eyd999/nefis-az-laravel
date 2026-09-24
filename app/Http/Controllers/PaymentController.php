@@ -29,7 +29,7 @@ class PaymentController extends Controller
         $this->own($request, $order);
 
         if (! $order->awaitsPayment()) {
-            return redirect()->route('orders.index');
+            return redirect(lroute('orders.index'));
         }
 
         // Nothing was set aside for this order yet, or that account is gone.
@@ -56,7 +56,7 @@ class PaymentController extends Controller
 
         $order->forceFill(['payment_account_id' => $account->id])->save();
 
-        return redirect()->route('orders.pay', $order);
+        return redirect(lroute('orders.pay', $order));
     }
 
     public function receipt(Request $request, Order $order): RedirectResponse
@@ -89,7 +89,7 @@ class PaymentController extends Controller
 
         defer(fn () => Telegram::receipt($order));
 
-        return redirect()->route('orders.index')
+        return redirect(lroute('orders.index'))
             ->with('status', 'Çek göndərildi. Ödənişi yoxlayıb sifarişinizi təsdiqləyəcəyik.');
     }
 }

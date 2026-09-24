@@ -42,7 +42,7 @@
           @include('partials.polaroid', ['id' => 'letter-preview', 'text' => old('letter_text')])
         </div>
 
-        <form class="letter-form" method="POST" action="{{ route('letters.store') }}" enctype="multipart/form-data">
+        <form class="letter-form" method="POST" action="{{ lroute('letters.store') }}" enctype="multipart/form-data">
           @csrf
           <div>
             <label>Şəkil <span style="font-weight:400; color:var(--cocoa-soft);">(istəyə görə)</span></label>

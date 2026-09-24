@@ -20,7 +20,7 @@ use Illuminate\Support\Str;
  */
 class GiftPage extends Model
 {
-    public const LOCALES = ['az' => 'Azərbaycanca', 'ru' => 'Rusca'];
+    public const LOCALES = ['az' => 'Azərbaycanca', 'ru' => 'Rusca', 'en' => 'İngiliscə'];
 
     protected $fillable = [
         'slug', 'locale', 'alt_of', 'menu_label', 'link_text', 'emoji', 'title',
@@ -65,12 +65,12 @@ class GiftPage extends Model
 
     public function url(): string
     {
-        return route($this->locale === 'ru' ? 'gifts.show.ru' : 'gifts.show', $this->slug);
+        return route(\App\Support\Locale::route('gifts.show', $this->locale), $this->slug);
     }
 
     public static function hubUrl(string $locale): string
     {
-        return route($locale === 'ru' ? 'gifts.index.ru' : 'gifts.index');
+        return route(\App\Support\Locale::route('gifts.index', $locale));
     }
 
     public function label(): string

@@ -6,27 +6,37 @@ use App\Models\GiftPage;
 use App\Models\Wrapping;
 use App\Support\Letter;
 use App\Support\LiveMaterials;
+use App\Support\Locale;
 use Illuminate\View\View;
 
 /**
  * Gift ideas: the list of occasions, and one page per occasion with the
- * designs that suit it. Written for the searches people make, in Azerbaijani
- * at /hediyye and in Russian at /podarki.
+ * designs that suit it. Written for the searches people make — /hediyye in
+ * Azerbaijani, /ru/podarki in Russian, /en/gifts in English — and each page
+ * belongs to one language only.
  */
 class GiftPageController extends Controller
 {
-    public function index(string $locale = 'az'): View
+    public function index(): View
     {
+        $locale = Locale::current();
         $pages = GiftPage::shown()->inLocale($locale)->get();
-        $otherHub = GiftPage::shown()->inLocale($locale === 'ru' ? 'az' : 'ru')->exists()
-            ? GiftPage::hubUrl($locale === 'ru' ? 'az' : 'ru')
-            : null;
+
+        // The same ideas in whichever other language the owner has written them.
+        $otherHub = null;
+        foreach (array_diff(Locale::all(), [$locale]) as $other) {
+            if (GiftPage::shown()->inLocale($other)->exists()) {
+                $otherHub = GiftPage::hubUrl($other);
+                break;
+            }
+        }
 
         return view('gifts.index', compact('pages', 'locale', 'otherHub'));
     }
 
-    public function show(GiftPage $giftPage, string $locale = 'az'): View
+    public function show(GiftPage $giftPage): View
     {
+        $locale = Locale::current();
         abort_unless($giftPage->is_active && $giftPage->locale === $locale, 404);
 
         $products = $giftPage->shownProducts();
@@ -42,11 +52,11 @@ class GiftPageController extends Controller
         // What else can go with the box, only what is on sale now.
         $extras = array_values(array_filter([
             Wrapping::where('is_active', true)->exists()
-                ? ['🎁', ...$this->extra($locale, 'wrap'), route('wrappings.index')] : null,
+                ? ['🎁', ...$this->extra($locale, 'wrap'), lroute('wrappings.index')] : null,
             Letter::enabled()
-                ? ['💌', ...$this->extra($locale, 'letter'), route('letters.create')] : null,
+                ? ['💌', ...$this->extra($locale, 'letter'), lroute('letters.create')] : null,
             LiveMaterials::enabled()
-                ? ['🎬', ...$this->extra($locale, 'live'), route('live.create')] : null,
+                ? ['🎬', ...$this->extra($locale, 'live'), lroute('live.create')] : null,
         ]));
 
         return view('gifts.show', ['page' => $giftPage] + compact('products', 'from', 'others', 'extras', 'alternate'));

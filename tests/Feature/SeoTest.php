@@ -95,7 +95,7 @@ class SeoTest extends TestCase
         $this->box('Kinder', 'kinder-vol-1');
         GiftPage::inLocale('az')->where('slug', 'sevgiliye')->first()->products()->sync([$love->id]);
 
-        $ru = route('gifts.show.ru', 'devushke');
+        $ru = route('ru.gifts.show', 'devushke');
         $az = route('gifts.show', 'sevgiliye');
 
         $html = $this->get($ru)->assertOk()
@@ -106,9 +106,10 @@ class SeoTest extends TestCase
             ->assertSee('Подходящие дизайны')
             ->assertSee('Коробка от 6.50 ₼')   // 6.50 is the design's price below
             ->assertSee('Доставка по Баку и регионам')
-            // the designs come from the Azerbaijani twin, so they are picked in one place
-            ->assertSee(route('products.customize', 'love-story-vol-1'))
-            ->assertDontSee(route('products.customize', 'kinder-vol-1'))
+            // the designs come from the Azerbaijani twin, so they are picked in one
+            // place; the links stay in the language the page is read in
+            ->assertSee(route('ru.products.customize', 'love-story-vol-1'))
+            ->assertDontSee(route('ru.products.customize', 'kinder-vol-1'))
             ->getContent();
 
         $this->assertStringContainsString('<link rel="alternate" hreflang="az" href="' . $az . '">', $html);
@@ -121,23 +122,29 @@ class SeoTest extends TestCase
             ->assertSee('<link rel="alternate" hreflang="ru" href="' . $ru . '">', false)
             ->assertSee('href="' . $ru . '"', false);
 
-        $this->get(route('gifts.index.ru'))->assertOk()
+        $this->get(route('ru.gifts.index'))->assertOk()
             ->assertSee('<h1>Идеи подарков</h1>', false)
             ->assertSee('Подарок на день рождения')
-            ->assertSee('href="' . route('gifts.show.ru', 'vmesto-cvetov') . '"', false);
+            ->assertSee('href="' . route('ru.gifts.show', 'vmesto-cvetov') . '"', false);
 
-        // Each address belongs to one language only.
-        $this->get('/podarki/ad-gunu')->assertNotFound();
+        // Each address belongs to one language only. (An old /podarki address
+        // is sent on first, and only then found to be the wrong language.)
+        $this->get('/ru/podarki/ad-gunu')->assertNotFound();
         $this->get('/hediyye/devushke')->assertNotFound();
 
-        // The Azerbaijani pages stay Azerbaijani, with the Russian hub in the footer.
+        // The Azerbaijani pages stay Azerbaijani; the switcher offers the others.
         $this->get(route('home'))->assertOk()
-            ->assertSee('href="' . route('gifts.index.ru') . '"', false)
+            ->assertSee('href="' . route('ru.home') . '"', false)
+            ->assertSee('href="' . route('en.home') . '"', false)
             ->assertDontSee('Подарок на день рождения');
 
+        // The addresses the Russian pages were found at before still work.
+        $this->get('/podarki')->assertRedirect('/ru/podarki');
+        $this->get('/podarki/devushke')->assertRedirect('/ru/podarki/devushke');
+
         $this->get('/sitemap.xml')->assertOk()
-            ->assertSee(route('gifts.show.ru', 'na-den-rozhdeniya'))
-            ->assertSee(route('gifts.index.ru'));
+            ->assertSee(route('ru.gifts.show', 'na-den-rozhdeniya'))
+            ->assertSee(route('ru.gifts.index'));
     }
 
     public function test_a_hidden_page_is_gone_everywhere(): void

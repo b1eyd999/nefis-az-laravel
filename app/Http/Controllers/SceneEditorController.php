@@ -58,7 +58,7 @@ class SceneEditorController extends Controller
             'library' => $library,
             'samples' => $samples,
             'canvas' => config('boxes.canvas'),
-            'liveUrl' => $liveBox ? route('products.customize', $liveBox->slug) : null,
+            'liveUrl' => $liveBox ? lroute('products.customize', $liveBox->slug) : null,
         ]);
     }
 

@@ -36,7 +36,7 @@ class LivePhotoController extends Controller
 
         Cart::addLive(LiveMaterials::fromRequest($request));
 
-        return redirect()->route('cart.index')->with('status', 'Canlı şəkil səbətə əlavə olundu.');
+        return redirect(lroute('cart.index'))->with('status', 'Canlı şəkil səbətə əlavə olundu.');
     }
 
     public function show(string $code): View

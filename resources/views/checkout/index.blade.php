@@ -259,7 +259,7 @@
     </div>
 
     <div class="auth-card">
-      <form method="POST" action="{{ route('checkout.store') }}" id="checkout-form">
+      <form method="POST" action="{{ lroute('checkout.store') }}" id="checkout-form">
         @csrf
         @if($methods->isNotEmpty())
           {{-- How it reaches the customer; each way asks for what it needs. --}}

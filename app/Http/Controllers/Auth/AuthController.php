@@ -36,7 +36,7 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('home'))->with('status', 'Qeydiyyat uğurla tamamlandı — xoş gəldiniz!');
+        return redirect()->intended(lroute('home'))->with('status', 'Qeydiyyat uğurla tamamlandı — xoş gəldiniz!');
     }
 
     public function showLogin()
@@ -59,7 +59,7 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('home'));
+        return redirect()->intended(lroute('home'));
     }
 
     public function logout(Request $request): RedirectResponse
@@ -68,6 +68,6 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('home');
+        return redirect(lroute('home'));
     }
 }
