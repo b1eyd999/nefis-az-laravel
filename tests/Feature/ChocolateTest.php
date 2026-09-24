@@ -335,6 +335,40 @@ class ChocolateTest extends TestCase
         Storage::disk('public')->assertExists($ferrero->image);
     }
 
+    public function test_bravo_bars_are_read_from_its_wolt_shelf(): void
+    {
+        // Wolt counts in qəpiks and gives the weight either in the name or in its own unit.
+        $item = fn (string $id, string $name, int $price, int $before = 0, ?string $unit = null) => [
+            'id' => $id, 'name' => $name, 'price' => $price, 'original_price' => $before ?: null,
+            'unit_info' => $unit, 'disabled_info' => null, 'barcode_gtin' => '86000' . $id,
+            'images' => [['url' => 'https://imageproxy.wolt.com/assets/' . $id]],
+        ];
+
+        Http::fake([
+            'consumer-api.wolt.com/*' => Http::sequence()
+                ->push(['items' => [
+                    $item('a1', 'Milka Südlü Şokolad 90qr', 269, 449),
+                    $item('a2', 'Monamo Südlü Plitka', 199, 349, '85 g'),          // too light for the box
+                    $item('a3', 'Nestle Bitter Tünd Şokolad 70% 90qr', 249),
+                ], 'metadata' => ['next_page_token' => 'page2']])
+                ->push(['items' => [
+                    $item('b1', 'Ritter Sport Südlü 100 q', 399),
+                    $item('b2', 'Lindt Excellence 300qr', 1699),                    // too heavy
+                ], 'metadata' => ['next_page_token' => null]]),
+            'imageproxy.wolt.com/*' => Http::response($this->png()),
+        ]);
+
+        $r = \App\Support\Bravo::sync();
+
+        $this->assertSame(['found' => 3, 'created' => 3, 'updated' => 0, 'missing' => 0], $r);
+        $bravo = Market::where('importer', 'bravo')->firstOrFail();
+        $milka = Chocolate::where('source', 'bravo')->where('source_id', 'a1')->firstOrFail();
+        $this->assertSame([$bravo->id, 4.49, 2.69, 40, 'Bravo', 90.0],
+            [$milka->market_id, $milka->base_price, $milka->sale_price, $milka->sale_percent, $milka->seller, $milka->weight_g]);
+        $this->assertNull(Chocolate::where('source_id', 'a3')->first()->sale_price, 'no price before, no promotion');
+        Storage::disk('public')->assertExists($milka->image);
+    }
+
     public function test_the_owner_sets_the_common_markup_in_the_panel(): void
     {
         Chocolate::create(['name' => 'Alenka', 'base_price' => 3.00]);

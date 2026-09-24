@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\ArazMarket;
 use App\Support\Birmarket;
+use App\Support\Bravo;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -18,6 +19,7 @@ class Market extends Model
     public const IMPORTERS = [
         'arazmarket' => ArazMarket::class,
         'birmarket' => Birmarket::class,
+        'bravo' => Bravo::class,
     ];
 
     protected $fillable = ['name', 'slug', 'website', 'importer', 'sort_order'];

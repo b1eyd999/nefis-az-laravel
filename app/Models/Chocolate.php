@@ -30,6 +30,8 @@ class Chocolate extends Model
 
     public const SOURCE_BIRMARKET = 'birmarket';
 
+    public const SOURCE_BRAVO = 'bravo';
+
     protected $fillable = [
         'market_id', 'name', 'brand', 'weight_g', 'image', 'base_price', 'sale_price', 'sale_percent', 'markup_percent',
         'is_active', 'sort_order', 'source', 'source_id', 'source_url', 'barcode', 'seller', 'in_source', 'synced_at',
