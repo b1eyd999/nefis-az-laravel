@@ -89,6 +89,12 @@ class OrderResource extends Resource
                                     . ($record->delivery_slot ? ', ' . $record->delivery_slot : '')
                                 : 'Seçilməyib')
                             ->columnSpanFull(),
+                        Forms\Components\Placeholder::make('courier')
+                            ->label('Kuryer')
+                            ->content(fn (?Order $record) => $record?->courier_name
+                                ? $record->courier_name . ' · ' . $record->courier_taken_at?->format('d.m.Y H:i')
+                                : 'Hələ kimsə götürməyib')
+                            ->visible(fn (?Order $record) => (bool) $record?->courier_chat_id),
                         Forms\Components\Placeholder::make('delivery_method')
                             ->label('Üsul')
                             ->content(fn (?Order $record) => $record?->delivery_name
@@ -186,6 +192,11 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('contact_phone')
                     ->label('Telefon')
                     ->visibleFrom('md'),
+                Tables\Columns\TextColumn::make('courier_name')
+                    ->label('Kuryer')
+                    ->placeholder('—')
+                    ->description(fn (Order $r) => $r->courier_taken_at?->format('d.m H:i'))
+                    ->visibleFrom('lg'),
                 Tables\Columns\TextColumn::make('items_count')
                     ->label('Məhsul sayı')
                     ->counts('items')

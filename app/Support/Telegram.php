@@ -88,30 +88,59 @@ class Telegram
     /** Sends a message; a failure is written to the log, never shown to a customer. */
     public static function send(string $text, ?string $chat = null, ?string $token = null): bool
     {
+        return self::post('sendMessage', ['text' => $text], $chat, $token) !== null;
+    }
+
+    /**
+     * One call to the bot about a chat. Gives back what Telegram answered, so
+     * a message can be remembered and changed later, or null if nothing went.
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function post(string $method, array $payload, ?string $chat = null, ?string $token = null): ?array
+    {
         $chat = trim((string) ($chat ?: self::chat()));
         $token = trim((string) ($token ?: self::token()));
         if ($token === '' || $chat === '') {
-            return false;
+            return null;
         }
 
         try {
-            $answer = Http::timeout(15)->post(self::API . $token . '/sendMessage', [
+            $answer = Http::timeout(15)->post(self::API . $token . '/' . $method, $payload + [
                 'chat_id' => $chat,
-                'text' => $text,
                 'parse_mode' => 'HTML',
                 'disable_web_page_preview' => true,
             ]);
 
             if ($answer->successful()) {
-                return true;
+                return (array) $answer->json('result', []);
             }
 
-            Log::error('Telegram refused the message: ' . $answer->body());
+            Log::error('Telegram refused ' . $method . ': ' . $answer->body());
         } catch (Throwable $e) {
             Log::error('Telegram is unreachable: ' . $e->getMessage());
         }
 
-        return false;
+        return null;
+    }
+
+    /** A call that belongs to no chat: webhooks, and answers to a tap. */
+    public static function call(string $method, array $payload = [], ?string $token = null): ?array
+    {
+        $token = trim((string) ($token ?: self::courierToken()));
+        if ($token === '') {
+            return null;
+        }
+
+        try {
+            $answer = Http::timeout(15)->post(self::API . $token . '/' . $method, $payload);
+
+            return $answer->successful() ? (array) $answer->json('result', []) : null;
+        } catch (Throwable $e) {
+            Log::error('Telegram is unreachable: ' . $e->getMessage());
+
+            return null;
+        }
     }
 
     /**
@@ -199,6 +228,28 @@ class Telegram
         if (! self::courierOn()) {
             return false;
         }
+
+        $sent = self::post('sendMessage', [
+            'text' => self::courierText($order),
+            // Whoever is free taps it, and his name then stands under the address.
+            'reply_markup' => json_encode(['inline_keyboard' => [[
+                ['text' => '🚴 Mən götürürəm', 'callback_data' => 'take:' . $order->id],
+            ]]], JSON_UNESCAPED_UNICODE),
+        ], self::courierChat(), self::courierToken());
+
+        if ($sent && isset($sent['message_id'])) {
+            $order->forceFill([
+                'courier_chat_id' => (string) ($sent['chat']['id'] ?? self::courierChat()),
+                'courier_message_id' => (int) $sent['message_id'],
+            ])->saveQuietly();
+        }
+
+        return $sent !== null;
+    }
+
+    /** What the couriers read: who, where, when, and who took it. */
+    public static function courierText(Order $order): string
+    {
         $order->loadMissing('user');
 
         $lines = ['📦 <b>Sifariş #' . $order->id . ' hazırdır</b>', ''];
@@ -220,9 +271,67 @@ class Telegram
             $lines[] = '';
             $lines[] = '🗺 ' . $map;
         }
+        if ($order->courier_name) {
+            $lines[] = '';
+            $lines[] = '🚴 <b>Götürdü:</b> ' . e($order->courier_name);
+        }
 
-        return self::send(implode("
-", $lines), self::courierChat(), self::courierToken());
+        return implode("\n", $lines);
+    }
+
+    /**
+     * A courier tapped the message: his name goes under the text and the
+     * button disappears, so the others see it is taken.
+     */
+    public static function courierTaken(Order $order): void
+    {
+        if (! $order->courier_chat_id || ! $order->courier_message_id) {
+            return;
+        }
+
+        self::call('editMessageText', [
+            'chat_id' => $order->courier_chat_id,
+            'message_id' => $order->courier_message_id,
+            'text' => self::courierText($order),
+            'parse_mode' => 'HTML',
+            'disable_web_page_preview' => true,
+        ], self::courierToken());
+    }
+
+    /** The secret Telegram sends back with every tap, made once and kept. */
+    public static function hookSecret(): string
+    {
+        $secret = trim((string) Setting::get(Setting::TELEGRAM_HOOK_SECRET));
+        if ($secret === '') {
+            $secret = bin2hex(random_bytes(16));
+            Setting::put(Setting::TELEGRAM_HOOK_SECRET, $secret);
+        }
+
+        return $secret;
+    }
+
+    /** Tells Telegram where to call when a courier taps a message. */
+    public static function watchTaps(): bool
+    {
+        return self::call('setWebhook', [
+            'url' => route('telegram.courier', self::hookSecret()),
+            'secret_token' => self::hookSecret(),
+            'allowed_updates' => json_encode(['callback_query']),
+            'drop_pending_updates' => true,
+        ], self::courierToken()) !== null;
+    }
+
+    public static function stopWatching(): bool
+    {
+        return self::call('deleteWebhook', ['drop_pending_updates' => false], self::courierToken()) !== null;
+    }
+
+    /** Whether Telegram is calling us, and about what. */
+    public static function tapStatus(): ?array
+    {
+        $info = self::call('getWebhookInfo', [], self::courierToken());
+
+        return is_array($info) ? $info : null;
     }
 
     /** The customer says he has paid and uploads the receipt. */

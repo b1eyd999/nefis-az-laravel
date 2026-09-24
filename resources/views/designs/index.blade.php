@@ -1,17 +1,17 @@
 @extends('layouts.app')
 
-@section('title', 'Şokolad qutusu dizaynları — şəkilli fərdi hədiyyə | Nefis')
+@section('title', __('Şokolad qutusu dizaynları — şəkilli fərdi hədiyyə | Nefis'))
 @section('meta_description', 'Kinder, Milka, Love story, Netflix, Spotify və başqa şokolad qutusu dizaynları. Bəyəndiyinizi seçin, şəklinizi və sözünüzü əlavə edin — hədiyyə hazırdır.')
 
 @push('jsonld')
   {{ \App\Support\Seo::jsonLd(['@graph' => [
       \App\Support\Seo::breadcrumbs([
-          ['Ana səhifə', lroute('home')],
-          ['Dizaynlar', lroute('designs.index')],
+          [__('Ana səhifə'), lroute('home')],
+          [__('Dizaynlar'), lroute('designs.index')],
       ]),
       [
           '@type' => 'ItemList',
-          'name' => 'Şokolad qutusu dizaynları',
+          'name' => __('Şokolad qutusu dizaynları'),
           'itemListElement' => $designs->flatten()->filter->isCustomizable()->values()
               ->map(fn ($d, $i) => [
                   '@type' => 'ListItem',
@@ -100,12 +100,12 @@
 
   <section class="page-hero">
     <div class="wrap">
-      <span class="eyebrow">Kolleksiya</span>
-      <h1>Dizaynlar</h1>
+      <span class="eyebrow">{{ __('Kolleksiya') }}</span>
+      <h1>{{ __('Dizaynlar') }}</h1>
       <p class="lede">Şokolad qutularından posterlərə qədər — bəyəndiyiniz dizaynı seçin, sonra öz şəklinizi və sözünüzü əlavə edin.</p>
       @if($gifts->isNotEmpty())
         <nav class="occ-chips" style="margin-top:1.75rem;" aria-label="Hədiyyə fikirləri">
-          <span style="width:100%; font-size:.8125rem; color:var(--cocoa-faint);">Münasibətə görə seçin:</span>
+          <span style="width:100%; font-size:.8125rem; color:var(--cocoa-faint);">{{ __('Münasibətə görə seçin:') }}</span>
           @foreach($gifts as $gift)
             <a class="occ-chip" href="{{ $gift->url() }}">{{ $gift->emoji }} {{ $gift->menu_label }}</a>
           @endforeach
@@ -121,11 +121,11 @@
 
       @if($total === 0)
         <div class="empty-note">
-          <p>Hələ dizayn əlavə olunmayıb.</p>
+          <p>{{ __('Hələ dizayn əlavə olunmayıb.') }}</p>
         </div>
       @else
         <div class="filter-bar">
-          <button type="button" class="chip active" data-filter="all">Hamısı ({{ $total }})</button>
+          <button type="button" class="chip active" data-filter="all">{{ __('Hamısı') }} ({{ $total }})</button>
           @foreach(\App\Models\Product::CATEGORIES as $key => $label)
             @if($designs->has($key))
               <button type="button" class="chip" data-filter="{{ $key }}">{{ $label }} ({{ $designs[$key]->count() }})</button>
@@ -138,7 +138,7 @@
           <div class="cat-block" data-category="{{ $key }}">
             <div class="cat-head">
               <h2>{{ $label }}</h2>
-              <span class="cat-count">{{ $designs[$key]->count() }} dizayn</span>
+              <span class="cat-count">{{ __(':count dizayn', ['count' => $designs[$key]->count()]) }}</span>
             </div>
             <div class="designs-grid">
               @foreach($designs[$key] as $design)
@@ -148,8 +148,8 @@
                         data-image="{{ \App\Support\Media::url($design->catalogImage()) }}"
                         data-url="{{ $design->isCustomizable() ? lroute('products.customize', $design->slug) : '' }}">
                   <div class="d-card-media">
-                    @if($design->isCustomizable())<span class="pill">Fərdiləşdir</span>@endif
-                    <img src="{{ \App\Support\Media::url($design->catalogImage()) }}" alt="{{ $design->name }} — şəkilli şokolad qutusu" loading="lazy">
+                    @if($design->isCustomizable())<span class="pill">{{ __('Fərdiləşdir') }}</span>@endif
+                    <img src="{{ \App\Support\Media::url($design->catalogImage()) }}" alt="{{ $design->name }} — {{ __('şəkilli şokolad qutusu') }}" loading="lazy">
                   </div>
                   <div class="d-card-body">
                     <h3>{{ $design->name }}</h3>
@@ -168,13 +168,13 @@
   <section class="tinted">
     <div class="wrap">
       <article class="prose">
-        <h2>Şəkilli şokolad qutusu necə seçilir?</h2>
+        <h2>{{ __('Şəkilli şokolad qutusu necə seçilir?') }}</h2>
         <p>Hər dizayn hazır şablondur: içində şəkliniz üçün yer və yazı sahələri var. Dizaynı açın, şəklinizi yükləyin,
           adı və sözlərinizi yazın — qutunun necə görünəcəyini elə saytda, sifarişdən əvvəl görürsünüz.</p>
         <p>Sonra qutunun içindəki şokoladı seçirsiniz (Milka, Alpen Gold və digər 90–105 qramlıq plitkalar).
           İstəsəniz qutunu hədiyyə kağızına bükürük, içinə polaroid məktub qoyuruq, yaxud
           <a href="{{ lroute('live.create') }}">canlı şəkil</a> əlavə edirik — telefonu şəklə tutanda videonuz oynayır.</p>
-        <h2>Hansı dizaynı kimə?</h2>
+        <h2>{{ __('Hansı dizaynı kimə?') }}</h2>
         <p>Cütlüklər üçün "Love story" və "Love is…", uşaqlar üçün Kinder və Barbie, maşın sevənlər üçün "Avtomobil",
           zarafat üçün Netflix, Google və Spotify üslubunda dizaynlar var. Ailə şəkli üçün isə "Family Frame" uyğundur.
           Münasibətə görə seçmək istəyirsinizsə, <a href="{{ lroute('gifts.index') }}">hədiyyə fikirlərinə</a> baxın.</p>
@@ -190,7 +190,7 @@
       <div class="lb-side">
         <span class="cat" id="lb-cat"></span>
         <h3 id="lb-title"></h3>
-        <p>Öz şəklinizi və istədiyiniz mətni bu dizaynın üzərinə əlavə edə bilərsiniz.</p>
+        <p>{{ __('Öz şəklinizi və istədiyiniz mətni bu dizaynın üzərinə əlavə edə bilərsiniz.') }}</p>
         <a class="btn btn-primary" id="lb-action" href="#">
           Fərdiləşdir
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>

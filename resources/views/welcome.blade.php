@@ -1,16 +1,16 @@
 @extends('layouts.app')
 
-@section('title', 'Nefis — Şəkilli Şokolad Qutuları və Fərdi Hədiyyələr Bakıda')
-@section('meta_description', 'Ad günü, sevgiliyə, 8 Mart və hər münasibətə fərdi hədiyyə: öz şəkliniz və sözlərinizlə şokolad qutusu. Onlayn sifariş, Bakıda və bütün Azərbaycanda çatdırılma.')
+@section('title', __('Nefis — Şəkilli Şokolad Qutuları və Fərdi Hədiyyələr Bakıda'))
+@section('meta_description', __('Ad günü, sevgiliyə, 8 Mart və hər münasibətə fərdi hədiyyə: öz şəkliniz və sözlərinizlə şokolad qutusu. Onlayn sifariş, Bakıda və bütün Azərbaycanda çatdırılma.'))
 
 @php
   // The questions on the home page, shown below and given to search engines as an FAQ.
   $faq = [
-    ['q' => 'Necə sifariş verə bilərəm?', 'a' => 'Kolleksiyadan dizayn seçin, şəklinizi yükləyin, səbətə əlavə edib qeydiyyatdan keçərək sifarişi tamamlayın.'],
-    ['q' => 'Hansı şokolad növləri mövcuddur?', 'a' => 'Kinder, Milka, Alionka və digər premium brendlərin dizaynında qutular təklif edirik.'],
-    ['q' => 'Çatdırılma nə qədər vaxt aparır?', 'a' => 'Sifariş adətən 1-3 iş günü ərzində hazırlanıb çatdırılır.'],
-    ['q' => 'Bakı xaricinə çatdırılma varmı?', 'a' => 'Bəli, Azərbaycan daxilində bütün bölgələrə çatdırılma mövcuddur.'],
-    ['q' => 'Fərdi sifarişi geri qaytara bilərəmmi?', 'a' => 'Fərdi hazırlanan məhsullar üçün geri qaytarma tətbiq olunmur, lakin çatdırılma zamanı zədə aşkar olarsa əvəz edilir.'],
+    ['q' => __('Necə sifariş verə bilərəm?'), 'a' => __('Kolleksiyadan dizayn seçin, şəklinizi yükləyin, səbətə əlavə edib qeydiyyatdan keçərək sifarişi tamamlayın.')],
+    ['q' => __('Hansı şokolad növləri mövcuddur?'), 'a' => __('Kinder, Milka, Alionka və digər premium brendlərin dizaynında qutular təklif edirik.')],
+    ['q' => __('Çatdırılma nə qədər vaxt aparır?'), 'a' => __('Sifariş adətən 1-3 iş günü ərzində hazırlanıb çatdırılır.')],
+    ['q' => __('Bakı xaricinə çatdırılma varmı?'), 'a' => __('Bəli, Azərbaycan daxilində bütün bölgələrə çatdırılma mövcuddur.')],
+    ['q' => __('Fərdi sifarişi geri qaytara bilərəmmi?'), 'a' => __('Fərdi hazırlanan məhsullar üçün geri qaytarma tətbiq olunmur, lakin çatdırılma zamanı zədə aşkar olarsa əvəz edilir.')],
   ];
 @endphp
 
@@ -107,13 +107,13 @@
     </div>
     @if($many)
       <div class="hero-nav">
-        <button type="button" class="hero-arrow" data-dir="-1" aria-label="Əvvəlki slayd">‹</button>
+        <button type="button" class="hero-arrow" data-dir="-1" aria-label="{{ __('Əvvəlki slayd') }}">‹</button>
         <div class="hero-dots">
           @foreach($slides as $i => $s)
-            <button type="button" class="hero-dot{{ $i === 0 ? ' is-on' : '' }}" data-go="{{ $i }}" aria-label="Slayd {{ $i + 1 }}" @if($i === 0) aria-current="true" @endif></button>
+            <button type="button" class="hero-dot{{ $i === 0 ? ' is-on' : '' }}" data-go="{{ $i }}" aria-label="{{ __('Slayd') }} {{ $i + 1 }}" @if($i === 0) aria-current="true" @endif></button>
           @endforeach
         </div>
-        <button type="button" class="hero-arrow" data-dir="1" aria-label="Növbəti slayd">›</button>
+        <button type="button" class="hero-arrow" data-dir="1" aria-label="{{ __('Növbəti slayd') }}">›</button>
       </div>
     @endif
   </section>
@@ -124,23 +124,23 @@
       <div class="features-grid">
         <div class="feature-card reveal">
           <div class="ico">📸</div>
-          <h3>Fərdi Şəkil Çapı</h3>
-          <p>Üz və ya tam boy şəklinizi yüksək keyfiyyətdə qutuya çap edirik.</p>
+          <h3>{{ __('Fərdi Şəkil Çapı') }}</h3>
+          <p>{{ __('Üz və ya tam boy şəklinizi yüksək keyfiyyətdə qutuya çap edirik.') }}</p>
         </div>
         <div class="feature-card reveal">
           <div class="ico">🍫</div>
-          <h3>Premium Şokolad</h3>
-          <p>Yalnız keyfiyyətli, təzə şokolad məhsullarından istifadə edirik.</p>
+          <h3>{{ __('Premium Şokolad') }}</h3>
+          <p>{{ __('Yalnız keyfiyyətli, təzə şokolad məhsullarından istifadə edirik.') }}</p>
         </div>
         <div class="feature-card reveal">
           <div class="ico">💌</div>
-          <h3>Fərdi Yazı</h3>
-          <p>İstədiyiniz mətni, adı və ya tarixi qutuya əlavə edin.</p>
+          <h3>{{ __('Fərdi Yazı') }}</h3>
+          <p>{{ __('İstədiyiniz mətni, adı və ya tarixi qutuya əlavə edin.') }}</p>
         </div>
         <div class="feature-card reveal">
           <div class="ico">⚡</div>
-          <h3>Sürətli Hazırlanma</h3>
-          <p>Sifarişiniz qısa müddətdə hazırlanıb sizə çatdırılır.</p>
+          <h3>{{ __('Sürətli Hazırlanma') }}</h3>
+          <p>{{ __('Sifarişiniz qısa müddətdə hazırlanıb sizə çatdırılır.') }}</p>
         </div>
       </div>
     </div>
@@ -150,27 +150,27 @@
   <section id="how" class="tinted">
     <div class="wrap">
       <div class="section-head center">
-        <span class="eyebrow" style="justify-content:center;">Necə İşləyir</span>
-        <h2>Üç Addımda Fərdi Hədiyyə</h2>
+        <span class="eyebrow" style="justify-content:center;">{{ __('Necə İşləyir') }}</span>
+        <h2>{{ __('Üç Addımda Fərdi Hədiyyə') }}</h2>
         <p class="lede" style="margin-inline:auto;">Hər addım diqqətlə düşünülüb ki, xatirəniz ən nəfis formada sizə qaytarılsın.</p>
       </div>
       <div class="steps">
         <div class="step reveal">
           <div class="step-line"></div>
           <div class="num">1</div>
-          <h3>Dizaynı Seçin</h3>
-          <p>Kolleksiyadan xoşunuza gələn qutu dizaynını seçin.</p>
+          <h3>{{ __('Dizaynı Seçin') }}</h3>
+          <p>{{ __('Kolleksiyadan xoşunuza gələn qutu dizaynını seçin.') }}</p>
         </div>
         <div class="step reveal">
           <div class="step-line"></div>
           <div class="num">2</div>
-          <h3>Şəklinizi Yükləyin</h3>
-          <p>Öz şəklinizi və istədiyiniz mətni əlavə edib canlı önizləmə görün.</p>
+          <h3>{{ __('Şəklinizi Yükləyin') }}</h3>
+          <p>{{ __('Öz şəklinizi və istədiyiniz mətni əlavə edib canlı önizləmə görün.') }}</p>
         </div>
         <div class="step reveal">
           <div class="num">3</div>
-          <h3>Sifariş Verin</h3>
-          <p>Sifarişinizi göndərin, biz sizinlə əlaqə saxlayıb təsdiqləyək.</p>
+          <h3>{{ __('Sifariş Verin') }}</h3>
+          <p>{{ __('Sifarişinizi göndərin, biz sizinlə əlaqə saxlayıb təsdiqləyək.') }}</p>
         </div>
       </div>
     </div>
@@ -180,51 +180,51 @@
   <section id="collections">
     <div class="wrap">
       <div class="section-head reveal">
-        <span class="eyebrow">Kolleksiya</span>
-        <h2>Hər Zövqə Uyğun Dizaynlar</h2>
-        <p class="lede">Bir dizayn seçin, öz şəklinizi yükləyin və canlı önizləməni görün.</p>
+        <span class="eyebrow">{{ __('Kolleksiya') }}</span>
+        <h2>{{ __('Hər Zövqə Uyğun Dizaynlar') }}</h2>
+        <p class="lede">{{ __('Bir dizayn seçin, öz şəklinizi yükləyin və canlı önizləməni görün.') }}</p>
       </div>
       <div class="cards-grid">
         @forelse($products as $product)
           @include('partials.p-card', ['product' => $product])
         @empty
           <div class="p-card reveal">
-            <div class="p-card-media"><span class="tag">Milli Ornament</span><span class="ph-ico">🍫</span></div>
+            <div class="p-card-media"><span class="tag">{{ __('Milli Ornament') }}</span><span class="ph-ico">🍫</span></div>
             <div class="p-card-body">
               <h3>Azerbaijan Style</h3>
-              <p>Milli ornament motivləri ilə bəzədilmiş, qürur oyadan dizayn.</p>
+              <p>{{ __('Milli ornament motivləri ilə bəzədilmiş, qürur oyadan dizayn.') }}</p>
               <div class="p-card-foot">
-                <span class="p-card-price">Tezliklə</span>
+                <span class="p-card-price">{{ __('Tezliklə') }}</span>
               </div>
             </div>
           </div>
           <div class="p-card reveal">
-            <div class="p-card-media"><span class="tag">Cütlük Üçün</span><span class="ph-ico">💕</span></div>
+            <div class="p-card-media"><span class="tag">{{ __('Cütlük Üçün') }}</span><span class="ph-ico">💕</span></div>
             <div class="p-card-body">
               <h3>Couple Box</h3>
-              <p>Sevginizi göstərmək üçün ikinizin şəkli ilə xüsusi dizayn.</p>
+              <p>{{ __('Sevginizi göstərmək üçün ikinizin şəkli ilə xüsusi dizayn.') }}</p>
               <div class="p-card-foot">
-                <span class="p-card-price">Tezliklə</span>
+                <span class="p-card-price">{{ __('Tezliklə') }}</span>
               </div>
             </div>
           </div>
           <div class="p-card reveal">
-            <div class="p-card-media"><span class="tag">Klassik</span><span class="ph-ico">🎁</span></div>
+            <div class="p-card-media"><span class="tag">{{ __('Klassik') }}</span><span class="ph-ico">🎁</span></div>
             <div class="p-card-body">
               <h3>Kinder Style</h3>
-              <p>Tanış və sevimli qablaşdırma üzərində sizin şəkliniz.</p>
+              <p>{{ __('Tanış və sevimli qablaşdırma üzərində sizin şəkliniz.') }}</p>
               <div class="p-card-foot">
-                <span class="p-card-price">Tezliklə</span>
+                <span class="p-card-price">{{ __('Tezliklə') }}</span>
               </div>
             </div>
           </div>
           <div class="p-card reveal">
-            <div class="p-card-media"><span class="tag">Populyar</span><span class="ph-ico">✨</span></div>
+            <div class="p-card-media"><span class="tag">{{ __('Populyar') }}</span><span class="ph-ico">✨</span></div>
             <div class="p-card-body">
               <h3>Milka Style</h3>
-              <p>Yumşaq bənövşəyi qablaşdırma üzərində fərdi toxunuş.</p>
+              <p>{{ __('Yumşaq bənövşəyi qablaşdırma üzərində fərdi toxunuş.') }}</p>
               <div class="p-card-foot">
-                <span class="p-card-price">Tezliklə</span>
+                <span class="p-card-price">{{ __('Tezliklə') }}</span>
               </div>
             </div>
           </div>
@@ -233,7 +233,7 @@
       @if(($designCount ?? 0) > $products->count())
         <div class="collections-foot reveal">
           <a href="{{ lroute('designs.index') }}" class="btn btn-ghost">
-            Bütün {{ $designCount }} dizayna bax
+            {{ __('Bütün :count dizayna bax', ['count' => $designCount]) }}
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </a>
         </div>
@@ -246,9 +246,9 @@
     <section id="gifts" class="tinted">
       <div class="wrap">
         <div class="section-head center reveal">
-          <span class="eyebrow" style="justify-content:center;">Hədiyyə fikirləri</span>
-          <h2>Hər Münasibətə Fərdi Hədiyyə</h2>
-          <p class="lede" style="margin-inline:auto;">Ad günü, sevgiliyə, 8 Mart, körpəyə — kimə və nə üçün hədiyyə axtarırsınız?</p>
+          <span class="eyebrow" style="justify-content:center;">{{ __('Hədiyyə fikirləri') }}</span>
+          <h2>{{ __('Hər Münasibətə Fərdi Hədiyyə') }}</h2>
+          <p class="lede" style="margin-inline:auto;">{{ __('Ad günü, sevgiliyə, 8 Mart, körpəyə — kimə və nə üçün hədiyyə axtarırsınız?') }}</p>
         </div>
         <div class="occ-grid">
           @foreach($gifts->take(8) as $gift)
@@ -263,7 +263,7 @@
         </div>
         @if($gifts->count() > 8)
           <div class="collections-foot reveal">
-            <a href="{{ lroute('gifts.index') }}" class="btn btn-ghost">Bütün hədiyyə fikirləri
+            <a href="{{ lroute('gifts.index') }}" class="btn btn-ghost">{{ __('Bütün hədiyyə fikirləri') }}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
             </a>
           </div>
@@ -277,10 +277,10 @@
     <div class="wrap">
       <div class="insta-band reveal">
         <span class="eyebrow" style="justify-content:center; color:var(--gold);">@nefis.az</span>
-        <h2>Bizi Instagramda İzləyin</h2>
-        <p>Yeni dizaynlar, müştəri işləri və elanları Instagram səhifəmizdə paylaşırıq.</p>
+        <h2>{{ __('Bizi Instagramda İzləyin') }}</h2>
+        <p>{{ __('Yeni dizaynlar, müştəri işləri və elanları Instagram səhifəmizdə paylaşırıq.') }}</p>
         <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="btn btn-primary">
-          Instagrama Keç
+          {{ __('Instagrama Keç') }}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg>
         </a>
       </div>
@@ -291,8 +291,8 @@
   <section id="faq" class="tinted">
     <div class="wrap">
       <div class="section-head center reveal">
-        <span class="eyebrow" style="justify-content:center;">Suallar</span>
-        <h2>Tez-tez Soruşulan Suallar</h2>
+        <span class="eyebrow" style="justify-content:center;">{{ __('Suallar') }}</span>
+        <h2>{{ __('Tez-tez Soruşulan Suallar') }}</h2>
       </div>
       <div class="faq-list reveal">
         @foreach($faq as $i => $f)

@@ -24,6 +24,9 @@ class Setting extends Model
 
     public const CHOCOLATE_FROM_SALE = 'chocolate_price_from_sale';
 
+    /** Which languages the site offers; the others are still being written. */
+    public const SITE_LANGUAGES = 'site_languages';
+
     public const MAINTENANCE = 'maintenance';
 
     public const MAINTENANCE_MESSAGE = 'maintenance_message';
@@ -97,6 +100,9 @@ class Setting extends Model
 
     public const TELEGRAM_COURIER_CHAT = 'telegram_courier_chat';
 
+    /** The secret in the address Telegram calls when a courier taps a message. */
+    public const TELEGRAM_HOOK_SECRET = 'telegram_hook_secret';
+
     /** The weight of bar the boxes take — the owner widens or narrows it. */
     public const CHOCOLATE_MIN_G = 'chocolate_min_grams';
 
@@ -146,6 +152,7 @@ class Setting extends Model
 14:00 — 18:00
 18:00 — 21:00",
         self::NOTIFY_EMAIL => '1',
+        self::SITE_LANGUAGES => 'az',
         self::MAINTENANCE => '0',
         self::MAINTENANCE_MESSAGE => 'Saytda texniki işlər aparılır. Tezliklə qayıdacağıq!',
         self::PROFIT_SHARES => '[{"name":"Sahibkar","percent":33.34},{"name":"Menecer 1","percent":33.33},{"name":"Menecer 2","percent":33.33}]',

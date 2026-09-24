@@ -104,6 +104,22 @@ class SiteSettings extends Page implements HasActions, HasForms
                         Notification::make()->danger()->title($e->getMessage())->send();
                     }
                 }),
+            Actions\Action::make('courierTaps')
+                ->label('Kuryer düyməsini işə sal')
+                ->icon('heroicon-o-cursor-arrow-rays')
+                ->color('gray')
+                ->visible(fn () => Telegram::courierOn())
+                ->action(function () {
+                    if (! Telegram::watchTaps()) {
+                        Notification::make()->danger()->title('Alınmadı')
+                            ->body('Token düzgündürmü? Saytın ünvanı https ilə açılmalıdır.')->persistent()->send();
+
+                        return;
+                    }
+                    Notification::make()->success()->title('İşə salındı')
+                        ->body('İndi qrupda "Mən götürürəm" düyməsinə basan kuryerin adı mesajın altında yazılacaq.')
+                        ->persistent()->send();
+                }),
             Actions\Action::make('testCourier')
                 ->label('Kuryerə test mesajı')
                 ->icon('heroicon-o-paper-airplane')

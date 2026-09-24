@@ -43,6 +43,11 @@ class Order extends Model
         'delivery_lat',
         'delivery_lng',
         'materials_cost',
+        // Which courier took it, and the message in the group he took it from.
+        'courier_name',
+        'courier_taken_at',
+        'courier_chat_id',
+        'courier_message_id',
         // Paying by transfer: which account the money goes to, and the receipt.
         'payment_account_id',
         'payment_receipt',
@@ -58,6 +63,7 @@ class Order extends Model
             'delivery_lat' => 'float',
             'delivery_lng' => 'float',
             'materials_cost' => 'float',
+            'courier_taken_at' => 'datetime',
             'receipt_at' => 'datetime',
             'payment_confirmed_at' => 'datetime',
         ];

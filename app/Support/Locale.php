@@ -28,6 +28,27 @@ class Locale
         return array_keys(self::NAMES);
     }
 
+    /**
+     * The languages a customer is offered. A language whose pages are still
+     * half-written is reachable by address — so it can be looked at — but it
+     * is not in the switcher, not in hreflang and not in the sitemap, and it
+     * tells search engines not to keep it.
+     *
+     * @return array<int, string>
+     */
+    public static function published(): array
+    {
+        $set = preg_split('/[^a-z]+/', strtolower((string) \App\Models\Setting::get(\App\Models\Setting::SITE_LANGUAGES))) ?: [];
+        $set = array_values(array_intersect(self::all(), $set));
+
+        return $set === [] ? [self::DEFAULT] : array_unique(array_merge([self::DEFAULT], $set));
+    }
+
+    public static function isPublished(?string $locale = null): bool
+    {
+        return in_array($locale ?: self::current(), self::published(), true);
+    }
+
     public static function current(): string
     {
         $locale = app()->getLocale();

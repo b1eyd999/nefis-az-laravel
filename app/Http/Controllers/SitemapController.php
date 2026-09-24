@@ -6,6 +6,7 @@ use App\Models\GiftPage;
 use App\Models\Product;
 use App\Models\Wrapping;
 use App\Support\Letter;
+use App\Support\Locale;
 use App\Support\LiveMaterials;
 use App\Support\Media;
 use App\Support\Seo;
@@ -32,39 +33,43 @@ class SitemapController extends Controller
     {
         $products = $this->guard(fn () => Product::where('is_active', true)
             ->orderBy('sort_order')->orderBy('name')->get()->filter->isCustomizable()) ?? collect();
-        $gifts = $this->guard(fn () => GiftPage::shown()->get()) ?? collect();
-        $ruGifts = $gifts->where('locale', 'ru');
-        $gifts = $gifts->where('locale', 'az');
-        $newest = $this->newest($products->concat($gifts));
+        $allGifts = $this->guard(fn () => GiftPage::shown()->get()) ?? collect();
+        $azGifts = $allGifts->where('locale', 'az');
+        $newest = $this->newest($products->concat($azGifts));
+        $wraps = (bool) $this->guard(fn () => Wrapping::where('is_active', true)->exists());
+        $letters = (bool) $this->guard(fn () => Letter::enabled());
+        $live = (bool) $this->guard(fn () => LiveMaterials::enabled());
 
-        $this->add(fn () => [route('home'), $newest]);
-        $this->add(fn () => [route('designs.index'), $newest]);
-        $this->add(fn () => [route('gifts.index'), $this->newest($gifts)]);
+        // Every language the shop offers, each page in its own address.
+        foreach (Locale::published() as $locale) {
+            $name = fn (string $route) => Locale::route($route, $locale);
+            $gifts = $allGifts->where('locale', $locale);
 
-        foreach ($gifts as $page) {
-            $this->add(fn () => [$page->url(), $this->changed($page)]);
-        }
-        if ($ruGifts->isNotEmpty()) {
-            $this->add(fn () => [GiftPage::hubUrl('ru'), $this->newest($ruGifts)]);
-            foreach ($ruGifts as $page) {
-                $this->add(fn () => [$page->url(), $this->changed($page)]);
+            $this->add(fn () => [route($name('home')), $newest]);
+            $this->add(fn () => [route($name('designs.index')), $newest]);
+
+            if ($gifts->isNotEmpty()) {
+                $this->add(fn () => [GiftPage::hubUrl($locale), $this->newest($gifts)]);
+                foreach ($gifts as $page) {
+                    $this->add(fn () => [$page->url(), $this->changed($page)]);
+                }
             }
-        }
-        if ($this->guard(fn () => Wrapping::where('is_active', true)->exists())) {
-            $this->add(fn () => [route('wrappings.index')]);
-        }
-        if ($this->guard(fn () => Letter::enabled())) {
-            $this->add(fn () => [route('letters.create')]);
-        }
-        if ($this->guard(fn () => LiveMaterials::enabled())) {
-            $this->add(fn () => [route('live.create')]);
-        }
-        foreach ($products as $product) {
-            $this->add(fn () => [
-                route('products.customize', $product->slug),
-                $this->changed($product),
-                Media::url($product->catalogImage()),
-            ]);
+            if ($wraps) {
+                $this->add(fn () => [route($name('wrappings.index'))]);
+            }
+            if ($letters) {
+                $this->add(fn () => [route($name('letters.create'))]);
+            }
+            if ($live) {
+                $this->add(fn () => [route($name('live.create'))]);
+            }
+            foreach ($products as $product) {
+                $this->add(fn () => [
+                    route($name('products.customize'), $product->slug),
+                    $this->changed($product),
+                    Media::url($product->catalogImage()),
+                ]);
+            }
         }
 
         $body = '<?xml version="1.0" encoding="UTF-8"?>' . "\n"

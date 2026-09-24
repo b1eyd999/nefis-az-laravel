@@ -91,6 +91,9 @@ class SeoTest extends TestCase
 
     public function test_the_russian_pages_speak_russian_and_are_paired_with_their_twins(): void
     {
+        // All three languages are offered to customers here.
+        \App\Models\Setting::put(\App\Models\Setting::SITE_LANGUAGES, 'az,ru,en');
+
         $love = $this->box('Love Story', 'love-story-vol-1', 6.5);
         $this->box('Kinder', 'kinder-vol-1');
         GiftPage::inLocale('az')->where('slug', 'sevgiliye')->first()->products()->sync([$love->id]);
@@ -145,6 +148,28 @@ class SeoTest extends TestCase
         $this->get('/sitemap.xml')->assertOk()
             ->assertSee(route('ru.gifts.show', 'na-den-rozhdeniya'))
             ->assertSee(route('ru.gifts.index'));
+    }
+
+    public function test_a_language_still_being_written_is_kept_out_of_search(): void
+    {
+        // Only Azerbaijani is offered: the other two are reachable, but quietly.
+        Setting::put(Setting::SITE_LANGUAGES, 'az');
+
+        $this->get('/ru')->assertOk()
+            ->assertSee('<meta name="robots" content="noindex, follow">', false)
+            ->assertDontSee('hreflang="ru"', false);
+
+        $this->get('/')->assertOk()
+            ->assertDontSee('hreflang="ru"', false)
+            ->assertDontSee('<meta name="robots" content="noindex', false);
+
+        // The owner switches Russian on, and it joins the site properly.
+        Setting::put(Setting::SITE_LANGUAGES, 'az,ru');
+
+        $this->get('/ru')->assertOk()
+            ->assertDontSee('noindex', false)
+            ->assertSee('hreflang="ru"', false);
+        $this->get('/')->assertOk()->assertSee('hreflang="ru"', false)->assertDontSee('hreflang="en"', false);
     }
 
     public function test_a_hidden_page_is_gone_everywhere(): void

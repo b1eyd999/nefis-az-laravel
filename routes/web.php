@@ -31,6 +31,11 @@ Route::get('/canli/{code}', [LivePhotoController::class, 'show'])->where('code',
 Route::get('/canli/{code}/video', [LivePhotoController::class, 'video'])->where('code', '[a-z0-9]{4,16}')->name('live.video');
 Route::post('/canli-hazirla/{livePhoto}', [LivePhotoController::class, 'storeMind'])->middleware('auth')->name('live.mind');
 
+// A courier taps "I'll take it" in the group and Telegram calls this address.
+Route::post('/telegram/kuryer/{secret}', [\App\Http\Controllers\TelegramController::class, 'courier'])
+    ->where('secret', '[a-f0-9]{32}')
+    ->name('telegram.courier');
+
 // Address lookups for the checkout map (OpenStreetMap), asked through the site.
 Route::middleware('throttle:40,1')->prefix('xerite')->name('map.')->group(function () {
     Route::get('/unvan', [MapController::class, 'reverse'])->name('reverse');

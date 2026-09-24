@@ -15,6 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [\App\Http\Middleware\MaintenanceMode::class]);
         // Which language a page is written in comes from its address.
         $middleware->alias(['locale' => \App\Http\Middleware\SetLocale::class]);
+        // Telegram carries no session and no form token; its own secret guards it.
+        $middleware->validateCsrfTokens(except: ['telegram/kuryer/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // More than the hosting takes in one sending (a long video): a plain
