@@ -4,11 +4,11 @@
     use App\Support\Price;
 @endphp
 <!DOCTYPE html>
-<html lang="az">
+<html lang="{{ \App\Support\Locale::tag() }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Nefis.az — sifariş #{{ $order->id }}</title>
+    <title>{{ __('Nefis.az — sifariş #') }}{{ $order->id }}</title>
 </head>
 <body style="margin:0;padding:0;background:#faf7f2;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#2b2118;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#faf7f2;padding:24px 12px;">
@@ -22,7 +22,7 @@
                 </tr>
                 <tr>
                     <td style="padding:24px;">
-                        <p style="margin:0 0 6px;font-size:14px;color:#8a7a68;">Sifariş #{{ $order->id }}</p>
+                        <p style="margin:0 0 6px;font-size:14px;color:#8a7a68;">{{ __('Sifariş') }} #{{ $order->id }}</p>
                         <p style="margin:0 0 18px;font-size:18px;font-weight:700;line-height:1.4;">{{ $line }}</p>
 
                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:15px;line-height:1.6;">
@@ -39,20 +39,20 @@
                             @if ($order->delivery_date)
                                 <tr>
                                     <td style="padding:10px 0 0;">
-                                        <span style="color:#8a7a68;">Çatdırılma:</span>
+                                        <span style="color:#8a7a68;">{{ __('Çatdırılma:') }}</span>
                                         {{ DeliveryTime::day($order->delivery_date) }}@if ($order->delivery_slot), {{ $order->delivery_slot }}@endif
                                     </td>
                                 </tr>
                             @endif
                             @if ($order->delivery_name)
                                 <tr>
-                                    <td style="padding:2px 0;"><span style="color:#8a7a68;">Üsul:</span> {{ $order->delivery_name }}</td>
+                                    <td style="padding:2px 0;"><span style="color:#8a7a68;">{{ __('Üsul:') }}</span> {{ $order->delivery_name }}</td>
                                 </tr>
                             @endif
                             @if ($order->total() > 0)
                                 <tr>
                                     <td style="padding:2px 0;font-weight:700;">
-                                        <span style="color:#8a7a68;font-weight:400;">Məbləğ:</span> {{ Price::format($order->total()) }}
+                                        <span style="color:#8a7a68;font-weight:400;">{{ __('Məbləğ:') }}</span> {{ Price::format($order->total()) }}
                                     </td>
                                 </tr>
                             @endif
@@ -60,18 +60,18 @@
 
                         <p style="margin:22px 0 0;">
                             <a href="{{ $link }}" style="display:inline-block;background:#d97706;color:#fff;text-decoration:none;padding:12px 22px;border-radius:9px;font-weight:700;">
-                                {{ $order->awaitsPayment() ? 'Ödənişi tamamla' : 'Sifarişə bax' }}
+                                {{ $order->awaitsPayment() ? __('Ödənişi tamamla') : __('Sifarişə bax') }}
                             </a>
                         </p>
                     </td>
                 </tr>
                 <tr>
                     <td style="padding:18px 24px;background:#faf7f2;font-size:13px;color:#8a7a68;line-height:1.6;">
-                        Sualınız var? Yazın və ya zəng edin:
+                        {{ __('Sualınız var? Yazın və ya zəng edin:') }}
                         @if (Contact::has())
                             <a href="{{ Contact::whatsapp() }}" style="color:#d97706;">{{ Contact::display() }}</a>
                         @endif
-                        <br>Nefis.az — əl ilə hazırlanan şəkilli şokolad qutuları, Bakı.
+                        <br>{{ __('Nefis.az — əl ilə hazırlanan şəkilli şokolad qutuları, Bakı.') }}
                     </td>
                 </tr>
             </table>

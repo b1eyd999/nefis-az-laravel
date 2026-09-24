@@ -42,6 +42,7 @@ class Order extends Model
         'metro_station',
         'delivery_lat',
         'delivery_lng',
+        'locale',
         'materials_cost',
         // Which courier took it, and the message in the group he took it from.
         'courier_name',

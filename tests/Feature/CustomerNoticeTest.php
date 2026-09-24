@@ -64,6 +64,45 @@ class CustomerNoticeTest extends TestCase
         ));
     }
 
+    public function test_a_russian_customer_is_written_to_in_russian(): void
+    {
+        Mail::fake();
+        Setting::put(Setting::SITE_LANGUAGES, 'az,ru,en');
+        $customer = User::factory()->create(['email' => 'aysel@example.com']);
+        $box = Product::create(['name' => 'Love Story', 'slug' => 'love-story', 'is_active' => true, 'price' => 4.90,
+            'template_width' => 969, 'template_height' => 1895]);
+        $box->layers()->create(['name' => 'BG', 'image' => 'boxes/bg.webp', 'x' => 0, 'y' => 0, 'width' => 969,
+            'height' => 1895, 'rotation' => 0, 'opacity' => 100, 'placement' => 'above', 'sort_order' => 0]);
+        $door = DeliveryMethod::where('type', DeliveryMethod::DOOR)->firstOrFail();
+        $door->update(['price' => 5, 'is_active' => true]);
+
+        // The whole order is placed on the Russian pages.
+        $this->actingAs($customer)->post('/ru/cart', ['product_id' => $box->id]);
+        $this->actingAs($customer)->post('/ru/checkout', [
+            'delivery_method_id' => $door->id, 'contact_phone' => '050 123 45 67',
+            'delivery_address' => 'Bakı, Nəsimi 1',
+        ])->assertRedirect();
+
+        $order = Order::firstOrFail();
+        $this->assertSame('ru', $order->locale);
+
+        $order->forceFill(['status' => 'confirmed'])->save();
+
+        Mail::assertSent(OrderStatus::class, function (OrderStatus $mail) {
+            $body = $mail->render();
+
+            return str_contains($body, 'Оплата подтверждена')
+                && str_contains($body, 'Посмотреть заказ')
+                && ! str_contains($body, 'Ödəniş təsdiqləndi');
+        });
+
+        // The message the owner would send by hand is Russian too, and reading
+        // it leaves the site itself in whatever language it was showing.
+        app()->setLocale('az');
+        $this->assertStringContainsString('Оплата подтверждена', CustomerNotice::text($order->fresh()));
+        $this->assertSame('az', app()->getLocale());
+    }
+
     public function test_the_owner_can_switch_the_letters_off(): void
     {
         Mail::fake();

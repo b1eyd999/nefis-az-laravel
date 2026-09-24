@@ -60,6 +60,7 @@ class CheckoutController extends Controller
 
         $order = Order::create($delivery + [
             'user_id' => $request->user()->id,
+            'locale' => \App\Support\Locale::current(),
             'status' => $account ? 'awaiting_payment' : 'pending',
             'payment_account_id' => $account?->id,
             'note' => $request->input('note'),

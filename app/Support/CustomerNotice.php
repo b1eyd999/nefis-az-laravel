@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Mail\OrderStatus;
 use App\Models\Order;
 use App\Models\Setting;
+use App\Support\Locale;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
@@ -40,7 +41,30 @@ class CustomerNotice
 
     public static function line(Order $order): string
     {
-        return self::LINES[$order->status] ?? ('Sifarişinizin statusu: ' . $order->statusLabel() . '.');
+        return isset(self::LINES[$order->status])
+            ? __(self::LINES[$order->status])
+            : __('Sifarişinizin statusu: :status.', ['status' => $order->statusLabel()]);
+    }
+
+    /** The language this order was placed in; letters follow it. */
+    public static function locale(Order $order): string
+    {
+        $locale = (string) ($order->locale ?: Locale::DEFAULT);
+
+        return in_array($locale, Locale::all(), true) ? $locale : Locale::DEFAULT;
+    }
+
+    /** Runs something as if the customer's own page were being drawn. */
+    private static function inTheirLanguage(Order $order, callable $what): mixed
+    {
+        $was = app()->getLocale();
+        app()->setLocale(self::locale($order));
+
+        try {
+            return $what();
+        } finally {
+            app()->setLocale($was);
+        }
     }
 
     /** Where the customer carries on: the payment page, or his orders. */
@@ -51,6 +75,11 @@ class CustomerNotice
 
     /** The whole message, the way both the letter and WhatsApp carry it. */
     public static function text(Order $order): string
+    {
+        return self::inTheirLanguage($order, fn () => self::message($order));
+    }
+
+    private static function message(Order $order): string
     {
         $lines = ['Nefis.az — sifariş #' . $order->id, self::line($order)];
 
@@ -105,7 +134,7 @@ class CustomerNotice
         }
 
         try {
-            Mail::mailer(self::mailer())->to($to)->send(new OrderStatus($order));
+            Mail::mailer(self::mailer())->to($to)->locale(self::locale($order))->send(new OrderStatus($order));
 
             return self::$sent = true;
         } catch (Throwable $e) {
