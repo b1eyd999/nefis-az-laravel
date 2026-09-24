@@ -66,10 +66,15 @@ class DashboardTest extends TestCase
             ->assertSee('Kinder')
             ->assertCanSeeTableRecords(Order::firstOrFail()->items);   // the table renders its rows
 
+        Material::create(['name' => 'Yapışqan', 'unit' => 'qutucuq', 'pack_price' => 5, 'pack_size' => 10,
+            'per_box' => 0.1, 'stock' => 0, 'low_stock' => 2, 'is_active' => true]);
+
         Livewire::test(StockLeft::class)
             ->assertSee('Karton qutu')                 // 6 left, under its own low mark: shown first
             ->assertSee('Lent')
-            ->assertSee('6 ədəd');
+            ->assertSee('6 ədəd')
+            ->assertSee('bitib')                       // nothing left reads as a word, not as "0"
+            ->assertSee('almaq lazımdır');
     }
 
     public function test_a_manager_sees_the_work_but_not_the_money(): void

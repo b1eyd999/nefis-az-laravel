@@ -39,7 +39,9 @@ class StockLeft extends TableWidget
                 Tables\Columns\TextColumn::make('name')->label('Material')->weight('bold')->wrap(),
                 Tables\Columns\TextColumn::make('stock')
                     ->label('Qalıq')
-                    ->formatStateUsing(fn ($state, Material $m) => rtrim(rtrim(number_format((float) $state, 2, '.', ' '), '0'), '.') . ' ' . $m->unit)
+                    ->formatStateUsing(fn ($state, Material $m) => (float) $state <= 0
+                        ? 'bitib'
+                        : rtrim(rtrim(number_format((float) $state, 2, '.', ' '), '0'), '.') . ' ' . $m->unit)
                     ->badge()
                     ->color(fn ($state, Material $m) => match (true) {
                         (float) $state <= 0 => 'danger',
@@ -49,8 +51,14 @@ class StockLeft extends TableWidget
                     ->sortable(),
                 Tables\Columns\TextColumn::make('boxes_left')
                     ->label('Neçə qutuya bəs edir')
-                    ->state(fn (Material $m) => $m->per_box > 0 ? floor($m->stock / $m->per_box) . ' qutu' : '—')
-                    ->color(fn (Material $m) => $m->per_box > 0 && $m->stock / $m->per_box < 10 ? 'warning' : 'gray'),
+                    ->state(fn (Material $m) => match (true) {
+                        $m->per_box <= 0 => '—',
+                        $m->stock <= 0 => 'almaq lazımdır',
+                        default => floor($m->stock / $m->per_box) . ' qutu',
+                    })
+                    ->color(fn (Material $m) => $m->stock <= 0
+                        ? 'danger'
+                        : ($m->per_box > 0 && $m->stock / $m->per_box < 10 ? 'warning' : 'gray')),
             ])
             ->emptyStateHeading('Anbar boşdur')
             ->emptyStateDescription('Materialları "Anbar" bölməsində əlavə edin.');
