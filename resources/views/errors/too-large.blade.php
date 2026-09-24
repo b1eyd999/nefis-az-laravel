@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Fayl çox böyükdür — Nefis</title>
+<title>{{ __('Fayl çox böyükdür') }} — Nefis</title>
 <style>
   body{ margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1.5rem; box-sizing:border-box;
     background:#FBF6EF; color:#2A1D15; font-family:Inter, system-ui, sans-serif; text-align:center; }
@@ -19,7 +19,7 @@
   <div class="box">
     <img src="/images/logo.svg" alt="Nefis" style="height:3rem;">
     <h1>{{ __('Fayllar çox böyükdür') }}</h1>
-    <p>Bir göndərişdə 30 MB-a qədər fayl yükləmək olar. Videonu qısaldın və ya sıxın (18 MB-a qədər), sonra yenidən cəhd edin.</p>
+    <p>{{ __('Bir göndərişdə 30 MB-a qədər fayl yükləmək olar. Videonu qısaldın və ya sıxın, sonra yenidən cəhd edin.') }}</p>
     <a href="javascript:history.back()">← {{ __('Geri qayıt') }}</a>
   </div>
 </body>

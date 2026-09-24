@@ -18,8 +18,8 @@
      pages set their own title, description, picture and robots rule.
      yieldContent() hands these back already escaped, hence {!! !!}. --}}
 @php
-  $seoTitle = trim($__env->yieldContent('title', 'Nefis — Şəkilli Şokolad Qutuları və Fərdi Hədiyyələr'));
-  $seoDescription = trim($__env->yieldContent('meta_description', 'Öz şəkliniz və sözlərinizlə fərdi şokolad qutusu — ad günü, sevgiliyə, 8 Mart və hər münasibətə unudulmaz hədiyyə. Bakıda və bütün Azərbaycanda çatdırılma.'));
+  $seoTitle = trim($__env->yieldContent('title', __('Nefis — Şəkilli Şokolad Qutuları və Fərdi Hədiyyələr')));
+  $seoDescription = trim($__env->yieldContent('meta_description', __('Öz şəkliniz və sözlərinizlə fərdi şokolad qutusu — ad günü, sevgiliyə, 8 Mart və hər münasibətə unudulmaz hədiyyə. Bakıda və bütün Azərbaycanda çatdırılma.')));
   $seoUrl = e(\App\Support\Seo::canonical());
   $seoImage = trim($__env->yieldContent('og_image'));
 @endphp
@@ -86,7 +86,7 @@
 @php $navGifts = \App\Models\GiftPage::shown()->inLocale('az')->get(); @endphp
 
 
-<a href="#main" class="skip-link">Əsas məzmuna keç</a>
+<a href="#main" class="skip-link">{{ __('Əsas məzmuna keç') }}</a>
 
 <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="float-cta" id="float-cta" aria-label="{{ __('Instagramda yazın') }}">
   <span class="ico">📷</span><span class="txt">{{ __('Instagramda Yaz') }}</span>
@@ -236,7 +236,7 @@
       <div class="footer-col">
         <h4>{{ __('Naviqasiya') }}</h4>
         <a href="{{ lroute('designs.index') }}">{{ __('Dizaynlar') }}</a>@if($navWraps)<a href="{{ lroute('wrappings.index') }}">{{ __('Qablaşdırma') }}</a>@endif @if($navLetters)<a href="{{ lroute('letters.create') }}">{{ \App\Support\Letter::text('menu') }}</a>@endif @if($navLive)<a href="{{ lroute('live.create') }}">{{ __('Canlı şəkil') }}</a>@endif
-        <a href="{{ lroute('home') }}#how">Necə İşləyir</a>
+        <a href="{{ lroute('home') }}#how">{{ __('Necə İşləyir') }}</a>
         <a href="{{ lroute('home') }}#faq">Suallar</a>
       </div>
       @if($navGifts->isNotEmpty())
@@ -292,7 +292,7 @@
   }
   function labelThemeBtn(){
     var dark = currentTheme() === "dark";
-    themeBtn.setAttribute("aria-label", dark ? "İşıqlı rejim" : "Qaranlıq rejim");
+    themeBtn.setAttribute("aria-label", dark ? @json(__("İşıqlı rejim")) : @json(__("Qaranlıq rejim")));
     themeBtn.setAttribute("aria-pressed", dark ? "true" : "false");
   }
   themeBtn.addEventListener("click", function(){
@@ -368,7 +368,7 @@ document.addEventListener('submit', function(e){
   if (total <= 27 * 1048576) return;
   e.preventDefault();
   e.stopImmediatePropagation();
-  alert('Yüklədiyiniz fayllar birlikdə ' + (total / 1048576).toFixed(1) + ' MB-dır — 27 MB-dan çox ola bilməz. Videonu qısaldın və ya şəkilləri kiçildin.');
+  alert(@json(__('Yüklədiyiniz fayllar birlikdə ')) + (total / 1048576).toFixed(1) + @json(__(' MB-dır — 27 MB-dan çox ola bilməz. Videonu qısaldın və ya şəkilləri kiçildin.')));
 }, true);
 </script>
 @yield('page_script')

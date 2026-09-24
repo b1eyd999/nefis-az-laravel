@@ -415,7 +415,7 @@
                 <input type="file" name="ar_video" id="ar-video" accept="video/mp4,video/quicktime,video/webm,video/*">
                 <span id="ar-video-name">🎬 {{ __('Video seçin (MP4/MOV, :mb MB-a qədər)', ['mb' => \App\Support\LiveMaterials::videoMb()]) }}</span>
               </label>
-              <p class="slot-hint">Ən yaxşısı 10–30 saniyəlik, şaquli çəkilmiş video. Qutunun dizaynı kamera üçün özü hazırlanır — "Səbətə at" basanda bir neçə saniyə çəkir.</p>
+              <p class="slot-hint">{{ __('Ən yaxşısı 10–30 saniyəlik, şaquli çəkilmiş video. Qutunun dizaynı kamera üçün özü hazırlanır — "Səbətə at" basanda bir neçə saniyə çəkir.') }}</p>
               <input type="file" name="ar_photo" id="ar-photo" hidden>
               <input type="file" name="ar_mind" id="ar-mind" hidden>
             </div>

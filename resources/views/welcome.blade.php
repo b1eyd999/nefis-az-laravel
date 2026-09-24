@@ -97,7 +97,7 @@
               @else
                 <div class="ph">
                   <div class="ring">🎁</div>
-                  <p>Sizin şokolad qutunuzun<br>görüntüsü tezliklə burada</p>
+                  <p>{{ __('Sizin şokolad qutunuzun görüntüsü tezliklə burada') }}</p>
                 </div>
               @endif
             </div>
@@ -152,7 +152,7 @@
       <div class="section-head center">
         <span class="eyebrow" style="justify-content:center;">{{ __('Necə İşləyir') }}</span>
         <h2>{{ __('Üç Addımda Fərdi Hədiyyə') }}</h2>
-        <p class="lede" style="margin-inline:auto;">Hər addım diqqətlə düşünülüb ki, xatirəniz ən nəfis formada sizə qaytarılsın.</p>
+        <p class="lede" style="margin-inline:auto;">{{ __('Hər addım diqqətlə düşünülüb ki, xatirəniz ən nəfis formada sizə qaytarılsın.') }}</p>
       </div>
       <div class="steps">
         <div class="step reveal">

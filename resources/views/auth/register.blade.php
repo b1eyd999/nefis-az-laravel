@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Qeydiyyat — Nefis Şokolad Evi')
+@section('title', __('Qeydiyyat') . ' — Nefis Şokolad Evi')
 @section('robots', 'noindex, nofollow')
 
 @section('content')

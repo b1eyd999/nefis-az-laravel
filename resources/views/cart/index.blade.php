@@ -32,11 +32,11 @@
           <div class="cart-row">
             <div class="thumb">
               @if($isLive)
-                <img src="{{ \App\Support\Media::url($item['ar']['image'] ?? null) }}" alt="Canlı şəkil">
+                <img src="{{ \App\Support\Media::url($item['ar']['image'] ?? null) }}" alt="{{ __('Canlı şəkil') }}">
               @elseif($isLetter)
                 <div class="thumb-polaroid">@include('partials.polaroid', ['photo' => \App\Support\Media::url($item['letter']['photo'] ?? null), 'text' => $item['letter']['text'] ?? null])</div>
               @elseif(! empty($item['photo_paths']))
-                <img src="{{ \App\Support\Media::url($item['photo_paths'][0]) }}" alt="Yüklənmiş şəkil">
+                <img src="{{ \App\Support\Media::url($item['photo_paths'][0]) }}" alt="{{ __('Yüklənmiş şəkil') }}">
                 @if(count($item['photo_paths']) > 1)
                   <span class="thumb-more">+{{ count($item['photo_paths']) - 1 }}</span>
                 @endif
@@ -48,7 +48,7 @@
               <h3>{{ $isLive ? __('Canlı şəkil') : ($isLetter ? __('Polaroid məktub') : $item['product']->name) }}</h3>
               <p>
                 @if($texts) "{{ implode('" · "', $texts) }}" &middot; @endif
-                {{ $item['quantity'] }} ədəd
+                {{ __(':count ədəd', ['count' => $item['quantity']]) }}
                 @php $unit = \App\Support\Cart::unitPrice($item, $item['product']); @endphp
                 @if($unit > 0)
                   &middot; {{ \App\Support\Price::format($unit * $item['quantity']) }}
@@ -58,12 +58,12 @@
                 <p style="margin-top:.2rem;">🍫 {{ $item['chocolate']['name'] }} &middot; {{ \App\Support\Price::format($item['chocolate']['price']) }}</p>
               @endif
               @if(! empty($item['wrapping']))
-                <p style="margin-top:.2rem;">🎁 Qablaşdırma: {{ $item['wrapping']['name'] }} &middot; {{ \App\Support\Price::format($item['wrapping']['price']) }}</p>
+                <p style="margin-top:.2rem;">🎁 {{ __('Qablaşdırma') }}: {{ $item['wrapping']['name'] }} &middot; {{ \App\Support\Price::format($item['wrapping']['price']) }}</p>
               @endif
               @if($isLive)
                 <p style="margin-top:.2rem;">🎬 {{ __('Şəkil və video — QR kodla çap olunur') }}</p>
               @elseif(! empty($item['ar']))
-                <p style="margin-top:.2rem;">🎬 Canlı şəkil (AR) &middot; {{ \App\Support\Price::format($item['ar']['price']) }}</p>
+                <p style="margin-top:.2rem;">🎬 {{ __('Canlı şəkil (AR)') }} &middot; {{ \App\Support\Price::format($item['ar']['price']) }}</p>
               @endif
               @if(! empty($item['letter']))
                 <p style="margin-top:.2rem;">💌 {{ $isLetter ? '' : __('Polaroid məktub') . ' · ' }}{{ \Illuminate\Support\Str::limit(str_replace("\n", ' ', $item['letter']['text'] ?? ''), 60) ?: 'şəkilli' }}

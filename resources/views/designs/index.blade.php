@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', __('Şokolad qutusu dizaynları — şəkilli fərdi hədiyyə | Nefis'))
-@section('meta_description', 'Kinder, Milka, Love story, Netflix, Spotify və başqa şokolad qutusu dizaynları. Bəyəndiyinizi seçin, şəklinizi və sözünüzü əlavə edin — hədiyyə hazırdır.')
+@section('meta_description', __('Kinder, Milka, Love story, Netflix, Spotify və başqa şokolad qutusu dizaynları. Bəyəndiyinizi seçin, şəklinizi və sözünüzü əlavə edin — hədiyyə hazırdır.'))
 
 @push('jsonld')
   {{ \App\Support\Seo::jsonLd(['@graph' => [
@@ -102,9 +102,9 @@
     <div class="wrap">
       <span class="eyebrow">{{ __('Kolleksiya') }}</span>
       <h1>{{ __('Dizaynlar') }}</h1>
-      <p class="lede">Şokolad qutularından posterlərə qədər — bəyəndiyiniz dizaynı seçin, sonra öz şəklinizi və sözünüzü əlavə edin.</p>
+      <p class="lede">{{ __('Şokolad qutularından posterlərə qədər — bəyəndiyiniz dizaynı seçin, sonra öz şəklinizi və sözünüzü əlavə edin.') }}</p>
       @if($gifts->isNotEmpty())
-        <nav class="occ-chips" style="margin-top:1.75rem;" aria-label="Hədiyyə fikirləri">
+        <nav class="occ-chips" style="margin-top:1.75rem;" aria-label="{{ __('Hədiyyə fikirləri') }}">
           <span style="width:100%; font-size:.8125rem; color:var(--cocoa-faint);">{{ __('Münasibətə görə seçin:') }}</span>
           @foreach($gifts as $gift)
             <a class="occ-chip" href="{{ $gift->url() }}">{{ $gift->emoji }} {{ $gift->menu_label }}</a>
@@ -169,33 +169,30 @@
     <div class="wrap">
       <article class="prose">
         <h2>{{ __('Şəkilli şokolad qutusu necə seçilir?') }}</h2>
-        <p>Hər dizayn hazır şablondur: içində şəkliniz üçün yer və yazı sahələri var. Dizaynı açın, şəklinizi yükləyin,
-          adı və sözlərinizi yazın — qutunun necə görünəcəyini elə saytda, sifarişdən əvvəl görürsünüz.</p>
-        <p>Sonra qutunun içindəki şokoladı seçirsiniz (Milka, Alpen Gold və digər 90–105 qramlıq plitkalar).
-          İstəsəniz qutunu hədiyyə kağızına bükürük, içinə polaroid məktub qoyuruq, yaxud
-          <a href="{{ lroute('live.create') }}">canlı şəkil</a> əlavə edirik — telefonu şəklə tutanda videonuz oynayır.</p>
+        <p>{{ __('Hər dizayn hazır şablondur: içində şəkliniz üçün yer və yazı sahələri var. Dizaynı açın, şəklinizi yükləyin, adı və sözlərinizi yazın — qutunun necə görünəcəyini elə saytda, sifarişdən əvvəl görürsünüz.') }}</p>
+        <p>{{ __('Sonra qutunun içindəki şokoladı seçirsiniz (Milka, Alpen Gold və digər 90–105 qramlıq plitkalar). İstəsəniz qutunu hədiyyə kağızına bükürük, içinə polaroid məktub qoyuruq, yaxud') }}
+          <a href="{{ lroute('live.create') }}">{{ __('canlı şəkil') }}</a> {{ __('əlavə edirik — telefonu şəklə tutanda videonuz oynayır.') }}</p>
         <h2>{{ __('Hansı dizaynı kimə?') }}</h2>
-        <p>Cütlüklər üçün "Love story" və "Love is…", uşaqlar üçün Kinder və Barbie, maşın sevənlər üçün "Avtomobil",
-          zarafat üçün Netflix, Google və Spotify üslubunda dizaynlar var. Ailə şəkli üçün isə "Family Frame" uyğundur.
-          Münasibətə görə seçmək istəyirsinizsə, <a href="{{ lroute('gifts.index') }}">hədiyyə fikirlərinə</a> baxın.</p>
-        <p>Sifariş adətən 1–3 iş günü ərzində hazırlanır: Bakıda ünvana çatdırırıq, bölgələrə poçtla göndəririk.</p>
+        <p>{{ __('Cütlüklər üçün "Love story" və "Love is…", uşaqlar üçün Kinder və Barbie, maşın sevənlər üçün "Avtomobil", zarafat üçün Netflix, Google və Spotify üslubunda dizaynlar var. Ailə şəkli üçün isə "Family Frame" uyğundur. Münasibətə görə seçmək istəyirsinizsə,') }}
+          <a href="{{ lroute('gifts.index') }}">{{ __('hədiyyə fikirlərinə') }}</a> {{ __('baxın.') }}</p>
+        <p>{{ __('Sifariş adətən 1–3 iş günü ərzində hazırlanır: Bakıda ünvana çatdırırıq, bölgələrə poçtla göndəririk.') }}</p>
       </article>
     </div>
   </section>
 
-  <div class="lb" id="lightbox" role="dialog" aria-modal="true" aria-label="Dizayn önizləməsi">
+  <div class="lb" id="lightbox" role="dialog" aria-modal="true" aria-label="{{ __('Dizayn önizləməsi') }}">
     <div class="lb-inner">
-      <button type="button" class="lb-close" id="lb-close" aria-label="Bağla">✕</button>
+      <button type="button" class="lb-close" id="lb-close" aria-label="{{ __('Bağla') }}">✕</button>
       <div class="lb-img"><img id="lb-image" src="" alt=""></div>
       <div class="lb-side">
         <span class="cat" id="lb-cat"></span>
         <h3 id="lb-title"></h3>
         <p>{{ __('Öz şəklinizi və istədiyiniz mətni bu dizaynın üzərinə əlavə edə bilərsiniz.') }}</p>
         <a class="btn btn-primary" id="lb-action" href="#">
-          Fərdiləşdir
+          {{ __('Fərdiləşdir') }}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
-        <div class="soon" id="lb-soon">Bu dizayn üçün fərdiləşdirmə tezliklə açılacaq. Sifariş üçün bizə Instagramda yazın.</div>
+        <div class="soon" id="lb-soon">{{ __('Bu dizayn üçün fərdiləşdirmə tezliklə açılacaq. Sifariş üçün bizə Instagramda yazın.') }}</div>
       </div>
     </div>
   </div>

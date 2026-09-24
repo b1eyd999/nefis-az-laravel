@@ -283,11 +283,11 @@
           <div class="dlv-fields" data-for="post" hidden>
             <div class="field">
               <label for="recipient_name">{{ __('Ad və soyad') }}</label>
-              <input type="text" id="recipient_name" name="recipient_name" value="{{ old('recipient_name', auth()->user()->name) }}" placeholder="Məs. Aysel Məmmədova">
+              <input type="text" id="recipient_name" name="recipient_name" value="{{ old('recipient_name', auth()->user()->name) }}" placeholder="{{ __('Məs. Aysel Məmmədova') }}">
             </div>
             <div class="field">
               <label for="postal_index">{{ __('Poçt şöbəsinin indeksi') }}</label>
-              <input type="text" id="postal_index" name="postal_index" value="{{ old('postal_index') }}" placeholder="Məs. AZ1000" maxlength="8" autocapitalize="characters">
+              <input type="text" id="postal_index" name="postal_index" value="{{ old('postal_index') }}" placeholder="{{ __('Məs. AZ1000') }}" maxlength="8" autocapitalize="characters">
             </div>
           </div>
 
@@ -316,7 +316,7 @@
             </div>
             <div class="field">
               <label for="delivery_address">{{ __('Ünvan (yalnız Bakı)') }}</label>
-              <input type="text" id="delivery_address" name="delivery_address" value="{{ old('delivery_address') }}" placeholder="Küçə, ev — mənzil və mərtəbəni əlavə edin">
+              <input type="text" id="delivery_address" name="delivery_address" value="{{ old('delivery_address') }}" placeholder="{{ __('Küçə, ev — mənzil və mərtəbəni əlavə edin') }}">
             </div>
           </div>
 
@@ -337,7 +337,7 @@
         @else
           <div class="field">
             <label for="delivery_address">{{ __('Çatdırılma Ünvanı') }}</label>
-            <input type="text" id="delivery_address" name="delivery_address" value="{{ old('delivery_address') }}" required placeholder="Şəhər, rayon, ünvan">
+            <input type="text" id="delivery_address" name="delivery_address" value="{{ old('delivery_address') }}" required placeholder="{{ __('Şəhər, rayon, ünvan') }}">
           </div>
         @endif
 
@@ -366,7 +366,7 @@
 
         <div class="field">
           <label for="contact_phone">{{ __('Telefon nömrəsi') }}</label>
-          <input type="tel" id="contact_phone" name="contact_phone" value="{{ old('contact_phone', auth()->user()->phone) }}" required placeholder="+994 XX XXX XX XX">
+          <input type="tel" id="contact_phone" name="contact_phone" value="{{ old('contact_phone', auth()->user()->phone) }}" required placeholder="{{ __('+994 XX XXX XX XX') }}">
         </div>
         <div class="field">
           <label for="note">{{ __('Əlavə Qeyd (istəyə bağlı)') }}</label>

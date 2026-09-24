@@ -242,7 +242,7 @@
     e.preventDefault();
     submit.disabled = true;
     submit.textContent = @json(__('Hazırlanır…'));
-    var go = function(){ form.dataset.go = '1'; submit.textContent = 'Göndərilir…'; form.submit(); };
+    var go = function(){ form.dataset.go = '1'; submit.textContent = @json(__('Göndərilir…')); form.submit(); };
     job.then(go, go);
   });
 })();
