@@ -3,6 +3,26 @@
 @section('title', 'Şokolad qutusu dizaynları — şəkilli fərdi hədiyyə | Nefis')
 @section('meta_description', 'Kinder, Milka, Love story, Netflix, Spotify və başqa şokolad qutusu dizaynları. Bəyəndiyinizi seçin, şəklinizi və sözünüzü əlavə edin — hədiyyə hazırdır.')
 
+@push('jsonld')
+  {{ \App\Support\Seo::jsonLd(['@graph' => [
+      \App\Support\Seo::breadcrumbs([
+          ['Ana səhifə', route('home')],
+          ['Dizaynlar', route('designs.index')],
+      ]),
+      [
+          '@type' => 'ItemList',
+          'name' => 'Şokolad qutusu dizaynları',
+          'itemListElement' => $designs->flatten()->filter->isCustomizable()->values()
+              ->map(fn ($d, $i) => [
+                  '@type' => 'ListItem',
+                  'position' => $i + 1,
+                  'url' => route('products.customize', $d->slug),
+                  'name' => $d->name,
+              ])->all(),
+      ],
+  ]]) }}
+@endpush
+
 @section('page_style')
   .filter-bar{ display:flex; flex-wrap:wrap; gap:.6rem; justify-content:center; margin-bottom:3.5rem; }
   .chip{
@@ -142,6 +162,24 @@
         @endforeach
       @endif
 
+    </div>
+  </section>
+
+  <section class="tinted">
+    <div class="wrap">
+      <article class="prose">
+        <h2>Şəkilli şokolad qutusu necə seçilir?</h2>
+        <p>Hər dizayn hazır şablondur: içində şəkliniz üçün yer və yazı sahələri var. Dizaynı açın, şəklinizi yükləyin,
+          adı və sözlərinizi yazın — qutunun necə görünəcəyini elə saytda, sifarişdən əvvəl görürsünüz.</p>
+        <p>Sonra qutunun içindəki şokoladı seçirsiniz (Milka, Alpen Gold və digər 90–105 qramlıq plitkalar).
+          İstəsəniz qutunu hədiyyə kağızına bükürük, içinə polaroid məktub qoyuruq, yaxud
+          <a href="{{ route('live.create') }}">canlı şəkil</a> əlavə edirik — telefonu şəklə tutanda videonuz oynayır.</p>
+        <h2>Hansı dizaynı kimə?</h2>
+        <p>Cütlüklər üçün "Love story" və "Love is…", uşaqlar üçün Kinder və Barbie, maşın sevənlər üçün "Avtomobil",
+          zarafat üçün Netflix, Google və Spotify üslubunda dizaynlar var. Ailə şəkli üçün isə "Family Frame" uyğundur.
+          Münasibətə görə seçmək istəyirsinizsə, <a href="{{ route('gifts.index') }}">hədiyyə fikirlərinə</a> baxın.</p>
+        <p>Sifariş adətən 1–3 iş günü ərzində hazırlanır: Bakıda ünvana çatdırırıq, bölgələrə poçtla göndəririk.</p>
+      </article>
     </div>
   </section>
 

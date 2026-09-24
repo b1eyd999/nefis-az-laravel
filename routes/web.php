@@ -5,6 +5,7 @@ use App\Http\Controllers\BoxEditorController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CoverController;
+use App\Http\Controllers\FeedController;
 use App\Http\Controllers\GiftPageController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LetterController;
@@ -34,6 +35,8 @@ Route::get('/hediyye/{giftPage:slug}', [GiftPageController::class, 'show'])->nam
 Route::get('/podarki', [GiftPageController::class, 'index'])->defaults('locale', 'ru')->name('gifts.index.ru');
 Route::get('/podarki/{giftPage:slug}', [GiftPageController::class, 'show'])->defaults('locale', 'ru')->name('gifts.show.ru');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+// The designs as a product feed, for Google Merchant Center's free listings.
+Route::get('/feed.xml', [FeedController::class, 'index'])->name('feed');
 Route::get('/qablasdirma', [WrappingController::class, 'index'])->name('wrappings.index');
 Route::get('/mektub', [LetterController::class, 'create'])->name('letters.create');
 Route::post('/mektub', [LetterController::class, 'store'])->name('letters.store');

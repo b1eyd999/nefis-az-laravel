@@ -40,13 +40,22 @@ class ProductController extends Controller
                 ->values()
                 ->all();
 
+        // Where this design is offered, and what else looks like it — so a
+        // visitor (and a crawler) always has somewhere to go from here.
+        $gifts = GiftPage::shown()->inLocale('az')
+            ->whereHas('products', fn ($q) => $q->whereKey($product->id))->get();
+        $related = Product::where('is_active', true)->whereKeyNot($product->id)
+            ->where('category', $product->category)
+            ->orderBy('sort_order')->orderBy('name')->get()
+            ->filter->isCustomizable()->take(4)->values();
+
         // The bar that goes inside: chosen here, priced with the owner's markup.
         $chocolates = Chocolate::shown()->get()->map->toCustomer()->values();
 
         // Gift wraps, cheapest first; the page groups them by price.
         $wrappings = Wrapping::shown()->get()->map->toCustomer()->values();
 
-        return view('products.customize', compact('product', 'viewData', 'chocolates', 'wrappings'));
+        return view('products.customize', compact('product', 'viewData', 'chocolates', 'wrappings', 'gifts', 'related'));
     }
 
     /**

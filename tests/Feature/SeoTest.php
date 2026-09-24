@@ -304,6 +304,44 @@ class SeoTest extends TestCase
         $this->get(route('home'))->assertOk()->assertDontSee('wa.me', false)->assertSee('Instagram');
     }
 
+    public function test_a_design_page_points_at_its_occasions_and_its_neighbours(): void
+    {
+        $love = $this->box('Love Story', 'love-story-vol-1', 6.5);
+        $kinder = $this->box('Kinder', 'kinder-vol-1');
+        GiftPage::inLocale('az')->where('slug', 'sevgiliye')->first()->products()->sync([$love->id]);
+
+        $this->get(route('products.customize', 'love-story-vol-1'))->assertOk()
+            ->assertSee('Səhifənin yeri', false)                                  // the trail home
+            ->assertSee('href="' . route('designs.index') . '"', false)
+            ->assertSee('href="' . route('gifts.show', 'sevgiliye') . '"', false)  // where it is offered
+            ->assertSee('Bunlara da baxın')
+            ->assertSee(route('products.customize', 'kinder-vol-1'));              // its neighbour
+    }
+
+    public function test_the_designs_are_offered_to_google_shopping_as_a_feed(): void
+    {
+        $this->box('Love Story', 'love-story-vol-1', 6.5);
+        $this->box('Köhnə', 'kohne', active: false);
+
+        $xml = $this->get('/feed.xml')->assertOk()
+            ->assertHeader('Content-Type', 'application/xml; charset=UTF-8')
+            ->getContent();
+
+        $this->assertNotFalse(simplexml_load_string($xml), 'the feed is valid XML');
+        $this->assertStringContainsString('<g:price>6.50 AZN</g:price>', $xml);
+        $this->assertStringContainsString(route('products.customize', 'love-story-vol-1'), $xml);
+        $this->assertStringNotContainsString('kohne', $xml);
+    }
+
+    public function test_the_styles_are_a_file_of_their_own_so_pages_stay_small(): void
+    {
+        $html = $this->get(route('home'))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('#<link rel="stylesheet" href="[^"]*css/site\.css\?v=\d+">#', $html);
+        $this->assertStringNotContainsString('--cocoa-soft:', $html, 'the shared styles no longer travel with every page');
+        $this->assertLessThan(60_000, strlen($html), 'the page itself stays under 60 KB');
+    }
+
     public function test_the_catalogue_cards_are_links_search_engines_can_follow(): void
     {
         $this->box('Love Story', 'love-story-vol-1');

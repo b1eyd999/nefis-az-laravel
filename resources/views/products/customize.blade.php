@@ -157,10 +157,23 @@
 @section('content')
 <section class="page-hero" style="padding-bottom:0;">
   <div class="wrap">
+    <nav class="crumbs" aria-label="Səhifənin yeri">
+      <a href="{{ route('home') }}">Ana səhifə</a><span aria-hidden="true">›</span>
+      <a href="{{ route('designs.index') }}">Dizaynlar</a><span aria-hidden="true">›</span>
+      <span aria-current="page">{{ $product->name }}</span>
+    </nav>
     <span class="eyebrow" style="justify-content:center;">Fərdiləşdirmə</span>
     <h1>{{ $product->name }}</h1>
     @if($product->description)
       <p class="lede" style="margin-inline:auto;">{{ $product->description }}</p>
+    @endif
+    @if($gifts->isNotEmpty())
+      <nav class="occ-chips" style="margin-top:1.25rem;" aria-label="Hədiyyə fikirləri">
+        <span style="width:100%; font-size:.8125rem; color:var(--cocoa-faint);">Bu dizayn bu münasibətlərə uyğundur:</span>
+        @foreach($gifts as $gift)
+          <a class="occ-chip" href="{{ $gift->url() }}">{{ $gift->emoji }} {{ $gift->menu_label }}</a>
+        @endforeach
+      </nav>
     @endif
   </div>
 </section>
@@ -447,6 +460,23 @@
     </div>
   </div>
 </section>
+
+@if($related->isNotEmpty())
+  <section class="tinted">
+    <div class="wrap">
+      <div class="section-head center">
+        <span class="eyebrow" style="justify-content:center;">Oxşar dizaynlar</span>
+        <h2>Bunlara da baxın</h2>
+      </div>
+      <div class="cards-grid">
+        {{-- a name of its own: the page's own $product is still needed below --}}
+        @foreach($related as $other)
+          @include('partials.p-card', ['product' => $other])
+        @endforeach
+      </div>
+    </div>
+  </section>
+@endif
 @endsection
 
 @section('page_script')
