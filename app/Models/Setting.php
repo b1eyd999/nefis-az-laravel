@@ -78,6 +78,14 @@ class Setting extends Model
 
     public const SEO_BING = 'seo_bing_verification';
 
+    /**
+     * The owner's Telegram bot: its token (kept encrypted — see
+     * App\Support\Telegram::token()) and the chat new orders are sent to.
+     */
+    public const TELEGRAM_TOKEN = 'telegram_token';
+
+    public const TELEGRAM_CHAT = 'telegram_chat';
+
     /** How customers reach the shop: the phone (WhatsApp too) and when it is answered. */
     public const CONTACT_PHONE = 'contact_phone';
 

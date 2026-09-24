@@ -5,7 +5,11 @@ namespace App\Filament\Pages;
 use App\Models\Setting;
 use App\Models\User;
 use App\Support\Contact;
+use App\Support\Telegram;
 use App\Support\Seo;
+use Filament\Actions;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -18,8 +22,9 @@ use Filament\Pages\Page;
  * profit is shared out, and the codes that prove the site is the owner's to
  * Google, Yandex and Bing.
  */
-class SiteSettings extends Page implements HasForms
+class SiteSettings extends Page implements HasActions, HasForms
 {
+    use InteractsWithActions;
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
@@ -55,7 +60,35 @@ class SiteSettings extends Page implements HasForms
             'seo_analytics' => Setting::get(Setting::SEO_ANALYTICS),
             'contact_phone' => Setting::get(Setting::CONTACT_PHONE),
             'contact_hours' => Setting::get(Setting::CONTACT_HOURS),
+            'telegram_token' => Telegram::token(),
+            'telegram_chat' => Telegram::chat(),
         ]);
+    }
+
+    /** The two buttons that set the bot up: find the chat, then try it. */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\Action::make('findChat')
+                ->label('Telegram: chat-ı tap')
+                ->icon('heroicon-o-magnifying-glass')
+                ->color('gray')
+                ->action(function () {
+                    try {
+                        $this->data['telegram_chat'] = Telegram::findChat($this->data['telegram_token'] ?? null);
+                        Notification::make()->success()->title('Tapıldı — indi "Saxla" düyməsini basın')->send();
+                    } catch (\RuntimeException $e) {
+                        Notification::make()->danger()->title($e->getMessage())->send();
+                    }
+                }),
+            Actions\Action::make('testMessage')
+                ->label('Telegram: test mesajı')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('gray')
+                ->action(fn () => Telegram::send('✅ Nefis: bildirişlər işləyir. Sifariş gələndə bura yazacağam.')
+                    ? Notification::make()->success()->title('Göndərildi — Telegram-a baxın')->send()
+                    : Notification::make()->danger()->title('Göndərilmədi. Əvvəlcə "Saxla", sonra token və Chat ID-ni yoxlayın.')->send()),
+        ];
     }
 
     public function form(Form $form): Form
@@ -96,6 +129,24 @@ class SiteSettings extends Page implements HasForms
                             ->maxLength(80),
                     ])
                     ->columns(2),
+                Forms\Components\Section::make('Telegram bildirişləri')
+                    ->description('Sifariş gələn kimi Telegram-a mesaj gəlir. Bot sizindir: Telegram-da @BotFather-ə "/newbot" yazıb bot yaradın, verdiyi tokeni bura yapışdırın, sonra öz botunuza "/start" yazıb "Chat-ı tap" düyməsini basın.')
+                    ->schema([
+                        Forms\Components\TextInput::make('telegram_token')
+                            ->label('Bot tokeni')
+                            ->password()
+                            ->revealable()
+                            ->placeholder('123456789:AA...')
+                            ->helperText('@BotFather verir. Saytda şifrələnmiş saxlanılır.')
+                            ->maxLength(200),
+                        Forms\Components\TextInput::make('telegram_chat')
+                            ->label('Chat ID')
+                            ->placeholder('123456789')
+                            ->helperText('Mesajların gedəcəyi söhbət. Aşağıdakı düymə özü tapır.')
+                            ->maxLength(40),
+                    ])
+                    ->columns(2)
+                    ->collapsible(),
                 Forms\Components\Section::make('Axtarış sistemləri (SEO)')
                     ->description('Google Search Console, Yandex Webmaster və Bing Webmaster-də saytı təsdiqləmək üçün. Oradan "HTML tag" üsulunu seçin və verilən kodu (və ya bütün <meta …> sətrini) buraya yapışdırın. Sayt xəritəsi: ' . url('/sitemap.xml'))
                     ->schema([
@@ -146,6 +197,8 @@ class SiteSettings extends Page implements HasForms
         Setting::put(Setting::SEO_ANALYTICS, Seo::measurementId($data['seo_analytics'] ?? ''));
         Setting::put(Setting::CONTACT_PHONE, Contact::clean($data['contact_phone'] ?? ''));
         Setting::put(Setting::CONTACT_HOURS, trim((string) ($data['contact_hours'] ?? '')));
+        Telegram::saveToken($data['telegram_token'] ?? '');
+        Setting::put(Setting::TELEGRAM_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['telegram_chat'] ?? '')));
 
         Notification::make()->success()
             ->title($data['maintenance'] ? 'Saxlanıldı — sayt müştərilər üçün bağlıdır' : 'Saxlanıldı')

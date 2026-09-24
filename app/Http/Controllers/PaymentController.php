@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\PaymentAccount;
 use App\Models\Setting;
 use App\Support\ImageStore;
+use App\Support\Telegram;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -85,6 +86,8 @@ class PaymentController extends Controller
         if ($old && $old !== $path) {
             Storage::disk('public')->delete($old);
         }
+
+        defer(fn () => Telegram::receipt($order));
 
         return redirect()->route('orders.index')
             ->with('status', 'Çek göndərildi. Ödənişi yoxlayıb sifarişinizi təsdiqləyəcəyik.');

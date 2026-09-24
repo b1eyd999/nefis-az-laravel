@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Support\Accounting;
 use App\Support\Analytics;
 use App\Support\Cart;
+use App\Support\Telegram;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -139,6 +140,9 @@ class CheckoutController extends Controller
 
         // Google counts the order on the next page, once.
         Analytics::purchase($order);
+
+        // …and the owner hears about it in Telegram, after the answer is out.
+        defer(fn () => Telegram::order($order));
 
         Cart::clear();
 
