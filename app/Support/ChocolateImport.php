@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Chocolate;
 use App\Models\Market;
+use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -19,10 +20,20 @@ use RuntimeException;
  */
 class ChocolateImport
 {
-    /** Bars that fit the boxes. */
+    /** Bars that fit the boxes, unless the owner set his own range. */
     public const MIN_GRAMS = 90;
 
     public const MAX_GRAMS = 105;
+
+    public static function minGrams(): float
+    {
+        return (float) (Setting::get(Setting::CHOCOLATE_MIN_G) ?: self::MIN_GRAMS);
+    }
+
+    public static function maxGrams(): float
+    {
+        return (float) (Setting::get(Setting::CHOCOLATE_MAX_G) ?: self::MAX_GRAMS);
+    }
 
     /** A weight in grams, read from a product title ("Milka … 90 qr", "Yummy, 100 q"). */
     public static function grams(string $title): ?float
@@ -34,7 +45,7 @@ class ChocolateImport
 
     public static function fits(?float $grams): bool
     {
-        return $grams !== null && $grams >= self::MIN_GRAMS && $grams <= self::MAX_GRAMS;
+        return $grams !== null && $grams >= self::minGrams() && $grams <= self::maxGrams();
     }
 
     /**
@@ -46,7 +57,8 @@ class ChocolateImport
     {
         @set_time_limit(300);
         if (! $rows) {
-            throw new RuntimeException($market->name . ' saytında 90–105 q plitka şokolad tapılmadı — heç nə dəyişdirilmədi.');
+            throw new RuntimeException($market->name . ' saytında ' . (int) self::minGrams() . '–' . (int) self::maxGrams()
+                . ' q plitka şokolad tapılmadı — heç nə dəyişdirilmədi.');
         }
 
         $created = $updated = 0;

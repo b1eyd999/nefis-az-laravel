@@ -34,6 +34,8 @@ class Order extends Model
         'delivery_type',
         'delivery_name',
         'delivery_price',
+        'delivery_date',
+        'delivery_slot',
         'recipient_name',
         'postal_index',
         'metro_station',
@@ -51,6 +53,7 @@ class Order extends Model
     {
         return [
             'delivery_price' => 'float',
+            'delivery_date' => 'date',
             'delivery_lat' => 'float',
             'delivery_lng' => 'float',
             'materials_cost' => 'float',

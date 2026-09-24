@@ -135,6 +135,9 @@ class Telegram
         if ($order->delivery_name) {
             $lines[] = '🚚 ' . e($order->delivery_name) . ' — ' . Price::format((float) $order->delivery_price);
         }
+        if ($order->delivery_date) {
+            $lines[] = '🗓 ' . e(DeliveryTime::day($order->delivery_date) . ($order->delivery_slot ? ', ' . $order->delivery_slot : ''));
+        }
         foreach (array_filter([
             '👤' => $order->recipient_name ?: $order->user?->name,
             '📞' => $order->contact_phone,

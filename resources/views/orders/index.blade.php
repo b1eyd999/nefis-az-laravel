@@ -78,6 +78,9 @@
             @if($order->delivery_name)
               <p style="font-size:.875rem; color:var(--cocoa-soft); margin-top:.5rem;">
                 🚚 {{ $order->delivery_name }} — {{ $order->deliverySummary() }}
+                @if($order->delivery_date)
+                  <br>🗓 {{ \App\Support\DeliveryTime::day($order->delivery_date) }}@if($order->delivery_slot), {{ $order->delivery_slot }}@endif
+                @endif
                 &middot; {{ $order->delivery_price > 0 ? \App\Support\Price::format($order->delivery_price) : 'pulsuz' }}
               </p>
             @endif

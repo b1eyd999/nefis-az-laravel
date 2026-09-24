@@ -13,41 +13,54 @@ use Illuminate\Support\Facades\Http;
  * Bravo has no site of its own to read, but it sells through Wolt, whose
  * assortment API answers plain JSON: one call per category page, 50 items at
  * a time, carrying the name, the picture, the price in qəpiks and — while a
- * promotion runs — the price before it. The "Plitka Şokoladlar" category is
- * exactly what the boxes take, so nothing but the weight has to be filtered.
+ * promotion runs — the price before it. Bravo spreads its chocolate over
+ * several shelves (Kinder sits with the children's sweets), so all of them
+ * are read and the weight decides what goes in a box.
  */
 class Bravo
 {
     public const VENUE = 'bravo-hypermarket-koroglu';
 
-    /** Wolt's slug for the bar-chocolate shelf. */
-    public const CATEGORY = 'plitka-sokoladlar-80';
+    /**
+     * Wolt's slugs for Bravo's chocolate shelves. The bars are spread over
+     * several: Kinder sits on the children's shelf, Ritter Sport on the
+     * plain one, so all of them are read and the weight decides what fits.
+     */
+    public const CATEGORIES = [
+        'plitka-sokoladlar-80',
+        'sokoladlar-78',
+        'usaqlar-ucun-sokoladlar-79',
+        'dubai-sokolad-85',
+    ];
 
     public const API = 'https://consumer-api.wolt.com/consumer-api/consumer-assortment/v1/venues/slug/';
 
     public const PAGE_URL = 'https://wolt.com/en/aze/baku/venue/';
 
-    /** Everything the shelf lists, keyed by Wolt's item id. */
+    /** Everything the chocolate shelves list, keyed by Wolt's item id. */
     public static function products(): array
     {
         $all = [];
-        $token = null;
-        $page = 0;
 
-        do {
-            $data = Http::timeout(30)->retry(2, 500)->acceptJson()
-                ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; NefisShokoladEvi/1.0)'])
-                ->get(self::API . self::VENUE . '/assortment/categories/slug/' . self::CATEGORY,
-                    array_filter(['language' => 'az', 'page_token' => $token]))
-                ->throw()
-                ->json();
+        foreach (self::CATEGORIES as $category) {
+            $token = null;
+            $page = 0;
 
-            foreach ($data['items'] ?? [] as $item) {
-                $all[$item['id']] = $item;
-            }
+            do {
+                $data = Http::timeout(30)->retry(2, 500)->acceptJson()
+                    ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; NefisShokoladEvi/1.0)'])
+                    ->get(self::API . self::VENUE . '/assortment/categories/slug/' . $category,
+                        array_filter(['language' => 'az', 'page_token' => $token]))
+                    ->throw()
+                    ->json();
 
-            $token = $data['metadata']['next_page_token'] ?? null;
-        } while ($token && ++$page < 20);
+                foreach ($data['items'] ?? [] as $item) {
+                    $all[$item['id']] = $item + ['_shelf' => $category];
+                }
+
+                $token = $data['metadata']['next_page_token'] ?? null;
+            } while ($token && ++$page < 20);
+        }
 
         return $all;
     }
@@ -97,7 +110,7 @@ class Bravo
                 'base' => $onSale ? $before : $now,
                 'sale' => $onSale ? $now : null,
                 'sale_percent' => $onSale ? (int) round(($before - $now) / $before * 100) : null,
-                'url' => self::PAGE_URL . self::VENUE . '/items/' . self::CATEGORY,
+                'url' => self::PAGE_URL . self::VENUE . '/items/' . ($item['_shelf'] ?? self::CATEGORIES[0]),
                 'barcode' => $item['barcode_gtin'] ?? null,
                 'seller' => 'Bravo',
                 'image' => $item['images'][0]['url'] ?? null,

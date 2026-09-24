@@ -86,6 +86,19 @@ class Setting extends Model
 
     public const TELEGRAM_CHAT = 'telegram_chat';
 
+    /** The weight of bar the boxes take — the owner widens or narrows it. */
+    public const CHOCOLATE_MIN_G = 'chocolate_min_grams';
+
+    public const CHOCOLATE_MAX_G = 'chocolate_max_grams';
+
+    /**
+     * When a box can be delivered: how many days the shop needs before an
+     * order is ready, and the parts of the day it hands orders over in.
+     */
+    public const DELIVERY_LEAD_DAYS = 'delivery_lead_days';
+
+    public const DELIVERY_SLOTS = 'delivery_slots';
+
     /** How customers reach the shop: the phone (WhatsApp too) and when it is answered. */
     public const CONTACT_PHONE = 'contact_phone';
 
@@ -111,6 +124,12 @@ class Setting extends Model
         self::CHOCOLATE_MARKUP => '30',
         self::CHOCOLATE_FROM_SALE => '0',
         self::CONTACT_HOURS => 'Hər gün 10:00 — 20:00',
+        self::CHOCOLATE_MIN_G => '90',
+        self::CHOCOLATE_MAX_G => '105',
+        self::DELIVERY_LEAD_DAYS => '2',
+        self::DELIVERY_SLOTS => "10:00 — 14:00
+14:00 — 18:00
+18:00 — 21:00",
         self::MAINTENANCE => '0',
         self::MAINTENANCE_MESSAGE => 'Saytda texniki işlər aparılır. Tezliklə qayıdacağıq!',
         self::PROFIT_SHARES => '[{"name":"Sahibkar","percent":33.34},{"name":"Menecer 1","percent":33.33},{"name":"Menecer 2","percent":33.33}]',

@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Support\Accounting;
 use App\Support\Analytics;
 use App\Support\Cart;
+use App\Support\DeliveryTime;
 use App\Support\Telegram;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -151,6 +152,17 @@ class CheckoutController extends Controller
             : redirect()->route('orders.index')->with('status', 'Sifarişiniz qəbul edildi! Tezliklə sizinlə əlaqə saxlayacağıq.');
     }
 
+    /** The day and the part of the day the box is wanted, or the earliest the shop can do. */
+    private static function when(array $data): array
+    {
+        $slots = DeliveryTime::slots();
+
+        return [
+            'delivery_date' => $data['delivery_date'] ?? DeliveryTime::earliest()->toDateString(),
+            'delivery_slot' => $data['delivery_slot'] ?? $slots[0],
+        ];
+    }
+
     /**
      * The chosen delivery and what it needs: an address for the door, name,
      * phone and post-office index for the post, a station for the metro.
@@ -162,13 +174,20 @@ class CheckoutController extends Controller
         $common = [
             'contact_phone' => ['required', 'string', 'max:30'],
             'note' => ['nullable', 'string', 'max:500'],
+            // Nothing is ready before the shop has had its days. The page always
+            // sends a day; without one the earliest possible is taken.
+            'delivery_date' => ['nullable', 'date_format:Y-m-d',
+                'after_or_equal:' . DeliveryTime::earliest()->toDateString(),
+                'before_or_equal:' . DeliveryTime::latest()->toDateString()],
+            'delivery_slot' => ['nullable', Rule::in(DeliveryTime::slots())],
         ];
 
         // Without any method set up, checkout asks for an address as it always did.
         if (! DeliveryMethod::where('is_active', true)->exists()) {
             $data = $request->validate($common + ['delivery_address' => ['required', 'string', 'max:255']]);
 
-            return ['contact_phone' => $data['contact_phone'], 'delivery_address' => $data['delivery_address']];
+            return ['contact_phone' => $data['contact_phone'], 'delivery_address' => $data['delivery_address']]
+                + self::when($data);
         }
 
         $request->validate(['delivery_method_id' => ['required', Rule::exists('delivery_methods', 'id')->where('is_active', true)]],
@@ -202,9 +221,10 @@ class CheckoutController extends Controller
         $data = $request->validate($rules, [], [
             'contact_phone' => 'Telefon', 'recipient_name' => 'Ad və soyad', 'postal_index' => 'Poçt indeksi',
             'metro_station' => 'Metro stansiyası', 'delivery_address' => 'Ünvan',
+            'delivery_date' => 'Çatdırılma tarixi', 'delivery_slot' => 'Çatdırılma vaxtı',
         ]);
 
-        $order = [
+        $order = self::when($data) + [
             'delivery_method_id' => $method->id,
             'delivery_type' => $method->type,
             'delivery_name' => $method->name,

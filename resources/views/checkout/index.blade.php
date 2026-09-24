@@ -7,6 +7,19 @@
 @section('referrer', 'strict-origin-when-cross-origin')
 
 @section('page_style')
+  .when-note{ margin:.25rem 0 .75rem; font-size:.875rem; color:var(--gold-deep); }
+  .when input[type="date"]{ width:100%; }
+  .slots{ display:flex; flex-wrap:wrap; gap:.6rem; margin-top:.75rem; }
+  .slot{ flex:1 1 8rem; }
+  .slot input{ position:absolute; opacity:0; width:0; height:0; }
+  .slot span{
+    display:block; text-align:center; padding:.7rem .5rem; border-radius:.7rem; border:1px solid var(--line);
+    background:var(--paper); font-size:.9375rem; font-weight:600; color:var(--cocoa-soft); cursor:pointer;
+    transition:border-color .2s, color .2s, background .2s;
+  }
+  .slot input:checked + span{ border-color:var(--gold); color:var(--cocoa); background:var(--cream-2); }
+  .slot input:focus-visible + span{ outline:2px solid var(--gold); outline-offset:2px; }
+
   .dlv-grid{ display:grid; gap:.6rem; margin-top:.4rem; }
   .dlv-card{ position:relative; display:flex; flex-direction:column; gap:.2rem; padding:.8rem 1rem; border:1.5px solid var(--line); border-radius:.9rem;
     background:var(--paper); cursor:pointer; margin:0; font-weight:400; transition:border-color .15s, box-shadow .15s; }
@@ -327,6 +340,29 @@
             <input type="text" id="delivery_address" name="delivery_address" value="{{ old('delivery_address') }}" required placeholder="Şəhər, rayon, ünvan">
           </div>
         @endif
+
+        {{-- When it should arrive. Nothing is ready before the shop has had its days. --}}
+        @php
+          $earliest = \App\Support\DeliveryTime::earliest();
+          $slots = \App\Support\DeliveryTime::slots();
+        @endphp
+        <div class="field when">
+          <label for="delivery_date">Çatdırılma tarixi və vaxtı</label>
+          <p class="when-note">{{ \App\Support\DeliveryTime::notice() }}</p>
+          <input type="date" id="delivery_date" name="delivery_date" required
+                 value="{{ old('delivery_date', $earliest->toDateString()) }}"
+                 min="{{ $earliest->toDateString() }}"
+                 max="{{ \App\Support\DeliveryTime::latest()->toDateString() }}">
+          <div class="slots">
+            @foreach($slots as $i => $slot)
+              <label class="slot">
+                <input type="radio" name="delivery_slot" value="{{ $slot }}" required
+                       @checked(old('delivery_slot', $slots[0]) === $slot)>
+                <span>{{ $slot }}</span>
+              </label>
+            @endforeach
+          </div>
+        </div>
 
         <div class="field">
           <label for="contact_phone">Telefon nömrəsi</label>

@@ -132,6 +132,13 @@ class OrderResource extends Resource
                     ->label('Məhsul sayı')
                     ->counts('items')
                     ->visibleFrom('lg'),
+                Tables\Columns\TextColumn::make('delivery_date')
+                    ->label('Nə vaxta')
+                    ->formatStateUsing(fn (?string $state, Order $r) => $state
+                        ? \App\Support\DeliveryTime::day($state) . ($r->delivery_slot ? ', ' . $r->delivery_slot : '')
+                        : '—')
+                    ->wrap()
+                    ->visibleFrom('md'),
                 Tables\Columns\TextColumn::make('delivery_name')
                     ->label('Çatdırılma')
                     ->visibleFrom('lg')

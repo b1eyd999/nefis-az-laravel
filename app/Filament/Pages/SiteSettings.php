@@ -60,6 +60,10 @@ class SiteSettings extends Page implements HasActions, HasForms
             'seo_analytics' => Setting::get(Setting::SEO_ANALYTICS),
             'contact_phone' => Setting::get(Setting::CONTACT_PHONE),
             'contact_hours' => Setting::get(Setting::CONTACT_HOURS),
+            'delivery_lead_days' => (int) Setting::get(Setting::DELIVERY_LEAD_DAYS),
+            'delivery_slots' => Setting::get(Setting::DELIVERY_SLOTS),
+            'chocolate_min_g' => (int) Setting::get(Setting::CHOCOLATE_MIN_G),
+            'chocolate_max_g' => (int) Setting::get(Setting::CHOCOLATE_MAX_G),
             'telegram_token' => Telegram::token(),
             'telegram_chat' => Telegram::chat(),
         ]);
@@ -129,6 +133,31 @@ class SiteSettings extends Page implements HasActions, HasForms
                             ->maxLength(80),
                     ])
                     ->columns(2),
+                Forms\Components\Section::make('Çatdırılma vaxtı')
+                    ->description('Müştəri sifariş verəndə tarix və vaxt seçir. Qutular əl ilə hazırlandığına görə ən tez tarix bu gündən neçə gün sonra olacağını siz deyirsiniz.')
+                    ->schema([
+                        Forms\Components\TextInput::make('delivery_lead_days')
+                            ->label('Sifariş neçə gündən sonra hazır olur')
+                            ->numeric()->minValue(0)->maxValue(30)->required()
+                            ->suffix('gün')
+                            ->helperText('Müştəri bundan tez tarix seçə bilmir; səbətdə bu barədə yazı görünür.'),
+                        Forms\Components\Textarea::make('delivery_slots')
+                            ->label('Vaxt aralıqları')
+                            ->rows(3)
+                            ->helperText('Hər sətirdə bir aralıq, məs. "10:00 — 14:00".'),
+                    ])
+                    ->columns(2),
+                Forms\Components\Section::make('Şokolad plitkaları')
+                    ->description('Marketlərdən yalnız qutuya sığan plitkalar götürülür.')
+                    ->schema([
+                        Forms\Components\TextInput::make('chocolate_min_g')
+                            ->label('Ən az çəki')->numeric()->minValue(10)->maxValue(500)->required()->suffix('q'),
+                        Forms\Components\TextInput::make('chocolate_max_g')
+                            ->label('Ən çox çəki')->numeric()->minValue(10)->maxValue(500)->required()->suffix('q')
+                            ->helperText('Dəyişdikdən sonra Şokoladlar səhifəsində "Yenilə" düyməsini basın.'),
+                    ])
+                    ->columns(2)
+                    ->collapsible(),
                 Forms\Components\Section::make('Telegram bildirişləri')
                     ->description('Sifariş gələn kimi Telegram-a mesaj gəlir. Bot sizindir: Telegram-da @BotFather-ə "/newbot" yazıb bot yaradın, verdiyi tokeni bura yapışdırın, sonra öz botunuza "/start" yazıb "Chat-ı tap" düyməsini basın.')
                     ->schema([
@@ -197,6 +226,10 @@ class SiteSettings extends Page implements HasActions, HasForms
         Setting::put(Setting::SEO_ANALYTICS, Seo::measurementId($data['seo_analytics'] ?? ''));
         Setting::put(Setting::CONTACT_PHONE, Contact::clean($data['contact_phone'] ?? ''));
         Setting::put(Setting::CONTACT_HOURS, trim((string) ($data['contact_hours'] ?? '')));
+        Setting::put(Setting::DELIVERY_LEAD_DAYS, max(0, (int) ($data['delivery_lead_days'] ?? 2)));
+        Setting::put(Setting::DELIVERY_SLOTS, trim((string) ($data['delivery_slots'] ?? '')));
+        Setting::put(Setting::CHOCOLATE_MIN_G, max(1, (int) ($data['chocolate_min_g'] ?? 90)));
+        Setting::put(Setting::CHOCOLATE_MAX_G, max((int) ($data['chocolate_min_g'] ?? 90), (int) ($data['chocolate_max_g'] ?? 105)));
         Telegram::saveToken($data['telegram_token'] ?? '');
         Setting::put(Setting::TELEGRAM_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['telegram_chat'] ?? '')));
 

@@ -344,23 +344,40 @@ class ChocolateTest extends TestCase
             'images' => [['url' => 'https://imageproxy.wolt.com/assets/' . $id]],
         ];
 
-        Http::fake([
-            'consumer-api.wolt.com/*' => Http::sequence()
-                ->push(['items' => [
+        // Wolt answers one shelf at a time, in pages; Kinder sits on the children's shelf.
+        $shelves = [
+            'plitka-sokoladlar-80' => [
+                ['items' => [
                     $item('a1', 'Milka Südlü Şokolad 90qr', 269, 449),
                     $item('a2', 'Monamo Südlü Plitka', 199, 349, '85 g'),          // too light for the box
+                ], 'metadata' => ['next_page_token' => 'page2']],
+                ['items' => [
                     $item('a3', 'Nestle Bitter Tünd Şokolad 70% 90qr', 249),
-                ], 'metadata' => ['next_page_token' => 'page2']])
-                ->push(['items' => [
-                    $item('b1', 'Ritter Sport Südlü 100 q', 399),
-                    $item('b2', 'Lindt Excellence 300qr', 1699),                    // too heavy
-                ], 'metadata' => ['next_page_token' => null]]),
-            'imageproxy.wolt.com/*' => Http::response($this->png()),
-        ]);
+                    $item('a4', 'Lindt Excellence 300qr', 1699),                    // too heavy
+                ], 'metadata' => ['next_page_token' => null]],
+            ],
+            'usaqlar-ucun-sokoladlar-79' => [
+                ['items' => [$item('k1', 'Kinder Şokolad 100qr', 450)], 'metadata' => ['next_page_token' => null]],
+            ],
+        ];
+
+        Http::fake(function ($request) use ($shelves) {
+            if (str_contains($request->url(), 'imageproxy.wolt.com')) {
+                return Http::response($this->png());
+            }
+            foreach ($shelves as $slug => $pages) {
+                if (str_contains($request->url(), $slug)) {
+                    return Http::response($pages[str_contains($request->url(), 'page2') ? 1 : 0]);
+                }
+            }
+
+            return Http::response(['items' => [], 'metadata' => ['next_page_token' => null]]);
+        });
 
         $r = \App\Support\Bravo::sync();
 
         $this->assertSame(['found' => 3, 'created' => 3, 'updated' => 0, 'missing' => 0], $r);
+        $this->assertNotNull(Chocolate::where('source_id', 'k1')->first(), 'Kinder comes from the children shelf');
         $bravo = Market::where('importer', 'bravo')->firstOrFail();
         $milka = Chocolate::where('source', 'bravo')->where('source_id', 'a1')->firstOrFail();
         $this->assertSame([$bravo->id, 4.49, 2.69, 40, 'Bravo', 90.0],
