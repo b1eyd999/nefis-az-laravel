@@ -33,7 +33,7 @@ class OrdersRelationManager extends RelationManager
                     ->badge()
                     ->formatStateUsing(fn (string $state) => OrderResource::STATUSES[$state] ?? $state)
                     ->color(fn (string $state) => match ($state) {
-                        'pending' => 'warning', 'confirmed' => 'info', 'completed' => 'success', 'cancelled' => 'danger', default => 'gray',
+                        'pending' => 'warning', 'confirmed' => 'info', 'ready' => 'primary', 'completed' => 'success', 'cancelled' => 'danger', default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('items_count')->label('Məhsul'),
                 Tables\Columns\TextColumn::make('total')

@@ -68,6 +68,8 @@ class SiteSettings extends Page implements HasActions, HasForms
             'notify_email' => Setting::get(Setting::NOTIFY_EMAIL) === '1',
             'telegram_token' => Telegram::token(),
             'telegram_chat' => Telegram::chat(),
+            'telegram_courier_token' => Setting::get(Setting::TELEGRAM_COURIER_TOKEN) ? Telegram::courierToken() : null,
+            'telegram_courier_chat' => Telegram::courierChat(),
         ]);
     }
 
@@ -87,6 +89,33 @@ class SiteSettings extends Page implements HasActions, HasForms
                         Notification::make()->danger()->title($e->getMessage())->send();
                     }
                 }),
+            Actions\Action::make('findCourierChat')
+                ->label('Telegram: kuryer chat-ı')
+                ->icon('heroicon-o-truck')
+                ->color('gray')
+                ->action(function () {
+                    try {
+                        $this->data['telegram_courier_chat'] = Telegram::findChat(
+                            $this->data['telegram_courier_token'] ?: ($this->data['telegram_token'] ?? null),
+                        );
+                        Notification::make()->success()->title('Tapıldı — indi "Saxla" düyməsini basın')
+                            ->body('Botu kuryer qrupuna əlavə edib qrupda bir mesaj yazın, sonra bu düyməni basın.')->send();
+                    } catch (\RuntimeException $e) {
+                        Notification::make()->danger()->title($e->getMessage())->send();
+                    }
+                }),
+            Actions\Action::make('testCourier')
+                ->label('Kuryerə test mesajı')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('gray')
+                ->visible(fn () => Telegram::courierOn())
+                ->action(fn () => Telegram::send(
+                    '🚚 Nefis: kuryer bildirişləri işləyir. Sifariş hazır olanda ünvan və telefon bura gələcək.',
+                    Telegram::courierChat(),
+                    Telegram::courierToken(),
+                )
+                    ? Notification::make()->success()->title('Göndərildi — kuryer qrupuna baxın')->send()
+                    : Notification::make()->danger()->title('Göndərilmədi. Əvvəlcə "Saxla", sonra token və chat-ı yoxlayın.')->send()),
             Actions\Action::make('testEmail')
                 ->label('Test e-poçtu')
                 ->icon('heroicon-o-envelope')
@@ -195,7 +224,16 @@ class SiteSettings extends Page implements HasActions, HasForms
                             ->placeholder('123456789:AA...')
                             ->helperText('@BotFather verir. Saytda şifrələnmiş saxlanılır.')
                             ->maxLength(200),
-                        Forms\Components\TextInput::make('telegram_chat')
+                        Forms\Components\TextInput::make('telegram_courier_token')
+                        ->label('Kuryer botunun tokeni (istəyə görə)')
+                        ->password()->revealable()->autocomplete(false)
+                        ->helperText('Kuryerlər üçün ayrıca bot: onlar yalnız çatdırılmaları görür. Boş qalsa, yuxarıdakı bot işlədilir.'),
+                    Forms\Components\TextInput::make('telegram_courier_chat')
+                        ->label('Kuryer qrupunun chat-ı')
+                        ->helperText('Sifarişin statusu "Hazırdır" olanda kuryerə ad, telefon, tarix, saat, ünvan və xəritə linki gedir. '
+                            . 'Botu qrupa əlavə edin, qrupda bir mesaj yazın, sonra yuxarıdakı "Telegram: kuryer chat-ı" düyməsini basın. Boş buraxsanız, heç nə göndərilmir.')
+                        ->rule('regex:/^-?\d*$/'),
+                    Forms\Components\TextInput::make('telegram_chat')
                             ->label('Chat ID')
                             ->placeholder('123456789')
                             ->helperText('Mesajların gedəcəyi söhbət. Aşağıdakı düymə özü tapır.')
@@ -260,6 +298,8 @@ class SiteSettings extends Page implements HasActions, HasForms
         Setting::put(Setting::NOTIFY_EMAIL, ! empty($data['notify_email']));
         Telegram::saveToken($data['telegram_token'] ?? '');
         Setting::put(Setting::TELEGRAM_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['telegram_chat'] ?? '')));
+        Telegram::saveCourierToken($data['telegram_courier_token'] ?? '');
+        Setting::put(Setting::TELEGRAM_COURIER_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['telegram_courier_chat'] ?? '')));
 
         Notification::make()->success()
             ->title($data['maintenance'] ? 'Saxlanıldı — sayt müştərilər üçün bağlıdır' : 'Saxlanıldı')

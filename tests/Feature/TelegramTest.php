@@ -51,6 +51,49 @@ class TelegramTest extends TestCase
         return Order::firstOrFail();
     }
 
+    public function test_a_ready_order_goes_to_the_couriers_own_bot(): void
+    {
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true])]);
+        Telegram::saveCourierToken('999:COURIER');
+        Setting::put(Setting::TELEGRAM_COURIER_CHAT, '-1001234');
+        $order = $this->order();
+        $order->update(['delivery_date' => '2026-09-26', 'delivery_slot' => '14:00 — 18:00']);
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true])]);   // forget the new-order call
+
+        $order->forceFill(['status' => 'ready'])->save();
+
+        Http::assertSent(function ($request) {
+            if (! str_contains($request->url(), '999:COURIER')) {
+                return false;
+            }
+            $text = $request['text'];
+
+            return $request['chat_id'] === '-1001234'
+                && str_contains($text, 'hazırdır')
+                && str_contains($text, 'Aysel')                          // who waits for it
+                && str_contains($text, '+994 50 123 45 67')              // the number to ring
+                && str_contains($text, '26 sentyabr')                    // the day
+                && str_contains($text, '14:00 — 18:00')                  // and the hours
+                && str_contains($text, 'Rəşid Behbudov 10');             // where to take it
+        });
+
+        // The customer hears it too, in his own words.
+        $this->assertSame('Sifarişiniz hazırdır — kuryer yola düşəndə sizinlə əlaqə saxlayacaq.',
+            \App\Support\CustomerNotice::line($order->fresh()));
+    }
+
+    public function test_without_a_courier_chat_nothing_is_sent(): void
+    {
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true])]);
+        $order = $this->order();
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true])]);
+
+        $order->forceFill(['status' => 'ready'])->save();
+
+        $this->assertFalse(Telegram::courierOn());
+        Http::assertNothingSent();
+    }
+
     public function test_a_new_order_is_written_to_the_owners_telegram(): void
     {
         Http::fake(['api.telegram.org/*' => Http::response(['ok' => true])]);

@@ -25,6 +25,7 @@ class CustomerNotice
         'payment_check' => 'Çekinizi aldıq — ödənişi yoxlayırıq.',
         'pending' => 'Sifarişiniz qeydə alındı və növbəyə düşdü.',
         'confirmed' => 'Ödəniş təsdiqləndi — sifarişiniz hazırlanır.',
+        'ready' => 'Sifarişiniz hazırdır — kuryer yola düşəndə sizinlə əlaqə saxlayacaq.',
         'completed' => 'Sifarişiniz hazırdır və təhvil verildi. Nuş olsun!',
         'cancelled' => 'Sifarişiniz ləğv edildi.',
     ];

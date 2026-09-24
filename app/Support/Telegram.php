@@ -45,21 +45,58 @@ class Telegram
         return trim((string) Setting::get(Setting::TELEGRAM_CHAT));
     }
 
+    /**
+     * The couriers have a bot of their own, so they see the deliveries and
+     * nothing else. Without one the owner's bot carries the messages.
+     */
+    public static function courierToken(): ?string
+    {
+        $stored = Setting::get(Setting::TELEGRAM_COURIER_TOKEN);
+        if (blank($stored)) {
+            return self::token();
+        }
+
+        try {
+            return Crypt::decryptString($stored);
+        } catch (Throwable) {
+            return self::token();
+        }
+    }
+
+    public static function saveCourierToken(?string $token): void
+    {
+        $token = trim((string) $token);
+        Setting::put(Setting::TELEGRAM_COURIER_TOKEN, $token === '' ? '' : Crypt::encryptString($token));
+    }
+
+    /** The couriers' group, if the owner has set one up. */
+    public static function courierChat(): string
+    {
+        return trim((string) Setting::get(Setting::TELEGRAM_COURIER_CHAT));
+    }
+
+    public static function courierOn(): bool
+    {
+        return filled(self::courierToken()) && self::courierChat() !== '';
+    }
+
     public static function on(): bool
     {
         return filled(self::token()) && self::chat() !== '';
     }
 
     /** Sends a message; a failure is written to the log, never shown to a customer. */
-    public static function send(string $text): bool
+    public static function send(string $text, ?string $chat = null, ?string $token = null): bool
     {
-        if (! self::on()) {
+        $chat = trim((string) ($chat ?: self::chat()));
+        $token = trim((string) ($token ?: self::token()));
+        if ($token === '' || $chat === '') {
             return false;
         }
 
         try {
-            $answer = Http::timeout(15)->post(self::API . self::token() . '/sendMessage', [
-                'chat_id' => self::chat(),
+            $answer = Http::timeout(15)->post(self::API . $token . '/sendMessage', [
+                'chat_id' => $chat,
                 'text' => $text,
                 'parse_mode' => 'HTML',
                 'disable_web_page_preview' => true,
@@ -151,6 +188,41 @@ class Telegram
         $lines[] = url('/admin/orders/' . $order->id . '/edit');
 
         self::send(implode("\n", $lines));
+    }
+
+    /**
+     * An order that is made, written for whoever takes it out: who, where,
+     * when and the number to ring — nothing about money or the design.
+     */
+    public static function courier(Order $order): bool
+    {
+        if (! self::courierOn()) {
+            return false;
+        }
+        $order->loadMissing('user');
+
+        $lines = ['📦 <b>Sifariş #' . $order->id . ' hazırdır</b>', ''];
+
+        foreach (array_filter([
+            '👤' => $order->recipient_name ?: $order->user?->name,
+            '📞' => $order->contact_phone ?: $order->user?->phone,
+            '🗓' => $order->delivery_date
+                ? DeliveryTime::day($order->delivery_date) . ($order->delivery_slot ? ', ' . $order->delivery_slot : '')
+                : null,
+            '🚚' => $order->delivery_name,
+            '📍' => $order->deliverySummary(),
+            '📝' => $order->note,
+        ]) as $icon => $value) {
+            $lines[] = $icon . ' ' . e($value);
+        }
+
+        if ($map = $order->mapUrl()) {
+            $lines[] = '';
+            $lines[] = '🗺 ' . $map;
+        }
+
+        return self::send(implode("
+", $lines), self::courierChat(), self::courierToken());
     }
 
     /** The customer says he has paid and uploads the receipt. */

@@ -18,6 +18,7 @@ class Order extends Model
         'payment_check' => 'Çek yoxlanılır',
         'pending' => 'Gözləmədə',
         'confirmed' => 'Təsdiqləndi',
+        'ready' => 'Hazırdır',
         'completed' => 'Tamamlandı',
         'cancelled' => 'Ləğv edildi',
     ];
@@ -101,6 +102,11 @@ class Order extends Model
             // Wherever the status was changed from — the list, the order's own
             // page, the payment flow — the customer hears about it here.
             \App\Support\CustomerNotice::email($order);
+
+            // Made and waiting: the courier gets the address and the phone.
+            if ($order->status === 'ready' && $was !== 'ready') {
+                \App\Support\Telegram::courier($order);
+            }
         });
     }
 

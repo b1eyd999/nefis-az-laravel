@@ -89,6 +89,14 @@ class Setting extends Model
 
     public const TELEGRAM_CHAT = 'telegram_chat';
 
+    /**
+     * The couriers' own bot and the group it writes to: an order that is ready
+     * is written there, not to the owner. The token is kept encrypted.
+     */
+    public const TELEGRAM_COURIER_TOKEN = 'telegram_courier_token';
+
+    public const TELEGRAM_COURIER_CHAT = 'telegram_courier_chat';
+
     /** The weight of bar the boxes take — the owner widens or narrows it. */
     public const CHOCOLATE_MIN_G = 'chocolate_min_grams';
 

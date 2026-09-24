@@ -215,6 +215,7 @@ class OrderResource extends Resource
                         'gray' => 'awaiting_payment',
                         'warning' => fn ($state) => in_array($state, ['payment_check', 'pending'], true),
                         'info' => 'confirmed',
+                        'primary' => 'ready',
                         'success' => 'completed',
                         'danger' => 'cancelled',
                     ])
