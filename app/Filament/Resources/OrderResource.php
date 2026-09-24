@@ -122,6 +122,38 @@ class OrderResource extends Resource
             ]);
     }
 
+    /**
+     * Changing where an order stands without opening it: the status in the
+     * list is tapped, the new one is picked, and that is it. Saved through
+     * the model, so cancelling still puts the materials back in stock.
+     */
+    private static function statusAction(string $name): Tables\Actions\Action
+    {
+        return Tables\Actions\Action::make($name)
+            ->label('Statusu dəyiş')
+            ->icon('heroicon-o-arrow-path')
+            ->modalHeading(fn (Order $record) => 'Sifariş #' . $record->id . ' — status')
+            ->modalSubmitActionLabel('Yadda saxla')
+            ->modalWidth('sm')
+            ->fillForm(fn (Order $record) => ['status' => $record->status])
+            ->form([
+                Forms\Components\Radio::make('status')
+                    ->hiddenLabel()
+                    ->options(self::STATUSES)
+                    ->required(),
+            ])
+            ->action(function (Order $record, array $data) {
+                if ($data['status'] === $record->status) {
+                    return;
+                }
+                $record->forceFill(['status' => $data['status']])->save();
+                Notification::make()->success()
+                    ->title('Status dəyişdi')
+                    ->body('Sifariş #' . $record->id . ' — ' . self::STATUSES[$data['status']])
+                    ->send();
+            });
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -161,8 +193,11 @@ class OrderResource extends Resource
                             . ($r->delivery_slot ? '<br>' . e(str_replace(' — ', '–', $r->delivery_slot)) : ''))
                         : null)
                     ->wrap(),
+                // Tapped in the list, it asks for the new status straight away.
                 Tables\Columns\BadgeColumn::make('status')
                     ->label('Status')
+                    ->action(self::statusAction('status_quick'))
+                    ->tooltip('Dəyişmək üçün toxunun')
                     ->colors([
                         'gray' => 'awaiting_payment',
                         'warning' => fn ($state) => in_array($state, ['payment_check', 'pending'], true),
@@ -202,6 +237,7 @@ class OrderResource extends Resource
                             $record->forceFill(['status' => 'confirmed', 'payment_confirmed_at' => now()])->save();
                             Notification::make()->success()->title('Ödəniş təsdiqləndi')->send();
                         }),
+                    self::statusAction('status_change'),
                     Tables\Actions\EditAction::make(),
                 ]),
             ])

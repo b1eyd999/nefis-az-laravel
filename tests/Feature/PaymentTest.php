@@ -146,6 +146,27 @@ class PaymentTest extends TestCase
         $this->actingAs($customer)->get(route('orders.pay', $order))->assertRedirect(route('orders.index'));
     }
 
+    public function test_the_status_is_changed_from_the_list_itself(): void
+    {
+        $order = $this->order($this->box());
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        // Tapping the status badge asks for the new one.
+        Livewire::test(ListOrders::class)
+            ->callTableAction('status_quick', $order, ['status' => 'completed'])
+            ->assertHasNoTableActionErrors();
+        $this->assertSame('completed', $order->fresh()->status);
+
+        // The same from the ⋮ menu, and cancelling still goes through the
+        // model, so the materials come back to the store room.
+        Livewire::test(ListOrders::class)
+            ->callTableAction('status_change', $order, ['status' => 'cancelled'])
+            ->assertHasNoTableActionErrors();
+        $this->assertSame('cancelled', $order->fresh()->status);
+        $this->assertSame('Ləğv edildi', $order->fresh()->statusLabel());
+    }
+
     public function test_without_any_account_an_order_goes_through_as_before(): void
     {
         $box = $this->box();
