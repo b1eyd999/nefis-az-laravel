@@ -44,6 +44,18 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::HEAD_END,
                 fn (): string => '<script>try{if(matchMedia("(max-width: 1023px)").matches)localStorage.setItem("isOpen","false")}catch(e){}</script>',
             )
+            // On a phone Filament stacks the month's four numbers one under
+            // another, so the month took a screen and a half; two to a row.
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => '<style>@media (max-width:767px){'
+                    . '.fi-wi-stats-overview-stats-ctn{grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}'
+                    . '.fi-wi-stats-overview-stats-ctn .fi-wi-stats-overview-stat{padding:.85rem}'
+                    . '.fi-wi-stats-overview-stats-ctn .fi-wi-stats-overview-stat-value{font-size:1.5rem}'
+                    . '.fi-wi-stats-overview-stats-ctn .fi-wi-stats-overview-stat-label,'
+                    . '.fi-wi-stats-overview-stats-ctn .fi-wi-stats-overview-stat-description{font-size:.75rem}'
+                    . '}</style>',
+            )
             // A way back to the shop: a button in the top bar and the same
             // line in the account menu, because the panel offers none.
             ->renderHook(

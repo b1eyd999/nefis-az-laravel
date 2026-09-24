@@ -56,6 +56,8 @@ class StockLeft extends TableWidget
                         $m->stock <= 0 => 'almaq lazımdır',
                         default => floor($m->stock / $m->per_box) . ' qutu',
                     })
+                    // On a phone the two columns that matter are the name and what is left.
+                    ->visibleFrom('md')
                     ->color(fn (Material $m) => $m->stock <= 0
                         ? 'danger'
                         : ($m->per_box > 0 && $m->stock / $m->per_box < 10 ? 'warning' : 'gray')),
