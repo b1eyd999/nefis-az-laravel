@@ -17,11 +17,15 @@ class Assets
 {
     public static function version(string $path): string
     {
-        return Cache::remember('asset:' . $path, now()->addHour(), function () use ($path) {
-            $file = public_path($path);
+        $file = public_path($path);
 
-            return (string) (is_file($file) ? filemtime($file) : self::deployedAt());
-        });
+        // On the hosting there is nothing to look at, and the answer would
+        // only go stale in the cache; a single stat is cheaper than that.
+        if (! is_file($file)) {
+            return (string) self::deployedAt();
+        }
+
+        return Cache::remember('asset:' . $path, now()->addHour(), fn () => (string) filemtime($file));
     }
 
     private static function deployedAt(): int
