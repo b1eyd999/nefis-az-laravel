@@ -230,16 +230,8 @@
         @foreach($photoSlots as $index => $slot)
           <div class="slot-block" data-slot="{{ $index }}">
             <label>{{ $loop->iteration }}. {{ $slot->label ?: 'Şəkil' }}</label>
-            @if($slot->shape === 'ellipse')
-              <div class="photo-guide">
-                <svg viewBox="0 0 120 150" width="64" height="80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <ellipse cx="60" cy="78" rx="42" ry="54" stroke="var(--gold)" stroke-width="3"/>
-                  <line x1="10" y1="78" x2="110" y2="78" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="4 4"/>
-                  <line x1="60" y1="22" x2="60" y2="134" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="4 4"/>
-                </svg>
-                <p>Üzünüz şəklin mərkəzində, düz kameraya baxaraq çəkilmiş olsun</p>
-              </div>
-            @endif
+            {{-- Drawn, not described: what the shot has to look like. --}}
+            @include('partials.photo-guide', ['small' => true])
             <label class="upload-box" for="photo-input-{{ $index }}">
               <div class="ico">📷</div>
               <div class="upload-label">Şəkil seçmək üçün klikləyin</div>
@@ -1063,6 +1055,22 @@
     r.addEventListener('change', function(){ if (r.checked) show(r); });
   });
   show(document.querySelector('input[name="wrapping_id"]:checked'));
+})();
+
+/* "Nümunəyə bax": the window with the sketches of a good and a bad shot. */
+(function(){
+  var modal = document.getElementById('photo-guide-modal');
+  if (!modal) return;
+  var last = null;
+  function open(btn){ last = btn; modal.hidden = false; document.body.style.overflow = 'hidden'; }
+  function close(){ modal.hidden = true; document.body.style.overflow = ''; if (last) last.focus(); }
+
+  document.querySelectorAll('[data-photo-guide]').forEach(function(btn){
+    btn.addEventListener('click', function(){ open(btn); });
+  });
+  document.getElementById('photo-guide-close').addEventListener('click', close);
+  modal.addEventListener('click', function(e){ if (e.target === modal) close(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !modal.hidden) close(); });
 })();
 
 /* The Polaroid letter: switched on, its fields open and the Polaroid follows them. */

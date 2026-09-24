@@ -28,6 +28,12 @@ class Assets
         return Cache::remember('asset:' . $path, now()->addHour(), fn () => (string) filemtime($file));
     }
 
+    /** The file's address with its stamp on the end. */
+    public static function url(string $path): string
+    {
+        return asset($path) . '?v=' . self::version($path);
+    }
+
     private static function deployedAt(): int
     {
         // artisan travels with every release; its date is the release's date.

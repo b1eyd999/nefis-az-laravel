@@ -52,7 +52,12 @@
 {{ \App\Support\Analytics::script() }}
 @stack('head')
 @stack('jsonld')
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%AB%3C/text%3E%3C/svg%3E">
+{{-- The shop's own mark. A data: icon is never fetched by search engines,
+     so Google drew the blank globe next to the site in its results. --}}
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/png" sizes="96x96" href="{{ \App\Support\Assets::url('images/icon-96.png') }}">
+<link rel="icon" type="image/png" sizes="192x192" href="{{ \App\Support\Assets::url('images/icon-192.png') }}">
+<link rel="apple-touch-icon" href="{{ \App\Support\Assets::url('images/apple-touch-icon.png') }}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 {{-- The families after Poppins stand in for the designs' own display faces,
