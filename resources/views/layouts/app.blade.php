@@ -333,30 +333,6 @@
   /* reveal on scroll — CSS transition driven, no rAF dependency */
   var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /* Everything further down the page comes in the same way, without every
-     view having to say so: headings, cards, questions, the article's own
-     paragraphs. Only what is still below the fold is marked, so nothing
-     already on screen blinks, and neighbours follow each other by a beat. */
-  if (!reduced) {
-    var edge = window.innerHeight * 0.9;
-    var groups = [
-      "main section:not(#hero) > .wrap > *",
-      ".cards-grid > *", ".occ-grid > *", ".features-grid > *", ".steps > *",
-      ".d-grid > *", ".faq-item", ".gv-grid > *", ".wrap-block", ".live-steps > li"
-    ];
-    groups.forEach(function(sel){
-      var found;
-      try { found = document.querySelectorAll(sel); } catch (e) { return; }
-      Array.prototype.forEach.call(found, function(el, i){
-        if (el.classList.contains("reveal")) return;
-        var box = el.getBoundingClientRect();
-        if (box.top < edge || box.height > window.innerHeight) return;
-        el.classList.add("reveal");
-        if (i % 8) el.style.transitionDelay = (i % 8) * 55 + "ms";
-      });
-    });
-  }
-
   var els = document.querySelectorAll(".reveal");
   if (reduced || !("IntersectionObserver" in window)){
     els.forEach(function(el){ el.classList.add("is-visible"); });
@@ -368,7 +344,7 @@
           obs.unobserve(entry.target);
         }
       });
-    }, { threshold:0, rootMargin:"0px 0px -8% 0px" });
+    }, { threshold:0.12, rootMargin:"0px 0px -40px 0px" });
     els.forEach(function(el){ io.observe(el); });
   }
 
