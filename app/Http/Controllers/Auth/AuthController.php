@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\Contact;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -24,14 +25,20 @@ class AuthController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:30'],
+            // The shop rings and writes on WhatsApp; an order without a number
+            // is an order nobody can ask about.
+            'phone' => ['required', 'string', 'max:30', function ($attribute, $value, $fail) {
+                if (! Contact::az($value)) {
+                    $fail(__('Telefon nömrəsini +994 55 555 55 55 şəklində yazın.'));
+                }
+            }],
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
 
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
-            'phone' => $data['phone'] ?? null,
+            'phone' => Contact::az($data['phone']),
             'password' => Hash::make($data['password']),
         ]);
 

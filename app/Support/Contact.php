@@ -52,6 +52,27 @@ class Contact
         return trim((string) Setting::get(Setting::CONTACT_HOURS));
     }
 
+    /**
+     * A customer's Azerbaijani number, written the way the country writes it:
+     * +994 55 555 55 55. Accepts it typed with the code, with a leading zero
+     * or with nothing at all, and returns null when it is not a number at
+     * all, so validation has something to answer.
+     */
+    public static function az(?string $value): ?string
+    {
+        $d = preg_replace('/\D/', '', (string) $value);
+
+        if (strlen($d) === 12 && str_starts_with($d, '994')) {
+            $d = substr($d, 3);
+        } elseif (strlen($d) === 10 && str_starts_with($d, '0')) {
+            $d = substr($d, 1);
+        }
+
+        return strlen($d) === 9
+            ? sprintf('+994 %s %s %s %s', substr($d, 0, 2), substr($d, 2, 3), substr($d, 5, 2), substr($d, 7, 2))
+            : null;
+    }
+
     /** Keeps whatever the owner typed as digits with a leading plus. */
     public static function clean(?string $value): string
     {

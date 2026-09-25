@@ -345,19 +345,15 @@
     background:radial-gradient(circle, var(--f-glow) 0%, transparent 70%);
     transition:transform .6s var(--ease), opacity .4s;
   }
-  .feature-card::after{
-    content:""; position:absolute; left:0; right:0; bottom:0; height:3px;
-    background:linear-gradient(90deg, var(--f-a), var(--f-b));
-    transform:scaleX(0); transform-origin:left; transition:transform .5s var(--ease);
-  }
-  .feature-card:hover{ transform:translateY(-6px); box-shadow:var(--shadow-sm); border-color:transparent; }
+  .feature-card:hover{ transform:translateY(-7px) scale(1.012); box-shadow:0 20px 34px -22px rgba(58,38,23,.45); border-color:rgba(250,117,18,.35); }
   .feature-card:hover::before{ transform:scale(1.25); }
-  .feature-card:hover::after{ transform:scaleX(1); }
   .feature-card .ico{
     width:3rem; height:3rem; display:grid; place-items:center; margin-bottom:1rem;
     font-size:1.35rem; border-radius:1rem; background:linear-gradient(140deg, var(--f-a), var(--f-b));
     box-shadow:0 12px 22px -14px var(--f-b), inset 0 1px 0 rgba(255,255,255,.5);
+    transition:transform .45s var(--ease), box-shadow .45s var(--ease);
   }
+  .feature-card:hover .ico{ transform:rotate(-7deg) scale(1.12); box-shadow:0 16px 26px -14px var(--f-b), inset 0 1px 0 rgba(255,255,255,.5); }
   .feature-card h3{ font-size:1rem; font-family:var(--sans); font-weight:700; }
   .feature-card p{ font-size:.875rem; color:var(--cocoa-soft); margin-top:.4rem; }
   /* The four tones the cards take in turn, here and in the gift grid. */
@@ -739,16 +735,13 @@
     content:""; position:absolute; z-index:-1; right:-4rem; top:-4rem; width:10rem; height:10rem; border-radius:50%;
     background:radial-gradient(circle, var(--f-glow, rgba(214,163,90,.3)) 0%, transparent 70%);
     transition:transform .6s var(--ease); }
-  .occ-card::after{
-    content:""; position:absolute; left:0; right:0; bottom:0; height:3px;
-    background:linear-gradient(90deg, var(--f-a, var(--gold)), var(--f-b, var(--terracotta)));
-    transform:scaleX(0); transform-origin:left; transition:transform .5s var(--ease); }
-  .occ-card:hover{ transform:translateY(-4px); box-shadow:var(--shadow-sm); border-color:transparent; }
+  .occ-card:hover{ transform:translateY(-6px) scale(1.012); box-shadow:0 20px 34px -22px rgba(58,38,23,.45); border-color:rgba(250,117,18,.35); }
+  .occ-card:hover .occ-ico{ transform:rotate(-7deg) scale(1.12); box-shadow:0 16px 26px -14px var(--f-b, #D6A35A), inset 0 1px 0 rgba(255,255,255,.5); }
   .occ-card:hover::before{ transform:scale(1.25); }
-  .occ-card:hover::after{ transform:scaleX(1); }
   .occ-card .occ-ico{ flex:none; width:3rem; height:3rem; border-radius:1rem; display:grid; place-items:center; font-size:1.4rem;
     background:linear-gradient(140deg, var(--f-a, #F7DCAE), var(--f-b, #D6A35A));
-    box-shadow:0 12px 22px -14px var(--f-b, #D6A35A), inset 0 1px 0 rgba(255,255,255,.5); }
+    box-shadow:0 12px 22px -14px var(--f-b, #D6A35A), inset 0 1px 0 rgba(255,255,255,.5);
+    transition:transform .45s var(--ease), box-shadow .45s var(--ease); }
   .occ-card h2, .occ-card h3{ font-family:var(--sans); font-size:1rem; font-weight:700; }
   .occ-card p{ margin-top:.3rem; font-size:.875rem; color:var(--cocoa-soft); line-height:1.5; }
   .occ-chips{ display:flex; flex-wrap:wrap; justify-content:center; gap:.5rem; }

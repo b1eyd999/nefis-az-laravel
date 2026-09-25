@@ -36,8 +36,9 @@
           <input type="email" id="email" name="email" value="{{ old('email') }}" required>
         </div>
         <div class="field">
-          <label for="phone">{{ __('Telefon (istəyə bağlı)') }}</label>
-          <input type="tel" id="phone" name="phone" value="{{ old('phone') }}" placeholder="+994 XX XXX XX XX">
+          <label for="phone">{{ __('Telefon') }}</label>
+          <input type="tel" id="phone" name="phone" value="{{ old('phone', '+994 ') }}" required
+                 inputmode="tel" autocomplete="tel" placeholder="+994 55 555 55 55">
         </div>
         <div class="field">
           <label for="password">{{ __('Şifrə') }}</label>
@@ -54,4 +55,29 @@
     </div>
   </div>
 </section>
+@endsection
+
+@section('page_script')
+<script>
+/* The number writes itself as it is typed: the country code stays where it
+   is and the rest falls into +994 55 555 55 55, however it was pasted in. */
+(function(){
+  var el = document.getElementById('phone');
+  if (!el) return;
+  function shape(value){
+    var d = value.replace(/\D/g, '');
+    if (d.indexOf('994') === 0) d = d.slice(3);
+    d = d.replace(/^0+/, '').slice(0, 9);
+    var out = '+994';
+    if (d.length) out += ' ' + d.slice(0, 2);
+    if (d.length > 2) out += ' ' + d.slice(2, 5);
+    if (d.length > 5) out += ' ' + d.slice(5, 7);
+    if (d.length > 7) out += ' ' + d.slice(7, 9);
+    return out;
+  }
+  el.value = shape(el.value);
+  el.addEventListener('input', function(){ el.value = shape(el.value); });
+  el.addEventListener('focus', function(){ if (el.value.length < 5) el.value = '+994 '; });
+})();
+</script>
 @endsection
