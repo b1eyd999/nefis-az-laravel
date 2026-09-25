@@ -22,6 +22,12 @@ class DeliveryTime
         return max(0, (int) Setting::get(Setting::DELIVERY_LEAD_DAYS));
     }
 
+    /** What jumping the queue costs; 0 when the shop does not offer it. */
+    public static function rushFee(): float
+    {
+        return max(0, round((float) Setting::get(Setting::RUSH_FEE), 2));
+    }
+
     /** The first day the customer may choose. */
     public static function earliest(): CarbonInterface
     {

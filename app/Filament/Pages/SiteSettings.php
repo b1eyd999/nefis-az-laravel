@@ -6,6 +6,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Support\Contact;
 use App\Support\CustomerNotice;
+use App\Support\DeliveryTime;
 use App\Support\Telegram;
 use App\Support\Seo;
 use Filament\Actions;
@@ -63,6 +64,7 @@ class SiteSettings extends Page implements HasActions, HasForms
             'contact_hours' => Setting::get(Setting::CONTACT_HOURS),
             'delivery_lead_days' => (int) Setting::get(Setting::DELIVERY_LEAD_DAYS),
             'delivery_slots' => Setting::get(Setting::DELIVERY_SLOTS),
+            'rush_fee' => DeliveryTime::rushFee(),
             'chocolate_min_g' => (int) Setting::get(Setting::CHOCOLATE_MIN_G),
             'chocolate_max_g' => (int) Setting::get(Setting::CHOCOLATE_MAX_G),
             'notify_email' => Setting::get(Setting::NOTIFY_EMAIL) === '1',
@@ -205,6 +207,10 @@ class SiteSettings extends Page implements HasActions, HasForms
                             ->numeric()->minValue(0)->maxValue(30)->required()
                             ->suffix('gün')
                             ->helperText('Müştəri bundan tez tarix seçə bilmir; səbətdə bu barədə yazı görünür.'),
+                        Forms\Components\TextInput::make('rush_fee')
+                            ->label('Növbədənkənar hazırlamaq')
+                            ->numeric()->minValue(0)->step(0.01)->suffix('₼')
+                            ->helperText('Dizayn səhifəsində müştəriyə yazılır: sifariş neçə günə hazırlanır və tezləşdirmək üçün nə qədər əlavə ödəniş lazımdır. 0 yazsanız, bu təklif görünmür.'),
                         Forms\Components\Textarea::make('delivery_slots')
                             ->label('Vaxt aralıqları')
                             ->rows(3)
@@ -309,6 +315,7 @@ class SiteSettings extends Page implements HasActions, HasForms
         Setting::put(Setting::CONTACT_HOURS, trim((string) ($data['contact_hours'] ?? '')));
         Setting::put(Setting::DELIVERY_LEAD_DAYS, max(0, (int) ($data['delivery_lead_days'] ?? 2)));
         Setting::put(Setting::DELIVERY_SLOTS, trim((string) ($data['delivery_slots'] ?? '')));
+        Setting::put(Setting::RUSH_FEE, max(0, round((float) ($data['rush_fee'] ?? 0), 2)));
         Setting::put(Setting::CHOCOLATE_MIN_G, max(1, (int) ($data['chocolate_min_g'] ?? 90)));
         Setting::put(Setting::CHOCOLATE_MAX_G, max((int) ($data['chocolate_min_g'] ?? 90), (int) ($data['chocolate_max_g'] ?? 105)));
         Setting::put(Setting::NOTIFY_EMAIL, ! empty($data['notify_email']));

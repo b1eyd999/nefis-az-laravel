@@ -60,6 +60,14 @@
   }
   .rotate-reset:hover{ border-color:var(--gold); }
   .slot-hint{ font-size:.8125rem; color:var(--cocoa-soft); margin-top:.5rem; }
+  .lead-note{ display:flex; gap:.75rem; align-items:flex-start; margin-bottom:1.25rem; padding:.85rem 1rem;
+    border:1px solid rgba(250,117,18,.35); border-radius:.9rem;
+    background:linear-gradient(120deg, rgba(255,132,1,.12) 0%, rgba(240,84,32,.06) 60%, transparent 100%); }
+  .lead-note .ln-ico{ flex:none; width:2rem; height:2rem; display:grid; place-items:center; border-radius:.65rem;
+    background:var(--flame-grad); color:#fff; font-size:1rem; }
+  .lead-note p{ margin:0; font-size:.8125rem; line-height:1.5; color:var(--cocoa-soft); }
+  .lead-note b{ color:var(--cocoa); }
+  .lead-note a{ color:var(--flame-2); font-weight:600; text-decoration:underline; }
   .angle-thumb canvas{ width:100%; height:100%; object-fit:cover; display:block; }
   textarea.text-input{ resize:vertical; }
   .wrap-block{ display:flex; flex-direction:column; gap:.6rem; }
@@ -226,6 +234,10 @@
       <form class="customize-panel" method="POST" action="{{ lroute('cart.add') }}" enctype="multipart/form-data" id="customize-form">
         @csrf
         <input type="hidden" name="product_id" value="{{ $product->id }}">
+
+        {{-- Said before the first field, not after the money: how long the box
+             takes and what jumping the queue costs. --}}
+        @include('partials.lead-note')
 
         @foreach($photoSlots as $index => $slot)
           <div class="slot-block" data-slot="{{ $index }}">

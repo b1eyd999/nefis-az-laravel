@@ -61,6 +61,9 @@ class Setting extends Model
     /** JSON: the letter page's wording and the Polaroid's look (see App\Support\Letter::PAGE_DEFAULTS). */
     public const LETTER_PAGE = 'letter_page';
 
+    /** JSON: the live photo page's wording (see App\Support\LivePage::DEFAULTS). */
+    public const LIVE_PAGE = 'live_page';
+
     /** Live photos (AR) sold to customers: on sale or not, and the price. */
     public const AR_ENABLED = 'ar_enabled';
 
@@ -116,6 +119,9 @@ class Setting extends Model
 
     public const DELIVERY_SLOTS = 'delivery_slots';
 
+    /** What a customer pays to have his order made before the others; 0 hides the offer. */
+    public const RUSH_FEE = 'rush_fee';
+
     /** How customers reach the shop: the phone (WhatsApp too) and when it is answered. */
     public const CONTACT_PHONE = 'contact_phone';
 
@@ -148,6 +154,7 @@ class Setting extends Model
         self::CHOCOLATE_MIN_G => '90',
         self::CHOCOLATE_MAX_G => '105',
         self::DELIVERY_LEAD_DAYS => '2',
+        self::RUSH_FEE => '3',
         self::DELIVERY_SLOTS => "10:00–14:00
 14:00–18:00
 18:00–21:00",
