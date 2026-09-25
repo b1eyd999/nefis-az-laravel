@@ -96,6 +96,7 @@
 <div class="blobs" aria-hidden="true">
   <div class="blob" style="width:26rem;height:26rem;background:var(--gold);top:-8rem;right:-6rem;"></div>
   <div class="blob b2" style="width:20rem;height:20rem;background:var(--terracotta);top:20rem;left:-8rem;opacity:.28;"></div>
+  <div class="blob b3" style="width:24rem;height:24rem;background:var(--flame);top:34rem;right:-10rem;opacity:.16;"></div>
 </div>
 
 <header id="site-header">

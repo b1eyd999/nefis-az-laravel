@@ -145,11 +145,17 @@
      phones lay the page out wider than the screen (it slid sideways, and the
      full-screen menu slid off to the right). */
   .blobs{ position:absolute; top:0; left:0; right:0; height:64rem; overflow:hidden; pointer-events:none; z-index:0; }
-  .blob{ position:absolute; border-radius:50%; filter:blur(60px); opacity:.5; pointer-events:none; z-index:0; animation:drift 16s ease-in-out infinite; }
-  .blob.b2{ animation-duration:20s; animation-direction:reverse; }
+  .blob{ position:absolute; border-radius:50%; filter:blur(60px); opacity:.5; pointer-events:none; z-index:0;
+    animation:drift 26s ease-in-out infinite; will-change:transform; }
+  .blob.b2{ animation-duration:34s; animation-direction:reverse; }
+  .blob.b3{ animation-duration:30s; animation-delay:-9s; }
+  /* They never stop: a slow round the page, each at its own pace. */
   @keyframes drift{
-    0%,100%{ transform:translate(0,0) scale(1); }
-    50%{ transform:translate(1.5rem,-1.25rem) scale(1.06); }
+    0%{ transform:translate(0,0) scale(1); }
+    25%{ transform:translate(4rem,-2.5rem) scale(1.09); }
+    50%{ transform:translate(2rem,3.5rem) scale(.95); }
+    75%{ transform:translate(-3.5rem,1rem) scale(1.06); }
+    100%{ transform:translate(0,0) scale(1); }
   }
   @keyframes float-y{
     0%,100%{ transform:translateY(0); }
