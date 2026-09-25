@@ -58,6 +58,15 @@ class LeadNoteTest extends TestCase
             ->assertDontSee('Təcili hazırlansın');
     }
 
+    public function test_the_hurry_is_chosen_beside_the_count(): void
+    {
+        Setting::put(Setting::RUSH_FEE, 3);
+
+        $this->get(route('products.customize', $this->box()->slug))->assertOk()
+            ->assertSee('name="rush"', false)
+            ->assertSee('Bir neçə saat ərzində hazır olur, növbədənkənar.');
+    }
+
     public function test_the_customer_reads_it_in_his_own_language(): void
     {
         Setting::put(Setting::SITE_LANGUAGES, 'az,ru,en');

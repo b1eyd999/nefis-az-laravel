@@ -83,10 +83,19 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
           <span style="font-weight:700; font-size:1.125rem;">{{ __('Cəmi') }}</span>
           <span style="font-weight:700; font-size:1.125rem; color:var(--gold-deep);">
-            @php $total = $items->sum(fn($i) => \App\Support\Cart::unitPrice($i, $i['product']) * $i['quantity']); @endphp
-            {{ $total > 0 ? \App\Support\Price::format($total) : __('Qiymət sorğu ilə') }}
+            @php
+              $total = $items->sum(fn($i) => \App\Support\Cart::unitPrice($i, $i['product']) * $i['quantity']);
+              // Asked for on the design page, paid once for the whole order.
+              $rush = \App\Support\Cart::rush() ? \App\Support\DeliveryTime::rushFee() : 0;
+            @endphp
+            {{ $total > 0 ? \App\Support\Price::format($total + $rush) : __('Qiymət sorğu ilə') }}
           </span>
         </div>
+        @if($rush > 0)
+          <p style="display:flex; justify-content:space-between; gap:1rem; font-size:.875rem; color:var(--flame-2); font-weight:600; margin:.35rem 0 .75rem;">
+            <span>⚡ {{ __('Təcili hazırlansın') }}</span><span>+{{ \App\Support\Price::format($rush) }}</span>
+          </p>
+        @endif
         <a href="{{ lroute('checkout.index') }}" class="btn btn-primary btn-block">{{ __('Sifarişi Tamamla') }}</a>
         {{-- The cart keeps what is in it: one tap back to the designs. --}}
         <a href="{{ lroute('designs.index') }}" class="btn btn-ghost btn-block" style="margin-top:.6rem;">

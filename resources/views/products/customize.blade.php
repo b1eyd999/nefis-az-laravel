@@ -214,6 +214,26 @@
   .choc-name{ font-size:.8125rem; line-height:1.3; color:var(--cocoa); }
   .choc-meta{ display:flex; justify-content:space-between; align-items:baseline; gap:.3rem; font-size:.75rem; color:var(--cocoa-soft); margin-top:auto; }
   .choc-meta b{ color:var(--gold-deep); font-size:.875rem; }
+  /* The count and the hurry stand side by side. */
+  .qty-row{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:1rem; }
+  .qty-row > div{ flex:none; }
+  .qty-row input[type="number"]{ max-width:7rem; }
+  .qty-row .rush-pick{ flex:1 1 15rem; min-width:0; }
+  .rush-pick{ display:flex; align-items:center; gap:.75rem; margin:0; padding:.6rem .8rem; cursor:pointer;
+    border:1.5px solid var(--line); border-radius:.9rem; background:linear-gradient(140deg, var(--paper), var(--cream-2));
+    transition:border-color .25s, box-shadow .3s, transform .3s var(--ease); }
+  .rush-pick:hover{ border-color:rgba(250,117,18,.45); transform:translateY(-1px); }
+  .rush-pick input{ position:absolute; opacity:0; width:0; height:0; }
+  .rush-box{ flex:none; width:2.2rem; height:2.2rem; border-radius:.7rem; display:grid; place-items:center; font-size:1rem;
+    background:var(--cream-2); transition:background .25s, transform .25s var(--ease), box-shadow .25s; }
+  .rush-text{ flex:1; min-width:0; }
+  .rush-text b{ display:block; font-size:.875rem; }
+  .rush-text small{ display:block; font-size:.75rem; color:var(--cocoa-soft); margin-top:.1rem; }
+  .rush-fee{ flex:none; font-weight:800; font-size:.75rem; color:#fff; background:var(--flame-grad); padding:.2rem .55rem; border-radius:999px; }
+  .rush-pick:has(input:checked){ border-color:var(--flame); background:linear-gradient(140deg, #FFF7EF, #FFE9D6);
+    box-shadow:0 0 0 3px rgba(250,117,18,.16); }
+  .rush-pick:has(input:checked) .rush-box{ background:var(--flame-grad); transform:scale(1.05); box-shadow:0 8px 16px -10px var(--flame-shadow); }
+  .rush-pick:has(input:focus-visible){ outline:2px solid var(--flame); outline-offset:2px; }
   .price-sum{ border:1px solid var(--line); border-radius:.9rem; padding:.75rem 1rem; display:flex; flex-direction:column; gap:.35rem; font-size:.9375rem; }
   .price-sum div{ display:flex; justify-content:space-between; gap:1rem; color:var(--cocoa-soft); }
   .price-sum div[hidden]{ display:none; }
@@ -502,9 +522,23 @@
           </div>
         @endif
 
-        <div>
-          <label for="quantity">Say</label>
-          <input type="number" id="quantity" name="quantity" value="1" min="1" max="20" style="max-width:7rem;">
+        <div class="qty-row">
+          <div>
+            <label for="quantity">{{ __('Say') }}</label>
+            <input type="number" id="quantity" name="quantity" value="1" min="1" max="20">
+          </div>
+          @if(\App\Support\DeliveryTime::rushFee() > 0)
+            {{-- Made before the others: chosen here, paid once for the order. --}}
+            <label class="rush-pick" for="rush">
+              <input type="checkbox" name="rush" id="rush" value="1" @checked(old('rush', \App\Support\Cart::rush()))>
+              <span class="rush-box" aria-hidden="true">⚡</span>
+              <span class="rush-text">
+                <b>{{ __('Təcili hazırlansın') }}</b>
+                <small>{{ __('Bir neçə saat ərzində hazır olur, növbədənkənar.') }}</small>
+              </span>
+              <span class="rush-fee">+{{ \App\Support\Price::format(\App\Support\DeliveryTime::rushFee()) }}</span>
+            </label>
+          @endif
         </div>
 
         @if($product->price || $chocolates->isNotEmpty() || $wrappings->isNotEmpty() || \App\Support\Letter::enabled())
@@ -521,6 +555,9 @@
             @endif
             @if($wrappings->isNotEmpty())
               <div id="sum-wrap-row" hidden><span id="sum-wrap-name" class="sum-name">{{ __('Qablaşdırma') }}</span><span id="sum-wrap">—</span></div>
+            @endif
+            @if(\App\Support\DeliveryTime::rushFee() > 0)
+              <div id="sum-rush-row" data-price="{{ \App\Support\DeliveryTime::rushFee() }}" hidden><span>{{ __('Təcili hazırlansın') }}</span><span>{{ \App\Support\Price::format(\App\Support\DeliveryTime::rushFee()) }}</span></div>
             @endif
             <div class="total"><span>{{ __('Cəmi') }}</span><span id="sum-total">—</span></div>
           </div>
@@ -1258,10 +1295,16 @@
     var arRow = document.getElementById('sum-ar-row');
     var ar = arOn && arOn.checked && arRow ? parseFloat(arRow.dataset.price) || 0 : 0;
     if (arRow) arRow.hidden = !(arOn && arOn.checked);
+    var rushOn = document.getElementById('rush');
+    var rushRow = document.getElementById('sum-rush-row');
+    /* The hurry is for the whole order, so it is added once, not per box. */
+    var rush = rushOn && rushOn.checked && rushRow ? parseFloat(rushRow.dataset.price) || 0 : 0;
+    if (rushRow) rushRow.hidden = !(rushOn && rushOn.checked);
     var each = box + choc + wrap + letter + ar;
-    totalOut.textContent = each > 0 ? fmt(each * n) + (n > 1 ? ' (' + n + ' × ' + fmt(each) + ')' : '') : '—';
+    var all = each * n + rush;
+    totalOut.textContent = all > 0 ? fmt(all) + (n > 1 ? ' (' + n + ' × ' + fmt(each) + (rush ? ' + ' + fmt(rush) : '') + ')' : '') : '—';
   }
-  document.querySelectorAll('input[name="chocolate_id"], input[name="wrapping_id"], #letter-on, #ar-on').forEach(function(r){ r.addEventListener('change', update); });
+  document.querySelectorAll('input[name="chocolate_id"], input[name="wrapping_id"], #letter-on, #ar-on, #rush').forEach(function(r){ r.addEventListener('change', update); });
   qty.addEventListener('input', update);
   update();
 })();

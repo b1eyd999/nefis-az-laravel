@@ -19,6 +19,19 @@ class Cart
      * A Polaroid letter ordered on its own is a line with 'kind' => 'letter' and no product;
      * a live photo ordered on its own, 'kind' => 'live'.
      */
+    /** Whether the customer asked for his order to be made before the others. */
+    protected const RUSH = 'cart_rush';
+
+    public static function rush(): bool
+    {
+        return (bool) Session::get(self::RUSH, false);
+    }
+
+    public static function setRush(bool $wanted): void
+    {
+        Session::put(self::RUSH, $wanted);
+    }
+
     public static function items(): array
     {
         return Session::get(self::KEY, []);
@@ -114,5 +127,6 @@ class Cart
     public static function clear(): void
     {
         Session::forget(self::KEY);
+        Session::forget(self::RUSH);
     }
 }

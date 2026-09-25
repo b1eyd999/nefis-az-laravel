@@ -392,7 +392,7 @@
         @if(($rushFee ?? 0) > 0)
           {{-- Before the others: hours instead of days, for the fee the owner asks. --}}
           <label class="rush-pick">
-            <input type="checkbox" name="rush" value="1" @checked(old('rush'))>
+            <input type="checkbox" name="rush" value="1" @checked(old('rush', \App\Support\Cart::rush()))>
             <span class="rush-box" aria-hidden="true">⚡</span>
             <span class="rush-text">
               <b>{{ __('Təcili hazırlansın') }}</b>
@@ -417,7 +417,7 @@
             <div><span>{{ __('Çatdırılma') }}</span><span id="sum-delivery">{{ __('seçilməyib') }}</span></div>
           @endif
           @if(($rushFee ?? 0) > 0)
-            <div id="sum-rush-row" hidden><span>{{ __('Təcili hazırlansın') }}</span><span>{{ \App\Support\Price::format($rushFee) }}</span></div>
+            <div id="sum-rush-row" @unless(old('rush', \App\Support\Cart::rush())) hidden @endunless><span>{{ __('Təcili hazırlansın') }}</span><span>{{ \App\Support\Price::format($rushFee) }}</span></div>
           @endif
           <div class="total"><span>{{ __('Cəmi') }}</span><span id="sum-grand">{{ $itemsTotal > 0 ? \App\Support\Price::format($itemsTotal) : '—' }}</span></div>
         </div>

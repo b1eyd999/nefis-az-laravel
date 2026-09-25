@@ -40,6 +40,7 @@ class CartController extends Controller
 
         $rules = [
             'quantity' => ['nullable', 'integer', 'min:1', 'max:20'],
+            'rush' => ['nullable', 'boolean'],
         ];
 
         // A bar has to be picked whenever there are bars to pick from.
@@ -127,6 +128,12 @@ class CartController extends Controller
             $texts[] = $slot->fixed
                 ? (string) $slot->default_value
                 : trim((string) $request->input("custom_texts.$index"));
+        }
+
+        // Asked for here, paid once at the end: the whole order is hurried,
+        // not this one box, so ticking it anywhere turns it on for the order.
+        if ($request->boolean('rush')) {
+            Cart::setRush(true);
         }
 
         $quantity = (int) $request->input('quantity', 1);

@@ -13,7 +13,7 @@
         <b>{{ __('Sifariş :days gün ərzində hazırlanır.', ['days' => $leadDays]) }}</b>
       @endif
       @if($rushFee > 0)
-        {{ __('Sifarişi rəsmiləşdirəndə «Təcili hazırlansın» seçsəniz (+:fee), qutunuz bir neçə saat ərzində hazır olur.', ['fee' => \App\Support\Price::format($rushFee)]) }}
+        {{ __('Aşağıda «Təcili hazırlansın» seçsəniz (+:fee), qutunuz bir neçə saat ərzində hazır olur.', ['fee' => \App\Support\Price::format($rushFee)]) }}
       @endif
     </p>
   </div>
