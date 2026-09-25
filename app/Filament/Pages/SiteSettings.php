@@ -73,6 +73,9 @@ class SiteSettings extends Page implements HasActions, HasForms
             'telegram_chat' => Telegram::chat(),
             'telegram_courier_token' => Setting::get(Setting::TELEGRAM_COURIER_TOKEN) ? Telegram::courierToken() : null,
             'telegram_courier_chat' => Telegram::courierChat(),
+            'chat_enabled' => Setting::get(Setting::CHAT_ENABLED) === '1',
+            'chat_token' => ChatBot::token(),
+            'chat_chat' => ChatBot::chat(),
         ]);
     }
 
@@ -288,6 +291,27 @@ class SiteSettings extends Page implements HasActions, HasForms
                     ])
                     ->columns(2)
                     ->collapsible(),
+                Forms\Components\Section::make('Saytdakı söhbət')
+                    ->description('Saytın küncündəki söhbət pəncərəsi. Müştəri ora yazır (ekran şəkli də göndərə bilir), mesaj sizin Telegram-a gəlir; '
+                        . 'cavab vermək üçün həmin mesaja Telegram-da "reply" yazın, cavabınız müştərinin pəncərəsində görünür. '
+                        . 'Ayrıca bot lazımdır: @BotFather-də "/newbot", tokeni bura yapışdırın, botu qrupa əlavə edin, qrupda bir mesaj yazın və yuxarıdakı "Söhbət: chat-ı tap" düyməsini basın.')
+                    ->schema([
+                        Forms\Components\Toggle::make('chat_enabled')
+                            ->label('Söhbət pəncərəsi açıq olsun')
+                            ->helperText('Söndürülsə, küncdə heç nə görünmür.')
+                            ->columnSpanFull(),
+                        Forms\Components\TextInput::make('chat_token')
+                            ->label('Söhbət botunun tokeni')
+                            ->password()->revealable()->autocomplete(false)
+                            ->placeholder('123456789:AA...')
+                            ->helperText('Şifrələnmiş saxlanılır.'),
+                        Forms\Components\TextInput::make('chat_chat')
+                            ->label('Mesajların gedəcəyi chat')
+                            ->helperText('Qrup və ya öz chat-ınız. Yuxarıdakı düymə özü tapır.')
+                            ->rule('regex:/^-?\d*$/'),
+                    ])
+                    ->columns(2)
+                    ->collapsible(),
                 Forms\Components\Section::make('Axtarış sistemləri (SEO)')
                     ->description('Google Search Console, Yandex Webmaster və Bing Webmaster-də saytı təsdiqləmək üçün. Oradan "HTML tag" üsulunu seçin və verilən kodu (və ya bütün <meta …> sətrini) buraya yapışdırın. Sayt xəritəsi: ' . url('/sitemap.xml'))
                     ->schema([
@@ -348,6 +372,13 @@ class SiteSettings extends Page implements HasActions, HasForms
         Setting::put(Setting::TELEGRAM_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['telegram_chat'] ?? '')));
         Telegram::saveCourierToken($data['telegram_courier_token'] ?? '');
         Setting::put(Setting::TELEGRAM_COURIER_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['telegram_courier_chat'] ?? '')));
+        ChatBot::saveToken($data['chat_token'] ?? '');
+        Setting::put(Setting::CHAT_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['chat_chat'] ?? '')));
+        Setting::put(Setting::CHAT_ENABLED, ! empty($data['chat_enabled']));
+        // Telegram only sends the shop's answers once it has been asked to.
+        if (ChatBot::enabled()) {
+            ChatBot::watch();
+        }
 
         Notification::make()->success()
             ->title($data['maintenance'] ? 'Saxlanıldı — sayt müştərilər üçün bağlıdır' : 'Saxlanıldı')
