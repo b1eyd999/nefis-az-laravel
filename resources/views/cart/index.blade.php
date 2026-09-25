@@ -19,7 +19,7 @@
 
     @if($items->isEmpty())
       <div class="cart-empty">
-        <div class="ico">🛍️</div>
+        <div class="ico">@include('partials.cart-icon', ['id' => 'empty'])</div>
         <p>{{ __('Səbətiniz hələ boşdur.') }}</p>
         <div style="margin-top:1.5rem;">
           <a href="{{ lroute('designs.index') }}" class="btn btn-primary">{{ __('Dizaynlara Bax') }}</a>

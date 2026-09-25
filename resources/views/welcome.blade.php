@@ -33,13 +33,22 @@
   .hero-slider .hero-slide.is-on{ opacity:1; visibility:visible; }
   .hero-slider .hero-slide:not(.is-on) .hero-in{ animation:none; opacity:0; }
   .hero-nav{ position:relative; z-index:2; display:flex; align-items:center; justify-content:center; gap:1rem; margin-top:2.5rem; }
-  .hero-arrow{ width:2.6rem; height:2.6rem; border-radius:50%; border:1px solid var(--line); background:var(--paper); color:var(--cocoa);
-    font-size:1.4rem; line-height:1; display:grid; place-items:center; transition:border-color .2s, transform .2s; }
-  .hero-arrow:hover{ border-color:var(--gold); transform:translateY(-1px); }
-  .hero-dots{ display:flex; gap:.5rem; }
-  .hero-dot{ width:.6rem; height:.6rem; border-radius:999px; border:0; padding:0; background:var(--line); transition:width .3s var(--ease), background .3s; }
-  .hero-dot.is-on{ width:1.8rem; background:var(--gold); }
-  .hero-arrow:focus-visible, .hero-dot:focus-visible{ outline:2px solid var(--gold); outline-offset:3px; }
+  /* The banner's own controls: a ring of the logo's orange that fills in
+     under the cursor, and dots that stretch into a lit bar. */
+  .hero-arrow{ position:relative; width:2.7rem; height:2.7rem; border-radius:50%; border:0; padding:2px; color:var(--flame-2);
+    font-size:1.35rem; line-height:1; display:grid; place-items:center; background:var(--flame-grad);
+    transition:transform .3s var(--ease), box-shadow .3s; }
+  .hero-arrow::before{ content:""; position:absolute; inset:2px; border-radius:50%; background:var(--paper); transition:opacity .3s; }
+  .hero-arrow span, .hero-arrow svg{ position:relative; z-index:1; transition:color .3s; }
+  .hero-arrow:hover{ transform:translateY(-2px); box-shadow:0 12px 24px -12px var(--flame-shadow); }
+  .hero-arrow:hover::before{ opacity:0; }
+  .hero-arrow:hover{ color:#fff; }
+  .hero-dots{ display:flex; align-items:center; gap:.5rem; }
+  .hero-dot{ width:.6rem; height:.6rem; border-radius:999px; border:0; padding:0; background:var(--line);
+    transition:width .35s var(--ease), background .35s, box-shadow .35s; }
+  .hero-dot:hover{ background:var(--flame); }
+  .hero-dot.is-on{ width:1.9rem; background:var(--flame-grad); box-shadow:0 4px 12px -4px var(--flame-shadow); }
+  .hero-arrow:focus-visible, .hero-dot:focus-visible{ outline:2px solid var(--flame); outline-offset:3px; }
   @media (prefers-reduced-motion:reduce){ .hero-slider .hero-slide{ transition:none; } }
   .collections-foot{ display:flex; justify-content:center; margin-top:3rem; }
 @endsection
@@ -107,13 +116,13 @@
     </div>
     @if($many)
       <div class="hero-nav">
-        <button type="button" class="hero-arrow" data-dir="-1" aria-label="{{ __('Əvvəlki slayd') }}">‹</button>
+        <button type="button" class="hero-arrow" data-dir="-1" aria-label="{{ __('Əvvəlki slayd') }}"><span>‹</span></button>
         <div class="hero-dots">
           @foreach($slides as $i => $s)
             <button type="button" class="hero-dot{{ $i === 0 ? ' is-on' : '' }}" data-go="{{ $i }}" aria-label="{{ __('Slayd') }} {{ $i + 1 }}" @if($i === 0) aria-current="true" @endif></button>
           @endforeach
         </div>
-        <button type="button" class="hero-arrow" data-dir="1" aria-label="{{ __('Növbəti slayd') }}">›</button>
+        <button type="button" class="hero-arrow" data-dir="1" aria-label="{{ __('Növbəti slayd') }}"><span>›</span></button>
       </div>
     @endif
   </section>

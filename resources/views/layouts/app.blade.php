@@ -152,8 +152,8 @@
           @endforeach
         </div>
       </div>
-      <a href="{{ lroute('cart.index') }}" class="icon-btn" aria-label="{{ __('Səbət') }}">
-        🛍️
+      <a href="{{ lroute('cart.index') }}" class="icon-btn cart-btn" aria-label="{{ __('Səbət') }}">
+        @include('partials.cart-icon')
         @if(($cartCount ?? 0) > 0)
           <span class="badge">{{ $cartCount }}</span>
         @endif
