@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
@@ -27,6 +28,15 @@ class GiftPage extends Model
         'meta_title', 'meta_description', 'eyebrow', 'intro', 'body', 'faq',
         'is_active', 'sort_order',
     ];
+
+    protected static function booted(): void
+    {
+        // The page's little picture may be a new one; the emoji font asks
+        // Google only for the characters the site actually shows.
+        $forget = fn () => Cache::forget('emoji:chars');
+        static::saved($forget);
+        static::deleted($forget);
+    }
 
     protected function casts(): array
     {

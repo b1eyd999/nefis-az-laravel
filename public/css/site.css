@@ -41,7 +41,9 @@
     /* San Francisco: on an iPhone or a Mac the system gives us the real one,
        everywhere else Inter stands in for it, and it is drawn to match. */
     --sf: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
-          "Inter", "Segoe UI", Roboto, ui-sans-serif, system-ui, sans-serif;
+          "Inter", "Segoe UI", Roboto,
+          "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji",
+          ui-sans-serif, system-ui, sans-serif;
     --serif: var(--sf);
     --sans: var(--sf);
     --dur: 500ms;
