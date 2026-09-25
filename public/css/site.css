@@ -193,8 +193,9 @@
   .nav-drop{ position:relative; }
   .nav-drop > button:not(.icon-btn){ background:none; border:0; padding:0; color:inherit; font:inherit; display:inline-flex; align-items:center; gap:.35rem; transition:color .25s; }
   .nav-drop > button:not(.icon-btn):hover{ color:var(--cocoa); }
-  .nav-drop > button svg{ width:.8rem; height:.8rem; transition:transform .25s var(--ease); }
-  .nav-drop:hover > button svg, .nav-drop.open > button svg{ transform:rotate(180deg); }
+  .nav-drop > button svg:not(.flag){ width:.8rem; height:.8rem; transition:transform .25s var(--ease); }
+  /* The little arrow of a menu turns over; a flag is not an arrow. */
+  .nav-drop:hover > button svg:not(.flag), .nav-drop.open > button svg:not(.flag){ transform:rotate(180deg); }
   .account-drop > button svg{ width:1.15rem; height:1.15rem; transform:none !important; color:var(--cocoa); }
   .nav-panel{ position:absolute; top:calc(100% + .9rem); left:50%; z-index:60; min-width:17.5rem; padding:.45rem; border-radius:1rem;
     background:var(--paper); border:1px solid var(--line); box-shadow:var(--shadow);
