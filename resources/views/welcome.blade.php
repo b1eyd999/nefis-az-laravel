@@ -118,64 +118,6 @@
     @endif
   </section>
 
-  <!-- FEATURES -->
-  <section class="features">
-    <div class="wrap">
-      <div class="features-grid">
-        <div class="feature-card reveal">
-          <div class="ico">📸</div>
-          <h3>{{ __('Fərdi Şəkil Çapı') }}</h3>
-          <p>{{ __('Üz və ya tam boy şəklinizi yüksək keyfiyyətdə qutuya çap edirik.') }}</p>
-        </div>
-        <div class="feature-card reveal">
-          <div class="ico">🍫</div>
-          <h3>{{ __('Premium Şokolad') }}</h3>
-          <p>{{ __('Yalnız keyfiyyətli, təzə şokolad məhsullarından istifadə edirik.') }}</p>
-        </div>
-        <div class="feature-card reveal">
-          <div class="ico">💌</div>
-          <h3>{{ __('Fərdi Yazı') }}</h3>
-          <p>{{ __('İstədiyiniz mətni, adı və ya tarixi qutuya əlavə edin.') }}</p>
-        </div>
-        <div class="feature-card reveal">
-          <div class="ico">⚡</div>
-          <h3>{{ __('Sürətli Hazırlanma') }}</h3>
-          <p>{{ __('Sifarişiniz qısa müddətdə hazırlanıb sizə çatdırılır.') }}</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- HOW IT WORKS -->
-  <section id="how" class="tinted">
-    <div class="wrap">
-      <div class="section-head center">
-        <span class="eyebrow" style="justify-content:center;">{{ __('Necə İşləyir') }}</span>
-        <h2>{{ __('Üç Addımda Fərdi Hədiyyə') }}</h2>
-        <p class="lede" style="margin-inline:auto;">{{ __('Hər addım diqqətlə düşünülüb ki, xatirəniz ən nəfis formada sizə qaytarılsın.') }}</p>
-      </div>
-      <div class="steps">
-        <div class="step reveal">
-          <div class="step-line"></div>
-          <div class="num">1</div>
-          <h3>{{ __('Dizaynı Seçin') }}</h3>
-          <p>{{ __('Kolleksiyadan xoşunuza gələn qutu dizaynını seçin.') }}</p>
-        </div>
-        <div class="step reveal">
-          <div class="step-line"></div>
-          <div class="num">2</div>
-          <h3>{{ __('Şəklinizi Yükləyin') }}</h3>
-          <p>{{ __('Öz şəklinizi və istədiyiniz mətni əlavə edib canlı önizləmə görün.') }}</p>
-        </div>
-        <div class="step reveal">
-          <div class="num">3</div>
-          <h3>{{ __('Sifariş Verin') }}</h3>
-          <p>{{ __('Sifarişinizi göndərin, biz sizinlə əlaqə saxlayıb təsdiqləyək.') }}</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- COLLECTIONS -->
   <section id="collections">
     <div class="wrap">
@@ -240,6 +182,65 @@
       @endif
     </div>
   </section>
+
+  <!-- FEATURES -->
+  <section class="features">
+    <div class="wrap">
+      <div class="features-grid">
+        <div class="feature-card reveal">
+          <div class="ico">📸</div>
+          <h3>{{ __('Fərdi Şəkil Çapı') }}</h3>
+          <p>{{ __('Üz və ya tam boy şəklinizi yüksək keyfiyyətdə qutuya çap edirik.') }}</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="ico">🍫</div>
+          <h3>{{ __('Premium Şokolad') }}</h3>
+          <p>{{ __('Yalnız keyfiyyətli, təzə şokolad məhsullarından istifadə edirik.') }}</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="ico">💌</div>
+          <h3>{{ __('Fərdi Yazı') }}</h3>
+          <p>{{ __('İstədiyiniz mətni, adı və ya tarixi qutuya əlavə edin.') }}</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="ico">⚡</div>
+          <h3>{{ __('Sürətli Hazırlanma') }}</h3>
+          <p>{{ __('Sifarişiniz qısa müddətdə hazırlanıb sizə çatdırılır.') }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how" class="tinted">
+    <div class="wrap">
+      <div class="section-head center">
+        <span class="eyebrow" style="justify-content:center;">{{ __('Necə İşləyir') }}</span>
+        <h2>{{ __('Üç Addımda Fərdi Hədiyyə') }}</h2>
+        <p class="lede" style="margin-inline:auto;">{{ __('Hər addım diqqətlə düşünülüb ki, xatirəniz ən nəfis formada sizə qaytarılsın.') }}</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <div class="step-line"></div>
+          <div class="num">1</div>
+          <h3>{{ __('Dizaynı Seçin') }}</h3>
+          <p>{{ __('Kolleksiyadan xoşunuza gələn qutu dizaynını seçin.') }}</p>
+        </div>
+        <div class="step reveal">
+          <div class="step-line"></div>
+          <div class="num">2</div>
+          <h3>{{ __('Şəklinizi Yükləyin') }}</h3>
+          <p>{{ __('Öz şəklinizi və istədiyiniz mətni əlavə edib canlı önizləmə görün.') }}</p>
+        </div>
+        <div class="step reveal">
+          <div class="num">3</div>
+          <h3>{{ __('Sifariş Verin') }}</h3>
+          <p>{{ __('Sifarişinizi göndərin, biz sizinlə əlaqə saxlayıb təsdiqləyək.') }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
 
   <!-- GIFT IDEAS: one page per occasion people search for -->
   @if($gifts->isNotEmpty())

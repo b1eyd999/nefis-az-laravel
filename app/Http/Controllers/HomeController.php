@@ -11,10 +11,12 @@ class HomeController extends Controller
 {
     public function index()
     {
+        // The whole catalogue opens right under the banner: the first thing a
+        // visitor sees is the boxes themselves, not a description of them.
         $products = Product::where('is_active', true)
             ->withCount('layers')
             ->orderBy('sort_order')
-            ->take(8)
+            ->orderBy('name')
             ->get();
 
         $designCount = Product::where('is_active', true)->count();
