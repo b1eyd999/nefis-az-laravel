@@ -22,7 +22,7 @@
 <style>
   :root{ --cream:#F3E6D6; --gold:#D6A35A; --gold2:#F0C987; --ink:#17110D; --ease:cubic-bezier(.34,1.56,.64,1); }
   *{ box-sizing:border-box; }
-  html, body{ margin:0; height:100%; background:var(--ink); color:var(--cream); font-family:Inter, system-ui, sans-serif; overflow:hidden;
+  html, body{ margin:0; height:100%; background:var(--ink); color:var(--cream); font-family:-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, "Segoe UI", Roboto, sans-serif; overflow:hidden;
     -webkit-tap-highlight-color:transparent; }
   #ar{ position:fixed; inset:0; }
   #ar > video{ object-fit:cover; }
@@ -40,7 +40,7 @@
     background:radial-gradient(ellipse at 50% 25%, #4a2f1c 0%, #2a1b12 45%, var(--ink) 80%); transition:opacity .4s; }
   .screen[hidden]{ display:none; }
   .logo{ height:2.4rem; }
-  h1{ font-family:'Playfair Display', Georgia, serif; font-size:1.75rem; margin:0; line-height:1.2; }
+  h1{ font-family:-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, "Segoe UI", Roboto, sans-serif; font-size:1.75rem; margin:0; line-height:1.2; }
   h1 .spark{ display:inline-block; animation:twinkle 1.8s ease-in-out infinite; }
   p{ margin:0; opacity:.85; line-height:1.55; max-width:22rem; }
   .err{ color:#f2a39a; opacity:1; font-weight:600; }

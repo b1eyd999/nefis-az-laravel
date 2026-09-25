@@ -15,12 +15,12 @@
   }
   *{ box-sizing:border-box; }
   body{ margin:0; min-height:100vh; display:grid; place-items:center; padding:24px 16px; background:var(--bg); color:var(--cocoa);
-    font-family:Inter, system-ui, sans-serif; background-image:radial-gradient(60rem 30rem at 80% -10%, rgba(214,163,90,.18), transparent 60%); }
+    font-family:-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, "Segoe UI", Roboto, sans-serif; background-image:radial-gradient(60rem 30rem at 80% -10%, rgba(214,163,90,.18), transparent 60%); }
   .card{ max-width:32rem; width:100%; text-align:center; background:var(--paper); border:1px solid var(--line); border-radius:1.5rem; padding:2.5rem 1.75rem;
     box-shadow:0 30px 80px -40px rgba(0,0,0,.6); }
   img{ height:2.6rem; margin-bottom:1.5rem; }
   .ico{ font-size:2.5rem; margin-bottom:.75rem; }
-  h1{ font-family:'Playfair Display', Georgia, serif; font-weight:600; font-size:1.9rem; margin:0 0 .75rem; }
+  h1{ font-family:-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, "Segoe UI", Roboto, sans-serif; font-weight:600; font-size:1.9rem; margin:0 0 .75rem; }
   p{ color:var(--soft); line-height:1.6; margin:0 0 1.5rem; white-space:pre-line; }
   a{ display:inline-block; color:var(--gold); text-decoration:none; border:1px solid var(--line); border-radius:999px; padding:.6rem 1.2rem; font-weight:500; }
   a:hover{ border-color:var(--gold); }

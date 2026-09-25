@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 {{-- Runs before any styles paint, so a visitor who chose a theme never sees
-     a flash of the other one. With no choice stored the device decides. --}}
+     a flash of the other one. With no choice stored the shop is light. --}}
 <script>
   try {
     var t = localStorage.getItem('nefis-theme');
@@ -32,7 +32,8 @@
 <meta name="robots" content="noindex, follow">
 @endif
 <link rel="canonical" href="{!! $seoUrl !!}">
-<meta name="theme-color" content="#3A2617">
+<meta name="theme-color" content="#FBF4EA">
+<meta name="theme-color" content="#17110D" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="@yield('og_type', 'website')">
 <meta property="og:locale" content="{{ ['az' => 'az_AZ', 'ru' => 'ru_RU', 'en' => 'en_US'][\App\Support\Locale::current()] }}">
 {{-- The same page in the other two languages, for search engines. --}}
@@ -138,13 +139,13 @@
       {{-- The same page in another language: one tap, nothing else changes. --}}
       <div class="nav-drop lang-drop" @if(count(\App\Support\Locale::published()) < 2) hidden @endif>
         <button type="button" class="icon-btn lang-btn" aria-expanded="false" aria-haspopup="true" aria-label="{{ __('Dil') }}">
-          {{ \App\Support\Locale::SHORT[\App\Support\Locale::current()] }}
+          @include('partials.flag', ['code' => \App\Support\Locale::current()])
         </button>
         <div class="nav-panel right lang-panel">
           @foreach(\App\Support\Locale::published() as $__code)
             @php $__name = \App\Support\Locale::NAMES[$__code]; @endphp
             <a class="nav-item{{ \App\Support\Locale::is($__code) ? ' is-on' : '' }}" hreflang="{{ $__code }}"
-               href="{{ \App\Support\Locale::switchUrl($__code) }}"><span class="ni-ico">{{ \App\Support\Locale::SHORT[$__code] }}</span><span><b>{{ $__name }}</b></span></a>
+               href="{{ \App\Support\Locale::switchUrl($__code) }}"><span class="ni-ico">@include('partials.flag', ['code' => $__code])</span><span><b>{{ $__name }}</b></span></a>
           @endforeach
         </div>
       </div>
@@ -283,12 +284,11 @@
   document.addEventListener("scroll", onScroll, { passive:true });
   onScroll();
 
-  /* dark / light switch — remembered per visitor, otherwise the device decides */
+  /* dark / light switch: the shop is light until this visitor asks for dark */
   var root = document.documentElement;
-  var prefersDark = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
   var themeBtn = document.getElementById("theme-toggle");
   function currentTheme(){
-    return root.getAttribute("data-theme") || (prefersDark && prefersDark.matches ? "dark" : "light");
+    return root.getAttribute("data-theme") === "dark" ? "dark" : "light";
   }
   function labelThemeBtn(){
     var dark = currentTheme() === "dark";
@@ -301,7 +301,6 @@
     try { localStorage.setItem("nefis-theme", next); } catch (e) {}
     labelThemeBtn();
   });
-  if (prefersDark && prefersDark.addEventListener) prefersDark.addEventListener("change", labelThemeBtn);
   labelThemeBtn();
 
   /* mobile nav */
