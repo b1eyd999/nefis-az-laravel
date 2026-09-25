@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', __('Şokolad qutusu dizaynları — şəkilli fərdi hədiyyə | Nefis'))
-@section('meta_description', __('Kinder, Milka, Love story, Netflix, Spotify və başqa şokolad qutusu dizaynları. Bəyəndiyinizi seçin, şəklinizi və sözünüzü əlavə edin — hədiyyə hazırdır.'))
+@section('title', __('Şokolad qutusu dizaynları, şəkilli fərdi hədiyyə | Nefis'))
+@section('meta_description', __('Kinder, Milka, Love story, Netflix, Spotify və başqa şokolad qutusu dizaynları. Bəyəndiyinizi seçin, şəklinizi və sözünüzü əlavə edin, hədiyyə hazırdır.'))
 
 @push('jsonld')
   {{ \App\Support\Seo::jsonLd(['@graph' => [
@@ -102,7 +102,7 @@
     <div class="wrap">
       <span class="eyebrow">{{ __('Kolleksiya') }}</span>
       <h1>{{ __('Dizaynlar') }}</h1>
-      <p class="lede">{{ __('Şokolad qutularından posterlərə qədər — bəyəndiyiniz dizaynı seçin, sonra öz şəklinizi və sözünüzü əlavə edin.') }}</p>
+      <p class="lede">{{ __('Şokolad qutularından posterlərə qədər, bəyəndiyiniz dizaynı seçin, sonra öz şəklinizi və sözünüzü əlavə edin.') }}</p>
       @if($gifts->isNotEmpty())
         <nav class="occ-chips" style="margin-top:1.75rem;" aria-label="{{ __('Hədiyyə fikirləri') }}">
           <span style="width:100%; font-size:.8125rem; color:var(--cocoa-faint);">{{ __('Münasibətə görə seçin:') }}</span>
@@ -149,7 +149,7 @@
                         data-url="{{ $design->isCustomizable() ? lroute('products.customize', $design->slug) : '' }}">
                   <div class="d-card-media">
                     @if($design->isCustomizable())<span class="pill">{{ __('Fərdiləşdir') }}</span>@endif
-                    <img src="{{ \App\Support\Media::url($design->catalogImage()) }}" alt="{{ $design->tr('name') }} — {{ __('şəkilli şokolad qutusu') }}" loading="lazy">
+                    <img src="{{ \App\Support\Media::url($design->catalogImage()) }}" alt="{{ $design->tr('name') }}, {{ __('şəkilli şokolad qutusu') }}" loading="lazy">
                   </div>
                   <div class="d-card-body">
                     <h3>{{ $design->name }}</h3>
@@ -169,9 +169,9 @@
     <div class="wrap">
       <article class="prose">
         <h2>{{ __('Şəkilli şokolad qutusu necə seçilir?') }}</h2>
-        <p>{{ __('Hər dizayn hazır şablondur: içində şəkliniz üçün yer və yazı sahələri var. Dizaynı açın, şəklinizi yükləyin, adı və sözlərinizi yazın — qutunun necə görünəcəyini elə saytda, sifarişdən əvvəl görürsünüz.') }}</p>
+        <p>{{ __('Hər dizayn hazır şablondur: içində şəkliniz üçün yer və yazı sahələri var. Dizaynı açın, şəklinizi yükləyin, adı və sözlərinizi yazın, qutunun necə görünəcəyini elə saytda, sifarişdən əvvəl görürsünüz.') }}</p>
         <p>{{ __('Sonra qutunun içindəki şokoladı seçirsiniz (Milka, Alpen Gold və digər 90–105 qramlıq plitkalar). İstəsəniz qutunu hədiyyə kağızına bükürük, içinə polaroid məktub qoyuruq, yaxud') }}
-          <a href="{{ lroute('live.create') }}">{{ __('canlı şəkil') }}</a> {{ __('əlavə edirik — telefonu şəklə tutanda videonuz oynayır.') }}</p>
+          <a href="{{ lroute('live.create') }}">{{ __('canlı şəkil') }}</a> {{ __('əlavə edirik, telefonu şəklə tutanda videonuz oynayır.') }}</p>
         <h2>{{ __('Hansı dizaynı kimə?') }}</h2>
         <p>{{ __('Cütlüklər üçün "Love story" və "Love is…", uşaqlar üçün Kinder və Barbie, maşın sevənlər üçün "Avtomobil", zarafat üçün Netflix, Google və Spotify üslubunda dizaynlar var. Ailə şəkli üçün isə "Family Frame" uyğundur. Münasibətə görə seçmək istəyirsinizsə,') }}
           <a href="{{ lroute('gifts.index') }}">{{ __('hədiyyə fikirlərinə') }}</a> {{ __('baxın.') }}</p>

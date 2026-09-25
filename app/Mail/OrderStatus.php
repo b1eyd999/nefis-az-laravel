@@ -22,7 +22,7 @@ class OrderStatus extends Mailable
     {
         return new Envelope(
             from: new \Illuminate\Mail\Mailables\Address(CustomerNotice::FROM, 'Nefis.az'),
-            subject: __('Nefis.az — sifariş #') . $this->order->id . ': ' . __($this->order->statusLabel()),
+            subject: __('Nefis.az, sifariş #') . $this->order->id . ': ' . __($this->order->statusLabel()),
         );
     }
 

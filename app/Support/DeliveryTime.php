@@ -14,7 +14,7 @@ use Illuminate\Support\Carbon;
  */
 class DeliveryTime
 {
-    public const DEFAULT_SLOTS = ['10:00 — 14:00', '14:00 — 18:00', '18:00 — 21:00'];
+    public const DEFAULT_SLOTS = ['10:00–14:00', '14:00–18:00', '18:00–21:00'];
 
     /** How many days the shop needs before a box is ready. */
     public static function leadDays(): int

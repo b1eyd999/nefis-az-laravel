@@ -1,6 +1,6 @@
 {{--
   What a photo for a box has to look like, drawn rather than described: a
-  sketch of the right shot next to the two that come in most often — a face
+  sketch of the right shot next to the two that come in most often, a face
   turned away, and a person standing too far off.
 
   Used by the box customizer under every photo slot ($small = the inline
@@ -96,7 +96,7 @@ SVG;
       </div>
 
       <ul class="pg-tips">
-        <li>{{ __('Gündüz işığında və ya pəncərəyə tərəf durub çəkin — kölgə üzə düşməsin.') }}</li>
+        <li>{{ __('Gündüz işığında və ya pəncərəyə tərəf durub çəkin, kölgə üzə düşməsin.') }}</li>
         <li>{{ __('Telefonu göz səviyyəsində tutun.') }}</li>
         <li>{{ __('Şəkil aydın olsun: bulanıq və ya ekrandan çəkilmiş şəkil çap olunanda daha pis görünür.') }}</li>
         <li>{{ __('Bir neçə nəfər varsa, hamısı kameraya baxsın.') }}</li>

@@ -23,10 +23,10 @@ class CustomerNotice
     /** What each status means to the person waiting for the box. */
     public const LINES = [
         'awaiting_payment' => 'Sifarişiniz qeydə alındı. Ödəniş gözlənilir.',
-        'payment_check' => 'Çekinizi aldıq — ödənişi yoxlayırıq.',
+        'payment_check' => 'Çekinizi aldıq, ödənişi yoxlayırıq.',
         'pending' => 'Sifarişiniz qeydə alındı və növbəyə düşdü.',
-        'confirmed' => 'Ödəniş təsdiqləndi — sifarişiniz hazırlanır.',
-        'ready' => 'Sifarişiniz hazırdır — kuryer yola düşəndə sizinlə əlaqə saxlayacaq.',
+        'confirmed' => 'Ödəniş təsdiqləndi, sifarişiniz hazırlanır.',
+        'ready' => 'Sifarişiniz hazırdır, kuryer yola düşəndə sizinlə əlaqə saxlayacaq.',
         'completed' => 'Sifarişiniz hazırdır və təhvil verildi. Nuş olsun!',
         'cancelled' => 'Sifarişiniz ləğv edildi.',
     ];
@@ -81,7 +81,7 @@ class CustomerNotice
 
     private static function message(Order $order): string
     {
-        $lines = ['Nefis.az — sifariş #' . $order->id, self::line($order)];
+        $lines = ['Nefis.az, sifariş #' . $order->id, self::line($order)];
 
         if ($order->delivery_date) {
             $lines[] = 'Çatdırılma: ' . DeliveryTime::day($order->delivery_date)
@@ -149,8 +149,8 @@ class CustomerNotice
     {
         try {
             Mail::mailer(self::mailer())->raw(
-                "Nefis.az — yoxlama məktubu.\n\nE-poçt bildirişləri işləyir: sifarişin statusu dəyişəndə müştəriyə belə bir məktub gedəcək.",
-                fn ($m) => $m->to($to)->subject('Nefis.az — yoxlama')->from(self::FROM, 'Nefis.az'),
+                "Nefis.az, yoxlama məktubu.\n\nE-poçt bildirişləri işləyir: sifarişin statusu dəyişəndə müştəriyə belə bir məktub gedəcək.",
+                fn ($m) => $m->to($to)->subject('Nefis.az, yoxlama')->from(self::FROM, 'Nefis.az'),
             );
 
             return null;

@@ -4,8 +4,8 @@
   $labels = $pages->take(6)->pluck('menu_label')->implode(', ');
 @endphp
 
-@section('title', __('Hədiyyə fikirləri — ad günü, sevgiliyə, 8 Mart | Nefis'))
-@section('meta_description', __('Kimə və hansı münasibətə hədiyyə axtarırsınız?') . ' ' . $labels . ' — '
+@section('title', __('Hədiyyə fikirləri, ad günü, sevgiliyə, 8 Mart | Nefis'))
+@section('meta_description', __('Kimə və hansı münasibətə hədiyyə axtarırsınız?') . ' ' . $labels . ', '
     . __('şəkil və sözlərinizlə fərdi şokolad qutusu fikirləri.'))
 
 @section('own_hreflang', 1)
@@ -49,7 +49,7 @@
       <span class="eyebrow">{{ __('Kimə, nə üçün?') }}</span>
       <h1>{{ __('Hədiyyə fikirləri') }}</h1>
       <p class="lede">
-        {{ __('Ad günü, sevgiliyə, anaya, körpəyə və ya bayrama — kimə hədiyyə axtardığınızı seçin, sizə uyğun dizaynları göstərək.') }}
+        {{ __('Ad günü, sevgiliyə, anaya, körpəyə və ya bayrama, kimə hədiyyə axtardığınızı seçin, sizə uyğun dizaynları göstərək.') }}
       </p>
     </div>
   </section>

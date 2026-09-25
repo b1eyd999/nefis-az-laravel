@@ -8,7 +8,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ __('Nefis.az — sifariş #') }}{{ $order->id }}</title>
+    <title>{{ __('Nefis.az, sifariş #') }}{{ $order->id }}</title>
 </head>
 <body style="margin:0;padding:0;background:#faf7f2;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#2b2118;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#faf7f2;padding:24px 12px;">
@@ -71,7 +71,7 @@
                         @if (Contact::has())
                             <a href="{{ Contact::whatsapp() }}" style="color:#d97706;">{{ Contact::display() }}</a>
                         @endif
-                        <br>{{ __('Nefis.az — əl ilə hazırlanan şəkilli şokolad qutuları, Bakı.') }}
+                        <br>{{ __('Nefis.az, əl ilə hazırlanan şəkilli şokolad qutuları, Bakı.') }}
                     </td>
                 </tr>
             </table>

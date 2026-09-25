@@ -453,7 +453,7 @@ class LivePhotoTest extends TestCase
         $item = $order->items()->firstOrFail();
         $this->assertSame([7.5, 12.5], [$item->ar_price, $item->unitPrice()]);
         $live = $item->livePhotos()->firstOrFail();
-        $this->assertSame('Sifariş #' . $order->id . ' — Test', $live->title);
+        $this->assertSame('Sifariş #' . $order->id . ', Test', $live->title);
         $this->assertTrue($live->isReady());   // the video plays from the hosting until Yandex Disk is connected
         $this->assertSame(1.9546, $live->aspect());
         $this->actingAs($user)->get(route('orders.index'))->assertSee('Canlı şəkil (AR)')->assertSee('Canlı şəklə bax');
@@ -475,7 +475,7 @@ class LivePhotoTest extends TestCase
         Livewire::test(ItemsRelationManager::class, ['ownerRecord' => $order, 'pageClass' => EditOrder::class])
             ->assertSee('Videonu yüklə')->assertSee('AR yarat')->assertSee('order_item=' . $item->id, false);
         Livewire::withQueryParams(['order_item' => $item->id])->test(CreateLivePhoto::class)
-            ->assertFormSet(['title' => 'Sifariş #' . $order->id . ' — Test', 'order_item_id' => $item->id]);
+            ->assertFormSet(['title' => 'Sifariş #' . $order->id . ', Test', 'order_item_id' => $item->id]);
     }
 
     public function test_switched_off_there_is_nothing_to_buy(): void

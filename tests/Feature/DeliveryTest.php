@@ -124,7 +124,7 @@ class DeliveryTest extends TestCase
         $this->getJson(route('map.reverse', ['lat' => 40.6828, 'lng' => 46.3606]))
             ->assertOk()->assertJson(['address' => null, 'outside' => true]);
         $this->getJson(route('map.search', ['q' => 'Fəvvarələr']))
-            ->assertOk()->assertJsonPath('results.0.label', 'Fəvvarələr meydanı — Nizami küçəsi, Bakı')->assertJsonPath('results.0.lat', 40.3777);
+            ->assertOk()->assertJsonPath('results.0.label', 'Fəvvarələr meydanı, Nizami küçəsi, Bakı')->assertJsonPath('results.0.lat', 40.3777);
 
         \Illuminate\Support\Facades\Http::assertSent(fn ($r) => str_contains($r->header('User-Agent')[0] ?? '', 'NefisShokoladEvi'));
     }

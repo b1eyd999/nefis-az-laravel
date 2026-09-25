@@ -50,7 +50,7 @@ class YandexDisk
             throw new RuntimeException('Bu qovluğun linkidir. Qovluğu açın və şəklin öz linkini göndərin.');
         }
         if (! isset(self::TYPES[$meta['mime_type'] ?? ''])) {
-            throw new RuntimeException('Linkdəki fayl şəkil deyil — PNG, JPG və ya WEBP lazımdır.');
+            throw new RuntimeException('Linkdəki fayl şəkil deyil, PNG, JPG və ya WEBP lazımdır.');
         }
         if (($meta['size'] ?? 0) > self::MAX_BYTES) {
             throw new RuntimeException('Şəkil çox böyükdür (' . round($meta['size'] / 1048576) . ' MB). 30 MB-dan kiçik olmalıdır.');
@@ -188,7 +188,7 @@ class YandexDisk
                 Sleep::for(2)->seconds();
             }
             if ((int) ($there['size'] ?? -1) !== $size) {
-                throw new RuntimeException('Yandex Disk videonu hələ emal edir — bir az sonra yenidən köçürün.');
+                throw new RuntimeException('Yandex Disk videonu hələ emal edir, bir az sonra yenidən köçürün.');
             }
         }
 
@@ -246,13 +246,13 @@ class YandexDisk
             return [];
         }
         if ($response->status() === 401) {
-            throw new RuntimeException('Yandex Disk tokeni qəbul etmədi — yeni token alıb yenidən əlavə edin.');
+            throw new RuntimeException('Yandex Disk tokeni qəbul etmədi, yeni token alıb yenidən əlavə edin.');
         }
         if ($response->status() === 507) {
             throw new RuntimeException('Yandex Diskdə yer qalmayıb.');
         }
         if (! $response->successful()) {
-            throw new RuntimeException('Yandex Disk cavab vermədi (' . $response->status() . ': ' . $path . ' — '
+            throw new RuntimeException('Yandex Disk cavab vermədi (' . $response->status() . ': ' . $path . ', '
                 . Str::limit((string) ($response->json('message') ?? $response->json('error') ?? ''), 120) . ').');
         }
 

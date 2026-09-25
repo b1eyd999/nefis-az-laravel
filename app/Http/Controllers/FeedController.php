@@ -32,7 +32,7 @@ class FeedController extends Controller
 
             $items .= '  <item>' . "\n"
                 . $this->tag('g:id', 'design-' . $product->id)
-                . $this->tag('title', Str::limit($product->name . ' — şəkilli şokolad qutusu', 145))
+                . $this->tag('title', Str::limit($product->name . ', şəkilli şokolad qutusu', 145))
                 . $this->tag('description', Str::limit(strip_tags($description), 4900))
                 . $this->tag('link', Seo::canonical(route('products.customize', $product->slug)))
                 . ($image ? $this->tag('g:image_link', Seo::canonical($image)) : '')
@@ -48,7 +48,7 @@ class FeedController extends Controller
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
             . '<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">' . "\n"
             . '<channel>' . "\n"
-            . $this->tag('title', 'Nefis Şokolad Evi — fərdi şokolad qutuları')
+            . $this->tag('title', 'Nefis Şokolad Evi, fərdi şokolad qutuları')
             . $this->tag('link', Seo::canonical(route('home')))
             . $this->tag('description', 'Öz şəkliniz və sözlərinizlə fərdi şokolad qutuları.')
             . $items

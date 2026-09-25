@@ -69,7 +69,7 @@ class HeroSlide extends Model
         return new self([
             'eyebrow' => 'Nefis Şokolad Evi',
             'title' => "Hər Hədiyyə\nBir Xatirəyə Dönsün.",
-            'text' => 'Öz şəklinizi, öz sözünüzü seçin — biz onu sevdiklərinizə hədiyyə edəcəyiniz ən nəfis şokolad qutusuna çeviririk.',
+            'text' => 'Öz şəklinizi, öz sözünüzü seçin, biz onu sevdiklərinizə hədiyyə edəcəyiniz ən nəfis şokolad qutusuna çeviririk.',
             'button1_label' => 'İndi Sifariş Ver', 'button1_url' => '#collections',
             'button2_label' => 'Dizaynlara Bax', 'button2_url' => '/dizaynlar',
             'badges' => ['Premium Şokolad', '100% Fərdi Dizayn', 'Sürətli Çatdırılma'],

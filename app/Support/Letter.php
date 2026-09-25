@@ -16,7 +16,7 @@ class Letter
         'menu' => 'Polaroid məktub',
         'eyebrow' => 'Qutunun içinə və ya ayrıca',
         'title' => 'Polaroid məktub',
-        'lede' => 'Şəkliniz və bir neçə sözünüz — polaroid kimi çap edib qutunun içinə qoyuruq və ya ayrıca göndəririk.',
+        'lede' => 'Şəkliniz və bir neçə sözünüz, polaroid kimi çap edib qutunun içinə qoyuruq və ya ayrıca göndəririk.',
         'photo_label' => 'Şəkil seçin',
         'text_placeholder' => 'Məs. Səni çox sevirəm! Ad günün mübarək ❤',
         'hint' => 'Şəkil olmasa, mətn polaroidin içində yazılır.',

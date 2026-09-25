@@ -55,7 +55,7 @@ class Seo
                 'url' => $home,
                 'logo' => asset('images/logo.png'),
                 'image' => asset('images/og-nefis.jpg'),
-                'description' => 'Öz şəkliniz və sözlərinizlə fərdi şokolad qutuları — ad günü, sevgiliyə, 8 Mart və hər münasibətə hədiyyə.',
+                'description' => 'Öz şəkliniz və sözlərinizlə fərdi şokolad qutuları, ad günü, sevgiliyə, 8 Mart və hər münasibətə hədiyyə.',
                 'areaServed' => ['@type' => 'Country', 'name' => 'Azərbaycan'],
                 'address' => ['@type' => 'PostalAddress', 'addressLocality' => 'Bakı', 'addressCountry' => 'AZ'],
                 'currenciesAccepted' => 'AZN',

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', __('Canlı şəkil') . ' — Nefis Şokolad Evi')
-@section('meta_description', __('Şəklinizi canlandırın: QR kodu oxudub telefonu şəklə tutanda üstündə sizin videonuz oynayır — tətbiq yükləmədən.'))
+@section('title', __('Canlı şəkil') . ', Nefis Şokolad Evi')
+@section('meta_description', __('Şəklinizi canlandırın: QR kodu oxudub telefonu şəklə tutanda üstündə sizin videonuz oynayır, tətbiq yükləmədən.'))
 
 @section('page_style')
   .live-grid{ display:grid; gap:2.5rem; align-items:start; }
@@ -49,7 +49,7 @@
     <div class="wrap">
       <span class="eyebrow" style="justify-content:center;">Yeni · AR</span>
       <h1>{{ __('Canlı şəkil') }}</h1>
-      <p class="lede" style="margin-inline:auto;">{{ __('Şəklinizi canlandırın: QR kodu oxudub telefonu şəklə tutanda, üstündə sizin videonuz oynayır — heç bir tətbiq yükləmədən.') }}</p>
+      <p class="lede" style="margin-inline:auto;">{{ __('Şəklinizi canlandırın: QR kodu oxudub telefonu şəklə tutanda, üstündə sizin videonuz oynayır, heç bir tətbiq yükləmədən.') }}</p>
     </div>
   </section>
 
@@ -65,7 +65,7 @@
         <div class="live-stage">
           <div class="live-phone" aria-hidden="true">
             <div class="live-screen">
-              <div class="live-pic empty" id="live-pic">{{ __('Şəkil və video seçin — burada necə canlanacağını görəcəksiniz') }}</div>
+              <div class="live-pic empty" id="live-pic">{{ __('Şəkil və video seçin, burada necə canlanacağını görəcəksiniz') }}</div>
               <span class="live-scan" id="live-scan" hidden>▶ {{ __('Video şəklin üstündə oynayır') }}</span>
             </div>
           </div>
@@ -113,7 +113,7 @@
                 <circle cx="35" cy="32" r="9" />
                 <path d="M32.5 27.5l6 4.5-6 4.5z" />
               </svg>
-              <span>{{ __('Şəkli və videonu yükləyirsiniz — qalanını sistem özü hazırlayır.') }}</span>
+              <span>{{ __('Şəkli və videonu yükləyirsiniz, qalanını sistem özü hazırlayır.') }}</span>
             </li>
             <li>
               <svg class="step-art" viewBox="0 0 48 48" aria-hidden="true">
@@ -135,7 +135,7 @@
                 <path d="M21 24l-3 3M25 36l-2 3M17 22l-2-2" opacity=".5" />
                 <path d="M40 38l1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z" opacity=".6" />
               </svg>
-              <span>{{ __('Hədiyyəni alan QR kodu oxudur, telefonu şəklə tutur — video şəklin üstündə oynayır.') }}</span>
+              <span>{{ __('Hədiyyəni alan QR kodu oxudur, telefonu şəklə tutur, video şəklin üstündə oynayır.') }}</span>
             </li>
           </ol>
         </form>
@@ -162,7 +162,7 @@
     pic.innerHTML = '';
     if (!picUrl) {
       pic.className = 'live-pic empty';
-      pic.textContent = @json(__('Şəkil və video seçin — burada necə canlanacağını görəcəksiniz'));
+      pic.textContent = @json(__('Şəkil və video seçin, burada necə canlanacağını görəcəksiniz'));
       pic.style.aspectRatio = '';
       scan.hidden = true;
       return;
@@ -213,7 +213,7 @@
     }).catch(function(){
       if (mine !== job) return;
       /* Not this browser: the shop prepares it by hand instead. */
-      prepText.textContent = @json(__('Şəkil qəbul olundu — kamera üçün biz hazırlayacağıq'));
+      prepText.textContent = @json(__('Şəkil qəbul olundu, kamera üçün biz hazırlayacağıq'));
       prepHint.hidden = true;
     });
   });
@@ -228,7 +228,7 @@
     var big = f.size > MAX;
     hint.classList.toggle('bad', big);
     hint.textContent = big
-      ? 'Video ' + (f.size / 1048576).toFixed(1) + ' ' + @json(__('MB-dır — :mb MB-dan kiçik olmalıdır. Qısaldın və ya sıxın.', ['mb' => $maxMb]))
+      ? 'Video ' + (f.size / 1048576).toFixed(1) + ' ' + @json(__('MB-dır, :mb MB-dan kiçik olmalıdır. Qısaldın və ya sıxın.', ['mb' => $maxMb]))
       : @json(__('Ən yaxşısı 10–30 saniyəlik video. Öz ölçüsündə (məs. 9:16), kəsilmədən oynayır.'));
     vidUrl = URL.createObjectURL(f);
     preview();

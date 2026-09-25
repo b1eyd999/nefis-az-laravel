@@ -58,7 +58,7 @@ class ChocolateImport
         @set_time_limit(300);
         if (! $rows) {
             throw new RuntimeException($market->name . ' saytında ' . (int) self::minGrams() . '–' . (int) self::maxGrams()
-                . ' q plitka şokolad tapılmadı — heç nə dəyişdirilmədi.');
+                . ' q plitka şokolad tapılmadı, heç nə dəyişdirilmədi.');
         }
 
         $created = $updated = 0;

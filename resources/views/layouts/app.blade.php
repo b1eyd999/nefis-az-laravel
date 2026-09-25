@@ -18,8 +18,8 @@
      pages set their own title, description, picture and robots rule.
      yieldContent() hands these back already escaped, hence {!! !!}. --}}
 @php
-  $seoTitle = trim($__env->yieldContent('title', __('Nefis — Şəkilli Şokolad Qutuları və Fərdi Hədiyyələr')));
-  $seoDescription = trim($__env->yieldContent('meta_description', __('Öz şəkliniz və sözlərinizlə fərdi şokolad qutusu — ad günü, sevgiliyə, 8 Mart və hər münasibətə unudulmaz hədiyyə. Bakıda və bütün Azərbaycanda çatdırılma.')));
+  $seoTitle = trim($__env->yieldContent('title', __('Nefis, Şəkilli Şokolad Qutuları və Fərdi Hədiyyələr')));
+  $seoDescription = trim($__env->yieldContent('meta_description', __('Öz şəkliniz və sözlərinizlə fərdi şokolad qutusu, ad günü, sevgiliyə, 8 Mart və hər münasibətə unudulmaz hədiyyə. Bakıda və bütün Azərbaycanda çatdırılma.')));
   $seoUrl = e(\App\Support\Seo::canonical());
   $seoImage = trim($__env->yieldContent('og_image'));
 @endphp
@@ -228,7 +228,7 @@
     <div class="footer-top">
       <div class="footer-brand">
         <span class="brand"><img src="/images/logo.svg" alt="Nefis"></span>
-        <p>{{ __('Şokoladın ən nəfis halı — hər qutu sizin xatirəniz üçün fərdi hazırlanır.') }}</p>
+        <p>{{ __('Şokoladın ən nəfis halı, hər qutu sizin xatirəniz üçün fərdi hazırlanır.') }}</p>
         <div class="footer-social">
           <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" aria-label="Instagram">📷</a>
         </div>
@@ -368,7 +368,7 @@ document.addEventListener('submit', function(e){
   if (total <= 27 * 1048576) return;
   e.preventDefault();
   e.stopImmediatePropagation();
-  alert(@json(__('Yüklədiyiniz fayllar birlikdə ')) + (total / 1048576).toFixed(1) + @json(__(' MB-dır — 27 MB-dan çox ola bilməz. Videonu qısaldın və ya şəkilləri kiçildin.')));
+  alert(@json(__('Yüklədiyiniz fayllar birlikdə ')) + (total / 1048576).toFixed(1) + @json(__(' MB-dır, 27 MB-dan çox ola bilməz. Videonu qısaldın və ya şəkilləri kiçildin.')));
 }, true);
 </script>
 @yield('page_script')

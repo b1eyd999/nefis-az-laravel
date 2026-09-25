@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', __('Hədiyyə qablaşdırması') . ' — Nefis Şokolad Evi')
+@section('title', __('Hədiyyə qablaşdırması') . ', Nefis Şokolad Evi')
 @section('meta_description', __('Şokolad qutunuzu hədiyyə kağızına büküb lentlə bağlayırıq. Naxışları və qiymətləri burada görün.'))
 
 @section('page_style')
@@ -32,7 +32,7 @@
     <div class="wrap">
       <span class="eyebrow">{{ __('Hədiyyə üçün') }}</span>
       <h1>{{ __('Qablaşdırma') }}</h1>
-      <p class="lede">{{ __('Qutunuzu seçdiyiniz kağıza büküb lentlə bağlayırıq — açılana qədər sürpriz qalsın.') }}</p>
+      <p class="lede">{{ __('Qutunuzu seçdiyiniz kağıza büküb lentlə bağlayırıq, açılana qədər sürpriz qalsın.') }}</p>
     </div>
   </section>
 
@@ -48,7 +48,7 @@
             @foreach($wraps as $w)
               <button type="button" class="wr-card" data-gift-open data-name="{{ $w['name'] }}"
                       data-price="{{ \App\Support\Price::format($w['price']) }}" data-ribbon-label="{{ \App\Models\Wrapping::RIBBONS[$w['ribbon']] ?? '' }}"
-                      aria-label="{{ $w['name'] }} — {{ __('hər tərəfdən bax') }}">
+                      aria-label="{{ $w['name'] }}, {{ __('hər tərəfdən bax') }}">
                 <span class="wr-360">360°</span>
                 @include('partials.gift-box', ['wrap' => $w])
                 <span class="wr-body">

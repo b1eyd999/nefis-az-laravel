@@ -144,13 +144,13 @@ class Setting extends Model
         self::PAYMENT_NOTE => 'Köçürmədən sonra çeki (qəbzi) buraya yükləyin. Ödənişi 1 saat ərzində yoxlayıb sifarişinizi təsdiqləyirik.',
         self::CHOCOLATE_MARKUP => '30',
         self::CHOCOLATE_FROM_SALE => '0',
-        self::CONTACT_HOURS => 'Hər gün 10:00 — 20:00',
+        self::CONTACT_HOURS => 'Hər gün 10:00–20:00',
         self::CHOCOLATE_MIN_G => '90',
         self::CHOCOLATE_MAX_G => '105',
         self::DELIVERY_LEAD_DAYS => '2',
-        self::DELIVERY_SLOTS => "10:00 — 14:00
-14:00 — 18:00
-18:00 — 21:00",
+        self::DELIVERY_SLOTS => "10:00–14:00
+14:00–18:00
+18:00–21:00",
         self::NOTIFY_EMAIL => '1',
         self::SITE_LANGUAGES => 'az',
         self::MAINTENANCE => '0',

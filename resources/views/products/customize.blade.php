@@ -3,12 +3,12 @@
 @php
   $seoImage = \App\Support\Media::url($product->catalogImage());
   $seoText = $product->description
-      ? \Illuminate\Support\Str::limit((string) $product->tr('description'), 110) . ' ' . __('Şəklinizi və sözlərinizi əlavə edin — Bakıda çatdırılma.')
+      ? \Illuminate\Support\Str::limit((string) $product->tr('description'), 110) . ' ' . __('Şəklinizi və sözlərinizi əlavə edin, Bakıda çatdırılma.')
       : '«' . $product->tr('name') . '» ' . __('dizaynında fərdi şokolad qutusu: şəklinizi və sözlərinizi əlavə edin, önizləməni dərhal görün')
         . ($product->price ? ', ' . \App\Support\Price::format($product->price) . '-dan' : '')
-        . '. ' . __('Ad günü və sevdiklərinizə hədiyyə — Bakıda çatdırılma.');
+        . '. ' . __('Ad günü və sevdiklərinizə hədiyyə, Bakıda çatdırılma.');
 @endphp
-@section('title', $product->tr('name') . ' — ' . __('şəkilli şokolad qutusu') . ' | Nefis')
+@section('title', $product->tr('name') . ', ' . __('şəkilli şokolad qutusu') . ' | Nefis')
 @section('meta_description', $seoText)
 @if($seoImage)
   @section('og_image', $seoImage)
@@ -19,7 +19,7 @@
   {{ \App\Support\Seo::jsonLd(['@graph' => array_values(array_filter([
       array_filter([
           '@type' => 'Product',
-          'name' => $product->tr('name') . ' — ' . __('şəkilli şokolad qutusu'),
+          'name' => $product->tr('name') . ', ' . __('şəkilli şokolad qutusu'),
           'image' => $seoImage ? [$seoImage] : null,
           'description' => $seoText,
           'sku' => 'nefis-' . $product->id,
@@ -406,16 +406,16 @@
           <div class="letter-block" id="ar-block">
             <label class="letter-toggle">
               <input type="checkbox" name="ar_on" value="1" id="ar-on" @checked($arOn)>
-              <span>🎬 {{ __('Canlı şəkil (AR) — qutu telefonda canlanır') }}</span>
+              <span>🎬 {{ __('Canlı şəkil (AR), qutu telefonda canlanır') }}</span>
               <b>+{{ \App\Support\Price::format(\App\Support\LiveMaterials::price()) }}</b>
             </label>
             <div id="ar-fields" @unless($arOn) hidden @endunless style="margin-top:.8rem;">
-              <p class="slot-hint" style="margin:0 0 .6rem;">{{ __('Qutuya QR kod çap edirik. Hədiyyəni alan QR kodu oxudub telefonu qutunun şəklinə tutanda, sizin videonuz şəklin üstündə oynayır — tətbiq yükləmədən.') }}</p>
+              <p class="slot-hint" style="margin:0 0 .6rem;">{{ __('Qutuya QR kod çap edirik. Hədiyyəni alan QR kodu oxudub telefonu qutunun şəklinə tutanda, sizin videonuz şəklin üstündə oynayır, tətbiq yükləmədən.') }}</p>
               <label class="letter-file">
                 <input type="file" name="ar_video" id="ar-video" accept="video/mp4,video/quicktime,video/webm,video/*">
                 <span id="ar-video-name">🎬 {{ __('Video seçin (MP4/MOV, :mb MB-a qədər)', ['mb' => \App\Support\LiveMaterials::videoMb()]) }}</span>
               </label>
-              <p class="slot-hint">{{ __('Ən yaxşısı 10–30 saniyəlik, şaquli çəkilmiş video. Qutunun dizaynı kamera üçün özü hazırlanır — "Səbətə at" basanda bir neçə saniyə çəkir.') }}</p>
+              <p class="slot-hint">{{ __('Ən yaxşısı 10–30 saniyəlik, şaquli çəkilmiş video. Qutunun dizaynı kamera üçün özü hazırlanır, "Səbətə at" basanda bir neçə saniyə çəkir.') }}</p>
               <input type="file" name="ar_photo" id="ar-photo" hidden>
               <input type="file" name="ar_mind" id="ar-mind" hidden>
             </div>
@@ -1111,7 +1111,7 @@
   toggle();
   file.addEventListener('change', function(){
     var f = file.files && file.files[0];
-    name.textContent = f ? '🎬 ' + f.name + (f.size > MAX ? ' — ' + @json(__(':mb MB-dan böyükdür!', ['mb' => \App\Support\LiveMaterials::videoMb()])) : '') : label;
+    name.textContent = f ? '🎬 ' + f.name + (f.size > MAX ? ', ' + @json(__(':mb MB-dan böyükdür!', ['mb' => \App\Support\LiveMaterials::videoMb()])) : '') : label;
   });
 
   form.addEventListener('submit', function(e){

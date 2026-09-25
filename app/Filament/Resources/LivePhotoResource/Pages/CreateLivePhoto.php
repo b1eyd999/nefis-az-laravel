@@ -17,7 +17,7 @@ class CreateLivePhoto extends CreateRecord
     {
         $item = OrderItem::find(request()->integer('order_item'));
         if ($item) {
-            $this->form->fill(['title' => 'Sifariş #' . $item->order_id . ' — ' . ($item->product_name ?? 'qutu'), 'order_item_id' => $item->id, 'is_active' => true]);
+            $this->form->fill(['title' => 'Sifariş #' . $item->order_id . ', ' . ($item->product_name ?? 'qutu'), 'order_item_id' => $item->id, 'is_active' => true]);
         }
     }
 

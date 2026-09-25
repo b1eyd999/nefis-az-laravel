@@ -66,7 +66,7 @@ class ArazMarket
         $page = strpos($payload, '"page_type":"categories"');
         $list = strpos($payload, '"products":[', $page === false ? 0 : $page);
         if ($list === false) {
-            throw new RuntimeException('Araz Market səhifəsində məhsul siyahısı tapılmadı — saytın quruluşu dəyişib.');
+            throw new RuntimeException('Araz Market səhifəsində məhsul siyahısı tapılmadı, saytın quruluşu dəyişib.');
         }
         $json = self::balanced($payload, $list + strlen('"products":'));
         $items = json_decode($json, true);

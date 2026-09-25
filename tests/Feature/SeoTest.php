@@ -69,8 +69,8 @@ class SeoTest extends TestCase
         $page->products()->sync([$love->id]);
 
         $html = $this->get(route('gifts.show', 'sevgiliye'))->assertOk()
-            ->assertSee('<title>Sevgiliyə hədiyyə — birgə şəkillə fərdi şokolad | Nefis</title>', false)
-            ->assertSee('<h1>Sevgiliyə hədiyyə — şəkilli şokolad qutusu</h1>', false)
+            ->assertSee('<title>Sevgiliyə hədiyyə, birgə şəkillə fərdi şokolad | Nefis</title>', false)
+            ->assertSee('<h1>Sevgiliyə hədiyyə, şəkilli şokolad qutusu</h1>', false)
             ->assertSee('<link rel="canonical" href="' . route('gifts.show', 'sevgiliye') . '">', false)
             ->assertSee('<h2>Sevgiliyə nə almaq olar?</h2>', false)   // the article's Markdown
             ->assertSee('Qutu 6.50 ₼-dan')
@@ -103,7 +103,7 @@ class SeoTest extends TestCase
 
         $html = $this->get($ru)->assertOk()
             ->assertSee('<html lang="ru">', false)
-            ->assertSee('<h1>Подарок девушке — шоколад с вашим фото</h1>', false)
+            ->assertSee('<h1>Подарок девушке, шоколад с вашим фото</h1>', false)
             ->assertSee('<link rel="canonical" href="' . $ru . '">', false)
             ->assertSee('<h2>Что подарить девушке?</h2>', false)
             ->assertSee('Подходящие дизайны')
@@ -271,7 +271,7 @@ class SeoTest extends TestCase
             ->assertDontSee('name="robots"', false);
 
         $home = $this->get(route('home'))->assertOk()
-            ->assertSee('<title>Nefis — Şəkilli Şokolad Qutuları və Fərdi Hədiyyələr Bakıda</title>', false)
+            ->assertSee('<title>Nefis, Şəkilli Şokolad Qutuları və Fərdi Hədiyyələr Bakıda</title>', false)
             ->getContent();
         $types = collect($this->jsonLd($home))->flatMap(fn ($b) => $b['@graph'] ?? [$b])->pluck('@type')->all();
         $this->assertEqualsCanonicalizing(['OnlineStore', 'WebSite', 'FAQPage'], $types);
@@ -302,12 +302,12 @@ class SeoTest extends TestCase
         $this->box('Frame & Player', 'frame-player', 4.9);
 
         $html = $this->get(route('products.customize', 'frame-player'))->assertOk()
-            ->assertSee('<title>Frame &amp; Player — şəkilli şokolad qutusu | Nefis</title>', false)
+            ->assertSee('<title>Frame &amp; Player, şəkilli şokolad qutusu | Nefis</title>', false)
             ->assertSee('<meta property="og:type" content="product">', false)
             ->getContent();
 
         $product = collect($this->jsonLd($html))->flatMap(fn ($b) => $b['@graph'] ?? [$b])->firstWhere('@type', 'Product');
-        $this->assertSame('Frame & Player — şəkilli şokolad qutusu', $product['name']);
+        $this->assertSame('Frame & Player, şəkilli şokolad qutusu', $product['name']);
         $this->assertSame('4.90', $product['offers']['price']);
         $this->assertSame('AZN', $product['offers']['priceCurrency']);
         $this->assertStringContainsString('4.90 ₼-dan', $product['description']);
@@ -319,7 +319,7 @@ class SeoTest extends TestCase
         $box->update(['description' => 'Milka üslubunda bənövşəyi dizayn, Alp dağları fonunda birgə şəkliniz.']);
 
         $this->get(route('products.customize', 'milka'))->assertOk()
-            ->assertSee('<meta name="description" content="Milka üslubunda bənövşəyi dizayn, Alp dağları fonunda birgə şəkliniz. Şəklinizi və sözlərinizi əlavə edin — Bakıda çatdırılma.">', false);
+            ->assertSee('<meta name="description" content="Milka üslubunda bənövşəyi dizayn, Alp dağları fonunda birgə şəkliniz. Şəklinizi və sözlərinizi əlavə edin, Bakıda çatdırılma.">', false);
 
         // …and on the card, instead of the category name it used to repeat
         $this->get(route('home'))->assertOk()->assertSee('Milka üslubunda bənövşəyi dizayn');
@@ -350,7 +350,7 @@ class SeoTest extends TestCase
             ->assertSee('href="tel:+994992308050"', false)
             ->assertSee('+994 99 230 80 50')                      // written the way people read it
             ->assertSee('href="https://wa.me/994992308050"', false)
-            ->assertSee('Hər gün 10:00 — 20:00')
+            ->assertSee('Hər gün 10:00–20:00')
             ->getContent();
 
         $store = collect($this->jsonLd($html))->flatMap(fn ($b) => $b['@graph'] ?? [$b])->firstWhere('@type', 'OnlineStore');

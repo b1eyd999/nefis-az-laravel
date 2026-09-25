@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', __('Sifarişlərim') . ' — Nefis Şokolad Evi')
+@section('title', __('Sifarişlərim') . ', Nefis Şokolad Evi')
 @section('robots', 'noindex, nofollow')
 
 @section('content')
@@ -77,7 +77,7 @@
             @endforeach
             @if($order->delivery_name)
               <p style="font-size:.875rem; color:var(--cocoa-soft); margin-top:.5rem;">
-                🚚 {{ $order->delivery_name }} — {{ $order->deliverySummary() }}
+                🚚 {{ $order->delivery_name }}, {{ $order->deliverySummary() }}
                 @if($order->delivery_date)
                   <br>🗓 {{ \App\Support\DeliveryTime::day($order->delivery_date) }}@if($order->delivery_slot), {{ $order->delivery_slot }}@endif
                 @endif

@@ -36,7 +36,7 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->intended(lroute('home'))->with('status', __('Qeydiyyat uğurla tamamlandı — xoş gəldiniz!'));
+        return redirect()->intended(lroute('home'))->with('status', __('Qeydiyyat uğurla tamamlandı, xoş gəldiniz!'));
     }
 
     public function showLogin()

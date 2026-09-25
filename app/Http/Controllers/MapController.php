@@ -57,7 +57,7 @@ class MapController extends Controller
                 $label = self::format($r) ?? $r['display_name'];
                 $name = trim((string) ($r['name'] ?? ''));
                 if ($name !== '' && ! str_contains($label, $name)) {
-                    $label = $name . ' — ' . $label;
+                    $label = $name . ', ' . $label;
                 }
 
                 return ['lat' => round((float) $r['lat'], 7), 'lng' => round((float) $r['lon'], 7), 'label' => $label];

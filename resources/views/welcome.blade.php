@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', __('Nefis — Şəkilli Şokolad Qutuları və Fərdi Hədiyyələr Bakıda'))
+@section('title', __('Nefis, Şəkilli Şokolad Qutuları və Fərdi Hədiyyələr Bakıda'))
 @section('meta_description', __('Ad günü, sevgiliyə, 8 Mart və hər münasibətə fərdi hədiyyə: öz şəkliniz və sözlərinizlə şokolad qutusu. Onlayn sifariş, Bakıda və bütün Azərbaycanda çatdırılma.'))
 
 @php
@@ -248,7 +248,7 @@
         <div class="section-head center reveal">
           <span class="eyebrow" style="justify-content:center;">{{ __('Hədiyyə fikirləri') }}</span>
           <h2>{{ __('Hər Münasibətə Fərdi Hədiyyə') }}</h2>
-          <p class="lede" style="margin-inline:auto;">{{ __('Ad günü, sevgiliyə, 8 Mart, körpəyə — kimə və nə üçün hədiyyə axtarırsınız?') }}</p>
+          <p class="lede" style="margin-inline:auto;">{{ __('Ad günü, sevgiliyə, 8 Mart, körpəyə, kimə və nə üçün hədiyyə axtarırsınız?') }}</p>
         </div>
         <div class="occ-grid">
           @foreach($gifts->take(8) as $gift)

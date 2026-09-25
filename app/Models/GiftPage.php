@@ -171,7 +171,7 @@ class GiftPage extends Model
                 'designs' => __('Bu münasibətə uyğun dizaynlar'),
                 'pick' => __('Dizayn seç'),
                 'how' => __('Necə işləyir?'),
-                'lede' => __('Birini seçin, şəklinizi yükləyin və sözlərinizi yazın — qutunun necə görünəcəyini dərhal görəcəksiniz.'),
+                'lede' => __('Birini seçin, şəklinizi yükləyin və sözlərinizi yazın, qutunun necə görünəcəyini dərhal görəcəksiniz.'),
                 'fromPrice' => __('Qutu :price-dan'),
                 'yours' => __('Öz şəkliniz və sözləriniz'),
                 'delivery' => __('Bakıda və bölgələrə çatdırılma'),

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', __('Ödəniş') . ' — ' . __('Sifariş') . ' #' . $order->id . ' — Nefis Şokolad Evi')
+@section('title', __('Ödəniş') . ', ' . __('Sifariş') . ' #' . $order->id . ', Nefis Şokolad Evi')
 @section('robots', 'noindex, nofollow')
 
 @section('page_style')
@@ -104,14 +104,14 @@
         </div>
       @else
         <div class="pay-card">
-          <p class="pay-note">{{ __('Ödəniş hesabları hazırda əlçatan deyil. Sifarişiniz qeydə alınıb — sizinlə əlaqə saxlayacağıq.') }}</p>
+          <p class="pay-note">{{ __('Ödəniş hesabları hazırda əlçatan deyil. Sifarişiniz qeydə alınıb, sizinlə əlaqə saxlayacağıq.') }}</p>
         </div>
       @endif
 
       <div class="pay-card">
         <label>{{ __('Çek (qəbz)') }}</label>
         @if($order->payment_receipt)
-          <p class="pay-sent" style="margin:.6rem 0 .9rem;">{{ __('Çek göndərilib') }}{{ $order->receipt_at ? ' — ' . $order->receipt_at->format('d.m.Y H:i') : '' }}. Yoxlanılır.</p>
+          <p class="pay-sent" style="margin:.6rem 0 .9rem;">{{ __('Çek göndərilib') }}{{ $order->receipt_at ? ', ' . $order->receipt_at->format('d.m.Y H:i') : '' }}. Yoxlanılır.</p>
         @endif
         <form method="POST" action="{{ lroute('orders.pay.receipt', $order) }}" enctype="multipart/form-data">
           @csrf

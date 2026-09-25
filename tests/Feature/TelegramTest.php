@@ -57,7 +57,7 @@ class TelegramTest extends TestCase
         Telegram::saveCourierToken('999:COURIER');
         Setting::put(Setting::TELEGRAM_COURIER_CHAT, '-1001234');
         $order = $this->order();
-        $order->update(['delivery_date' => '2026-09-26', 'delivery_slot' => '14:00 — 18:00']);
+        $order->update(['delivery_date' => '2026-09-26', 'delivery_slot' => '14:00–18:00']);
         Http::fake(['api.telegram.org/*' => Http::response(['ok' => true])]);   // forget the new-order call
 
         $order->forceFill(['status' => 'ready'])->save();
@@ -73,12 +73,12 @@ class TelegramTest extends TestCase
                 && str_contains($text, 'Aysel')                          // who waits for it
                 && str_contains($text, '+994 50 123 45 67')              // the number to ring
                 && str_contains($text, '26 sentyabr')                    // the day
-                && str_contains($text, '14:00 — 18:00')                  // and the hours
+                && str_contains($text, '14:00–18:00')                  // and the hours
                 && str_contains($text, 'Rəşid Behbudov 10');             // where to take it
         });
 
         // The customer hears it too, in his own words.
-        $this->assertSame('Sifarişiniz hazırdır — kuryer yola düşəndə sizinlə əlaqə saxlayacaq.',
+        $this->assertSame('Sifarişiniz hazırdır, kuryer yola düşəndə sizinlə əlaqə saxlayacaq.',
             \App\Support\CustomerNotice::line($order->fresh()));
     }
 

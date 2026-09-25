@@ -192,14 +192,14 @@ class Telegram
             ]);
 
             $lines[] = '• ' . e($item->product_name) . ' × ' . $item->quantity
-                . ' — ' . Price::format($item->unitPrice() * $item->quantity)
+                . ', ' . Price::format($item->unitPrice() * $item->quantity)
                 . ($extras ? "\n   <i>" . e(implode(', ', $extras)) . '</i>' : '');
         }
 
         $lines[] = '';
         $lines[] = '💰 <b>Cəmi: ' . Price::format($order->total()) . '</b>';
         if ($order->delivery_name) {
-            $lines[] = '🚚 ' . e($order->delivery_name) . ' — ' . Price::format((float) $order->delivery_price);
+            $lines[] = '🚚 ' . e($order->delivery_name) . ', ' . Price::format((float) $order->delivery_price);
         }
         if ($order->delivery_date) {
             $lines[] = '🗓 ' . e(DeliveryTime::day($order->delivery_date) . ($order->delivery_slot ? ', ' . $order->delivery_slot : ''));
@@ -258,7 +258,7 @@ class Telegram
         // a courier never wonders whether it was simply left out.
         $when = $order->delivery_date
             ? DeliveryTime::day($order->delivery_date) . ($order->delivery_slot ? ', ' . $order->delivery_slot : '')
-            : 'vaxt seçilməyib — müştəri ilə dəqiqləşdirin';
+            : 'vaxt seçilməyib, müştəri ilə dəqiqləşdirin';
 
         foreach (array_filter([
             '👤' => $order->recipient_name ?: $order->user?->name,
@@ -341,7 +341,7 @@ class Telegram
     /** The customer says he has paid and uploads the receipt. */
     public static function receipt(Order $order): void
     {
-        self::send('🧾 <b>Sifariş #' . $order->id . '</b> üçün ödəniş çeki yükləndi — ' . Price::format($order->total())
+        self::send('🧾 <b>Sifariş #' . $order->id . '</b> üçün ödəniş çeki yükləndi, ' . Price::format($order->total())
             . "\n" . url('/admin/orders/' . $order->id . '/edit'));
     }
 }

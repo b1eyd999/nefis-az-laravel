@@ -81,8 +81,8 @@ class LiveMaterials
         return [
             'ar_video.required' => 'Canlı şəkil üçün videonu yükləyin.',
             'ar_video.mimetypes' => 'Video MP4, MOV və ya WEBM olmalıdır.',
-            'ar_video.max' => 'Video ' . self::videoMb() . ' MB-dan böyük ola bilməz — qısaldın və ya sıxın.',
-            'ar_video.uploaded' => 'Video yüklənmədi — ' . self::videoMb() . ' MB-dan kiçik olmalıdır.',
+            'ar_video.max' => 'Video ' . self::videoMb() . ' MB-dan böyük ola bilməz, qısaldın və ya sıxın.',
+            'ar_video.uploaded' => 'Video yüklənmədi, ' . self::videoMb() . ' MB-dan kiçik olmalıdır.',
             'ar_photo.required' => 'Canlanacaq şəkli yükləyin.',
             'ar_photo.image' => 'Şəkil JPG, PNG və ya WEBP olmalıdır.',
             'ar_photo.max' => 'Şəkil 10 MB-dan böyük ola bilməz.',

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', __('Səbət') . ' — Nefis Şokolad Evi')
+@section('title', __('Səbət') . ', Nefis Şokolad Evi')
 @section('robots', 'noindex, nofollow')
 
 @section('content')
@@ -61,7 +61,7 @@
                 <p style="margin-top:.2rem;">🎁 {{ __('Qablaşdırma') }}: {{ $item['wrapping']['name'] }} &middot; {{ \App\Support\Price::format($item['wrapping']['price']) }}</p>
               @endif
               @if($isLive)
-                <p style="margin-top:.2rem;">🎬 {{ __('Şəkil və video — QR kodla çap olunur') }}</p>
+                <p style="margin-top:.2rem;">🎬 {{ __('Şəkil və video, QR kodla çap olunur') }}</p>
               @elseif(! empty($item['ar']))
                 <p style="margin-top:.2rem;">🎬 {{ __('Canlı şəkil (AR)') }} &middot; {{ \App\Support\Price::format($item['ar']['price']) }}</p>
               @endif

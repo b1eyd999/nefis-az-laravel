@@ -62,7 +62,7 @@ class LivePhoto extends Model
         $borrowed = $image === null ? (($item->customer_photos ?? [])[0] ?? null) : null;
 
         $live = static::create([
-            'title' => 'Sifariş #' . $item->order_id . ' — ' . ($item->product_name ?? 'Canlı şəkil'),
+            'title' => 'Sifariş #' . $item->order_id . ', ' . ($item->product_name ?? 'Canlı şəkil'),
             'target_image' => '',
             'video_path' => $ar['video'],
             'order_item_id' => $item->id,

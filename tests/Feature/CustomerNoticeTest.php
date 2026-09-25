@@ -54,13 +54,13 @@ class CustomerNoticeTest extends TestCase
 
         Mail::assertSent(OrderStatus::class, function (OrderStatus $mail) use ($order) {
             return $mail->hasTo('aysel@example.com')
-                && $mail->envelope()->subject === 'Nefis.az — sifariş #' . $order->id . ': Təsdiqləndi';
+                && $mail->envelope()->subject === 'Nefis.az, sifariş #' . $order->id . ': Təsdiqləndi';
         });
 
         // The letter says what happened and where to look at the order.
-        $this->assertSame('Ödəniş təsdiqləndi — sifarişiniz hazırlanır.', CustomerNotice::line($order->fresh()));
+        $this->assertSame('Ödəniş təsdiqləndi, sifarişiniz hazırlanır.', CustomerNotice::line($order->fresh()));
         Mail::assertSent(OrderStatus::class, fn (OrderStatus $mail) => str_contains(
-            $mail->render(), 'Ödəniş təsdiqləndi — sifarişiniz hazırlanır.'
+            $mail->render(), 'Ödəniş təsdiqləndi, sifarişiniz hazırlanır.'
         ));
     }
 

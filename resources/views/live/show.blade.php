@@ -16,7 +16,7 @@
 <meta name="referrer" content="no-referrer">
 {{-- A customer's own video: not for search engines. --}}
 <meta name="robots" content="noindex, nofollow">
-<title>{{ $live->title }} — Canlı şəkil · Nefis</title>
+<title>{{ $live->title }}, Canlı şəkil · Nefis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -185,7 +185,7 @@
         <li><span class="ico">🎬</span>Video canlanır</li>
       </ol>
       <button type="button" class="btn" id="go">📷 Kameranı aç</button>
-      <p class="note">🔒 Brauzer kameraya icazə soruşacaq — <b>«İcazə ver»</b> basın. Heç nə yazılmır və saxlanmır.</p>
+      <p class="note">🔒 Brauzer kameraya icazə soruşacaq, <b>«İcazə ver»</b> basın. Heç nə yazılmır və saxlanmır.</p>
       <p class="err" id="err" hidden></p>
     </div>
 
@@ -241,7 +241,7 @@
       video.addEventListener('loadedmetadata', fit);
 
       /* Tips while looking, one after another. */
-      const TIPS = ['Şəkli çərçivəyə sığışdırın', 'Telefonu sabit saxlayın', 'Bir az uzaqlaşdırın — şəkil tam görünsün', 'İşıqlı yerdə daha yaxşı işləyir'];
+      const TIPS = ['Şəkli çərçivəyə sığışdırın', 'Telefonu sabit saxlayın', 'Bir az uzaqlaşdırın, şəkil tam görünsün', 'İşıqlı yerdə daha yaxşı işləyir'];
       let tipAt = 0, tipTimer = null;
       function tips(on){
         clearInterval(tipTimer);

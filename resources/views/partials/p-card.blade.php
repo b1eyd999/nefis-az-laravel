@@ -3,7 +3,7 @@
 <div class="p-card reveal">
   <a href="{{ $link }}" class="p-card-media">
     @if($product->tag)<span class="tag">{{ $product->tag }}</span>@endif
-    <img src="{{ \App\Support\Media::url($product->catalogImage()) }}" alt="{{ $product->tr('name') }} — {{ __('şəkilli şokolad qutusu') }}" loading="lazy">
+    <img src="{{ \App\Support\Media::url($product->catalogImage()) }}" alt="{{ $product->tr('name') }}, {{ __('şəkilli şokolad qutusu') }}" loading="lazy">
   </a>
   <div class="p-card-body">
     <h3>{{ $product->tr('name') }}</h3>

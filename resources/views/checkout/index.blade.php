@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', __('Sifarişi Tamamla') . ' — Nefis Şokolad Evi')
+@section('title', __('Sifarişi Tamamla') . ', Nefis Şokolad Evi')
 @section('robots', 'noindex, nofollow')
 
 {{-- The map services check where their requests come from. --}}
@@ -113,7 +113,7 @@
   function inBaku(a, b){ return a >= bounds.south && a <= bounds.north && b >= bounds.west && b <= bounds.east; }
 
   function picked(a, b){
-    if (!inBaku(a, b)) { say(@json(__('Bu yer Bakıdan kənardadır — qapıya çatdırılma yalnız Bakı daxilindədir.')), 'err'); return; }
+    if (!inBaku(a, b)) { say(@json(__('Bu yer Bakıdan kənardadır, qapıya çatdırılma yalnız Bakı daxilindədir.')), 'err'); return; }
     lat.value = a.toFixed(7); lng.value = b.toFixed(7);
     say(@json(__('Yer seçildi. Ünvanı yoxlayın, mənzil və mərtəbəni əlavə edin.')), 'ok');
     picker.reverse(a, b).then(function(text){
@@ -130,7 +130,7 @@
       reverseUrl: box.dataset.reverse, searchUrl: box.dataset.search,
       onPick: picked
     }).then(function(p){ picker = p; setTimeout(p.refresh, 50); return p; })
-      .catch(function(){ mapFailed = true; box.hidden = true; say(@json(__('Xəritə açılmadı — ünvanı aşağıda yazın.')), 'err'); });
+      .catch(function(){ mapFailed = true; box.hidden = true; say(@json(__('Xəritə açılmadı, ünvanı aşağıda yazın.')), 'err'); });
     return loading;
   }
 
@@ -174,11 +174,11 @@
     (ensure() || Promise.resolve()).then(function(){
       navigator.geolocation.getCurrentPosition(function(pos){
         var a = pos.coords.latitude, b = pos.coords.longitude;
-        if (!inBaku(a, b)) { say(@json(__('Siz Bakıdan kənardasınız — yeri xəritədə əl ilə seçin.')), 'err'); return; }
+        if (!inBaku(a, b)) { say(@json(__('Siz Bakıdan kənardasınız, yeri xəritədə əl ilə seçin.')), 'err'); return; }
         typedByHand = false;
         picker.place(a, b, true);
         picked(a, b);
-      }, function(){ say(@json(__('Yerinizə icazə verilmədi — xəritədə özünüz seçin.')), 'err'); }, { enableHighAccuracy: true, timeout: 10000 });
+      }, function(){ say(@json(__('Yerinizə icazə verilmədi, xəritədə özünüz seçin.')), 'err'); }, { enableHighAccuracy: true, timeout: 10000 });
     });
   });
 
@@ -310,13 +310,13 @@
                    data-bounds='@json(\App\Models\DeliveryMethod::BAKU_BOUNDS)'
                    data-center='@json(\App\Models\DeliveryMethod::BAKU_CENTER)'
                    data-reverse="{{ route('map.reverse') }}" data-search="{{ route('map.search') }}"></div>
-              <p class="map-hint" id="map-hint">{{ __('Xəritəyə toxunun və ya işarəni sürüşdürün — ünvan özü yazılacaq.') }}</p>
+              <p class="map-hint" id="map-hint">{{ __('Xəritəyə toxunun və ya işarəni sürüşdürün, ünvan özü yazılacaq.') }}</p>
               <input type="hidden" name="delivery_lat" id="delivery_lat" value="{{ old('delivery_lat') }}" data-optional>
               <input type="hidden" name="delivery_lng" id="delivery_lng" value="{{ old('delivery_lng') }}" data-optional>
             </div>
             <div class="field">
               <label for="delivery_address">{{ __('Ünvan (yalnız Bakı)') }}</label>
-              <input type="text" id="delivery_address" name="delivery_address" value="{{ old('delivery_address') }}" placeholder="{{ __('Küçə, ev — mənzil və mərtəbəni əlavə edin') }}">
+              <input type="text" id="delivery_address" name="delivery_address" value="{{ old('delivery_address') }}" placeholder="{{ __('Küçə, ev, mənzil və mərtəbəni əlavə edin') }}">
             </div>
           </div>
 
