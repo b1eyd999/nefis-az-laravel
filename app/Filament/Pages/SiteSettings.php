@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\ChatBot;
 use App\Support\Contact;
 use App\Support\CustomerNotice;
 use App\Support\DeliveryTime;
@@ -122,6 +123,30 @@ class SiteSettings extends Page implements HasActions, HasForms
                         ->body('İndi qrupda "Mən götürürəm" düyməsinə basan kuryerin adı mesajın altında yazılacaq.')
                         ->persistent()->send();
                 }),
+            Actions\Action::make('findChatBot')
+                ->label('Söhbət: chat-ı tap')
+                ->icon('heroicon-o-chat-bubble-left-right')
+                ->color('gray')
+                ->action(function () {
+                    try {
+                        $this->data['chat_chat'] = Telegram::findChat($this->data['chat_token'] ?: ChatBot::token());
+                        Notification::make()->success()->title('Tapıldı: ' . $this->data['chat_chat'])
+                            ->body('İndi "Yadda saxla" düyməsini basın.')->send();
+                    } catch (\RuntimeException $e) {
+                        Notification::make()->danger()->title('Alınmadı')->body($e->getMessage())->persistent()->send();
+                    }
+                }),
+            Actions\Action::make('testChatBot')
+                ->label('Söhbətə test mesajı')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('gray')
+                ->visible(fn () => ChatBot::enabled())
+                ->action(fn () => Telegram::send(
+                    '✅ Nefis: saytdakı söhbət işləyir. Müştəri yazanda mesaj buraya gələcək, cavab üçün mesaja reply yazın.',
+                    ChatBot::chat(),
+                    ChatBot::token(),
+                ) ? Notification::make()->success()->title('Göndərildi')->send()
+                  : Notification::make()->danger()->title('Getmədi')->send()),
             Actions\Action::make('testCourier')
                 ->label('Kuryerə test mesajı')
                 ->icon('heroicon-o-paper-airplane')

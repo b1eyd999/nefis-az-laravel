@@ -36,6 +36,16 @@ Route::post('/telegram/kuryer/{secret}', [\App\Http\Controllers\TelegramControll
     ->where('secret', '[a-f0-9]{32}')
     ->name('telegram.courier');
 
+// The chat window on the site: the visitor writes here, the shop answers from
+// Telegram and Telegram calls the last of these three.
+Route::middleware('throttle:30,1')->prefix('sohbet')->name('chat.')->group(function () {
+    Route::post('/yaz', [\App\Http\Controllers\ChatController::class, 'send'])->name('send');
+    Route::get('/oxu', [\App\Http\Controllers\ChatController::class, 'poll'])->name('poll');
+});
+Route::post('/telegram/sohbet/{secret}', [\App\Http\Controllers\ChatController::class, 'hook'])
+    ->where('secret', '[A-Za-z0-9]{32}')
+    ->name('telegram.chat');
+
 // Address lookups for the checkout map (OpenStreetMap), asked through the site.
 Route::middleware('throttle:40,1')->prefix('xerite')->name('map.')->group(function () {
     Route::get('/unvan', [MapController::class, 'reverse'])->name('reverse');

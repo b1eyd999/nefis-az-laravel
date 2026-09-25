@@ -130,6 +130,15 @@ class Setting extends Model
     /** Google Analytics measurement id (G-XXXXXXX); empty means no counter on the site. */
     public const SEO_ANALYTICS = 'seo_google_analytics';
 
+    /** The chat on the site: its own bot, where it writes, and whether it is open. */
+    public const CHAT_ENABLED = 'chat_enabled';
+
+    public const CHAT_TOKEN = 'chat_token';
+
+    public const CHAT_CHAT = 'chat_chat';
+
+    public const CHAT_HOOK = 'chat_hook_secret';
+
     /** Whether a customer is written to by e-mail when his order moves on. */
     public const NOTIFY_EMAIL = 'notify_customer_email';
 
@@ -159,6 +168,7 @@ class Setting extends Model
 14:00–18:00
 18:00–21:00",
         self::NOTIFY_EMAIL => '1',
+        self::CHAT_ENABLED => '0',
         self::SITE_LANGUAGES => 'az',
         self::MAINTENANCE => '0',
         self::MAINTENANCE_MESSAGE => 'Saytda texniki işlər aparılır. Tezliklə qayıdacağıq!',

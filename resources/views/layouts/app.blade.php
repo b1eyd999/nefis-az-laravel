@@ -89,13 +89,11 @@
 
 <a href="#main" class="skip-link">{{ __('Əsas məzmuna keç') }}</a>
 
-{{-- The corner the eye goes to when it wants to ask something: a chat on
-     WhatsApp, and the shop's Instagram under it. --}}
+{{-- The corner the eye goes to when it wants to ask something: the shop's
+     own chat, and its Instagram under it. --}}
 <div class="float-stack">
-  @if(\App\Support\Contact::has())
-    <a href="{{ \App\Support\Contact::whatsapp() }}" target="_blank" rel="noopener" class="float-chat" aria-label="{{ __('WhatsApp-da yazın') }}" title="{{ __('WhatsApp-da yazın') }}">
-      @include('partials.whatsapp-icon')
-    </a>
+  @if(\App\Support\ChatBot::enabled())
+    @include('partials.chat')
   @endif
   <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="float-cta" id="float-cta" aria-label="{{ __('Instagramda yazın') }}">
     <span class="ico">@include('partials.instagram-icon')</span><span class="txt">{{ __('Instagramda Yaz') }}</span>
@@ -400,5 +398,6 @@ document.addEventListener('submit', function(e){
 }, true);
 </script>
 @yield('page_script')
+@stack('chat_script')
 </body>
 </html>
