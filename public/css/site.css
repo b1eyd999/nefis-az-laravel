@@ -836,7 +836,18 @@
     transition:transform .3s var(--ease), box-shadow .3s var(--ease);
   }
   .chat-open:hover{ transform:translateY(-3px) scale(1.04); box-shadow:0 18px 34px -12px var(--flame-shadow); }
-  .chat-ico{ width:1.7rem; height:1.7rem; }
+  .chat-ico{ width:1.8rem; height:1.8rem; position:relative; z-index:1; }
+  /* The three dots answer in turn, and a ring goes out like a knock. */
+  .chat-ico .cd{ transform-box:fill-box; transform-origin:center; animation:chat-dots 1.6s ease-in-out infinite; }
+  .chat-ico .cd2{ animation-delay:.18s; }
+  .chat-ico .cd3{ animation-delay:.36s; }
+  @keyframes chat-dots{ 0%,60%,100%{ transform:translateY(0); opacity:.85; } 28%{ transform:translateY(-1.4px); opacity:1; } }
+  .chat-open::after{
+    content:""; position:absolute; inset:0; border-radius:50%; pointer-events:none;
+    box-shadow:0 0 0 0 rgba(250,117,18,.55); animation:chat-knock 2.8s ease-out infinite;
+  }
+  @keyframes chat-knock{ 0%{ box-shadow:0 0 0 0 rgba(250,117,18,.5); } 70%{ box-shadow:0 0 0 14px rgba(250,117,18,0); } 100%{ box-shadow:0 0 0 0 rgba(250,117,18,0); } }
+  @media (prefers-reduced-motion: reduce){ .chat-ico .cd, .chat-open::after{ animation:none; } }
   .chat-dot{ position:absolute; top:.15rem; right:.15rem; width:.85rem; height:.85rem; border-radius:50%;
     background:#3FB950; border:2px solid var(--paper); }
   .chat-panel{

@@ -3,9 +3,17 @@
      A screenshot can be picked, dragged in, or simply pasted. --}}
 <div class="chat" id="chat">
   <button type="button" class="chat-open" id="chat-open" aria-label="{{ __('Bizə yazın') }}" aria-expanded="false">
-    <svg class="chat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M21 11.6c0 4.1-3.9 7.4-8.7 7.4-1 0-2-.15-2.9-.42L4 20.5l1.3-3.5C3.87 15.6 3 13.7 3 11.6 3 7.5 6.9 4.2 11.7 4.2S21 7.5 21 11.6Z"/>
-      <path d="M8.6 11.6h.01M12 11.6h.01M15.4 11.6h.01"/>
+    {{-- A bubble the shape of a chocolate square, with three dots that answer
+         one after the other, as if someone were already typing. --}}
+    <svg class="chat-ico" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M5.6 3.6h12.8a2 2 0 0 1 2 2v8.6a2 2 0 0 1-2 2h-6.1l-4.4 3.6a.6.6 0 0 1-1-.47v-3.13H5.6a2 2 0 0 1-2-2V5.6a2 2 0 0 1 2-2Z"
+            fill="currentColor" opacity=".18"/>
+      <path d="M5.6 3.6h12.8a2 2 0 0 1 2 2v8.6a2 2 0 0 1-2 2h-6.1l-4.4 3.6a.6.6 0 0 1-1-.47v-3.13H5.6a2 2 0 0 1-2-2V5.6a2 2 0 0 1 2-2Z"
+            stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M12 3.9v12M3.9 9.9h16.2" stroke="currentColor" stroke-width=".9" opacity=".35"/>
+      <circle class="cd cd1" cx="8.4" cy="9.9" r="1.15" fill="currentColor"/>
+      <circle class="cd cd2" cx="12" cy="9.9" r="1.15" fill="currentColor"/>
+      <circle class="cd cd3" cx="15.6" cy="9.9" r="1.15" fill="currentColor"/>
     </svg>
     <span class="chat-dot" id="chat-dot" hidden></span>
   </button>
