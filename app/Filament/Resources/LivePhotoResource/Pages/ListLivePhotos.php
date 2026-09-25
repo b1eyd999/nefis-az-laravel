@@ -5,6 +5,7 @@ namespace App\Filament\Resources\LivePhotoResource\Pages;
 use App\Filament\Resources\LivePhotoResource;
 use App\Models\Setting;
 use App\Support\LiveMaterials;
+use App\Support\LivePage;
 use App\Support\Price;
 use App\Support\YandexDisk;
 use Illuminate\Support\Facades\Artisan;
@@ -101,6 +102,55 @@ class ListLivePhotos extends ListRecords
                     Setting::put(Setting::AR_VIDEO_MB, max(1, (int) ($data['video_mb'] ?? LiveMaterials::videoMb())));
                     Notification::make()->success()->title('Saxlanıldı')
                         ->body('Video limiti: ' . LiveMaterials::videoMb() . ' MB')->send();
+                }),
+            // The page's own sentences: the owner writes them the way he speaks.
+            Actions\Action::make('page')
+                ->label('Səhifənin mətnləri')
+                ->icon('heroicon-o-pencil-square')
+                ->color('gray')
+                ->modalHeading('"Canlı şəkil" səhifəsinin mətnləri')
+                ->modalDescription('Boş qoyduğunuz sahə öz ilkin mətnini saxlayır. Dəyişdiyiniz mətn rus və ingilis dillərində tərcüməsiz, olduğu kimi görünür.')
+                ->modalWidth('3xl')
+                ->fillForm(fn () => LivePage::page())
+                ->form([
+                    Forms\Components\TextInput::make('eyebrow')->label('Başlığın üstündəki kiçik yazı')->maxLength(60)
+                        ->placeholder(LivePage::DEFAULTS['eyebrow']),
+                    Forms\Components\TextInput::make('title')->label('Başlıq')->maxLength(60)
+                        ->placeholder(LivePage::DEFAULTS['title']),
+                    Forms\Components\Textarea::make('lede')->label('Başlığın altındakı mətn')->rows(2)->maxLength(300)
+                        ->placeholder(LivePage::DEFAULTS['lede'])->columnSpanFull(),
+                    Forms\Components\TextInput::make('photo_label')->label('1-ci addımın adı')->maxLength(60)
+                        ->placeholder(LivePage::DEFAULTS['photo_label']),
+                    Forms\Components\TextInput::make('photo_button')->label('Şəkil düyməsi')->maxLength(60)
+                        ->placeholder(LivePage::DEFAULTS['photo_button']),
+                    Forms\Components\Textarea::make('photo_hint')->label('Şəklin altındakı izah')->rows(2)->maxLength(300)
+                        ->placeholder(LivePage::DEFAULTS['photo_hint'])->columnSpanFull(),
+                    Forms\Components\TextInput::make('video_label')->label('2-ci addımın adı')->maxLength(60)
+                        ->placeholder(LivePage::DEFAULTS['video_label']),
+                    Forms\Components\TextInput::make('price_label')->label('Qiymətin yazısı')->maxLength(40)
+                        ->placeholder(LivePage::DEFAULTS['price_label']),
+                    Forms\Components\Textarea::make('video_hint')->label('Videonun altındakı izah')->rows(2)->maxLength(300)
+                        ->placeholder(LivePage::DEFAULTS['video_hint'])->columnSpanFull(),
+                    Forms\Components\TextInput::make('button')->label('Səbət düyməsi')->maxLength(40)
+                        ->placeholder(LivePage::DEFAULTS['button']),
+                    Forms\Components\TextInput::make('preview')->label('Boş telefonun içindəki yazı')->maxLength(120)
+                        ->placeholder(LivePage::DEFAULTS['preview']),
+                    Forms\Components\Textarea::make('caption')->label('Telefonun altındakı yazı')->rows(2)->maxLength(200)
+                        ->placeholder(LivePage::DEFAULTS['caption'])->columnSpanFull(),
+                    Forms\Components\Textarea::make('step1')->label('1-ci şəkilli addım')->rows(2)->maxLength(200)
+                        ->placeholder(LivePage::DEFAULTS['step1'])->columnSpanFull(),
+                    Forms\Components\Textarea::make('step2')->label('2-ci şəkilli addım')->rows(2)->maxLength(200)
+                        ->placeholder(LivePage::DEFAULTS['step2'])->columnSpanFull(),
+                    Forms\Components\Textarea::make('step3')->label('3-cü şəkilli addım')->rows(2)->maxLength(200)
+                        ->placeholder(LivePage::DEFAULTS['step3'])->columnSpanFull(),
+                ])
+                ->action(function (array $data) {
+                    $page = [];
+                    foreach (array_keys(LivePage::DEFAULTS) as $key) {
+                        $page[$key] = trim((string) ($data[$key] ?? ''));
+                    }
+                    Setting::put(Setting::LIVE_PAGE, json_encode($page, JSON_UNESCAPED_UNICODE));
+                    Notification::make()->success()->title('Saxlanıldı')->send();
                 }),
             Actions\CreateAction::make()->label('Canlı şəkil yarat'),
         ];

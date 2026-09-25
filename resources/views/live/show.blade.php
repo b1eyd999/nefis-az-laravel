@@ -121,6 +121,11 @@
     background:var(--cream); color:var(--ink); animation:pulse 1.6s ease-out infinite; }
   .sound.on{ top:max(1rem, env(safe-area-inset-top)); right:1rem; width:2.8rem; height:2.8rem; border-radius:50%; background:rgba(23,17,13,.6);
     color:#fff; border:1px solid rgba(255,255,255,.3); font-size:1.15rem; }
+  /* The shop's name in the corner while the camera looks at the picture. */
+  .ar-logo{ display:none; position:fixed; z-index:7; height:1.9rem; pointer-events:none;
+    left:max(1rem, env(safe-area-inset-left)); top:max(1rem, env(safe-area-inset-top));
+    opacity:.92; filter:drop-shadow(0 2px 10px rgba(0,0,0,.55)); }
+  body[data-state="scan"] .ar-logo, body[data-state="found"] .ar-logo{ display:block; }
   .toast{ position:fixed; left:50%; top:max(1.2rem, env(safe-area-inset-top)); z-index:7; transform:translate(-50%, -150%); padding:.6rem 1.1rem; border-radius:999px;
     background:rgba(23,17,13,.8); backdrop-filter:blur(6px); font-size:.88rem; font-weight:600; white-space:nowrap; transition:transform .5s var(--ease); }
   .toast.show{ transform:translate(-50%, 0); }
@@ -155,6 +160,7 @@
 </head>
 <body data-state="start">
   <div id="ar"></div>
+  <img src="/images/logo.svg" alt="Nefis" class="ar-logo">
 
   @if($live->isReady())
     {{-- Streamed from Yandex Disk; shown as an HTML video, so no cross-origin permission is needed.

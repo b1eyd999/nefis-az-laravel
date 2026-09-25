@@ -47,9 +47,9 @@
 @section('content')
   <section class="page-hero" style="padding-bottom:0;">
     <div class="wrap">
-      <span class="eyebrow" style="justify-content:center;">Yeni · AR</span>
-      <h1>{{ __('Canlı şəkil') }}</h1>
-      <p class="lede" style="margin-inline:auto;">{{ __('Şəklinizi canlandırın: QR kodu oxudub telefonu şəklə tutanda, üstündə sizin videonuz oynayır, heç bir tətbiq yükləmədən.') }}</p>
+      <span class="eyebrow" style="justify-content:center;">{{ \App\Support\LivePage::text('eyebrow') }}</span>
+      <h1>{{ \App\Support\LivePage::text('title') }}</h1>
+      <p class="lede" style="margin-inline:auto;">{{ \App\Support\LivePage::text('lede') }}</p>
     </div>
   </section>
 
@@ -65,30 +65,30 @@
         <div class="live-stage">
           <div class="live-phone" aria-hidden="true">
             <div class="live-screen">
-              <div class="live-pic empty" id="live-pic">{{ __('Şəkil və video seçin, burada necə canlanacağını görəcəksiniz') }}</div>
+              <div class="live-pic empty" id="live-pic">{{ \App\Support\LivePage::text('preview') }}</div>
               <span class="live-scan" id="live-scan" hidden>▶ {{ __('Video şəklin üstündə oynayır') }}</span>
             </div>
           </div>
-          <p class="live-caption">{{ __('Telefonda belə görünəcək: kamera şəkli tanıyır və video onun üzərinə düşür.') }}</p>
+          <p class="live-caption">{{ \App\Support\LivePage::text('caption') }}</p>
         </div>
 
         <form class="live-form" id="live-form" method="POST" action="{{ lroute('live.store') }}" enctype="multipart/form-data">
           @csrf
           <div>
-            <label>1. {{ __('Canlanacaq şəkil') }}</label>
+            <label>1. {{ \App\Support\LivePage::text('photo_label') }}</label>
             <label class="live-file" id="photo-pick">
               <input type="file" name="ar_photo" id="ar-photo" accept="image/*" required>
-              <span id="photo-name">📷 {{ __('Şəkil seçin') }}</span>
+              <span id="photo-name">📷 {{ \App\Support\LivePage::text('photo_button') }}</span>
             </label>
-            <p class="live-hint">{{ __('Bu şəkil QR kodla birlikdə çap olunur. Aydın, detallı şəkillər kamera tərəfindən daha yaxşı tanınır.') }}</p>
+            <p class="live-hint">{{ \App\Support\LivePage::text('photo_hint') }}</p>
           </div>
           <div>
-            <label>2. Video</label>
+            <label>2. {{ \App\Support\LivePage::text('video_label') }}</label>
             <label class="live-file" id="video-pick">
               <input type="file" name="ar_video" id="ar-video" accept="video/mp4,video/quicktime,video/webm,video/*" required>
               <span id="video-name">🎬 {{ __('Video seçin (MP4/MOV, :mb MB-a qədər)', ['mb' => $maxMb]) }}</span>
             </label>
-            <p class="live-hint" id="video-hint">{{ __('Ən yaxşısı 10–30 saniyəlik video. Öz ölçüsündə (məs. 9:16), kəsilmədən oynayır.') }}</p>
+            <p class="live-hint" id="video-hint">{{ \App\Support\LivePage::text('video_hint') }}</p>
           </div>
 
           <input type="file" name="ar_mind" id="ar-mind" hidden>
@@ -98,8 +98,8 @@
           </div>
           <p class="live-hint" id="prep-hint" hidden>{{ __('Hazırlanarkən bu səhifədən çıxmayın.') }}</p>
 
-          <div class="live-price"><span>{{ __('Qiymət') }}</span><b>{{ \App\Support\Price::format($price) }}</b></div>
-          <button type="submit" class="btn btn-primary btn-block" id="live-submit">{{ __('Səbətə at') }}</button>
+          <div class="live-price"><span>{{ \App\Support\LivePage::text('price_label') }}</span><b>{{ \App\Support\Price::format($price) }}</b></div>
+          <button type="submit" class="btn btn-primary btn-block" id="live-submit">{{ \App\Support\LivePage::text('button') }}</button>
 
           {{-- Drawn, because "the camera recognises the picture and the video
                plays over it" is a sentence people read twice. --}}
@@ -113,7 +113,7 @@
                 <circle cx="35" cy="32" r="9" />
                 <path d="M32.5 27.5l6 4.5-6 4.5z" />
               </svg>
-              <span>{{ __('Şəkli və videonu yükləyirsiniz, qalanını sistem özü hazırlayır.') }}</span>
+              <span>{{ \App\Support\LivePage::text('step1') }}</span>
             </li>
             <li>
               <svg class="step-art" viewBox="0 0 48 48" aria-hidden="true">
@@ -124,7 +124,7 @@
                 <path d="M7 27h5v5H7z" /><path d="M18 27h5v5h-5z" /><path d="M7 33h5v5H7z" />
                 <path d="M15 27v2" /><path d="M15 33h2v2h-2z" /><path d="M20 35h3v3h-3z" /><path d="M15 38h2" />
               </svg>
-              <span>{{ __('Şəkli QR kodla birlikdə çap edib sifarişinizlə göndəririk.') }}</span>
+              <span>{{ \App\Support\LivePage::text('step2') }}</span>
             </li>
             <li>
               <svg class="step-art" viewBox="0 0 48 48" aria-hidden="true">
@@ -135,7 +135,7 @@
                 <path d="M21 24l-3 3M25 36l-2 3M17 22l-2-2" opacity=".5" />
                 <path d="M40 38l1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z" opacity=".6" />
               </svg>
-              <span>{{ __('Hədiyyəni alan QR kodu oxudur, telefonu şəklə tutur, video şəklin üstündə oynayır.') }}</span>
+              <span>{{ \App\Support\LivePage::text('step3') }}</span>
             </li>
           </ol>
         </form>
