@@ -74,9 +74,6 @@
 {{-- The families after Poppins stand in for the designs' own display faces,
      which are not licensed for the web. --}}
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=Great+Vibes&family=Poppins:wght@600&family=Titan+One&family=Bungee&family=Fredoka:wght@500;600&family=Sacramento&family=Creepster&family=Source+Sans+3:wght@400;600&family=Orbitron:wght@600;800&family=Anton&family=Cinzel:wght@400;700&family=Bangers&family=Luckiest+Guy&family=Oswald:wght@500;700&family=Bevan&family=Archivo+Black&family=Caveat:wght@600&family=Pacifico&family=Montserrat:wght@300;500&display=swap" rel="stylesheet">
-{{-- Coloured pictures for Windows and Android too; an Apple device keeps its own. --}}
-@php $emojiFont = \App\Support\Emoji::stylesheet(); @endphp
-@if($emojiFont)<link href="{{ $emojiFont }}" rel="stylesheet">@endif
 <link rel="stylesheet" href="{{ asset('css/polaroid.css') }}">
 <link rel="stylesheet" href="{{ asset('css/site.css') }}?v={{ \App\Support\Assets::version('css/site.css') }}">
 <style>
@@ -235,6 +232,9 @@
         <p>{{ __('Şokoladın ən nəfis halı, hər qutu sizin xatirəniz üçün fərdi hazırlanır.') }}</p>
         <div class="footer-social">
           <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" aria-label="Instagram">@include('partials.instagram-icon')</a>
+          @if(\App\Support\Contact::has())
+            <a href="{{ \App\Support\Contact::whatsapp() }}" target="_blank" rel="noopener" aria-label="WhatsApp">@include('partials.whatsapp-icon')</a>
+          @endif
         </div>
       </div>
       <div class="footer-col">

@@ -46,7 +46,7 @@
        everywhere else Inter stands in for it, and it is drawn to match. */
     --sf: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
           "Inter", "Segoe UI", Roboto,
-          "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji",
+          "Apple Color Emoji", "Segoe UI Emoji",
           ui-sans-serif, system-ui, sans-serif;
     --serif: var(--sf);
     --sans: var(--sf);
@@ -780,7 +780,8 @@
   .footer-social a:hover{ background:var(--flame-grad); border-color:transparent; color:#fff; transform:translateY(-2px); }
   .footer-col h4{ font-size:.8125rem; letter-spacing:.06em; text-transform:uppercase; margin-bottom:1rem; font-weight:700; color:var(--on-band); }
   .footer-col a{ display:block; padding:.3rem 0; font-size:.9375rem; transition:color .25s; }
-  .footer-col a:hover{ color:var(--flame-2); }
+  /* On the orange band a link lights up white, not oranger still. */
+  .footer-col a:hover{ color:#fff; }
   .footer-col .f-phone{ font-family:var(--serif); font-size:1.25rem; color:var(--on-band); }
   .footer-col .f-hours{ display:block; padding:.5rem 0; font-size:.8125rem; opacity:.75; }
   .footer-bottom{ display:flex; flex-direction:column; gap:.75rem; padding-top:1.75rem; font-size:.8125rem; }
@@ -799,7 +800,8 @@
   .float-cta:hover{ transform:translateY(-3px); box-shadow:0 16px 34px -10px var(--shadow-strong); }
   .float-cta .ico{ font-size:1.125rem; line-height:1; display:grid; place-items:center; }
   .ig-ico{ width:1.3rem; height:1.3rem; display:block; }
-  .footer-social .ig-ico{ width:1.15rem; height:1.15rem; }
+  .footer-social .ig-ico, .footer-social .wa-ico{ width:1.15rem; height:1.15rem; }
+  .wa-ico{ width:1.3rem; height:1.3rem; display:block; }
   /* On a phone just the round icon: the words covered the forms' last fields. */
   .float-cta span.txt{ display:none; }
   @media (min-width:900px){ .float-cta span.txt{ display:inline; } }
