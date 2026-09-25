@@ -53,6 +53,10 @@ return new class extends Migration
 
         // The settings the owner writes for customers; the rest are numbers and keys.
         foreach (['payment_note', 'maintenance_message', 'contact_hours', 'delivery_slots', 'letter_page', 'chocolate_top_brands'] as $key) {
+            // Forgotten either way: a setting the owner never touched is read
+            // from the code's own defaults, and those have changed too.
+            Cache::forget('setting:' . $key);
+
             $row = DB::table('settings')->where('key', $key)->first();
             if (! $row) {
                 continue;
@@ -60,7 +64,6 @@ return new class extends Migration
             $now = self::clean($row->value);
             if ($now !== $row->value) {
                 DB::table('settings')->where('key', $key)->update(['value' => $now]);
-                Cache::forget('setting:' . $key);
             }
         }
 
