@@ -88,6 +88,11 @@
           </span>
         </div>
         <a href="{{ lroute('checkout.index') }}" class="btn btn-primary btn-block">{{ __('Sifarişi Tamamla') }}</a>
+        {{-- The cart keeps what is in it: one tap back to the designs. --}}
+        <a href="{{ lroute('designs.index') }}" class="btn btn-ghost btn-block" style="margin-top:.6rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+          {{ __('Alış-verişə davam et') }}
+        </a>
       </div>
     @endif
   </div>

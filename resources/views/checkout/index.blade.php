@@ -19,6 +19,24 @@
   }
   .slot input:checked + span{ border-color:var(--gold); color:var(--cocoa); background:var(--cream-2); }
   .slot input:focus-visible + span{ outline:2px solid var(--gold); outline-offset:2px; }
+  /* Made before the others: its own card, lit when it is chosen. */
+  .rush-pick{ display:flex; align-items:center; gap:.85rem; margin:0 0 1.25rem; padding:.85rem 1rem; cursor:pointer;
+    border:1.5px solid var(--line); border-radius:1rem; background:linear-gradient(140deg, var(--paper), var(--cream-2));
+    transition:border-color .25s, box-shadow .3s, transform .3s var(--ease); }
+  .rush-pick:hover{ border-color:rgba(250,117,18,.45); transform:translateY(-1px); }
+  .rush-pick input{ position:absolute; opacity:0; width:0; height:0; }
+  .rush-box{ flex:none; width:2.4rem; height:2.4rem; border-radius:.8rem; display:grid; place-items:center; font-size:1.1rem;
+    background:var(--cream-2); transition:background .25s, box-shadow .25s, transform .25s var(--ease); }
+  .rush-text{ flex:1; min-width:0; }
+  .rush-text b{ display:block; font-size:.9375rem; }
+  .rush-text small{ display:block; font-size:.8rem; color:var(--cocoa-soft); margin-top:.1rem; }
+  .rush-fee{ flex:none; font-weight:800; font-size:.8rem; color:#fff; background:var(--flame-grad); padding:.2rem .6rem; border-radius:999px;
+    box-shadow:0 6px 14px -8px var(--flame-shadow); }
+  .rush-pick:has(input:checked){ border-color:var(--flame); background:linear-gradient(140deg, #FFF7EF, #FFE9D6);
+    box-shadow:0 0 0 3px rgba(250,117,18,.16), 0 14px 28px -20px var(--flame-shadow); }
+  .rush-pick:has(input:checked) .rush-box{ background:var(--flame-grad); transform:scale(1.05);
+    box-shadow:0 8px 18px -10px var(--flame-shadow); }
+  .rush-pick:has(input:focus-visible){ outline:2px solid var(--flame); outline-offset:2px; }
 
   .dlv-grid{ display:grid; gap:.6rem; margin-top:.4rem; }
   .dlv-card{ position:relative; display:flex; flex-direction:column; gap:.2rem; padding:.8rem 1rem; border:1.5px solid var(--line); border-radius:.9rem;
@@ -77,6 +95,10 @@
   var groups = Array.prototype.slice.call(document.querySelectorAll('.dlv-fields'));
   var sum = document.getElementById('dlv-sum');
   var items = parseFloat(sum.dataset.items) || 0;
+  // Made before the others: its own line in the sum.
+  var rushBox = document.querySelector('input[name="rush"]');
+  var rushRow = document.getElementById('sum-rush-row');
+  var rushFee = {{ (float) ($rushFee ?? 0) }};
   function fmt(v){ v = Math.round(v * 100) / 100; return (v % 1 === 0 ? v.toFixed(0) : v.toFixed(2)) + ' ₼'; }
   function update(){
     var picked = radios.filter(function(r){ return r.checked; })[0];
@@ -88,10 +110,13 @@
     });
     var price = picked ? parseFloat(picked.dataset.price) || 0 : 0;
     document.getElementById('sum-delivery').textContent = picked ? (price > 0 ? fmt(price) : @json(__('Pulsuz'))) : @json(__('seçilməyib'));
-    var total = items + price;
+    var rush = rushBox && rushBox.checked ? rushFee : 0;
+    if (rushRow) rushRow.hidden = rush === 0;
+    var total = items + price + rush;
     document.getElementById('sum-grand').textContent = total > 0 ? fmt(total) : '—';
   }
   radios.forEach(function(r){ r.addEventListener('change', update); });
+  if (rushBox) rushBox.addEventListener('change', update);
   update();
 })();
 </script>
@@ -364,6 +389,19 @@
           </div>
         </div>
 
+        @if(($rushFee ?? 0) > 0)
+          {{-- Before the others: hours instead of days, for the fee the owner asks. --}}
+          <label class="rush-pick">
+            <input type="checkbox" name="rush" value="1" @checked(old('rush'))>
+            <span class="rush-box" aria-hidden="true">⚡</span>
+            <span class="rush-text">
+              <b>{{ __('Təcili hazırlansın') }}</b>
+              <small>{{ __('Bir neçə saat ərzində hazır olur, növbədənkənar.') }}</small>
+            </span>
+            <span class="rush-fee">+{{ \App\Support\Price::format($rushFee) }}</span>
+          </label>
+        @endif
+
         <div class="field">
           <label for="contact_phone">{{ __('Telefon nömrəsi') }}</label>
           <input type="tel" id="contact_phone" name="contact_phone" value="{{ old('contact_phone', auth()->user()->phone) }}" required placeholder="{{ __('+994 XX XXX XX XX') }}">
@@ -377,6 +415,9 @@
           <div><span>{{ __('Məhsullar') }}</span><span>{{ $itemsTotal > 0 ? \App\Support\Price::format($itemsTotal) : '—' }}</span></div>
           @if($methods->isNotEmpty())
             <div><span>{{ __('Çatdırılma') }}</span><span id="sum-delivery">{{ __('seçilməyib') }}</span></div>
+          @endif
+          @if(($rushFee ?? 0) > 0)
+            <div id="sum-rush-row" hidden><span>{{ __('Təcili hazırlansın') }}</span><span>{{ \App\Support\Price::format($rushFee) }}</span></div>
           @endif
           <div class="total"><span>{{ __('Cəmi') }}</span><span id="sum-grand">{{ $itemsTotal > 0 ? \App\Support\Price::format($itemsTotal) : '—' }}</span></div>
         </div>

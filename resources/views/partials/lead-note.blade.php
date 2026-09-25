@@ -13,12 +13,7 @@
         <b>{{ __('Sifariş :days gün ərzində hazırlanır.', ['days' => $leadDays]) }}</b>
       @endif
       @if($rushFee > 0)
-        {{ __('Tezləşdirmək istəsəniz, əlavə :fee ödəniş göndərməlisiniz.', ['fee' => \App\Support\Price::format($rushFee)]) }}
-        @if(\App\Support\Contact::has())
-          <a href="{{ \App\Support\Contact::whatsapp() }}" target="_blank" rel="noopener">{{ __('Sifarişdən sonra bizə yazın.') }}</a>
-        @else
-          {{ __('Sifarişdən sonra bizə yazın.') }}
-        @endif
+        {{ __('Sifarişi rəsmiləşdirəndə «Təcili hazırlansın» seçsəniz (+:fee), qutunuz bir neçə saat ərzində hazır olur.', ['fee' => \App\Support\Price::format($rushFee)]) }}
       @endif
     </p>
   </div>

@@ -39,7 +39,9 @@ class CheckoutController extends Controller
         $methods = DeliveryMethod::shown()->get();
         Analytics::beginCheckout($itemsTotal);
 
-        return view('checkout.index', compact('items', 'itemsTotal', 'methods'));
+        $rushFee = DeliveryTime::rushFee();
+
+        return view('checkout.index', compact('items', 'itemsTotal', 'methods', 'rushFee'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -164,6 +166,14 @@ class CheckoutController extends Controller
         ];
     }
 
+    /** What the customer pays for jumping the queue, or nothing if he did not ask. */
+    private static function rushFee(array $data): ?float
+    {
+        $fee = DeliveryTime::rushFee();
+
+        return ! empty($data['rush']) && $fee > 0 ? $fee : null;
+    }
+
     /**
      * The chosen delivery and what it needs: an address for the door, name,
      * phone and post-office index for the post, a station for the metro.
@@ -181,6 +191,8 @@ class CheckoutController extends Controller
                 'after_or_equal:' . DeliveryTime::earliest()->toDateString(),
                 'before_or_equal:' . DeliveryTime::latest()->toDateString()],
             'delivery_slot' => ['nullable', Rule::in(DeliveryTime::slots())],
+            // Made before the others, for the fee the owner asks today.
+            'rush' => ['nullable', 'boolean'],
         ];
 
         // Without any method set up, checkout asks for an address as it always did.
@@ -188,7 +200,7 @@ class CheckoutController extends Controller
             $data = $request->validate($common + ['delivery_address' => ['required', 'string', 'max:255']]);
 
             return ['contact_phone' => $data['contact_phone'], 'delivery_address' => $data['delivery_address']]
-                + self::when($data);
+                + self::when($data) + ['rush_fee' => self::rushFee($data)];
         }
 
         $request->validate(['delivery_method_id' => ['required', Rule::exists('delivery_methods', 'id')->where('is_active', true)]],
@@ -226,6 +238,7 @@ class CheckoutController extends Controller
         ]);
 
         $order = self::when($data) + [
+            'rush_fee' => self::rushFee($data),
             'delivery_method_id' => $method->id,
             'delivery_type' => $method->type,
             'delivery_name' => $method->name,

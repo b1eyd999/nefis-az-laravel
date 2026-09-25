@@ -36,7 +36,7 @@ class LeadNoteTest extends TestCase
 
         $this->get(route('products.customize', $this->box()->slug))->assertOk()
             ->assertSee('Sifariş 2 gün ərzində hazırlanır.')
-            ->assertSee('əlavə 3 ₼ ödəniş göndərməlisiniz.', false);
+            ->assertSee('«Təcili hazırlansın» seçsəniz (+3 ₼)', false);
     }
 
     public function test_the_owner_changes_both_numbers(): void
@@ -46,7 +46,7 @@ class LeadNoteTest extends TestCase
 
         $this->get(route('products.customize', $this->box()->slug))->assertOk()
             ->assertSee('Sifariş 4 gün ərzində hazırlanır.')
-            ->assertSee('5.50 ₼', false);
+            ->assertSee('(+5.50 ₼)', false);
     }
 
     public function test_no_fee_means_no_offer(): void
@@ -55,7 +55,7 @@ class LeadNoteTest extends TestCase
 
         $this->get(route('products.customize', $this->box()->slug))->assertOk()
             ->assertSee('Sifariş 2 gün ərzində hazırlanır.')
-            ->assertDontSee('ödəniş göndərməlisiniz');
+            ->assertDontSee('Təcili hazırlansın');
     }
 
     public function test_the_customer_reads_it_in_his_own_language(): void
@@ -65,6 +65,6 @@ class LeadNoteTest extends TestCase
 
         $this->get(route('ru.products.customize', $this->box()->slug))->assertOk()
             ->assertSee('Заказ готовится в течение 2 дней.')
-            ->assertSee('нужно доплатить 3 ₼', false);
+            ->assertSee('«Срочно» (+3 ₼)', false);
     }
 }

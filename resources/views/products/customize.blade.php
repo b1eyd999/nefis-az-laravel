@@ -71,41 +71,96 @@
   .angle-thumb canvas{ width:100%; height:100%; object-fit:cover; display:block; }
   textarea.text-input{ resize:vertical; }
   .wrap-block{ display:flex; flex-direction:column; gap:.6rem; }
-  .wrap-none{ display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.6rem .85rem; margin:0;
-    border:1.5px solid var(--line); border-radius:.8rem; background:var(--paper); cursor:pointer; font-weight:600; font-size:.875rem; position:relative; }
+  .wrap-open .wrap-none{ margin-top:.5rem; }
+  .wrap-none{ display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.7rem .9rem; margin:0;
+    border:1.5px solid var(--line); border-radius:.9rem; background:linear-gradient(140deg, var(--paper), var(--cream-2));
+    cursor:pointer; font-weight:600; font-size:.875rem; position:relative;
+    transition:border-color .25s, box-shadow .25s, transform .25s var(--ease); }
+  .wrap-none:hover{ border-color:rgba(250,117,18,.45); transform:translateY(-1px); }
   .wrap-none b{ font-size:.8rem; color:var(--cocoa-soft); font-weight:600; }
   .wrap-none input, .wrap-swatch input{ position:absolute; opacity:0; pointer-events:none; }
-  .wrap-none:has(input:checked){ border-color:var(--gold); box-shadow:0 0 0 3px var(--ring); }
-  .wrap-group{ border:1px solid var(--line); border-radius:.9rem; padding:.9rem .75rem .8rem; position:relative; margin-top:.35rem; }
-  .wrap-price{ position:absolute; top:-.7rem; right:.8rem; background:var(--gold); color:#fff; font-weight:800; font-size:.8rem;
+  .wrap-none:has(input:checked){ border-color:var(--flame); background:linear-gradient(140deg, #FFF7EF, #FFE9D6);
+    box-shadow:0 0 0 3px rgba(250,117,18,.18), 0 12px 24px -18px var(--flame-shadow); }
+  .wrap-open{ margin:0; }
+  .wrap-open > summary{ list-style:none; cursor:pointer; display:flex; align-items:center; gap:.6rem;
+    padding:.7rem .9rem; border:1.5px solid rgba(250,117,18,.5); border-radius:.9rem; font-weight:600; font-size:.875rem;
+    color:var(--cocoa); background:linear-gradient(140deg, #FFF7EF, #FFE9D6); transition:background .25s, border-color .25s; }
+  .wrap-open > summary > span{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .wrap-open > summary > b{ font-size:.8rem; font-weight:700; color:var(--flame-2); }
+  .wrap-open > summary::-webkit-details-marker{ display:none; }
+  .wrap-open > summary:hover{ border-color:var(--flame); }
+  .wrap-open > summary svg{ width:1rem; height:1rem; transition:transform .3s var(--ease); }
+  .wrap-open[open] > summary svg{ transform:rotate(180deg); }
+  .wrap-group{ border:1px solid var(--line); border-radius:1rem; padding:1rem .8rem .85rem; position:relative; margin-top:.5rem;
+    background:linear-gradient(150deg, var(--paper), var(--cream-2)); }
+  .wrap-price{ position:absolute; top:-.7rem; right:.8rem; background:var(--flame-grad); box-shadow:0 8px 16px -10px var(--flame-shadow); color:#fff; font-weight:800; font-size:.8rem;
     padding:.15rem .6rem; border-radius:999px; }
-  .wrap-swatches{ display:grid; grid-template-columns:repeat(auto-fill, minmax(4.6rem, 1fr)); gap:.6rem; }
-  .wrap-swatch{ position:relative; display:flex; flex-direction:column; align-items:center; gap:.3rem; margin:0; cursor:pointer; font-weight:400; }
-  .wrap-swatch .sw{ position:relative; width:100%; aspect-ratio:3/4; border-radius:.6rem; background-size:60px auto; background-repeat:repeat;
-    border:2px solid transparent; box-shadow:0 2px 8px rgba(0,0,0,.18); overflow:hidden; transition:transform .15s, border-color .15s; }
-  .wrap-swatch .sw i{ position:absolute; left:50%; top:0; bottom:0; width:12%; transform:translateX(-50%); background:var(--rb); opacity:.95; }
+  /* Each paper is shown as a little wrapped parcel: it stands at a slight
+     angle on its own shadow, the ribbons cross in a knot, and a sheen runs
+     over the paper when the cursor passes. */
+  .wrap-swatches{ display:grid; grid-template-columns:repeat(auto-fill, minmax(5.4rem, 1fr)); gap:.9rem .8rem; padding-top:.2rem; }
+  .wrap-swatch{ position:relative; display:flex; flex-direction:column; align-items:center; gap:.45rem; margin:0; cursor:pointer; font-weight:400;
+    perspective:600px; }
+  .wrap-swatch .sw{ position:relative; width:100%; aspect-ratio:3/4; border-radius:.55rem; background-size:60px auto; background-repeat:repeat;
+    border:2px solid transparent; overflow:hidden; transform:rotate(-2.5deg);
+    box-shadow:0 10px 18px -12px rgba(58,38,23,.55), 0 2px 4px rgba(58,38,23,.12);
+    transition:transform .4s var(--ease), box-shadow .4s var(--ease), border-color .25s; }
+  /* the paper's own fold: a soft light down one side */
+  .wrap-swatch .sw::before{ content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
+    background:linear-gradient(105deg, rgba(255,255,255,.35) 0%, transparent 38%, rgba(58,38,23,.12) 100%); }
+  /* the sheen that passes over it */
+  .wrap-swatch .sw::after{ content:''; position:absolute; top:-30%; bottom:-30%; left:-60%; width:45%; z-index:3; pointer-events:none;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.65), transparent); transform:skewX(-18deg) translateX(0);
+    transition:transform .7s var(--ease); }
+  .wrap-swatch:hover .sw::after{ transform:skewX(-18deg) translateX(420%); }
+  .wrap-swatch .sw i{ position:absolute; left:50%; top:0; bottom:0; width:12%; transform:translateX(-50%); background:var(--rb); opacity:.95; z-index:2; }
   .wrap-swatch .sw i::after{ content:''; position:absolute; left:-350%; right:-350%; top:42%; height:9%; background:var(--rb); }
-  .wrap-swatch:hover .sw{ transform:translateY(-2px); }
-  .wrap-swatch:has(input:checked) .sw{ border-color:var(--gold); box-shadow:0 0 0 3px var(--ring), 0 2px 8px rgba(0,0,0,.18); }
-  .wrap-swatch:has(input:checked)::after{ content:'✓'; position:absolute; top:.3rem; right:.3rem; width:1.2rem; height:1.2rem; border-radius:50%;
-    background:var(--gold); color:#fff; font-size:.7rem; display:grid; place-items:center; }
+  /* the knot where the two ribbons meet */
+  .wrap-swatch .sw i::before{ content:''; position:absolute; left:50%; top:46.5%; width:230%; height:16%; transform:translate(-50%,-50%);
+    border-radius:50%; background:var(--rb); box-shadow:inset 0 0 0 1px rgba(255,255,255,.45); }
+  .wrap-swatch:hover .sw{ transform:rotate(1.5deg) translateY(-5px) scale(1.04);
+    box-shadow:0 18px 26px -14px rgba(58,38,23,.5), 0 3px 6px rgba(58,38,23,.14); }
+  .wrap-swatch:has(input:checked) .sw{ border-color:var(--flame); transform:rotate(0deg) translateY(-3px) scale(1.04);
+    box-shadow:0 0 0 3px rgba(250,117,18,.25), 0 16px 26px -14px var(--flame-shadow); }
+  .wrap-swatch:has(input:checked)::after{ content:'✓'; position:absolute; top:-.35rem; right:-.15rem; width:1.35rem; height:1.35rem; border-radius:50%;
+    background:var(--flame-grad); color:#fff; font-size:.75rem; display:grid; place-items:center; z-index:4;
+    box-shadow:0 6px 14px -8px var(--flame-shadow), 0 0 0 2px var(--paper); }
   .wrap-swatch:has(input:focus-visible) .sw{ outline:2px solid var(--gold); outline-offset:2px; }
-  .wrap-swatch .nm{ font-size:.72rem; line-height:1.25; text-align:center; color:var(--cocoa-soft); }
+  .wrap-swatch .nm{ font-size:.74rem; line-height:1.25; text-align:center; color:var(--cocoa-soft); transition:color .25s; }
+  .wrap-swatch:hover .nm, .wrap-swatch:has(input:checked) .nm{ color:var(--cocoa); font-weight:600; }
   .wrap-preview{ border:1px solid var(--line); border-radius:.9rem; padding:.5rem .75rem 1rem; background:radial-gradient(ellipse at 50% 30%, var(--cream-2), transparent 70%); }
   .wrap-preview[hidden]{ display:none; }
   .wrap-preview{ cursor:zoom-in; }
-  .letter-block{ border:1px solid var(--line); border-radius:.9rem; padding:.75rem .85rem; }
+  .letter-block{ position:relative; overflow:hidden; border:1px solid var(--line); border-radius:1rem; padding:.85rem .95rem;
+    background:linear-gradient(150deg, var(--paper), var(--cream-2));
+    transition:border-color .25s, box-shadow .3s, transform .3s var(--ease); }
+  .letter-block:hover{ border-color:rgba(250,117,18,.4); transform:translateY(-1px); }
+  .letter-block:has(.letter-toggle input:checked){ border-color:rgba(250,117,18,.55);
+    box-shadow:0 14px 30px -22px var(--flame-shadow); }
   .letter-toggle{ display:flex; align-items:center; gap:.6rem; margin:0; cursor:pointer; font-weight:600; font-size:.9rem; }
-  .letter-toggle input{ width:1.15rem; height:1.15rem; flex:none; accent-color:var(--gold); }
+  /* The shop's own tick: a soft square that fills with the logo's orange. */
+  .letter-toggle input{ appearance:none; -webkit-appearance:none; position:relative; flex:none; margin:0; cursor:pointer;
+    width:1.4rem; height:1.4rem; border-radius:.5rem; border:1.5px solid var(--line); background:var(--paper);
+    transition:background .25s, border-color .25s, box-shadow .25s, transform .2s var(--ease); }
+  .letter-toggle input:hover{ border-color:var(--flame); transform:scale(1.05); }
+  .letter-toggle input::after{ content:''; position:absolute; left:50%; top:45%; width:.34rem; height:.66rem;
+    border:solid #fff; border-width:0 2px 2px 0; transform:translate(-50%,-55%) rotate(45deg) scale(.4); opacity:0;
+    transition:opacity .18s, transform .3s var(--ease); }
+  .letter-toggle input:checked{ background:var(--flame-grad); border-color:transparent;
+    box-shadow:0 8px 16px -9px var(--flame-shadow); }
+  .letter-toggle input:checked::after{ opacity:1; transform:translate(-50%,-55%) rotate(45deg) scale(1); }
+  .letter-toggle input:focus-visible{ outline:2px solid var(--flame); outline-offset:2px; }
   .letter-toggle span{ flex:1; }
-  .letter-toggle b{ font-size:.85rem; color:var(--gold-deep); }
+  .letter-toggle b{ font-size:.8rem; font-weight:800; color:#fff; background:var(--flame-grad); padding:.15rem .5rem; border-radius:999px;
+    box-shadow:0 6px 14px -8px var(--flame-shadow); }
   .letter-fields{ display:grid; grid-template-columns:7.5rem 1fr; gap:1rem; margin-top:.9rem; align-items:start; }
   .letter-fields[hidden]{ display:none; }
   .letter-mini .polaroid{ max-width:7.5rem; }
   .letter-inputs{ display:flex; flex-direction:column; gap:.5rem; min-width:0; }
-  .letter-file{ display:block; border:1.5px dashed var(--ring); border-radius:.7rem; padding:.6rem; text-align:center; cursor:pointer;
+  .letter-file{ display:block; border:1.5px dashed rgba(250,117,18,.45); border-radius:.75rem; padding:.65rem; text-align:center; cursor:pointer;
+    background:rgba(255,236,219,.45); transition:border-color .25s, background .25s;
     font-weight:600; font-size:.85rem; margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .letter-file:hover{ border-color:var(--gold); }
+  .letter-file:hover{ border-color:var(--flame); background:rgba(255,236,219,.85); }
   .letter-file input{ display:none; }
   .wrap-preview-name small{ display:block; font-weight:500; font-size:.72rem; color:var(--cocoa-faint); margin-top:.15rem; }
   .wrap-preview .gift{ max-width:15rem; margin-inline:auto; }
@@ -144,12 +199,15 @@
   @media (max-width:959px){ .dh-wide{ display:none; } .dh-narrow{ display:inline; } }
   .choc-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(8.5rem, 1fr)); gap:.625rem; margin-top:.5rem; }
   .choc-card{ position:relative; display:flex; flex-direction:column; gap:.3rem; padding:.6rem; border:1.5px solid var(--line); border-radius:.9rem;
-    background:var(--paper); cursor:pointer; transition:border-color .15s, box-shadow .15s; margin:0; font-weight:400; }
-  .choc-card:hover{ border-color:var(--gold); }
+    background:var(--paper); cursor:pointer; margin:0; font-weight:400;
+    transition:border-color .25s, box-shadow .3s, transform .3s var(--ease); }
+  .choc-card:hover{ border-color:rgba(250,117,18,.55); transform:translateY(-2px);
+    box-shadow:0 0 0 3px rgba(250,117,18,.12), 0 12px 24px -16px var(--flame-shadow); }
   .choc-card input{ position:absolute; opacity:0; pointer-events:none; }
-  .choc-card:has(input:checked){ border-color:var(--gold); box-shadow:0 0 0 3px var(--ring); }
+  .choc-card:has(input:checked){ border-color:var(--flame); box-shadow:0 0 0 3px rgba(250,117,18,.2); }
   .choc-card:has(input:checked)::after{ content:'✓'; position:absolute; top:.4rem; right:.5rem; width:1.4rem; height:1.4rem; border-radius:50%;
-    background:var(--gold); color:#fff; font-size:.8rem; display:grid; place-items:center; }
+    background:var(--flame-grad); color:#fff; font-size:.8rem; display:grid; place-items:center;
+    box-shadow:0 6px 14px -8px var(--flame-shadow); }
   .choc-card:has(input:focus-visible){ outline:2px solid var(--gold); outline-offset:2px; }
   .choc-pic{ aspect-ratio:1/1; display:grid; place-items:center; border-radius:.6rem; background:#fff; overflow:hidden; font-size:2rem; }
   .choc-pic img{ width:100%; height:100%; object-fit:contain; }
@@ -213,6 +271,7 @@
             <button type="button" class="angle-arrow prev" id="angle-prev" aria-label="{{ __('Əvvəlki görünüş') }}">‹</button>
             <button type="button" class="angle-arrow next" id="angle-next" aria-label="{{ __('Sonrakı görünüş') }}">›</button>
           @endif
+          @include('partials.preview-mark')
         </div>
         @if(count($viewData) > 1)
           <div class="angle-thumbs" id="angle-thumbs">
@@ -245,7 +304,7 @@
             {{-- Drawn, not described: what the shot has to look like. --}}
             @include('partials.photo-guide', ['small' => true])
             <label class="upload-box" for="photo-input-{{ $index }}">
-              <div class="ico">📷</div>
+              <div class="ico">@include('partials.camera-icon')</div>
               <div class="upload-label">{{ __('Şəkil seçmək üçün klikləyin') }}</div>
             </label>
             <input type="file" class="photo-input" id="photo-input-{{ $index }}" name="photos[{{ $index }}]"
@@ -357,10 +416,17 @@
           {{-- Gift wrap: swatches of paper, grouped by price. Picking one shows the box wrapped in it. --}}
           <div class="wrap-block" id="wrap-block">
             <label>{{ __('Hədiyyə qablaşdırması') }}</label>
-            <label class="wrap-none">
-              <input type="radio" name="wrapping_id" value="" data-price="0" data-name="" @checked(! old('wrapping_id'))>
-              <span>{{ __('Qablaşdırmasız') }}</span><b>{{ __('pulsuz') }}</b>
-            </label>
+            {{-- One row, not two: it says what is chosen and opens the papers. --}}
+            <details class="wrap-open" @if(old('wrapping_id')) open @endif>
+              <summary>
+                <span id="wrap-chosen">{{ __('Qablaşdırmasız') }}</span>
+                <b id="wrap-chosen-price">{{ __('pulsuz') }}</b>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+              </summary>
+              <label class="wrap-none">
+                <input type="radio" name="wrapping_id" value="" data-price="0" data-name="" @checked(! old('wrapping_id'))>
+                <span>{{ __('Qablaşdırmasız') }}</span><b>{{ __('pulsuz') }}</b>
+              </label>
             @foreach($wrappings->groupBy(fn ($w) => number_format($w['price'], 2, '.', '')) as $price => $group)
               <div class="wrap-group">
                 <div class="wrap-price">+{{ \App\Support\Price::format((float) $price) }}</div>
@@ -379,10 +445,12 @@
                 </div>
               </div>
             @endforeach
+            </details>
             {{-- The box as it will be handed over, in the paper just picked. --}}
             <div class="wrap-preview" id="wrap-preview" data-gift-open title="{{ __('Hər tərəfdən bax') }}" hidden>
               @include('partials.gift-box', ['wrap' => null])
               <p class="wrap-preview-name" id="wrap-preview-name"></p>
+              @include('partials.preview-mark')
             </div>
           </div>
         @endif
@@ -458,7 +526,7 @@
           </div>
         @endif
 
-        <button type="submit" class="btn btn-primary btn-block" id="add-to-cart-btn"
+        <button type="submit" class="btn btn-primary btn-block btn-flame" id="add-to-cart-btn"
                 @if($photoSlots->isNotEmpty()) disabled @endif>{{ __('Səbətə Əlavə Et') }}</button>
       </form>
     </div>
@@ -1063,10 +1131,22 @@
     preview.dataset.price = price;
     NefisGift.paint(box, { pattern: r.dataset.pattern, ribbon: r.dataset.ribbon, color: r.dataset.color, scale: parseFloat(r.dataset.scale) || 0.5 });
   }
+  /* The row above the papers says what is chosen right now. */
+  var chosen = document.getElementById('wrap-chosen');
+  var chosenPrice = document.getElementById('wrap-chosen-price');
+  var sheet = document.querySelector('.wrap-open');
+  function label(r){
+    if (!chosen) return;
+    var none = !r || !r.value;
+    chosen.textContent = none ? @json(__('Qablaşdırmasız')) : r.dataset.name;
+    chosenPrice.textContent = none ? @json(__('pulsuz')) : '+' + r.dataset.price.replace(/\.00$/, '') + ' ₼';
+  }
   document.querySelectorAll('input[name="wrapping_id"]').forEach(function(r){
-    r.addEventListener('change', function(){ if (r.checked) show(r); });
+    r.addEventListener('change', function(){ if (r.checked) { show(r); label(r); } });
   });
-  show(document.querySelector('input[name="wrapping_id"]:checked'));
+  var picked = document.querySelector('input[name="wrapping_id"]:checked');
+  show(picked);
+  label(picked);
 })();
 
 /* "Nümunəyə bax": the window with the sketches of a good and a bad shot. */

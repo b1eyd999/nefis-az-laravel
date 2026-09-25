@@ -35,6 +35,7 @@ class Order extends Model
         'delivery_type',
         'delivery_name',
         'delivery_price',
+        'rush_fee',
         'delivery_date',
         'delivery_slot',
         'recipient_name',
@@ -60,6 +61,7 @@ class Order extends Model
     {
         return [
             'delivery_price' => 'float',
+            'rush_fee' => 'float',
             'delivery_date' => 'date',
             'delivery_lat' => 'float',
             'delivery_lng' => 'float',
@@ -142,7 +144,13 @@ class Order extends Model
 
     public function total(): float
     {
-        return $this->itemsTotal() + (float) ($this->delivery_price ?? 0);
+        return $this->itemsTotal() + (float) ($this->delivery_price ?? 0) + (float) ($this->rush_fee ?? 0);
+    }
+
+    /** Whether the customer asked for his box to be made before the others. */
+    public function isRush(): bool
+    {
+        return (float) ($this->rush_fee ?? 0) > 0;
     }
 
     /** Where it goes, in one line: the address, the post office or the station. */

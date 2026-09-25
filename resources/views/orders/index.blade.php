@@ -84,6 +84,9 @@
                 &middot; {{ $order->delivery_price > 0 ? \App\Support\Price::format($order->delivery_price) : 'pulsuz' }}
               </p>
             @endif
+            @if($order->isRush())
+              <p style="font-size:.875rem; color:var(--flame-2); font-weight:600; margin-top:.35rem;">⚡ {{ __('Təcili hazırlansın') }} · {{ \App\Support\Price::format($order->rush_fee) }}</p>
+            @endif
             @if($order->total() > 0)
               <p style="font-weight:700; margin-top:.35rem;">{{ __('Cəmi') }}: {{ \App\Support\Price::format($order->total()) }}</p>
             @endif

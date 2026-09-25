@@ -93,7 +93,7 @@
 <a href="#main" class="skip-link">{{ __('Əsas məzmuna keç') }}</a>
 
 <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" class="float-cta" id="float-cta" aria-label="{{ __('Instagramda yazın') }}">
-  <span class="ico">📷</span><span class="txt">{{ __('Instagramda Yaz') }}</span>
+  <span class="ico">@include('partials.instagram-icon')</span><span class="txt">{{ __('Instagramda Yaz') }}</span>
 </a>
 
 <div class="blobs" aria-hidden="true">
@@ -234,7 +234,7 @@
         <span class="brand"><img src="/images/logo.svg" alt="Nefis"></span>
         <p>{{ __('Şokoladın ən nəfis halı, hər qutu sizin xatirəniz üçün fərdi hazırlanır.') }}</p>
         <div class="footer-social">
-          <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" aria-label="Instagram">📷</a>
+          <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener" aria-label="Instagram">@include('partials.instagram-icon')</a>
         </div>
       </div>
       <div class="footer-col">

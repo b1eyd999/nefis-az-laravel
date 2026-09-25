@@ -45,6 +45,34 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /** Admins and managers get into the panel; managers see the orders only. */
+    /**
+     * Whoever signs in with this: an e-mail as it is written, or a phone in
+     * any of the shapes people type it (+994 55 123 45 67, 0551234567,
+     * 55 123 45 67). The last nine digits are the number itself, so they are
+     * what is compared; if two accounts answer to them, neither is taken.
+     */
+    public static function byLogin(string $login): ?self
+    {
+        $login = trim($login);
+
+        if (str_contains($login, '@')) {
+            return static::where('email', $login)->first();
+        }
+
+        $digits = preg_replace('/\D/', '', $login);
+        if (strlen($digits) < 7) {
+            return null;
+        }
+
+        $matches = static::whereNotNull('phone')
+            ->whereRaw("REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') LIKE ?",
+                ['%' . substr($digits, -9)])
+            ->limit(2)
+            ->get();
+
+        return $matches->count() === 1 ? $matches->first() : null;
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->isStaff();

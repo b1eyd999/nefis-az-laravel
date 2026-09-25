@@ -8,6 +8,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
@@ -46,17 +48,32 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'string', 'email'],
+        $data = $request->validate([
+            'login' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
-        ]);
+        ], [], ['login' => __('E-poçt və ya telefon')]);
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        // A password is not guessed by hand: after five tries the door waits.
+        $key = 'login:' . Str::lower($data['login']) . '|' . $request->ip();
+        if (RateLimiter::tooManyAttempts($key, 5)) {
             return back()->withErrors([
-                'email' => __('Daxil etdiyiniz məlumatlar yanlışdır.'),
-            ])->onlyInput('email');
+                'login' => __('Çox cəhd oldu. :seconds saniyə sonra yenidən yoxlayın.',
+                    ['seconds' => RateLimiter::availableIn($key)]),
+            ])->onlyInput('login');
         }
 
+        $user = User::byLogin($data['login']);
+
+        if (! $user || ! Hash::check($data['password'], $user->password)) {
+            RateLimiter::hit($key, 60);
+
+            return back()->withErrors([
+                'login' => __('Daxil etdiyiniz məlumatlar yanlışdır.'),
+            ])->onlyInput('login');
+        }
+
+        RateLimiter::clear($key);
+        Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
         return redirect()->intended(lroute('home'));

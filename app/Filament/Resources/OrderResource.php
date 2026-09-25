@@ -118,11 +118,16 @@ class OrderResource extends Resource
                                 '<a href="' . e($record->mapUrl()) . '" target="_blank" rel="noopener" style="color:#d97706;font-weight:600;text-decoration:underline">Xəritədə aç ↗</a>'
                                 . '<span style="opacity:.6;margin-left:.6rem">' . e(number_format($record->delivery_lat, 5) . ', ' . number_format($record->delivery_lng, 5)) . '</span>'))
                             ->visible(fn (?Order $record) => (bool) $record?->mapUrl()),
+                        Forms\Components\Placeholder::make('rush')
+                            ->label('Təcili')
+                            ->content(fn (?Order $record) => 'Bəli, növbədənkənar, ' . Price::format($record?->rush_fee ?? 0))
+                            ->visible(fn (?Order $record) => (bool) $record?->isRush()),
                         Forms\Components\Placeholder::make('totals')
                             ->label('Məbləğ')
                             ->content(fn (?Order $record) => $record
                                 ? 'Məhsullar ' . Price::format($record->itemsTotal())
                                     . ' + çatdırılma ' . Price::format($record->delivery_price ?? 0)
+                                    . ($record->isRush() ? ' + təcili ' . Price::format($record->rush_fee) : '')
                                     . ' = ' . Price::format($record->total())
                                 : '—')
                             ->columnSpanFull(),

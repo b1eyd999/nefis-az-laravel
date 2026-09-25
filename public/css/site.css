@@ -368,6 +368,29 @@
   :root[data-theme="dark"] .feature-card::before,
   :root[data-theme="dark"] .occ-card::before{ opacity:.55; }
 
+  /* Price badges wear a ring of fire: the colours turn around the pill and
+     flicker, the way a flame does. */
+  @property --flame-turn{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
+  .wrap-price, .letter-toggle b, .rush-fee, .choc-brand.top, .btn-flame{ position:relative; isolation:isolate; }
+  .wrap-price::after, .letter-toggle b::after, .rush-fee::after, .choc-brand.top::after, .btn-flame::after{
+    content:""; position:absolute; inset:-2px; border-radius:inherit; padding:2px; pointer-events:none;
+    background:conic-gradient(from var(--flame-turn, 0deg), #FFE08A, #FF8401, #F0541F, #FFB347, #FFE08A);
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;
+    mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite:exclude;
+    animation:flame-turn 2.6s linear infinite, flame-flicker 1.5s ease-in-out infinite;
+  }
+  .choc-brand.top::after{ inset:-1.5px; }
+  /* The button that finishes the box: the same fire, a little wider. */
+  .btn-flame::after{ inset:-2.5px; padding:2.5px; }
+  .btn-flame:disabled::after{ animation:none; opacity:.35; }
+  @keyframes flame-turn{ to{ --flame-turn:360deg; } }
+  @keyframes flame-flicker{ 0%,100%{ filter:brightness(1); opacity:.95; } 40%{ filter:brightness(1.4); opacity:1; } 72%{ filter:brightness(.85); opacity:.8; } }
+  @media (prefers-reduced-motion: reduce){
+    .wrap-price::after, .letter-toggle b::after, .rush-fee::after, .choc-brand.top::after, .btn-flame::after{ animation:none; }
+  }
+
   /* ---------- section shell ---------- */
   section{ position:relative; padding:5rem 0; scroll-margin-top:5.5rem; }
   .section-head{ max-width:38rem; margin-bottom:3rem; }
@@ -542,9 +565,15 @@
   }
   .stage canvas{ max-width:100%; max-height:100%; }
   .stage .drop-hint{
-    position:absolute; inset:1.5rem; border:2px dashed var(--line); border-radius:1rem; display:flex; align-items:center;
+    position:absolute; inset:1.5rem; border-radius:1rem; display:flex; align-items:center;
     justify-content:center; text-align:center; color:var(--cocoa-faint); font-size:.9375rem; pointer-events:none; padding:1rem;
   }
+  /* The shop's mark sits under every preview, faint enough to stay out of
+     the way and dark enough to survive a screenshot. */
+  .preview-mark{ position:absolute; left:50%; bottom:.5rem; transform:translateX(-50%); height:4.4rem; width:auto;
+    opacity:.6; pointer-events:none; user-select:none; z-index:3; }
+  .wrap-preview{ position:relative; }
+  .wrap-preview .preview-mark{ height:3.2rem; bottom:.25rem; opacity:.55; }
   .angle-arrow{
     position:absolute; top:50%; transform:translateY(-50%); width:2.75rem; height:2.75rem; border-radius:50%;
     background:var(--glass); border:1px solid var(--line); box-shadow:var(--shadow-sm); display:flex;
@@ -582,7 +611,7 @@
   .gift.twine .gift-side i{ top:41.2%; height:1.6%; background:repeating-linear-gradient(0deg, var(--rb) 0 40%, transparent 40% 60%, var(--rb) 60% 100%); }
   .gift.twine .gift-top i{ left:48.4%; width:3.2%; background:repeating-linear-gradient(90deg, var(--rb) 0 40%, transparent 40% 60%, var(--rb) 60% 100%); }
   .gift-shadow{ position:absolute; left:16%; right:6%; bottom:.9rem; height:1.5rem; border-radius:50%;
-    background:radial-gradient(ellipse at center, rgba(0,0,0,.5), rgba(0,0,0,0) 70%); filter:blur(5px); z-index:-1; }
+    background:radial-gradient(ellipse at center, rgba(250,117,18,.75), rgba(240,84,32,0) 70%); filter:blur(5px); z-index:-1; }
   @media (prefers-reduced-motion: reduce){ .gift-3d{ transition:none; } }
 
 
@@ -683,7 +712,15 @@
     transition:border-color .25s, background .25s;
   }
   .upload-box:hover{ border-color:var(--gold); background:var(--paper); }
-  .upload-box .ico{ font-size:2rem; margin-bottom:.5rem; }
+  .upload-box .ico{ font-size:2rem; margin-bottom:.5rem; line-height:1; }
+  .cam-ico{ width:2.4rem; height:2.4rem; display:block; margin-inline:auto; color:var(--flame-2);
+    transition:transform .3s var(--ease); }
+  .cam-lens{ transform-box:fill-box; transform-origin:center; animation:cam-focus 3s ease-in-out infinite; }
+  @keyframes cam-focus{ 0%,100%{ transform:scale(1); } 45%{ transform:scale(.8); } }
+  .cam-flash{ animation:cam-blink 3s ease-in-out infinite; }
+  @keyframes cam-blink{ 0%,86%,100%{ opacity:.3; } 91%{ opacity:1; } }
+  .upload-box:hover .cam-ico{ transform:translateY(-2px) scale(1.06); }
+  @media (prefers-reduced-motion: reduce){ .cam-lens, .cam-flash{ animation:none; } }
   .upload-box .upload-label{ overflow-wrap:anywhere; }
   .range-row{ display:flex; align-items:center; gap:.75rem; }
   .range-row input[type=range]{ flex:1; padding:0; }
@@ -767,7 +804,9 @@
   }
   .float-cta.show{ opacity:1; transform:none; pointer-events:auto; }
   .float-cta:hover{ transform:translateY(-3px); box-shadow:0 16px 34px -10px var(--shadow-strong); }
-  .float-cta .ico{ font-size:1.125rem; line-height:1; }
+  .float-cta .ico{ font-size:1.125rem; line-height:1; display:grid; place-items:center; }
+  .ig-ico{ width:1.3rem; height:1.3rem; display:block; }
+  .footer-social .ig-ico{ width:1.15rem; height:1.15rem; }
   /* On a phone just the round icon: the words covered the forms' last fields. */
   .float-cta span.txt{ display:none; }
   @media (min-width:900px){ .float-cta span.txt{ display:inline; } }

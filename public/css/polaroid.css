@@ -10,7 +10,9 @@
   padding:6% 6% 0; border-radius:2px; transform:rotate(var(--pol-tilt, -2.5deg)); color:var(--pol-ink, #2b2622);
   background-color:var(--pol-frame, #fbfaf6);
   background-image:linear-gradient(135deg, rgba(0,0,0,.015), transparent 40%, rgba(0,0,0,.035));
-  box-shadow:0 1px 1px rgba(0,0,0,.06), 0 18px 34px -14px rgba(0,0,0,.55);
+  /* A thin dark line draws the print's edge, so the white frame is not lost
+     on a light page; the shadow under it is the shop's orange. */
+  box-shadow:inset 0 0 0 1px rgba(24,18,13,.38), 0 1px 1px rgba(240,84,32,.14), 0 18px 34px -12px rgba(250,117,18,.75);
 }
 .pol-photo{ position:relative; display:block; aspect-ratio:1/1; overflow:hidden; background:#26211d; }
 .pol-photo img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;

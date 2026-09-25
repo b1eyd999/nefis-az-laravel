@@ -30,8 +30,9 @@
       <form method="POST" action="{{ lroute('login') }}">
         @csrf
         <div class="field">
-          <label for="email">{{ __('E-poçt') }}</label>
-          <input type="email" id="email" name="email" value="{{ old('email') }}" required autofocus>
+          <label for="login">{{ __('E-poçt və ya telefon') }}</label>
+          <input type="text" id="login" name="login" value="{{ old('login') }}" required autofocus
+                 autocomplete="username" inputmode="email" placeholder="{{ __('ad@mail.com və ya +994 XX XXX XX XX') }}">
         </div>
         <div class="field">
           <label for="password">{{ __('Şifrə') }}</label>
