@@ -372,6 +372,21 @@
     els.forEach(function(el){ io.observe(el); });
   }
 
+  /* The three steps: the dashes run to the next number when the section is
+     reached. Without an observer they are simply there from the start. */
+  var steps = document.querySelector(".steps");
+  if (steps){
+    var drawLines = function(){ steps.classList.add("lines-in"); };
+    if (reduced || !("IntersectionObserver" in window)){
+      drawLines();
+    } else {
+      var lineIo = new IntersectionObserver(function(entries, obs){
+        if (entries[0].isIntersecting){ drawLines(); obs.disconnect(); }
+      }, { threshold:0.2 });
+      lineIo.observe(steps);
+    }
+  }
+
   /* only one FAQ item open at a time */
   document.querySelectorAll(".faq-item").forEach(function(item){
     item.addEventListener("toggle", function(){
