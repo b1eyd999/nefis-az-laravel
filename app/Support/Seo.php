@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\DeliveryMethod;
 use App\Models\Setting;
 use Illuminate\Support\HtmlString;
 
@@ -80,6 +81,64 @@ class Seo
     }
 
     /** @param array<int, array{0: string, 1: string}> $trail name and URL of each step */
+    /**
+     * What Google asks of every offer besides the price: how the thing ships
+     * and whether it can come back. Without these two the Search Console
+     * writes to the owner about "missing fields" on his own products.
+     *
+     * @return array<string, mixed>
+     */
+    public static function shipping(): array
+    {
+        $cheapest = (float) (DeliveryMethod::shown()->min('price') ?? 0);
+        $lead = max(1, DeliveryTime::leadDays());
+
+        return [
+            '@type' => 'OfferShippingDetails',
+            'shippingRate' => [
+                '@type' => 'MonetaryAmount',
+                'value' => number_format($cheapest, 2, '.', ''),
+                'currency' => 'AZN',
+            ],
+            'shippingDestination' => [
+                '@type' => 'DefinedRegion',
+                'addressCountry' => 'AZ',
+            ],
+            'deliveryTime' => [
+                '@type' => 'ShippingDeliveryTime',
+                // The shop makes the box by hand first, then hands it over.
+                'handlingTime' => [
+                    '@type' => 'QuantitativeValue',
+                    'minValue' => 1,
+                    'maxValue' => $lead,
+                    'unitCode' => 'DAY',
+                ],
+                'transitTime' => [
+                    '@type' => 'QuantitativeValue',
+                    'minValue' => 0,
+                    'maxValue' => 3,
+                    'unitCode' => 'DAY',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Every box carries someone's own photo and words, so it cannot be sold
+     * on to anyone else; what arrives damaged is replaced, which is not a
+     * return in the vocabulary Google reads.
+     *
+     * @return array<string, mixed>
+     */
+    public static function returns(): array
+    {
+        return [
+            '@type' => 'MerchantReturnPolicy',
+            'applicableCountry' => 'AZ',
+            'returnPolicyCategory' => 'https://schema.org/MerchantReturnNotPermitted',
+        ];
+    }
+
     public static function breadcrumbs(array $trail): array
     {
         return [

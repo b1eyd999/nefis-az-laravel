@@ -25,6 +25,14 @@
         <b>{{ __('Nefis') }}</b>
         <small>{{ \App\Support\Contact::hours() ?: __('Sualınızı yazın, cavab yazacağıq') }}</small>
       </span>
+      <button type="button" class="chat-bell" id="chat-bell" aria-label="{{ __('Səs') }}" title="{{ __('Cavab gələndə səs') }}" aria-pressed="true">
+        <svg class="bell-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 9a6 6 0 0 1 12 0c0 4 1.4 5.4 2 6H4c.6-.6 2-2 2-6Z"/><path d="M10.2 20a2.1 2.1 0 0 0 3.6 0"/>
+        </svg>
+        <svg class="bell-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 9a6 6 0 0 1 9.3-5M18 12c0 3.4 1.4 4.4 2 5H7"/><path d="M10.2 20a2.1 2.1 0 0 0 3.6 0"/><path d="M4 4l16 16"/>
+        </svg>
+      </button>
       <button type="button" class="chat-close" id="chat-close" aria-label="{{ __('Bağla') }}">✕</button>
     </div>
 
@@ -73,7 +81,48 @@
   var hint = document.getElementById('chat-hint');
   var dot = document.getElementById('chat-dot');
   var token = form.querySelector('input[name="_token"]').value;
-  var last = 0, timer = null, picked = null;
+  var last = 0, timer = null, picked = null, greeted = false;
+
+  /* A short two-note chime when the shop answers, played by the browser
+     itself so there is no file to fetch. It may be silenced, and the choice
+     is remembered on this device. */
+  var bell = document.getElementById('chat-bell');
+  var sound = true;
+  try { sound = localStorage.getItem('nefis-chat-sound') !== 'off'; } catch (e) {}
+  var audio = null;
+
+  function markBell(){
+    box.classList.toggle('muted', !sound);
+    bell.setAttribute('aria-pressed', sound ? 'true' : 'false');
+  }
+  function wakeAudio(){
+    if (audio || !window.AudioContext && !window.webkitAudioContext) return;
+    try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { audio = null; }
+  }
+  function ding(){
+    if (!sound || !audio) return;
+    if (audio.state === 'suspended') audio.resume();
+    [[880, 0], [1320, .12]].forEach(function(note){
+      var osc = audio.createOscillator(), gain = audio.createGain();
+      var at = audio.currentTime + note[1];
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(note[0], at);
+      gain.gain.setValueAtTime(0.0001, at);
+      gain.gain.exponentialRampToValueAtTime(0.16, at + .02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + .32);
+      osc.connect(gain).connect(audio.destination);
+      osc.start(at);
+      osc.stop(at + .34);
+    });
+  }
+  bell.addEventListener('click', function(e){
+    e.stopPropagation();
+    sound = !sound;
+    try { localStorage.setItem('nefis-chat-sound', sound ? 'on' : 'off'); } catch (e2) {}
+    markBell();
+    if (sound){ wakeAudio(); ding(); }
+  });
+  markBell();
 
   function line(m){
     var el = document.createElement('div');
@@ -109,8 +158,13 @@
           if (m.id <= last) return;
           last = m.id;
           /* The visitor's own lines are already on the screen. */
-          if (m.side === 'shop'){ line(m); if (panel.hidden) dot.hidden = false; }
+          if (m.side === 'shop'){
+            line(m);
+            if (panel.hidden) dot.hidden = false;
+            if (greeted) ding();
+          }
         });
+        greeted = true;
       })
       .catch(function(){});
   }
@@ -123,7 +177,7 @@
   open.addEventListener('click', function(){
     panel.hidden = !panel.hidden;
     open.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
-    if (!panel.hidden){ dot.hidden = true; text.focus(); poll(); }
+    if (!panel.hidden){ dot.hidden = true; text.focus(); wakeAudio(); poll(); }
     watch(!panel.hidden);
   });
   document.getElementById('chat-close').addEventListener('click', function(){

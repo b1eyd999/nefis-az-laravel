@@ -311,6 +311,18 @@ class SeoTest extends TestCase
         $this->assertSame('4.90', $product['offers']['price']);
         $this->assertSame('AZN', $product['offers']['priceCurrency']);
         $this->assertStringContainsString('4.90 ₼-dan', $product['description']);
+
+        // Google asks an offer how it ships and whether it comes back; without
+        // these two it writes to the owner about "missing fields".
+        $shipping = $product['offers']['shippingDetails'];
+        $this->assertSame('OfferShippingDetails', $shipping['@type']);
+        $this->assertSame('AZN', $shipping['shippingRate']['currency']);
+        $this->assertSame('AZ', $shipping['shippingDestination']['addressCountry']);
+        $this->assertSame('DAY', $shipping['deliveryTime']['handlingTime']['unitCode']);
+        $this->assertSame(
+            'https://schema.org/MerchantReturnNotPermitted',
+            $product['offers']['hasMerchantReturnPolicy']['returnPolicyCategory'],
+        );
     }
 
     public function test_a_design_with_its_own_words_uses_them_everywhere(): void

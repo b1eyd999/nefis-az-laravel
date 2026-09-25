@@ -33,6 +33,9 @@
               'availability' => 'https://schema.org/InStock',
               'itemCondition' => 'https://schema.org/NewCondition',
               'seller' => ['@type' => 'Organization', 'name' => 'Nefis Şokolad Evi'],
+              // Google asks every offer these two as well.
+              'shippingDetails' => \App\Support\Seo::shipping(),
+              'hasMerchantReturnPolicy' => \App\Support\Seo::returns(),
           ] : null,
       ]),
       \App\Support\Seo::breadcrumbs([
