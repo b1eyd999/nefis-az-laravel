@@ -166,9 +166,41 @@
   }
 
   /* ---------- reveal ---------- */
-  .reveal{ opacity:0; transform:translateY(24px); transition:opacity .9s var(--ease), transform .9s var(--ease); }
-  .reveal.is-visible{ opacity:1; transform:none; }
-  @media (prefers-reduced-motion:reduce){ .reveal{ opacity:1; transform:none; transition:none; } }
+  /* Nothing simply appears: text comes up out of a soft blur, a card tips up
+     onto its lower edge and settles, a picture grows into its frame. */
+  .reveal{
+    opacity:0; transform:translateY(26px); filter:blur(6px);
+    transition:opacity .75s var(--ease), transform .85s var(--ease), filter .75s var(--ease);
+  }
+  .reveal.is-visible{ opacity:1; transform:none; filter:none; }
+
+  .cards-grid > .reveal, .occ-grid > .reveal, .features-grid > .reveal,
+  .d-grid > .reveal, .faq-item.reveal, .wrap-block.reveal{
+    transform:perspective(1000px) translateY(38px) rotateX(12deg) scale(.96);
+    transform-origin:50% 100%;
+  }
+  .p-card.reveal .p-card-media img, .occ-card.reveal img{
+    transform:scale(1.07); transition:transform 1.2s var(--ease);
+  }
+  .p-card.reveal.is-visible .p-card-media img, .occ-card.reveal.is-visible img{ transform:none; }
+
+  /* A heading arrives a step ahead of the words under it. */
+  .section-head.reveal > .eyebrow{ display:inline-flex; }
+  .section-head.reveal h2{ opacity:0; transform:translateY(14px); transition:opacity .7s var(--ease) .12s, transform .7s var(--ease) .12s; }
+  .section-head.reveal p{ opacity:0; transform:translateY(14px); transition:opacity .7s var(--ease) .24s, transform .7s var(--ease) .24s; }
+  .section-head.reveal.is-visible h2, .section-head.reveal.is-visible p{ opacity:1; transform:none; }
+
+  /* A phone does less work: the tilt and the blur are lighter there. */
+  @media (max-width:640px){
+    .reveal{ transform:translateY(20px); filter:blur(4px); }
+    .cards-grid > .reveal, .occ-grid > .reveal, .features-grid > .reveal,
+    .d-grid > .reveal, .faq-item.reveal, .wrap-block.reveal{
+      transform:translateY(24px) scale(.975); }
+  }
+  @media (prefers-reduced-motion:reduce){
+    .reveal, .section-head.reveal h2, .section-head.reveal p{ opacity:1; transform:none; filter:none; transition:none; }
+    .p-card.reveal .p-card-media img, .occ-card.reveal img{ transform:none; }
+  }
 
   /* ---------- buttons ---------- */
   .btn{
@@ -436,9 +468,17 @@
   .steps.lines-in .step-line{ transform:scaleX(1); }
   .steps.lines-in .step:nth-child(1) .step-line{ transition-delay:.15s; }
   .steps.lines-in .step:nth-child(2) .step-line{ transition-delay:1s; }
+  /* On a phone the three stand one under the other. The dashes run down the
+     gap between them, clear of the words, and draw the same way. */
+  @media (max-width:799px){
+    .step-line{ top:auto; bottom:-2.3rem; height:2.3rem; left:50%; right:auto; width:4px;
+      background:repeating-linear-gradient(to bottom, var(--flame) 0 10px, rgba(250,117,18,.18) 10px 18px);
+      transform:translateX(-50%) scaleY(0); transform-origin:center top; }
+    .steps.lines-in .step-line{ transform:translateX(-50%) scaleY(1); }
+  }
   @media (prefers-reduced-motion:reduce){ .step-line{ transform:none; transition:none; } }
   .step:last-child .step-line{ display:none; }
-  @media (max-width:799px){ .step-line{ display:none; } }
+
 
   /* ---------- collections / product cards ---------- */
   /* Two to a row on a phone as well: one design per screen turned a page of
