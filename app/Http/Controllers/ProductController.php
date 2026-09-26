@@ -142,6 +142,8 @@ class ProductController extends Controller
                 'h' => (int) $slot->height,
                 'rotation' => (int) $slot->rotation,
                 'shape' => $slot->shape,
+                // The browser cuts the face out of whatever is uploaded here.
+                'cutout' => (bool) $slot->cutout,
             ])->values()->all(),
             'texts' => $view->textSlots->map(fn ($slot) => [
                 'x' => (int) $slot->x,

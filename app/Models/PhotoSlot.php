@@ -15,8 +15,14 @@ class PhotoSlot extends Model
         'height',
         'rotation',
         'shape',
+        'cutout',
         'sort_order',
     ];
+
+    protected function casts(): array
+    {
+        return ['cutout' => 'boolean'];
+    }
 
     public function slotable(): MorphTo
     {

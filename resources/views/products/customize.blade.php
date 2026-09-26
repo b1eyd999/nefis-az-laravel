@@ -593,8 +593,16 @@
 @endsection
 
 @section('page_script')
-@if($photoSlots->where('shape', 'ellipse')->isNotEmpty())
+@php
+  // A face is looked for when the window is an oval, and always when the
+  // design cuts the head out of the photo.
+  $cutsFaces = $photoSlots->contains(fn ($slot) => $slot->cutout);
+@endphp
+@if($cutsFaces || $photoSlots->where('shape', 'ellipse')->isNotEmpty())
 <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+@endif
+@if($cutsFaces)
+<script defer src="{{ asset('js/face-cutout.js') }}"></script>
 @endif
 <script src="{{ asset('js/box-render.js') }}"></script>
 <script src="{{ asset('js/scene-render.js') }}"></script>
@@ -910,7 +918,7 @@
     state.framed = false;
 
     var area = areaFor(slotIndex);
-    if (!area || area.shape !== 'ellipse' || typeof faceapi === 'undefined') return;
+    if (!area || (area.shape !== 'ellipse' && !area.cutout) || typeof faceapi === 'undefined') return;
 
     ensureFaceModel().then(function(){
       return faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions());
@@ -941,6 +949,27 @@
       var file = input.files && input.files[0];
       if (!file) return;
       label.textContent = file.name;
+
+      /* A face slot keeps only the head: the background is cut away here, in
+         the customer's own browser, and the cut-out picture is what is sent. */
+      var area = areaFor(index);
+      if (area && area.cutout && window.NefisCutout && !input.dataset.cut) {
+        if (hint){ hint.hidden = false; hint.textContent = @json(__('Şəkil hazırlanır, bir neçə saniyə…')); }
+        window.NefisCutout.prepare(file).then(function(cut){
+          if (!cut) { if (hint) hint.textContent = @json(__('Şəkli önizləmədə sürükləyərək mövqeyini dəyişə bilərsiniz.')); return; }
+          var box = new DataTransfer();
+          box.items.add(cut);
+          input.dataset.cut = '1';
+          input.files = box.files;
+          input.dispatchEvent(new Event('change'));
+          if (hint) hint.textContent = @json(__('Fon kəsildi. Şəkli sürükləyib böyüdə bilərsiniz.'));
+        }).catch(function(){
+          if (hint) hint.textContent = @json(__('Şəkli önizləmədə sürükləyərək mövqeyini dəyişə bilərsiniz.'));
+        });
+      } else if (!area || !area.cutout) {
+        input.dataset.cut = '';
+      }
+
       var reader = new FileReader();
       reader.onload = function(e){
         var img = new Image();

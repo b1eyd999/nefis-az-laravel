@@ -47,7 +47,7 @@ class BoxEditorController extends Controller
             'photos' => $product->photoSlots->map(fn ($s) => [
                 'label' => $s->label, 'x' => $s->x, 'y' => $s->y,
                 'width' => $s->width, 'height' => $s->height,
-                'rotation' => $s->rotation, 'shape' => $s->shape,
+                'rotation' => $s->rotation, 'shape' => $s->shape, 'cutout' => (bool) $s->cutout,
             ])->values(),
             'texts' => $product->textSlots->map(fn ($s) => [
                 'label' => $s->label, 'kind' => $s->kind ?: TextSlot::KIND_TEXT, 'fixed' => (bool) $s->fixed,
@@ -94,6 +94,7 @@ class BoxEditorController extends Controller
             'photos.*.height' => ['required', 'numeric', 'min:1'],
             'photos.*.rotation' => ['required', 'numeric', 'between:-360,360'],
             'photos.*.shape' => ['required', 'in:rectangle,ellipse'],
+            'photos.*.cutout' => ['nullable', 'boolean'],
 
             'texts' => ['present', 'array'],
             'texts.*.label' => ['nullable', 'string', 'max:60'],
@@ -165,6 +166,7 @@ class BoxEditorController extends Controller
                     'x' => (int) round($p['x']), 'y' => (int) round($p['y']),
                     'width' => (int) round($p['width']), 'height' => (int) round($p['height']),
                     'rotation' => (int) round($p['rotation']), 'shape' => $p['shape'],
+                    'cutout' => (bool) ($p['cutout'] ?? false),
                     'sort_order' => $order,
                 ]);
             }

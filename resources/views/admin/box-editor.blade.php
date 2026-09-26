@@ -1058,6 +1058,8 @@
       h += '<p class="hint">Müştərinin yüklədiyi şəkil bura düşür. "Fotonun üstündə" olan qatlar onu örtür.</p>';
       h += '<div class="row one">' + field('Müştəriyə görünən ad', txt('label', it.label, 'Şəkil')) + '</div>';
       h += '<div class="row one">' + field('Forma', seg('shape', it.shape, [['rectangle', 'Düzbucaqlı'], ['ellipse', 'Oval']])) + '</div>';
+      h += '<div class="row one">' + field('Üz kəsilsin', seg('cutout', it.cutout ? 1 : 0, [[0, 'Xeyr'], [1, 'Bəli, fonu at']])) + '</div>';
+      h += '<p class="hint">"Bəli" olanda müştərinin şəklindən yalnız başı götürülür, fon şəffaf qalır — üzün gövdənin üstünə oturduğu dizaynlar üçün.</p>';
       h += '<div class="row four">' + field('X', num('x', it.x)) + field('Y', num('y', it.y)) + field('En', num('width', it.width)) + field('Hünd.', num('height', it.height)) + '</div>';
       h += '<div class="row">' + field('Bucaq °', num('rotation', it.rotation)) + '</div>';
       h += '<div class="actions"><button class="btn small" data-act="fill">Bütün kətan</button><button class="btn small" data-act="center-h">Üfüqi mərkəz</button><button class="btn small" data-act="center-v">Şaquli mərkəz</button></div>';
@@ -1485,7 +1487,7 @@
     var payload = {
       layers: doc.layers.map(function(l){ return { name: l.name, image: l.image, x: l.x, y: l.y, width: l.width, height: l.height,
         rotation: l.rotation || 0, opacity: l.opacity == null ? 100 : l.opacity, placement: l.placement, locked: !!l.locked }; }),
-      photos: doc.photos.map(function(p){ return { label: p.label, x: p.x, y: p.y, width: p.width, height: p.height, rotation: p.rotation || 0, shape: p.shape }; }),
+      photos: doc.photos.map(function(p){ return { label: p.label, x: p.x, y: p.y, width: p.width, height: p.height, rotation: p.rotation || 0, shape: p.shape, cutout: p.cutout ? 1 : 0 }; }),
       texts: doc.texts.map(function(t){ var o = clone(t); o.rotation = o.rotation || 0; o.max_lines = Math.max(1, +o.max_lines || 1); o.max_length = Math.max(1, +o.max_length || 255); return o; }),
       box_color: doc.box_color || null
     };
