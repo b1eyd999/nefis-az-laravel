@@ -81,10 +81,16 @@ class HeroSlideTest extends TestCase
             ->assertHasFormErrors(['button1_url']);
     }
 
-    public function test_hidden_slides_stay_off_and_an_empty_list_keeps_the_banner(): void
+    public function test_hidden_slides_stay_off_and_without_any_the_designs_come_first(): void
     {
         HeroSlide::query()->update(['is_active' => false]);
-        $this->get(route('home'))->assertOk()->assertSee('Bir Xatirəyə Dönsün.');   // the built-in wording
+        // No banner at all: the page opens with the designs, and their
+        // heading becomes the page's own.
+        $html = $this->get(route('home'))->assertOk()
+            ->assertDontSee('id="hero"', false)
+            ->getContent();
+        $this->assertSame(1, substr_count($html, '<h1'), 'one main heading on the page');
+        $this->assertStringContainsString('Hər Zövqə Uyğun Dizaynlar', $html);
 
         HeroSlide::create(['title' => 'Görünməz', 'is_active' => false]);
         $this->get(route('home'))->assertDontSee('Görünməz');

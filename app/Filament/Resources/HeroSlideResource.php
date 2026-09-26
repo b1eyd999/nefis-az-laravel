@@ -132,7 +132,7 @@ class HeroSlideResource extends Resource
                 ->beforeReplicaSaved(fn (HeroSlide $replica) => $replica->fill(['is_active' => false, 'image' => null])),
                 Tables\Actions\DeleteAction::make()])
             ->emptyStateHeading('Slayd yoxdur')
-            ->emptyStateDescription('Slayd olmayanda ana səhifədə standart başlıq göstərilir.');
+            ->emptyStateDescription('Slayd olmayanda ana səhifə birbaşa dizaynlarla başlayır.');
     }
 
     public static function getPages(): array

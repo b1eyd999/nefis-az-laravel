@@ -21,11 +21,9 @@ class HomeController extends Controller
 
         $designCount = Product::where('is_active', true)->count();
 
-        // The opening banner: the owner's slides, or the original wording if none is on.
+        // The opening banner is the owner's own: without a slide the page
+        // starts with the designs themselves.
         $slides = HeroSlide::shown()->get();
-        if ($slides->isEmpty()) {
-            $slides = collect([HeroSlide::fallback()]);
-        }
         $autoplay = Setting::get(Setting::HERO_AUTOPLAY) === '1';
         $interval = max(2, (int) Setting::get(Setting::HERO_INTERVAL));
 
