@@ -36,6 +36,9 @@ class Product extends Model
         'description',
         'tag',
         'category',
+        // Designs built around a song: the customer pastes a Spotify link and
+        // the scannable code goes on the box. Off everywhere else.
+        'spotify_code',
         'preview_image',
         'poster_url',
         'box_color',

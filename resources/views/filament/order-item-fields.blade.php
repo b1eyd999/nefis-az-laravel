@@ -45,6 +45,25 @@
   @endforeach
 
   @php $item = $getRecord(); @endphp
+  @if($item->spotify_uri)
+    {{-- The song the customer chose. The code is here ready to put on the box —
+         svg for the press, png to glance at — and the link is here so the shop
+         can hear what it plays before printing it on someone's present. --}}
+    @php $song = $item->spotify_uri; @endphp
+    <div style="border:1px dashed rgba(29,185,84,.7); border-radius:.75rem; padding:.6rem .75rem;">
+      <div style="font-size:.8rem; font-weight:700; margin-bottom:.45rem;">
+        🎧 Spotify kodu — {{ \App\Support\SpotifyCode::kindLabel($song) }}
+      </div>
+      <img src="{{ \App\Support\SpotifyCode::image($song, 'png', 'ffffff', 'black', 640) }}" alt="Spotify kodu"
+           style="width:14rem; height:auto; background:#fff; padding:.3rem; border-radius:.35rem; border:1px solid rgba(128,128,128,.35); display:block;">
+      <div style="display:flex; flex-wrap:wrap; gap:.75rem; margin-top:.45rem; font-size:.78rem;">
+        <a href="{{ \App\Support\SpotifyCode::image($song, 'svg', 'ffffff', 'black', 1024) }}" target="_blank" rel="noopener" style="text-decoration:underline;">Çap üçün SVG</a>
+        <a href="{{ \App\Support\SpotifyCode::image($song, 'png', 'ffffff', 'black', 1024) }}" target="_blank" rel="noopener" style="text-decoration:underline;">PNG</a>
+        <a href="{{ \App\Support\SpotifyCode::link($song) }}" target="_blank" rel="noopener" style="text-decoration:underline;">Spotify-da dinlə ↗</a>
+      </div>
+    </div>
+  @endif
+
   @if($item->hasLetter())
     {{-- The Polaroid letter to print: its photo in full size and its words. --}}
     <div style="border:1px dashed rgba(217,119,6,.6); border-radius:.75rem; padding:.6rem .75rem;">
@@ -94,7 +113,7 @@
     </div>
   @endif
 
-  @if(! $fields['photos'] && ! $fields['texts'] && ! $item->hasLetter() && $item->ar_price === null)
+  @if(! $fields['photos'] && ! $fields['texts'] && ! $item->hasLetter() && $item->ar_price === null && ! $item->spotify_uri)
     <span style="opacity:.6;">—</span>
   @endif
 </div>

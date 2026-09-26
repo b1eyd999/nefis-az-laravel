@@ -15,7 +15,8 @@ class Cart
      *             'chocolate' => ?array{id: int, name: string, price: float},
      *             'wrapping' => ?array{id: int, name: string, price: float},
      *             'letter' => ?array{text: ?string, photo: ?string, price: float},
-     *             'ar' => ?array{video: string, image: ?string, mind: ?string, price: float}]
+     *             'ar' => ?array{video: string, image: ?string, mind: ?string, price: float},
+     *             'spotify' => ?string (spotify:track:…)]
      * A Polaroid letter ordered on its own is a line with 'kind' => 'letter' and no product;
      * a live photo ordered on its own, 'kind' => 'live'.
      */
@@ -43,7 +44,7 @@ class Cart
     }
 
     public static function add(int $productId, array $photoPaths, array $customTexts, int $quantity = 1,
-        array $photoLabels = [], array $textLabels = [], ?array $chocolate = null, ?array $wrapping = null, ?array $letter = null, ?array $ar = null): void
+        array $photoLabels = [], array $textLabels = [], ?array $chocolate = null, ?array $wrapping = null, ?array $letter = null, ?array $ar = null, ?string $spotify = null): void
     {
         $items = self::items();
         $items[] = [
@@ -58,6 +59,7 @@ class Cart
             'wrapping' => $wrapping,
             'letter' => $letter,
             'ar' => $ar,
+            'spotify' => $spotify,
         ];
         Session::put(self::KEY, $items);
     }

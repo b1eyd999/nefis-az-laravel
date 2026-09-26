@@ -109,6 +109,9 @@ class CheckoutController extends Controller
                 // Carts filled before labels were kept take them from the design.
                 'photo_labels' => $item['photo_labels'] ?? OrderItem::photoLabelsFor($product),
                 'text_labels' => $item['text_labels'] ?? OrderItem::textLabelsFor($product),
+                // The song, kept as the canonical uri so the code can be
+                // redrawn at print size whenever the box is made.
+                'spotify_uri' => $item['spotify'] ?? null,
                 'quantity' => $item['quantity'],
                 'price' => $product?->price,
                 'chocolate_id' => $item['chocolate']['id'] ?? null,

@@ -378,8 +378,8 @@
   /* Price badges wear a ring of fire: the colours turn around the pill and
      flicker, the way a flame does. */
   @property --flame-turn{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
-  .wrap-price, .letter-toggle b, .rush-fee, .choc-brand.top, .btn-flame{ position:relative; isolation:isolate; }
-  .wrap-price::after, .letter-toggle b::after, .rush-fee::after, .choc-brand.top::after, .btn-flame::after{
+  .wrap-price, .letter-toggle b, .rush-fee, .choc-brand.top, .btn-flame, .spotify-shown{ position:relative; isolation:isolate; }
+  .wrap-price::after, .letter-toggle b::after, .rush-fee::after, .choc-brand.top::after, .btn-flame::after, .spotify-shown::after{
     content:""; position:absolute; inset:-2px; border-radius:inherit; padding:2px; pointer-events:none;
     background:conic-gradient(from var(--flame-turn, 0deg), #FFE08A, #FF8401, #F0541F, #FFB347, #FFE08A);
     -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -389,13 +389,15 @@
     animation:flame-turn 2.6s linear infinite, flame-flicker 1.5s ease-in-out infinite;
   }
   .choc-brand.top::after{ inset:-1.5px; }
+  /* A card is bigger than a price pill, so the fire is thinner and slower on it. */
+  .spotify-shown::after{ inset:-1.5px; padding:1.5px; animation-duration:5.2s, 3s; opacity:.9; }
   /* The button that finishes the box: the same fire, a little wider. */
   .btn-flame::after{ inset:-2.5px; padding:2.5px; }
   .btn-flame:disabled::after{ animation:none; opacity:.35; }
   @keyframes flame-turn{ to{ --flame-turn:360deg; } }
   @keyframes flame-flicker{ 0%,100%{ filter:brightness(1); opacity:.95; } 40%{ filter:brightness(1.4); opacity:1; } 72%{ filter:brightness(.85); opacity:.8; } }
   @media (prefers-reduced-motion: reduce){
-    .wrap-price::after, .letter-toggle b::after, .rush-fee::after, .choc-brand.top::after, .btn-flame::after{ animation:none; }
+    .wrap-price::after, .letter-toggle b::after, .rush-fee::after, .choc-brand.top::after, .btn-flame::after, .spotify-shown::after{ animation:none; }
   }
 
   /* ---------- section shell ---------- */

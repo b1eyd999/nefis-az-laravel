@@ -18,6 +18,9 @@ class OrderItem extends Model
         'custom_texts',
         'photo_labels',
         'text_labels',
+        // The song on the box, as spotify:track:… — the canonical form, so the
+        // code can be redrawn at any size years after the order.
+        'spotify_uri',
         'quantity',
         'price',
         'chocolate_id',
@@ -139,6 +142,20 @@ class OrderItem extends Model
         }
 
         return ['photos' => $photos, 'texts' => $texts];
+    }
+
+    /** The page a phone opens when the printed code is scanned. */
+    public function spotifyLink(): ?string
+    {
+        return $this->spotify_uri ? \App\Support\SpotifyCode::link($this->spotify_uri) : null;
+    }
+
+    /** The code as a picture: svg to print from, png to look at. */
+    public function spotifyImage(string $format = 'png', int $width = 640): ?string
+    {
+        return $this->spotify_uri
+            ? \App\Support\SpotifyCode::image($this->spotify_uri, $format, 'ffffff', 'black', $width)
+            : null;
     }
 
     public function order(): BelongsTo

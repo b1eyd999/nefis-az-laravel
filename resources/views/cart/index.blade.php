@@ -65,6 +65,12 @@
               @elseif(! empty($item['ar']))
                 <p style="margin-top:.2rem;">🎬 {{ __('Canlı şəkil (AR)') }} &middot; {{ \App\Support\Price::format($item['ar']['price']) }}</p>
               @endif
+              @if(! empty($item['spotify']))
+                {{-- Free, so no price: the song is part of the box, not an extra. --}}
+                <p style="margin-top:.2rem;">🎧 {{ \App\Support\SpotifyCode::kindLabel($item['spotify']) }} &middot;
+                  <a href="{{ \App\Support\SpotifyCode::link($item['spotify']) }}" target="_blank" rel="noopener"
+                     style="text-decoration:underline;">{{ __('Spotify-da yoxla') }}</a></p>
+              @endif
               @if(! empty($item['letter']))
                 <p style="margin-top:.2rem;">💌 {{ $isLetter ? '' : __('Polaroid məktub') . ' · ' }}{{ \Illuminate\Support\Str::limit(str_replace("\n", ' ', $item['letter']['text'] ?? ''), 60) ?: 'şəkilli' }}
                   @unless($isLetter) &middot; {{ \App\Support\Price::format($item['letter']['price']) }} @endunless</p>

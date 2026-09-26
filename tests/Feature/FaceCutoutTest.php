@@ -204,6 +204,23 @@ class FaceCutoutTest extends TestCase
         $this->assertStringContainsString('settle();', $page);
     }
 
+    public function test_the_photo_can_be_turned_over(): void
+    {
+        // A head cut out of a photo often faces the wrong way for the drawn
+        // body it lands on, and no amount of turning fixes that — only a
+        // mirror does.
+        $this->box(true);
+        $page = $this->get(route('products.customize', 'pampers'))->assertOk();
+
+        $page->assertSee('class="flip-btn"', false);
+        $page->assertSee('aria-pressed="false"', false);
+
+        $source = file_get_contents(resource_path('views/products/customize.blade.php'));
+        $this->assertStringContainsString('if (state.flip) mctx.scale(-1, 1);', $source);
+        // A fresh photo starts the way it was taken.
+        $this->assertStringContainsString('state.flip = false;', $source);
+    }
+
     public function test_a_box_without_photo_windows_saves_without_complaint(): void
     {
         $this->panel();

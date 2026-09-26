@@ -60,7 +60,31 @@
   .slot-block{ border-top:1px solid var(--line); padding-top:1.25rem; }
   .slot-block:first-of-type{ border-top:none; padding-top:0; }
   .slot-block .zoom-row{ margin-top:.75rem; }
+  .spotify-pick{ border-top:1px solid var(--line); padding-top:1.25rem; }
+  .spotify-pick .opt{ font-weight:400; opacity:.6; font-size:.85em; }
+  .spotify-pick input{ width:100%; }
+  .spotify-pick .slot-hint.bad{ color:#c2410c; }
+  /* The song, shown the way the box will wear it: the code on its own white
+     tile, the fire of the rest of the page around the card. */
+  .spotify-shown{ position:relative; isolation:isolate; margin-top:.85rem; padding:.85rem .95rem 1rem;
+    border-radius:1rem; display:flex; flex-direction:column; gap:.6rem;
+    background:linear-gradient(150deg, rgba(29,185,84,.10), rgba(255,132,1,.10) 60%, transparent),
+               var(--card, rgba(255,255,255,.04)); animation:sp-in .45s var(--ease, ease) both; }
+  .spotify-shown[hidden]{ display:none; }
+  @keyframes sp-in{ from{ opacity:0; transform:translateY(.4rem) scale(.985); } }
+  .sp-top{ display:flex; align-items:center; gap:.5rem; font-size:.9rem; }
+  .sp-mark{ width:1.35rem; height:1.35rem; flex:none; }
+  .sp-ok{ opacity:.65; font-size:.82rem; }
+  .sp-open{ margin-left:auto; font-size:.82rem; font-weight:600; text-decoration:underline;
+    background:var(--flame-grad); -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-decoration-color:#F86E17; }
+  .sp-tile{ background:#fff; border-radius:.7rem; padding:.55rem .7rem; display:flex; justify-content:center;
+    box-shadow:0 10px 24px -16px rgba(0,0,0,.75); }
+  .sp-tile img{ display:block; width:100%; max-width:18rem; height:auto; }
+  .sp-note{ font-size:.8rem; opacity:.72; line-height:1.4; }
+  @media (prefers-reduced-motion:reduce){ .spotify-shown{ animation:none; } }
   .slot-block .rotate-row{ margin-top:.5rem; }
+  .flip-btn[aria-pressed="true"]{ background:var(--flame-grad, #F86E17); color:#fff; border-color:transparent; }
   .rotate-reset{
     flex:none; width:2rem; height:2rem; border-radius:50%; border:1px solid var(--line);
     background:var(--paper); color:var(--cocoa); font-size:.9rem; line-height:1;
@@ -344,6 +368,9 @@
               <span class="lbl">{{ __('Fırlat') }}</span>
               <input type="range" class="rotate-range" min="-180" max="180" value="0">
               <button type="button" class="rotate-reset" title="{{ __('Sıfırla') }}">↺</button>
+              {{-- A face cut from a photo often looks the wrong way round on a
+                   drawn body: this turns it over without touching anything else. --}}
+              <button type="button" class="flip-btn" aria-pressed="false" title="{{ __('Güzgü') }}">⇄</button>
             </div>
             <p class="slot-hint" hidden>{{ __('Şəkli önizləmədə sürükləyərək mövqeyini dəyişə bilərsiniz.') }}</p>
             @if($slot->cutout)
@@ -393,6 +420,33 @@
             </div>
           @endif
         @endforeach
+
+        @if($product->spotify_code)
+          {{-- A song on the box. The customer pastes the link Spotify gave him
+               and sees, right here, the code that will be printed — so a wrong
+               link is caught by him, not by us at the press. Optional: a box
+               without a song is still a box. --}}
+          <div class="spotify-pick">
+            <label for="spotify-uri">{{ __('Spotify mahnısı') }}
+              <span class="opt">{{ __('istəyə bağlı') }}</span></label>
+            <input type="text" id="spotify-uri" name="spotify_uri" inputmode="url" autocomplete="off"
+                   spellcheck="false" placeholder="https://open.spotify.com/track/…"
+                   value="{{ old('spotify_uri') }}">
+            <p class="slot-hint" id="spotify-hint">{{ __('Spotify-da mahnını açın → Paylaş → Linki kopyala, sonra bura yapışdırın.') }}</p>
+            <div class="spotify-shown" id="spotify-shown" hidden>
+              <div class="sp-top">
+                <svg class="sp-mark" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="#1DB954"/><path fill="#fff" d="M17.2 10.9a.94.94 0 0 1-1.29.31c-2.5-1.53-5.65-1.87-9.36-1.03a.94.94 0 1 1-.42-1.83c4.06-.93 7.55-.53 10.36 1.19.44.27.58.85.31 1.36Zm-1.4 2.85a.78.78 0 0 1-1.08.26c-2.14-1.32-5.4-1.7-7.93-.93a.78.78 0 1 1-.45-1.5c2.89-.88 6.48-.45 8.94 1.06.37.23.49.71.26 1.11Zm-1.25 2.75a.63.63 0 0 1-.86.21c-1.87-1.14-4.22-1.4-6.99-.77a.63.63 0 1 1-.28-1.22c3.03-.69 5.63-.39 7.73.89.3.18.39.57.21.86Z"/></svg>
+                <b id="spotify-kind">{{ __('Mahnı') }}</b>
+                <span class="sp-ok">{{ __('hazırdır') }}</span>
+                <a id="spotify-open" class="sp-open" target="_blank" rel="noopener">{{ __('dinlə ↗') }}</a>
+              </div>
+              <div class="sp-tile">
+                <img id="spotify-code-img" alt="{{ __('Spotify kodu') }}" width="320" height="80">
+              </div>
+              <span class="sp-note">{{ __('Bu kod qutunun üstündə çap olunacaq — telefonun kamerası ilə oxunur.') }}</span>
+            </div>
+          </div>
+        @endif
 
         @if($chocolates->isNotEmpty())
           {{-- The bar that goes inside the box. --}}
@@ -641,6 +695,53 @@
   /* Same for the cutter: its models are the slow part of the first photo. */
   setTimeout(function(){ if (window.NefisCutout) window.NefisCutout.warm(); }, 400);
 
+  /* The song on the box. Whatever Spotify handed the customer — the share
+     link, the app's own uri, a country prefix, a ?si= tail — comes down to
+     one address, and the code is drawn from it on the spot. Seeing the bars
+     appear is what tells him the link was the right one; the server checks
+     the same thing again when the box goes into the basket. */
+  var songInput = document.getElementById('spotify-uri');
+  if (songInput) {
+    var songHint = document.getElementById('spotify-hint');
+    var songShown = document.getElementById('spotify-shown');
+    var songImg = document.getElementById('spotify-code-img');
+    var songKind = document.getElementById('spotify-kind');
+    var songOpen = document.getElementById('spotify-open');
+    var ASKED = songHint.textContent;
+    var KINDS = 'track|album|playlist|artist|episode|show';
+    /* The same words the order will use, so he reads one name throughout. */
+    var KIND_NAMES = { track: @json(__('Mahnı')), album: @json(__('Albom')), playlist: @json(__('Pleylist')),
+      artist: @json(__('İfaçı')), episode: @json(__('Epizod')), show: @json(__('Podkast')) };
+
+    function songUri(v){
+      v = (v || '').trim();
+      var m = v.match(new RegExp('^spotify:(' + KINDS + '):([A-Za-z0-9]{22})$'));
+      if (m) return 'spotify:' + m[1] + ':' + m[2];
+      m = v.match(new RegExp('^https?://(?:open|play)\\.spotify\\.com/(?:intl-[a-z-]+/)?(' + KINDS + ')/([A-Za-z0-9]{22})'));
+      return m ? 'spotify:' + m[1] + ':' + m[2] : null;
+    }
+
+    function showSong(){
+      var raw = songInput.value.trim();
+      var uri = songUri(raw);
+      songHint.classList.toggle('bad', raw !== '' && !uri);
+      songHint.textContent = uri || raw === '' ? ASKED
+        : @json(__('Bu, Spotify linkinə oxşamır. Spotify-da mahnını açın → Paylaş → Linki kopyala.'));
+      songShown.hidden = !uri;
+      if (uri) {
+        songImg.src = 'https://scannables.scdn.co/uri/plain/png/ffffff/black/640/' + uri;
+        var kind = uri.split(':')[1];
+        songKind.textContent = KIND_NAMES[kind] || KIND_NAMES.track;
+        songOpen.href = 'https://open.spotify.com/' + kind + '/' + uri.split(':')[2];
+      }
+    }
+
+    songInput.addEventListener('input', showSong);
+    /* A paste lands before the value is read, so wait a tick for it. */
+    songInput.addEventListener('paste', function(){ setTimeout(showSong, 0); });
+    showSong();
+  }
+
   var canvas = document.getElementById('preview-canvas');
   var ctx = canvas.getContext('2d');
   var dropHint = document.getElementById('drop-hint');
@@ -691,7 +792,7 @@
      same framing carries from the flat design into every mockup. */
   var photos = [];
   for (var i = 0; i < SLOT_COUNT; i++) {
-    photos.push({ img: null, scale: 1, rotate: 0, panX: 0, panY: 0, faceBox: null, framed: false });
+    photos.push({ img: null, scale: 1, rotate: 0, flip: false, panX: 0, panY: 0, faceBox: null, framed: false });
   }
 
   function currentAngle(){ return ANGLES[activeAngle]; }
@@ -749,6 +850,7 @@
 
     mctx.translate((state.panX || 0) * area.w, (state.panY || 0) * area.h);
     mctx.rotate(photoRad);
+    if (state.flip) mctx.scale(-1, 1);
     mctx.drawImage(img, -img.width * s / 2, -img.height * s / 2, img.width * s, img.height * s);
     mctx.restore();
   }
@@ -929,6 +1031,7 @@
     state.panX = 0;
     state.panY = 0;
     state.framed = false;
+    state.flip = false;
 
     var area = areaFor(slotIndex);
     if (!area || (area.shape !== 'ellipse' && !area.cutout) || typeof faceapi === 'undefined') return;
@@ -950,12 +1053,14 @@
   slotBlocks.forEach(function(block){
     var index = Number(block.dataset.slot);
     var input = block.querySelector('.photo-input');
+    if (!input) return;          // not a photo window, whatever else it is
     var label = block.querySelector('.upload-label');
     var zoomRow = block.querySelector('.zoom-row');
     var zoom = block.querySelector('.zoom-range');
     var rotateRow = block.querySelector('.rotate-row');
     var rotate = block.querySelector('.rotate-range');
     var rotateReset = block.querySelector('.rotate-reset');
+    var flipBtn = block.querySelector('.flip-btn');
     var hint = block.querySelector('.slot-hint');
     var fixBg = block.querySelector('.fix-bg');
 
@@ -1063,6 +1168,14 @@
       rotateReset.addEventListener('click', function(){
         photos[index].rotate = 0;
         rotate.value = 0;
+        draw();
+      });
+    }
+
+    if (flipBtn) {
+      flipBtn.addEventListener('click', function(){
+        photos[index].flip = !photos[index].flip;
+        flipBtn.setAttribute('aria-pressed', photos[index].flip ? 'true' : 'false');
         draw();
       });
     }

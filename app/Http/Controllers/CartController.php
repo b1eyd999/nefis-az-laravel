@@ -11,6 +11,7 @@ use App\Models\Wrapping;
 use App\Support\Analytics;
 use App\Support\Cart;
 use App\Support\Letter;
+use App\Support\SpotifyCode;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -54,6 +55,18 @@ class CartController extends Controller
 
         // Gift wrap is a choice, never a must.
         $rules['wrapping_id'] = ['nullable', Rule::exists('wrappings', 'id')->where('is_active', true)];
+
+        // The song, on the designs built around one. Never required: the box
+        // is worth ordering without it. Checked here as well as in the page,
+        // because a link that is not Spotify's draws no code at the press.
+        $song = null;
+        if ($product->spotify_code) {
+            $rules['spotify_uri'] = ['nullable', 'string', 'max:300', function (string $attribute, $value, $fail) {
+                if (filled($value) && ! SpotifyCode::isValid($value)) {
+                    $fail(__('Spotify linki tanınmadı. Spotify-da mahnını açın → Paylaş → Linki kopyala.'));
+                }
+            }];
+        }
 
         // So is a Polaroid letter inside the box: a photo, words, or both.
         $withLetter = Letter::enabled() && $request->boolean('letter_on');
@@ -136,11 +149,15 @@ class CartController extends Controller
             Cart::setRush(true);
         }
 
+        if ($product->spotify_code) {
+            $song = SpotifyCode::uri($request->input('spotify_uri'));
+        }
+
         $quantity = (int) $request->input('quantity', 1);
         Cart::add($product->id, $paths, $texts, $quantity,
             OrderItem::photoLabelsFor($product), OrderItem::textLabelsFor($product), $chocolate, $wrapping,
             $withLetter ? Letter::fromRequest($request) : null,
-            $withAr ? LiveMaterials::fromRequest($request) : null);
+            $withAr ? LiveMaterials::fromRequest($request) : null, $song);
 
         // The line as it was just added — box, bar, paper, letter and video.
         $line = Cart::items()[array_key_last(Cart::items())] ?? [];

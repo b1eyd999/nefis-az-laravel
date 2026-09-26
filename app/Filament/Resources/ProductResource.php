@@ -99,6 +99,13 @@ class ProductResource extends Resource
                                     . 'Bu dizaynın bütün foto sahələrinə tətbiq olunur; sahələri ayrı-ayrılıqda seçmək üçün "Qutu redaktoru"ndan istifadə edin. '
                                     . 'Qutu redaktoru açıqdırsa, saxlamadan əvvəl o səhifəni yeniləyin.'
                                 : 'Bu dizaynda hələ foto sahəsi yoxdur — əvvəlcə "Qutu redaktoru"nda foto sahəsi əlavə edin.'),
+                        // Unlike the face switch, this one is the design's own
+                        // column: nothing is drawn per window, the customer
+                        // simply gets one more field to fill.
+                        Forms\Components\Toggle::make('spotify_code')
+                            ->label('Spotify kodu istənilsin')
+                            ->helperText('Müştəri sifariş edərkən mahnının Spotify linkini yapışdırır, siz isə sifarişdə həmin mahnının '
+                                . 'skan olunan kodunu görürsünüz və çapa göndərirsiniz. Yalnız bu dizaynda soruşulur.'),
                     ])->columns(2),
                 Forms\Components\Section::make('Kataloq posteri')
                     ->description('Dizaynlar səhifəsindəki kartda bu şəkil görünür (4:5, məs. 1080×1350). Şəkli Yandex Diskdə paylaşın və linkini bura yapışdırın — saxlayanda sayt onu özü yükləyir.')
@@ -174,6 +181,10 @@ class ProductResource extends Resource
                     ->boolean()
                     ->getStateUsing(fn (Product $record) => $record->face_cutout_slots_count > 0
                         || ($record->face_cutout_angles_count ?? 0) > 0)
+                    ->visibleFrom('lg'),
+                Tables\Columns\IconColumn::make('spotify_code')
+                    ->label('Spotify')
+                    ->boolean()
                     ->visibleFrom('lg'),
                 Tables\Columns\TextColumn::make('price')
                     ->label('Qiymət')
