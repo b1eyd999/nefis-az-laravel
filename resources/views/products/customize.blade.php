@@ -89,6 +89,8 @@
     padding:.7rem .9rem; border:1.5px solid rgba(250,117,18,.5); border-radius:.9rem; font-weight:600; font-size:.875rem;
     color:var(--cocoa); background:linear-gradient(140deg, #FFF7EF, #FFE9D6); transition:background .25s, border-color .25s; }
   .wrap-open > summary > span{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .wrap-open:not([open]) > summary .wrap-choose{ display:none; }
+  .wrap-open[open] > summary .wrap-picked, .wrap-open[open] > summary > b{ display:none; }
   .wrap-open > summary > b{ font-size:.8rem; font-weight:700; color:var(--flame-2); }
   .wrap-open > summary::-webkit-details-marker{ display:none; }
   .wrap-open > summary:hover{ border-color:var(--flame); }
@@ -442,7 +444,10 @@
             {{-- One row, not two: it says what is chosen and opens the papers. --}}
             <details class="wrap-open" @if(old('wrapping_id')) open @endif>
               <summary>
-                <span id="wrap-chosen">{{ __('Qablaşdırmasız') }}</span>
+                {{-- Closed, the row says what is chosen; open, it says what to
+                     do, so the same words are not read twice. --}}
+                <span class="wrap-picked"><span id="wrap-chosen">{{ __('Qablaşdırmasız') }}</span></span>
+                <span class="wrap-choose">{{ __('Hədiyyə kağızını seçin') }}</span>
                 <b id="wrap-chosen-price">{{ __('pulsuz') }}</b>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
               </summary>
