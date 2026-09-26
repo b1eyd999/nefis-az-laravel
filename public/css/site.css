@@ -897,6 +897,17 @@
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .chat-who small::before{ content:""; width:.42rem; height:.42rem; border-radius:50%; background:#8FF0A4; flex:none;
     box-shadow:0 0 7px #8FF0A4; }
+  /* The bell that silences the chime: one icon at a time, in a round button
+     like the one beside it. Without these rules both icons piled up in the
+     header and read as a grey box. */
+  .chat-bell{ flex:none; width:1.7rem; height:1.7rem; border:0; border-radius:50%; cursor:pointer; display:grid; place-items:center;
+    background:rgba(255,255,255,.18); color:#fff; transition:background .25s, transform .25s; }
+  .chat-bell:hover{ background:rgba(255,255,255,.32); transform:scale(1.06); }
+  .chat-bell svg{ width:1rem; height:1rem; display:block; }
+  .chat-bell .bell-off{ display:none; }
+  .chat.muted .chat-bell .bell-on{ display:none; }
+  .chat.muted .chat-bell .bell-off{ display:block; }
+  .chat.muted .chat-bell{ opacity:.75; }
   .chat-close{ flex:none; border:0; background:rgba(255,255,255,.18); color:#fff; font-size:.85rem; cursor:pointer;
     width:1.7rem; height:1.7rem; border-radius:50%; display:grid; place-items:center; transition:background .25s, transform .25s; }
   .chat-close:hover{ background:rgba(255,255,255,.32); transform:rotate(90deg); }
