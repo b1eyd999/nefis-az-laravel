@@ -470,8 +470,8 @@
     transition:transform .45s var(--ease), box-shadow .45s var(--ease), border-color .45s;
     display:flex; flex-direction:column;
   }
-  .p-card:hover{ transform:translateY(-8px); border-color:rgba(250,117,18,.35);
-    box-shadow:0 24px 50px -24px rgba(240,84,32,.55), 0 0 26px -6px rgba(250,117,18,.28); }
+  /* No shadow under a card: the light running round its edge is enough. */
+  .p-card:hover{ transform:translateY(-8px); border-color:rgba(250,117,18,.35); }
 
   /* A light travels around the card's edge while the cursor is on it, the
      way a sweep passes over glass. The angle has to be a real angle, or the
@@ -490,8 +490,7 @@
   .p-card:hover::before, .d-card:hover::before{ opacity:1; animation:card-sweep 2.4s linear infinite; }
   @keyframes card-sweep{ to{ --sweep:360deg; } }
   .d-card{ position:relative; }
-  .d-card:hover{ border-color:rgba(250,117,18,.35) !important;
-    box-shadow:0 24px 50px -24px rgba(240,84,32,.55), 0 0 26px -6px rgba(250,117,18,.28) !important; }
+  .d-card:hover{ border-color:rgba(250,117,18,.35) !important; box-shadow:none !important; }
   @media (prefers-reduced-motion: reduce){
     .p-card:hover::before, .d-card:hover::before{ animation:none; }
   }
