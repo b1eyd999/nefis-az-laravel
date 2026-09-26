@@ -842,33 +842,60 @@
   /* ---------- wiping the background off a cut-out head ---------- */
   .brush{ position:fixed; inset:0; z-index:220; display:grid; place-items:center; padding:1rem; }
   .brush[hidden]{ display:none; }
-  .brush-back{ position:absolute; inset:0; background:rgba(20,12,6,.72); backdrop-filter:blur(5px); }
-  .brush-sheet{ position:relative; width:min(34rem, 100%); max-height:100%; overflow:auto; display:flex; flex-direction:column; gap:.75rem;
-    background:linear-gradient(165deg, var(--paper), var(--cream-2)); border-radius:1.25rem; padding:1rem 1rem 1.1rem;
-    box-shadow:0 30px 70px -30px rgba(58,38,23,.7); }
-  .brush-head{ display:flex; align-items:center; justify-content:space-between; gap:1rem; }
-  .brush-head b{ font-size:1rem; }
-  .brush-x{ width:2rem; height:2rem; border:0; border-radius:50%; background:var(--cream-2); color:var(--cocoa); cursor:pointer; }
-  .brush-x:hover{ background:var(--flame-grad); color:#fff; }
+  .brush-back{ position:absolute; inset:0; background:rgba(20,12,6,.74); backdrop-filter:blur(6px); }
+  .brush-sheet{ position:relative; width:min(38rem, 100%); max-height:100%; overflow:auto; display:flex; flex-direction:column; gap:.85rem;
+    background:linear-gradient(165deg, var(--paper), var(--cream-2)); border-radius:1.35rem; padding:1.1rem 1.1rem 1.2rem;
+    box-shadow:0 30px 70px -30px rgba(58,38,23,.7), 0 0 0 1px rgba(250,117,18,.16);
+    animation:chat-in .35s var(--ease) both; }
+  .brush-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; }
+  .brush-title b{ display:block; font-size:1.0625rem; }
+  .brush-title small{ display:block; font-size:.78rem; color:var(--cocoa-soft); margin-top:.15rem; }
+  .brush-x{ flex:none; width:2rem; height:2rem; border:0; border-radius:50%; background:var(--cream-2); color:var(--cocoa); cursor:pointer;
+    transition:background .25s, color .25s, transform .25s; }
+  .brush-x:hover{ background:var(--flame-grad); color:#fff; transform:rotate(90deg); }
+
   /* A chequer behind the picture, so a hole in it is plain to see. */
-  .brush-stage{ display:grid; place-items:center; min-height:14rem; border-radius:1rem; overflow:hidden; touch-action:none;
-    background-color:#fff;
+  .brush-stage{ position:relative; display:grid; place-items:center; height:min(46vh, 22rem); border-radius:1.1rem; overflow:hidden;
+    touch-action:none; background-color:#fff;
     background-image:linear-gradient(45deg, #e9e2d8 25%, transparent 25%, transparent 75%, #e9e2d8 75%),
       linear-gradient(45deg, #e9e2d8 25%, transparent 25%, transparent 75%, #e9e2d8 75%);
-    background-size:18px 18px; background-position:0 0, 9px 9px; }
-  .brush-stage canvas{ display:block; touch-action:none; cursor:crosshair; }
+    background-size:18px 18px; background-position:0 0, 9px 9px;
+    box-shadow:inset 0 0 0 1px var(--line); }
+  .brush-stage canvas{ display:block; touch-action:none; cursor:none; }
+
+  /* The brush itself: the customer sees what the next stroke will take. */
+  .brush-ring{ position:absolute; left:0; top:0; border-radius:50%; pointer-events:none; transform:translate(-50%, -50%);
+    border:2px solid rgba(240,84,32,.95); box-shadow:0 0 0 1px rgba(255,255,255,.9) inset, 0 0 0 1px rgba(255,255,255,.55), 0 0 12px rgba(240,84,32,.35);
+    background:rgba(250,117,18,.12); }
+  .brush-ring[hidden]{ display:none; }
+  .brush.restoring .brush-ring{ border-color:rgba(63,185,80,.95); background:rgba(63,185,80,.12);
+    box-shadow:0 0 0 1px rgba(255,255,255,.9) inset, 0 0 0 1px rgba(255,255,255,.55), 0 0 12px rgba(63,185,80,.3); }
+
   .brush-tools{ display:flex; flex-wrap:wrap; align-items:center; gap:.75rem; }
-  .brush-seg{ display:inline-flex; border:1px solid var(--line); border-radius:999px; overflow:hidden; }
-  .brush-seg button{ border:0; background:var(--paper); color:var(--cocoa-soft); font:inherit; font-size:.8125rem; font-weight:600;
-    padding:.45rem .8rem; cursor:pointer; }
+  .brush-seg{ display:inline-flex; border:1px solid var(--line); border-radius:999px; overflow:hidden; background:var(--paper); }
+  .brush-seg button{ display:inline-flex; align-items:center; gap:.35rem; border:0; background:none; color:var(--cocoa-soft);
+    font:inherit; font-size:.8125rem; font-weight:600; padding:.5rem .85rem; cursor:pointer; transition:background .25s, color .25s; }
+  .brush-seg button svg{ width:1rem; height:1rem; }
   .brush-seg button.on{ background:var(--flame-grad); color:#fff; }
-  .brush-size{ display:flex; align-items:center; gap:.5rem; flex:1; min-width:9rem; font-size:.8125rem; color:var(--cocoa-soft); }
+  .brush.restoring .brush-seg button.on{ background:linear-gradient(120deg, #55C86B, #2E9E4B); }
+  .brush-size{ display:flex; align-items:center; gap:.5rem; flex:1; min-width:11rem; }
+  .brush-size-ico{ color:var(--cocoa-faint); font-size:.8rem; }
   .brush-size input{ flex:1; accent-color:var(--flame); }
-  .brush-undo{ padding:.5rem 1rem; font-size:.8125rem; }
+  .brush-size output{ min-width:2.2rem; text-align:right; font-size:.8125rem; font-weight:700; color:var(--cocoa-soft); font-variant-numeric:tabular-nums; }
+  .brush-acts{ display:flex; gap:.4rem; }
+  .brush-act{ border:1px solid var(--line); background:var(--paper); color:var(--cocoa); border-radius:999px;
+    font:inherit; font-size:.78rem; font-weight:600; padding:.45rem .8rem; cursor:pointer; transition:border-color .25s, color .25s; }
+  .brush-act:hover:not(:disabled){ border-color:var(--flame); color:var(--flame-2); }
+  .brush-act:disabled{ opacity:.45; cursor:not-allowed; }
   .brush-hint{ margin:0; font-size:.78rem; color:var(--cocoa-soft); line-height:1.5; }
   .brush-foot{ display:flex; justify-content:flex-end; gap:.6rem; }
-  .brush-foot .btn{ padding:.65rem 1.2rem; font-size:.875rem; }
+  .brush-foot .btn{ padding:.65rem 1.3rem; font-size:.875rem; }
   .fix-bg{ margin-top:.6rem; padding:.55rem 1rem; font-size:.8125rem; }
+  @media (max-width:520px){
+    .brush-sheet{ padding:.85rem .85rem 1rem; gap:.7rem; }
+    .brush-stage{ height:min(42vh, 17rem); }
+    .brush-size{ order:3; width:100%; flex:1 0 100%; }
+  }
 
   /* ---------- the chat in the corner ---------- */
   .chat{ position:relative; display:flex; flex-direction:column; align-items:flex-end; gap:.6rem; }
