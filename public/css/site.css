@@ -593,7 +593,12 @@
   /* ---------- customizer ---------- */
   .customizer{ display:grid; gap:2.5rem; }
   .customizer > *{ min-width:0; }
-  @media (min-width:960px){ .customizer{ grid-template-columns:1.1fr .9fr; align-items:start; } }
+  @media (min-width:960px){
+    .customizer{ grid-template-columns:1.1fr .9fr; align-items:start; }
+    /* The box stays in sight while the long form is scrolled: the picture is
+       what the customer is deciding about. */
+    .customizer > :first-child{ position:sticky; top:6rem; align-self:start; }
+  }
   .stage{
     position:relative; border-radius:var(--radius); overflow:hidden; background:var(--paper); border:1px solid var(--line);
     box-shadow:var(--shadow-sm); aspect-ratio:1/1; display:flex; align-items:center; justify-content:center;
