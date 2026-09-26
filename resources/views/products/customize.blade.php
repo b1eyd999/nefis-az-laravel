@@ -638,11 +638,18 @@
   if (typeof faceapi !== 'undefined' || document.querySelector('script[src*="face-api"]')) {
     setTimeout(function(){ ensureFaceModel().catch(function(){}); }, 300);
   }
+  /* Same for the cutter: its models are the slow part of the first photo. */
+  setTimeout(function(){ if (window.NefisCutout) window.NefisCutout.warm(); }, 400);
 
   var canvas = document.getElementById('preview-canvas');
   var ctx = canvas.getContext('2d');
   var dropHint = document.getElementById('drop-hint');
   var addBtn = document.getElementById('add-to-cart-btn');
+  /* Cutting the face out takes seconds on the first photo. The button
+     stays shut while it runs: otherwise a customer who taps straight
+     after choosing would order the uncut photo — background, room and
+     all — onto a design that is a drawn body with a hole for a head. */
+  var cutting = 0;
   var anglePrev = document.getElementById('angle-prev');
   var angleNext = document.getElementById('angle-next');
   var angleThumbs = document.querySelectorAll('.angle-thumb');
@@ -968,22 +975,38 @@
       if (!alreadyCut && area && area.cutout && window.NefisCutout) {
         if (hint){ hint.hidden = false; hint.textContent = @json(__('Şəkil hazırlanır, bir neçə saniyə…')); }
         if (fixBg) fixBg.hidden = true;
+        cutting++;
+        addBtn.disabled = true;
+        /* prepare() answers with null instead of throwing, so every way out
+           of it has to come through here or the button never opens again. */
+        var settled = false;
+        var settle = function(){
+          if (settled) return;
+          settled = true;
+          cutting--;
+          if (!cutting && allSlotsFilled()) addBtn.disabled = false;
+        };
         window.NefisCutout.prepare(file).then(function(cut){
           if (!cut) {
             /* Better to say so than to leave a square photo on a drawn body. */
             if (hint) hint.textContent = @json(__('Fonu kəsmək alınmadı. Şəkli özünüz yerləşdirin və ya fonu sadə olan başqa şəkil seçin.'));
+            settle();
             return;
           }
           var box = new DataTransfer();
           box.items.add(cut);
           input.dataset.processed = '1';
           input.files = box.files;
+          /* Freed before the picture goes back through this handler, so the
+             reader that follows finds nothing left to wait for. */
+          settle();
           input.dispatchEvent(new Event('change'));
           if (hint) hint.textContent = @json(__('Fon kəsildi. Şəkli sürükləyib böyüdə bilərsiniz.'));
           /* Whatever the machine left behind, the customer wipes himself. */
           if (fixBg) fixBg.hidden = false;
         }).catch(function(){
           if (hint) hint.textContent = @json(__('Fonu kəsmək alınmadı. Şəkli özünüz yerləşdirin və ya fonu sadə olan başqa şəkil seçin.'));
+          settle();
         });
       }
 
@@ -998,7 +1021,7 @@
           if (rotate) rotate.value = 0;
           if (hint) hint.hidden = false;
           if (dropHint) dropHint.style.display = 'none';
-          if (allSlotsFilled()) addBtn.disabled = false;
+          if (allSlotsFilled() && !cutting) addBtn.disabled = false;
           draw();
         };
         img.src = e.target.result;

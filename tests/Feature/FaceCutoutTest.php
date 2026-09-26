@@ -177,6 +177,33 @@ class FaceCutoutTest extends TestCase
         $this->assertStringContainsString('.fix-bg[hidden]{ display:none; }', file_get_contents(public_path('css/site.css')));
     }
 
+    public function test_the_restore_brush_paints_the_photo_back_and_not_black(): void
+    {
+        // Stroking a line and then clipping to it puts nothing back: clip()
+        // takes a path's fill, and a line encloses no area — so the stroke
+        // stayed on the picture as plain black paint. The brush is filled
+        // with the untouched photo instead. Checked here because the mistake
+        // is invisible in review and only shows on the printed box.
+        $brush = file_get_contents(public_path('js/cutout-brush.js'));
+
+        $this->assertStringContainsString("ctx.createPattern(source, 'no-repeat')", $brush);
+        $this->assertStringNotContainsString('ctx.clip()', $brush);
+    }
+
+    public function test_nothing_can_be_ordered_while_the_face_is_still_being_cut(): void
+    {
+        // The cut takes seconds on the first photo; until then the input still
+        // holds the untouched one. A customer who taps straight away would
+        // order his living room onto a design that is a body with a hole in it.
+        $page = file_get_contents(resource_path('views/products/customize.blade.php'));
+
+        $this->assertStringContainsString('var cutting = 0;', $page);
+        $this->assertStringContainsString('if (allSlotsFilled() && !cutting) addBtn.disabled = false;', $page);
+        // prepare() answers with null rather than throwing, so the counter has
+        // to come down on that path too or the button never opens again.
+        $this->assertStringContainsString('settle();', $page);
+    }
+
     public function test_a_box_without_photo_windows_saves_without_complaint(): void
     {
         $this->panel();

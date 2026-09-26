@@ -150,13 +150,17 @@ window.NefisBrush = (function () {
       return;
     }
 
-    /* Restoring paints the original photo back along the same line. */
+    /* Restoring paints the original photo back along the same line: the
+       brush itself is filled with the untouched picture, anchored at the
+       canvas origin, so the band the brush covers comes back pixel for
+       pixel. Stroking the line and then clipping to it does not work —
+       clip() takes a path's fill, and a line encloses no area, so the clip
+       would be empty and the stroke would stay as plain black paint. */
+    ctx.strokeStyle = ctx.createPattern(source, 'no-repeat');
     ctx.beginPath();
     ctx.moveTo(from.x, from.y);
     ctx.lineTo(to.x, to.y);
-    ctx.stroke();                      // the path itself is the clip below
-    ctx.clip();
-    ctx.drawImage(source, 0, 0);
+    ctx.stroke();
     ctx.restore();
   }
 
