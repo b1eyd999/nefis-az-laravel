@@ -29,6 +29,9 @@ class EditProduct extends EditRecord
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $data['face_cutout'] = $this->cutsFaces($this->record);
+        // Kept beside it so the save request, which builds a new component,
+        // can still tell whether the owner actually moved the switch.
+        $data['face_cutout_was'] = $data['face_cutout'];
 
         return $data;
     }
@@ -97,17 +100,27 @@ class EditProduct extends EditRecord
     {
         $wanted = (bool) ($this->data['face_cutout'] ?? false);
 
-        if ($wanted === $this->cutsFaces($product)) {
+        // Against what the page showed, not against the database: while this
+        // tab stood open the owner may have marked a single window in the box
+        // editor, and a save of the price here must not undo that.
+        if (! array_key_exists('face_cutout_was', $this->data) || $wanted === (bool) $this->data['face_cutout_was']) {
             return;
         }
 
         // A design whose photo windows are not drawn yet has nothing to mark.
         $product->photoSlots()->update(['cutout' => $wanted]);
+        // Designs from before the box editor keep a window on every angle too.
+        foreach ($product->angles as $angle) {
+            $angle->photoSlots()->update(['cutout' => $wanted]);
+        }
+
+        $this->data['face_cutout_was'] = $wanted;
     }
 
     private function cutsFaces(Product $product): bool
     {
-        return $product->photoSlots()->where('cutout', true)->exists();
+        return $product->photoSlots()->where('cutout', true)->exists()
+            || $product->angles()->whereHas('photoSlots', fn ($slot) => $slot->where('cutout', true))->exists();
     }
 
     /** A cover is drawn in the browser, on a page that then comes back here. */

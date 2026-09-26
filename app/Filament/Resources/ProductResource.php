@@ -86,6 +86,10 @@ class ProductResource extends Resource
                         // table, so EditProduct reads it from them and writes it back by hand.
                         // Hidden while creating: a design has no photo window until the box
                         // editor draws one, so there would be nowhere to keep the answer.
+                        // What the switch said when the page was opened, so a save
+                        // that never touched it leaves the photo windows alone.
+                        Forms\Components\Hidden::make('face_cutout_was')
+                            ->dehydrated(false),
                         Forms\Components\Toggle::make('face_cutout')
                             ->label('Üz avtomatik kəsilsin')
                             ->dehydrated(false)
@@ -168,7 +172,8 @@ class ProductResource extends Resource
                 Tables\Columns\IconColumn::make('face_cutout_slots_count')
                     ->label('Üz kəsimi')
                     ->boolean()
-                    ->getStateUsing(fn (Product $record) => $record->face_cutout_slots_count > 0)
+                    ->getStateUsing(fn (Product $record) => $record->face_cutout_slots_count > 0
+                        || ($record->face_cutout_angles_count ?? 0) > 0)
                     ->visibleFrom('lg'),
                 Tables\Columns\TextColumn::make('price')
                     ->label('Qiymət')
@@ -192,7 +197,10 @@ class ProductResource extends Resource
             // Both icon columns ask a relation a question; counted here so the list stays one query.
             ->modifyQueryUsing(fn ($query) => $query
                 ->withCount('layers')
-                ->withCount(['photoSlots as face_cutout_slots_count' => fn ($q) => $q->where('cutout', true)]))
+                ->withCount(['photoSlots as face_cutout_slots_count' => fn ($q) => $q->where('cutout', true)])
+                // Designs from before the box editor keep windows on their angles too.
+                ->withCount(['angles as face_cutout_angles_count' => fn ($q) => $q
+                    ->whereHas('photoSlots', fn ($slot) => $slot->where('cutout', true))]))
             ->defaultSort('sort_order')
             ->filters([
                 Tables\Filters\SelectFilter::make('category')

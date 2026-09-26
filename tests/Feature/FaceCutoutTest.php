@@ -136,6 +136,47 @@ class FaceCutoutTest extends TestCase
         $this->assertSame('Populyar', $box->fresh()->tag);
     }
 
+    public function test_a_save_that_never_touched_the_switch_leaves_the_windows_alone(): void
+    {
+        $this->panel();
+        $box = $this->box(false);
+
+        // The owner opens the design's page…
+        $page = $this->edit($box);
+
+        // …then marks the window in the box editor, in another tab…
+        $box->photoSlots()->update(['cutout' => true]);
+
+        // …and comes back to fix a word, without going near the switch.
+        $page->fillForm(['name' => 'Pampers zarafat'])->call('save')->assertHasNoFormErrors();
+
+        $this->assertTrue((bool) $box->photoSlots()->value('cutout'), 'the box editor’s choice survived');
+    }
+
+    public function test_the_switch_reaches_the_windows_of_older_designs_angles(): void
+    {
+        $this->panel();
+        $box = $this->box(false);
+        $angle = $box->angles()->create(['label' => 'Yan görünüş', 'template_image' => 'boxes/yan.webp',
+            'template_width' => 3508, 'template_height' => 2480, 'sort_order' => 0]);
+        $angle->photoSlots()->create(['label' => 'Üz', 'x' => 10, 'y' => 10, 'width' => 200, 'height' => 200,
+            'rotation' => 0, 'shape' => 'rectangle', 'cutout' => false, 'sort_order' => 0]);
+
+        $this->edit($box)->fillForm(['face_cutout' => true])->call('save')->assertHasNoFormErrors();
+
+        $this->assertTrue((bool) $angle->photoSlots()->value('cutout'), 'the angle’s window was marked too');
+        // And a design marked only on an angle still reads as a face design.
+        $box->photoSlots()->update(['cutout' => false]);
+        $this->edit($box)->assertFormSet(['face_cutout' => true]);
+    }
+
+    public function test_the_touch_up_button_stays_hidden_until_there_is_something_to_fix(): void
+    {
+        // The button carries .btn, whose display would beat the browser's own
+        // [hidden] rule, so the sheet needs this one line of its own.
+        $this->assertStringContainsString('.fix-bg[hidden]{ display:none; }', file_get_contents(public_path('css/site.css')));
+    }
+
     public function test_a_box_without_photo_windows_saves_without_complaint(): void
     {
         $this->panel();

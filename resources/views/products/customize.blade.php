@@ -967,6 +967,7 @@
       input.dataset.processed = '';
       if (!alreadyCut && area && area.cutout && window.NefisCutout) {
         if (hint){ hint.hidden = false; hint.textContent = @json(__('Şəkil hazırlanır, bir neçə saniyə…')); }
+        if (fixBg) fixBg.hidden = true;
         window.NefisCutout.prepare(file).then(function(cut){
           if (!cut) {
             /* Better to say so than to leave a square photo on a drawn body. */

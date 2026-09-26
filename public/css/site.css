@@ -891,6 +891,8 @@
   .brush-foot{ display:flex; justify-content:flex-end; gap:.6rem; }
   .brush-foot .btn{ padding:.65rem 1.3rem; font-size:.875rem; }
   .fix-bg{ margin-top:.6rem; padding:.55rem 1rem; font-size:.8125rem; }
+  /* .btn sets display, which would beat the browser's own [hidden] rule. */
+  .fix-bg[hidden]{ display:none; }
   @media (max-width:520px){
     .brush-sheet{ padding:.85rem .85rem 1rem; gap:.7rem; }
     .brush-stage{ height:min(42vh, 17rem); }

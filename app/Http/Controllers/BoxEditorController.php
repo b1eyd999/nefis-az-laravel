@@ -160,8 +160,13 @@ class BoxEditorController extends Controller
             }
 
             // The slots are rewritten from scratch, so what they said about
-            // face cutting is remembered first, in the order they are in.
+            // face cutting is remembered first, in the order they are in. The
+            // order is all we have to match them by, so it is only trusted
+            // when the windows were neither added nor removed.
             $kept = $product->photoSlots()->orderBy('sort_order')->pluck('cutout')->all();
+            if (count($kept) !== count($data['photos'])) {
+                $kept = [];
+            }
 
             $product->photoSlots()->delete();
             foreach (array_values($data['photos']) as $order => $p) {
