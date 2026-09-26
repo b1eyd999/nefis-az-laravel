@@ -513,6 +513,11 @@
   .p-card-foot{ display:flex; align-items:center; justify-content:space-between; margin-top:.25rem; }
   .p-card-price{ font-weight:700; font-size:.9375rem; color:var(--gold-deep); }
   .p-card-link{ font-size:.8125rem; font-weight:600; display:inline-flex; align-items:center; gap:.3rem; padding:.6rem 0; margin:-.6rem 0; }
+  /* The whole card opens the design, not only its picture and this link: the
+     link reaches over the card and takes the click wherever it lands, so the
+     white part below the picture works too. */
+  .p-card{ cursor:pointer; }
+  .p-card-link::after{ content:""; position:absolute; inset:0; z-index:2; }
   .p-card-link svg{ width:.875rem; height:.875rem; transition:transform .3s var(--ease); }
   .p-card:hover .p-card-link svg{ transform:translateX(3px); }
 
