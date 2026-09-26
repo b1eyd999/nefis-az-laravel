@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ProductResource\Pages;
 
 use App\Filament\Resources\ProductResource;
+use App\Models\Product;
 use App\Support\YandexDisk;
 use Filament\Actions;
 use Filament\Notifications\Notification;
@@ -19,6 +20,18 @@ class EditProduct extends EditRecord
 
     /** A new poster, fetched before saving so a bad link stops the save. */
     private ?UploadedFile $poster = null;
+
+    /**
+     * The face-cutout switch is not a column on products: the answer sits on
+     * each photo window of this design, so it is read back from there. One
+     * marked window is enough for the design to count as a face design.
+     */
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $data['face_cutout'] = $this->cutsFaces($this->record);
+
+        return $data;
+    }
 
     protected function beforeSave(): void
     {
@@ -50,6 +63,9 @@ class EditProduct extends EditRecord
     {
         $product = $this->record;
 
+        // Before the cover block below, which returns early for most designs.
+        $this->applyFaceCutout($product);
+
         if ($this->poster) {
             $product->storePoster($this->poster, $product->poster_url);
         } elseif (! $product->poster_url && $product->poster_image) {
@@ -68,6 +84,30 @@ class EditProduct extends EditRecord
         // Nothing to draw until the box editor has a visual to put in the scene.
         $this->coverOutdated = $product->preview_image
             && ($product->wasChanged(['cover_scene_id', 'box_color']) || ! $product->cover_image);
+    }
+
+    /**
+     * The panel's switch speaks for the whole design, while the box editor can
+     * mark one photo window and leave the one beside it alone. So a save that
+     * left the switch where it was changes nothing: a design with a face in one
+     * window and an ordinary picture in the other keeps that mix, and only the
+     * owner flipping the switch here gives every window the same answer.
+     */
+    private function applyFaceCutout(Product $product): void
+    {
+        $wanted = (bool) ($this->data['face_cutout'] ?? false);
+
+        if ($wanted === $this->cutsFaces($product)) {
+            return;
+        }
+
+        // A design whose photo windows are not drawn yet has nothing to mark.
+        $product->photoSlots()->update(['cutout' => $wanted]);
+    }
+
+    private function cutsFaces(Product $product): bool
+    {
+        return $product->photoSlots()->where('cutout', true)->exists();
     }
 
     /** A cover is drawn in the browser, on a page that then comes back here. */

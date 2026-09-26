@@ -82,6 +82,19 @@ class ProductResource extends Resource
                         Forms\Components\Toggle::make('is_active')
                             ->label('Saytda görünsün')
                             ->default(true),
+                        // This switch belongs to the design's photo windows, not to the products
+                        // table, so EditProduct reads it from them and writes it back by hand.
+                        // Hidden while creating: a design has no photo window until the box
+                        // editor draws one, so there would be nowhere to keep the answer.
+                        Forms\Components\Toggle::make('face_cutout')
+                            ->label('Üz avtomatik kəsilsin')
+                            ->dehydrated(false)
+                            ->visible(fn (?Product $record) => (bool) $record)
+                            ->helperText(fn (?Product $record) => $record?->photoSlots()->exists()
+                                ? 'Müştəri adi şəkil yükləyir, brauzer isə ondan yalnız başı kəsib fonu atır — üzün hazır gövdənin üstünə oturduğu dizaynlar üçün. '
+                                    . 'Bu dizaynın bütün foto sahələrinə tətbiq olunur; sahələri ayrı-ayrılıqda seçmək üçün "Qutu redaktoru"ndan istifadə edin. '
+                                    . 'Qutu redaktoru açıqdırsa, saxlamadan əvvəl o səhifəni yeniləyin.'
+                                : 'Bu dizaynda hələ foto sahəsi yoxdur — əvvəlcə "Qutu redaktoru"nda foto sahəsi əlavə edin.'),
                     ])->columns(2),
                 Forms\Components\Section::make('Kataloq posteri')
                     ->description('Dizaynlar səhifəsindəki kartda bu şəkil görünür (4:5, məs. 1080×1350). Şəkli Yandex Diskdə paylaşın və linkini bura yapışdırın — saxlayanda sayt onu özü yükləyir.')
@@ -152,6 +165,11 @@ class ProductResource extends Resource
                     ->boolean()
                     ->getStateUsing(fn (Product $record) => $record->isCustomizable())
                     ->visibleFrom('lg'),
+                Tables\Columns\IconColumn::make('face_cutout_slots_count')
+                    ->label('Üz kəsimi')
+                    ->boolean()
+                    ->getStateUsing(fn (Product $record) => $record->face_cutout_slots_count > 0)
+                    ->visibleFrom('lg'),
                 Tables\Columns\TextColumn::make('price')
                     ->label('Qiymət')
                     ->formatStateUsing(fn ($state) => $state ? Price::format($state) : 'Sorğu ilə')
@@ -171,7 +189,10 @@ class ProductResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->modifyQueryUsing(fn ($query) => $query->withCount('layers'))
+            // Both icon columns ask a relation a question; counted here so the list stays one query.
+            ->modifyQueryUsing(fn ($query) => $query
+                ->withCount('layers')
+                ->withCount(['photoSlots as face_cutout_slots_count' => fn ($q) => $q->where('cutout', true)]))
             ->defaultSort('sort_order')
             ->filters([
                 Tables\Filters\SelectFilter::make('category')

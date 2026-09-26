@@ -159,6 +159,10 @@ class BoxEditorController extends Controller
                 ]);
             }
 
+            // The slots are rewritten from scratch, so what they said about
+            // face cutting is remembered first, in the order they are in.
+            $kept = $product->photoSlots()->orderBy('sort_order')->pluck('cutout')->all();
+
             $product->photoSlots()->delete();
             foreach (array_values($data['photos']) as $order => $p) {
                 $product->photoSlots()->create([
@@ -166,7 +170,10 @@ class BoxEditorController extends Controller
                     'x' => (int) round($p['x']), 'y' => (int) round($p['y']),
                     'width' => (int) round($p['width']), 'height' => (int) round($p['height']),
                     'rotation' => (int) round($p['rotation']), 'shape' => $p['shape'],
-                    'cutout' => (bool) ($p['cutout'] ?? false),
+                    // An editor tab opened before this switch existed sends no
+                    // "cutout" at all; taking that as "off" would quietly turn
+                    // the face cutting off on a box that has it.
+                    'cutout' => array_key_exists('cutout', $p) ? (bool) $p['cutout'] : ($kept[$order] ?? false),
                     'sort_order' => $order,
                 ]);
             }

@@ -48,6 +48,10 @@
 
 @php
   $photoSlots = $product->photoSlots;
+  // Does this design cut faces out? The preview turns between the front and
+  // the other angles, so a cut-out window on any of them counts.
+  $cutsFaces = $photoSlots->contains(fn ($slot) => $slot->cutout)
+      || $product->angles->contains(fn ($angle) => $angle->photoSlots->contains(fn ($slot) => $slot->cutout));
   $textSlots = $product->textSlots;
 @endphp
 
@@ -342,6 +346,9 @@
               <button type="button" class="rotate-reset" title="{{ __('Sıfırla') }}">↺</button>
             </div>
             <p class="slot-hint" hidden>{{ __('Şəkli önizləmədə sürükləyərək mövqeyini dəyişə bilərsiniz.') }}</p>
+            @if($slot->cutout)
+              <button type="button" class="btn btn-ghost fix-bg" hidden>{{ __('Fonu düzəlt') }}</button>
+            @endif
           </div>
         @endforeach
 
@@ -590,19 +597,18 @@
     </div>
   </section>
 @endif
+@if($cutsFaces)
+  @include('partials.cutout-brush')
+@endif
 @endsection
 
 @section('page_script')
-@php
-  // A face is looked for when the window is an oval, and always when the
-  // design cuts the head out of the photo.
-  $cutsFaces = $photoSlots->contains(fn ($slot) => $slot->cutout);
-@endphp
 @if($cutsFaces || $photoSlots->where('shape', 'ellipse')->isNotEmpty())
 <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 @endif
 @if($cutsFaces)
 <script defer src="{{ asset('js/face-cutout.js') }}"></script>
+<script defer src="{{ asset('js/cutout-brush.js') }}"></script>
 @endif
 <script src="{{ asset('js/box-render.js') }}"></script>
 <script src="{{ asset('js/scene-render.js') }}"></script>
@@ -944,6 +950,7 @@
     var rotate = block.querySelector('.rotate-range');
     var rotateReset = block.querySelector('.rotate-reset');
     var hint = block.querySelector('.slot-hint');
+    var fixBg = block.querySelector('.fix-bg');
 
     input.addEventListener('change', function(){
       var file = input.files && input.files[0];
@@ -951,23 +958,32 @@
       label.textContent = file.name;
 
       /* A face slot keeps only the head: the background is cut away here, in
-         the customer's own browser, and the cut-out picture is what is sent. */
+         the customer's own browser, and the cut-out picture is what is sent.
+         The cut picture comes back through this same handler, so one flag
+         marks that round and is cleared at once — otherwise the second photo
+         a customer picks would go in uncut. */
       var area = areaFor(index);
-      if (area && area.cutout && window.NefisCutout && !input.dataset.cut) {
+      var alreadyCut = input.dataset.processed === '1';
+      input.dataset.processed = '';
+      if (!alreadyCut && area && area.cutout && window.NefisCutout) {
         if (hint){ hint.hidden = false; hint.textContent = @json(__('Şəkil hazırlanır, bir neçə saniyə…')); }
         window.NefisCutout.prepare(file).then(function(cut){
-          if (!cut) { if (hint) hint.textContent = @json(__('Şəkli önizləmədə sürükləyərək mövqeyini dəyişə bilərsiniz.')); return; }
+          if (!cut) {
+            /* Better to say so than to leave a square photo on a drawn body. */
+            if (hint) hint.textContent = @json(__('Fonu kəsmək alınmadı. Şəkli özünüz yerləşdirin və ya fonu sadə olan başqa şəkil seçin.'));
+            return;
+          }
           var box = new DataTransfer();
           box.items.add(cut);
-          input.dataset.cut = '1';
+          input.dataset.processed = '1';
           input.files = box.files;
           input.dispatchEvent(new Event('change'));
           if (hint) hint.textContent = @json(__('Fon kəsildi. Şəkli sürükləyib böyüdə bilərsiniz.'));
+          /* Whatever the machine left behind, the customer wipes himself. */
+          if (fixBg) fixBg.hidden = false;
         }).catch(function(){
-          if (hint) hint.textContent = @json(__('Şəkli önizləmədə sürükləyərək mövqeyini dəyişə bilərsiniz.'));
+          if (hint) hint.textContent = @json(__('Fonu kəsmək alınmadı. Şəkli özünüz yerləşdirin və ya fonu sadə olan başqa şəkil seçin.'));
         });
-      } else if (!area || !area.cutout) {
-        input.dataset.cut = '';
       }
 
       var reader = new FileReader();
@@ -988,6 +1004,21 @@
       };
       reader.readAsDataURL(file);
     });
+
+    if (fixBg) {
+      fixBg.addEventListener('click', function(){
+        var current = input.files && input.files[0];
+        if (!current || !window.NefisBrush) return;
+        window.NefisBrush.open(current).then(function(fixed){
+          if (!fixed) return;
+          var box = new DataTransfer();
+          box.items.add(fixed);
+          input.dataset.processed = '1';
+          input.files = box.files;
+          input.dispatchEvent(new Event('change'));
+        });
+      });
+    }
 
     if (zoom) {
       zoom.addEventListener('input', function(){

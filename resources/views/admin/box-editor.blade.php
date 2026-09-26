@@ -1145,7 +1145,9 @@
       commit(); refresh(); return;
     }
     if (b.dataset.seg && it) {
-      it[b.dataset.seg] = b.dataset.v;
+      /* data-v is always text. "Üz kəsilsin" is the one switch with yes/no values,
+         and the string "0" would read as yes — so that one is kept as a number. */
+      it[b.dataset.seg] = b.dataset.seg === 'cutout' ? +b.dataset.v : b.dataset.v;
       if (b.dataset.seg === 'align' && selection.kind === 'text') {
         /* Keep the text box where it is; only the anchor moves. */
         var box = boxOf('text', it);

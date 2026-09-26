@@ -839,6 +839,37 @@
   /* ---------- floating contact ---------- */
   /* Both corner buttons stand in one column, the chat on top. */
   .float-stack{ position:fixed; right:1.25rem; bottom:1.25rem; z-index:70; display:flex; flex-direction:column; align-items:flex-end; gap:.6rem; }
+  /* ---------- wiping the background off a cut-out head ---------- */
+  .brush{ position:fixed; inset:0; z-index:220; display:grid; place-items:center; padding:1rem; }
+  .brush[hidden]{ display:none; }
+  .brush-back{ position:absolute; inset:0; background:rgba(20,12,6,.72); backdrop-filter:blur(5px); }
+  .brush-sheet{ position:relative; width:min(34rem, 100%); max-height:100%; overflow:auto; display:flex; flex-direction:column; gap:.75rem;
+    background:linear-gradient(165deg, var(--paper), var(--cream-2)); border-radius:1.25rem; padding:1rem 1rem 1.1rem;
+    box-shadow:0 30px 70px -30px rgba(58,38,23,.7); }
+  .brush-head{ display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+  .brush-head b{ font-size:1rem; }
+  .brush-x{ width:2rem; height:2rem; border:0; border-radius:50%; background:var(--cream-2); color:var(--cocoa); cursor:pointer; }
+  .brush-x:hover{ background:var(--flame-grad); color:#fff; }
+  /* A chequer behind the picture, so a hole in it is plain to see. */
+  .brush-stage{ display:grid; place-items:center; min-height:14rem; border-radius:1rem; overflow:hidden; touch-action:none;
+    background-color:#fff;
+    background-image:linear-gradient(45deg, #e9e2d8 25%, transparent 25%, transparent 75%, #e9e2d8 75%),
+      linear-gradient(45deg, #e9e2d8 25%, transparent 25%, transparent 75%, #e9e2d8 75%);
+    background-size:18px 18px; background-position:0 0, 9px 9px; }
+  .brush-stage canvas{ display:block; touch-action:none; cursor:crosshair; }
+  .brush-tools{ display:flex; flex-wrap:wrap; align-items:center; gap:.75rem; }
+  .brush-seg{ display:inline-flex; border:1px solid var(--line); border-radius:999px; overflow:hidden; }
+  .brush-seg button{ border:0; background:var(--paper); color:var(--cocoa-soft); font:inherit; font-size:.8125rem; font-weight:600;
+    padding:.45rem .8rem; cursor:pointer; }
+  .brush-seg button.on{ background:var(--flame-grad); color:#fff; }
+  .brush-size{ display:flex; align-items:center; gap:.5rem; flex:1; min-width:9rem; font-size:.8125rem; color:var(--cocoa-soft); }
+  .brush-size input{ flex:1; accent-color:var(--flame); }
+  .brush-undo{ padding:.5rem 1rem; font-size:.8125rem; }
+  .brush-hint{ margin:0; font-size:.78rem; color:var(--cocoa-soft); line-height:1.5; }
+  .brush-foot{ display:flex; justify-content:flex-end; gap:.6rem; }
+  .brush-foot .btn{ padding:.65rem 1.2rem; font-size:.875rem; }
+  .fix-bg{ margin-top:.6rem; padding:.55rem 1rem; font-size:.8125rem; }
+
   /* ---------- the chat in the corner ---------- */
   .chat{ position:relative; display:flex; flex-direction:column; align-items:flex-end; gap:.6rem; }
   .chat-open{

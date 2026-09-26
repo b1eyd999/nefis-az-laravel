@@ -2,8 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\ProductResource\Pages\EditProduct;
+use App\Filament\Resources\ProductResource\Pages\ListProducts;
 use App\Models\Product;
+use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Features\SupportTesting\Testable;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -25,6 +31,25 @@ class FaceCutoutTest extends TestCase
             'rotation' => 0, 'shape' => $shape, 'cutout' => $cutout, 'sort_order' => 0]);
 
         return $box;
+    }
+
+    /** A second photo window on the same box, so a design can be half face and half picture. */
+    private function addSlot(Product $box, bool $cutout): void
+    {
+        $box->photoSlots()->create(['label' => 'İkinci şəkil', 'x' => 700, 'y' => 700, 'width' => 400, 'height' => 400,
+            'rotation' => 0, 'shape' => 'rectangle', 'cutout' => $cutout, 'sort_order' => 1]);
+    }
+
+    /** The switch lives on the owner's own page, so these tests sign in as him. */
+    private function panel(): void
+    {
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+    }
+
+    private function edit(Product $box): Testable
+    {
+        return Livewire::test(EditProduct::class, ['record' => $box->getRouteKey()]);
     }
 
     public function test_a_cutout_slot_brings_the_cutter_to_the_page(): void
@@ -55,5 +80,70 @@ class FaceCutoutTest extends TestCase
         $this->get(route('products.customize', 'pampers'))->assertOk()
             ->assertSee('face-api.min.js', false)
             ->assertDontSee('js/face-cutout.js', false);
+    }
+
+    public function test_the_switch_in_the_panel_reads_the_boxs_own_photo_windows(): void
+    {
+        $this->panel();
+
+        $plain = $this->box(false);
+        $this->edit($plain)->assertFormSet(['face_cutout' => false]);
+
+        $plain->photoSlots()->update(['cutout' => true]);
+        $this->edit($plain)->assertFormSet(['face_cutout' => true]);
+    }
+
+    public function test_turning_it_on_marks_every_photo_window_of_that_box(): void
+    {
+        $this->panel();
+        $box = $this->box(false);
+        $this->addSlot($box, false);
+
+        $this->edit($box)->fillForm(['face_cutout' => true])->call('save')->assertHasNoFormErrors();
+
+        $this->assertSame([true, true], $box->photoSlots()->pluck('cutout')->map(fn ($c) => (bool) $c)->all());
+        $this->get(route('products.customize', 'pampers'))->assertSee('js/face-cutout.js', false);
+
+        // The list of designs says which ones cut faces; the row comes from the
+        // list's own query, which is where the marked windows are counted.
+        Livewire::test(ListProducts::class)
+            ->assertCanSeeTableRecords([$box])
+            ->assertTableColumnStateSet('face_cutout_slots_count', true, (string) $box->getKey());
+    }
+
+    public function test_turning_it_off_clears_them_again(): void
+    {
+        $this->panel();
+        $box = $this->box(true);
+        $this->addSlot($box, true);
+
+        $this->edit($box)->fillForm(['face_cutout' => false])->call('save')->assertHasNoFormErrors();
+
+        $this->assertSame([false, false], $box->photoSlots()->pluck('cutout')->map(fn ($c) => (bool) $c)->all());
+        $this->get(route('products.customize', 'pampers'))->assertDontSee('js/face-cutout.js', false);
+    }
+
+    public function test_a_box_that_is_half_face_keeps_its_mix_until_the_switch_is_moved(): void
+    {
+        $this->panel();
+        $box = $this->box(true);
+        $this->addSlot($box, false);
+
+        // Saving something else on the page must not answer for the box editor.
+        $this->edit($box)->fillForm(['tag' => 'Populyar'])->call('save')->assertHasNoFormErrors();
+
+        $this->assertSame([true, false], $box->photoSlots()->pluck('cutout')->map(fn ($c) => (bool) $c)->all());
+        $this->assertSame('Populyar', $box->fresh()->tag);
+    }
+
+    public function test_a_box_without_photo_windows_saves_without_complaint(): void
+    {
+        $this->panel();
+        $poster = Product::create(['name' => 'Poster', 'slug' => 'poster', 'is_active' => true, 'price' => 9.90]);
+
+        $this->edit($poster)->fillForm(['face_cutout' => true])->call('save')->assertHasNoFormErrors();
+
+        $this->assertSame(0, $poster->photoSlots()->count());
+        $this->edit($poster)->assertFormSet(['face_cutout' => false]);
     }
 }
