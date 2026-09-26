@@ -92,18 +92,15 @@
                 </div>
               @endif
             </div>
-            <div class="hero-visual hero-in d3{{ $s->image ? ' has-img' : '' }}">
-              @if($s->ribbon)<div class="hero-ribbon">{{ $s->ribbon }}</div>@endif
-              @if($s->image)
+            {{-- A slide without a picture is just its words: an empty panel
+                 beside them only looks like something is missing. --}}
+            @if($s->image)
+              <div class="hero-visual hero-in d3 has-img">
+                @if($s->ribbon)<div class="hero-ribbon">{{ $s->ribbon }}</div>@endif
                 <img src="{{ $s->imageUrl() }}" alt="{{ str_replace("\n", ' ', $s->title) }}" class="fit-{{ $s->image_fit === 'contain' ? 'contain' : 'cover' }}"
                      @if($i > 0) loading="lazy" @endif>
-              @else
-                <div class="ph">
-                  <div class="ring">🎁</div>
-                  <p>{{ __('Sizin şokolad qutunuzun görüntüsü tezliklə burada') }}</p>
-                </div>
-              @endif
-            </div>
+              </div>
+            @endif
           </div>
         </div>
       @endforeach

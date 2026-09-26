@@ -290,7 +290,9 @@
   .hero{ position:relative; padding:3rem 0 5rem; overflow:hidden; }
   @media (min-width:900px){ .hero{ padding:4rem 0 7rem; } }
   .hero .wrap{ position:relative; z-index:1; display:grid; gap:3rem; align-items:center; }
-  @media (min-width:960px){ .hero .wrap{ grid-template-columns:1.05fr .95fr; gap:2rem; } }
+  @media (min-width:960px){ .hero .wrap:has(.hero-visual){ grid-template-columns:1.05fr .95fr; gap:2rem; } }
+  /* Alone on the line, the words keep a readable measure. */
+  .hero .wrap:not(:has(.hero-visual)) > div{ max-width:44rem; }
   .hero h1{ margin-top:1.25rem; }
   .hero .lede{ margin-top:1.5rem; }
   .hero-ctas{ display:flex; flex-wrap:wrap; gap:1rem; margin-top:2.25rem; }
