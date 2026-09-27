@@ -87,7 +87,7 @@
               @endif
               @if($s->badges)
                 <div class="hero-badges hero-in d5">
-                  @foreach($s->badges as $badge)
+                  @foreach(($s->tr('badges') ?: []) as $badge)
                     <div class="hero-badge"><span class="dot"></span> {{ $badge }}</div>
                   @endforeach
                 </div>
