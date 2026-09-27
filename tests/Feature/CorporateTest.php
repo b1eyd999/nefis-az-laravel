@@ -137,6 +137,32 @@ class CorporateTest extends TestCase
         Storage::disk('public')->assertMissing($path);
     }
 
+    public function test_the_box_is_shown_standing_where_it_will_stand(): void
+    {
+        $page = $this->get(route('corporate.index'))->assertOk();
+
+        // The photographs are real; only the printed face is drawn, so the
+        // page has to carry both the picture and the quad to draw it on.
+        $page->assertSee('co-scene-canvas', false)
+            ->assertSee('js/scene-render.js', false);
+
+        foreach (CorporatePage::SCENES as $scene) {
+            $page->assertSee($scene['image'], false);
+            $this->assertFileExists(public_path($scene['image']), $scene['image'] . ' is missing');
+
+            $this->assertCount(4, $scene['corners'], 'a quad has four corners');
+            foreach ($scene['corners'] as $corner) {
+                $this->assertCount(2, $corner);
+                foreach ($corner as $part) {
+                    // Fractions of the frame, so the same numbers hold at any
+                    // size the picture is served at.
+                    $this->assertGreaterThan(0, $part);
+                    $this->assertLessThan(1, $part);
+                }
+            }
+        }
+    }
+
     public function test_the_owner_rewrites_the_page_in_the_panel(): void
     {
         $this->actingAs($this->owner());

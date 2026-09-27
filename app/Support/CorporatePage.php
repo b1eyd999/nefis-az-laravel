@@ -73,6 +73,34 @@ class CorporatePage
         ['title' => 'Bakıya çatdırılma', 'text' => 'Hazır olanda özümüz gətiririk.'],
     ];
 
+    /**
+     * The photographs the box is shown in, and the four corners of its
+     * printed face in each — as fractions of the frame, so the same numbers
+     * hold whatever size the picture is served at.
+     *
+     * The scenes are real photographs (Pexels, whose licence allows this)
+     * with a blank box montaged into them; the customer's own logo is warped
+     * onto that face in his browser, so he sees his own mark on the counter
+     * rather than ours.
+     */
+    public const SCENES = [
+        [
+            'image' => 'images/corporate/scene-cafe.jpg',
+            'caption' => 'Qəhvənin yanında, kafedə',
+            'corners' => [[0.57593, 0.44676], [0.69136, 0.40046], [0.8216, 0.58009], [0.70123, 0.62778]],
+        ],
+        [
+            'image' => 'images/corporate/scene-reception.jpg',
+            'caption' => 'Resepşnda, qonağın qarşısında',
+            'corners' => [[0.45455, 0.42227], [0.5697, 0.42], [0.57697, 0.59591], [0.45939, 0.59818]],
+        ],
+        [
+            'image' => 'images/corporate/scene-wood.jpg',
+            'caption' => 'Masada, hesabla birlikdə',
+            'corners' => [[0.70437, 0.40975], [0.85313, 0.41256], [0.84688, 0.64041], [0.695, 0.6376]],
+        ],
+    ];
+
     /** The colours the box is offered in; the owner may add his own. */
     public const COLORS = [
         ['name' => 'Tünd göy', 'hex' => '#1B3A6B'],
@@ -103,6 +131,7 @@ class CorporatePage
         // Photographs have no sensible default: an empty gallery simply does
         // not show, rather than promising pictures that are not there.
         $page['gallery'] = self::rows($saved['gallery'] ?? null, [], ['image']);
+        $page['scenes'] = self::SCENES;
 
         return $page;
     }

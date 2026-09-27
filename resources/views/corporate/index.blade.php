@@ -45,6 +45,11 @@
   .co-card b{ display:block; margin-bottom:.25rem; }
   .co-card p{ margin:0; font-size:.88rem; color:var(--cocoa-soft); }
 
+  .co-scenes{ display:grid; gap:1.2rem; grid-template-columns:repeat(auto-fit, minmax(15rem, 1fr)); }
+  .co-scene{ margin:0; }
+  .co-scene canvas{ display:block; width:100%; height:auto; border-radius:var(--radius-sm);
+    box-shadow:var(--shadow-sm); background:var(--cream-2); aspect-ratio:3 / 4; }
+  .co-scene figcaption{ margin-top:.5rem; font-size:.82rem; color:var(--cocoa-soft); }
   .co-gallery{ display:grid; gap:1rem; grid-template-columns:repeat(auto-fit, minmax(16rem, 1fr)); }
   .co-shot{ margin:0; }
   .co-shot img{ display:block; width:100%; border-radius:var(--radius-sm); box-shadow:var(--shadow-sm); }
@@ -156,6 +161,27 @@
   </div>
 </section>
 
+{{-- The same box, standing where it will actually stand. The photographs
+     are real; only the printed face is drawn, with whatever logo the visitor
+     has just uploaded warped onto it. --}}
+<section id="sehnelar">
+  <div class="wrap">
+    <h2>{{ __($page['gallery_title']) }}</h2>
+    <p class="lede" style="max-width:48rem;">{{ __('Yuxarıda seçdiyiniz loqo və rəng elə burada da görünür.') }}</p>
+    <div class="co-scenes" style="margin-top:1.4rem;">
+      @foreach($page['scenes'] as $i => $scene)
+        <figure class="co-scene">
+          <canvas class="co-scene-canvas" id="co-scene-{{ $i }}"
+                  data-photo="{{ asset($scene['image']) }}"
+                  data-corners="{{ json_encode($scene['corners']) }}"
+                  aria-label="{{ __($scene['caption']) }}"></canvas>
+          <figcaption>{{ __($scene['caption']) }}</figcaption>
+        </figure>
+      @endforeach
+    </div>
+  </div>
+</section>
+
 <section>
   <div class="wrap">
     <h2>{{ __($page['whom_title']) }}</h2>
@@ -246,6 +272,9 @@
 @endsection
 
 @section('page_script')
+{{-- The same warper the shop's own mockups are drawn with, so a logo sits on
+     this box exactly as a design sits on a chocolate box. --}}
+<script src="{{ asset('js/scene-render.js') }}?v={{ \App\Support\Assets::version('js/scene-render.js') }}"></script>
 <script defer src="{{ asset('js/corporate-box.js') }}?v={{ \App\Support\Assets::version('js/corporate-box.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -259,7 +288,33 @@ document.addEventListener('DOMContentLoaded', function () {
   shown.set('slogan', @json(__($page['eyebrow'])));
   shown.set('qr', @json(url('/')));
 
-  var box = window.NefisCorporate.init({ front: 'co-try-front', back: 'co-try-back', color: first, qrScript: QR });
+  /* The photographs, and where the printed face sits in each of them. */
+  var scenes = Array.prototype.map.call(document.querySelectorAll('.co-scene-canvas'), function (cv) {
+    var photo = new Image();
+    photo.src = cv.dataset.photo;
+    photo.onload = paintScenes;
+    return { cv: cv, photo: photo, corners: JSON.parse(cv.dataset.corners) };
+  });
+  var warpCache = {};
+  var faceForScenes = null;
+
+  function paintScenes() {
+    if (!window.NefisScene || !faceForScenes) return;
+    scenes.forEach(function (s) {
+      if (!s.photo.complete || !s.photo.naturalWidth) return;
+      var w = 760;
+      var h = Math.round(w * s.photo.naturalHeight / s.photo.naturalWidth);
+      if (s.cv.width !== w) { s.cv.width = w; s.cv.height = h; }
+      window.NefisScene.drawScene(s.cv.getContext('2d'), {
+        w: w, h: h, bg: s.photo.src,
+        elements: [{ type: 'design', id: 'face', opacity: 100,
+          corners: s.corners.map(function (p) { return [p[0] * w, p[1] * h]; }) }],
+      }, faceForScenes, function () { return s.photo; }, warpCache, {});
+    });
+  }
+
+  var box = window.NefisCorporate.init({ front: 'co-try-front', back: 'co-try-back', color: first, qrScript: QR,
+    onDraw: function (front) { faceForScenes = front; paintScenes(); } });
 
   var field = document.getElementById('co-color-field');
 

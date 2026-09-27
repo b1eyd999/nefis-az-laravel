@@ -216,6 +216,9 @@ window.NefisCorporate = (function () {
     function draw() {
       drawFront();
       drawBack();
+      /* Whoever is showing this box somewhere else — the photographs of a
+         counter, say — is told it has changed. */
+      if (options.onDraw) options.onDraw(front, back, state);
     }
 
     /** The logo the company chose, read straight from their own machine. */
