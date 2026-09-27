@@ -47,13 +47,13 @@
           <div class="wr-grid">
             @foreach($wraps as $w)
               <button type="button" class="wr-card" data-gift-open data-name="{{ $w['name'] }}"
-                      data-price="{{ \App\Support\Price::format($w['price']) }}" data-ribbon-label="{{ \App\Models\Wrapping::RIBBONS[$w['ribbon']] ?? '' }}"
+                      data-price="{{ \App\Support\Price::format($w['price']) }}" data-ribbon-label="{{ __(\App\Models\Wrapping::RIBBONS[$w['ribbon']] ?? '') }}"
                       aria-label="{{ $w['name'] }}, {{ __('hər tərəfdən bax') }}">
                 <span class="wr-360">360°</span>
                 @include('partials.gift-box', ['wrap' => $w])
                 <span class="wr-body">
                   <span class="wr-name">{{ $w['name'] }}</span>
-                  <span class="wr-rib">{{ \App\Models\Wrapping::RIBBONS[$w['ribbon']] ?? '' }}</span>
+                  <span class="wr-rib">{{ __(\App\Models\Wrapping::RIBBONS[$w['ribbon']] ?? '') }}</span>
                 </span>
               </button>
             @endforeach
