@@ -59,7 +59,8 @@ class Wrapping extends Model
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
+            // Whatever language the shop is being read in.
+            'name' => $this->tr('name'),
             'price' => $this->price,
             'pattern' => Media::url($this->pattern),
             'ribbon' => $this->ribbon,

@@ -55,6 +55,24 @@ class Letter
      * and company pages. Without this the letter was the one part of the
      * shop that stayed Azerbaijani in every language.
      */
+    /**
+     * The whole page in the reader's language. The view was handed the raw
+     * array and printed it as it stood, which is how the letter page came to
+     * be the one page that stayed Azerbaijani however the shop was read.
+     *
+     * @return array<string, string>
+     */
+    public static function texts(): array
+    {
+        $page = self::page();
+
+        foreach ($page as $key => $value) {
+            $page[$key] = is_string($value) && $value !== '' ? __($value) : $value;
+        }
+
+        return $page;
+    }
+
     public static function text(string $key): string
     {
         $value = (string) (self::page()[$key] ?? '');

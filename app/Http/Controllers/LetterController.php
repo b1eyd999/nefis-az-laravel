@@ -19,7 +19,7 @@ class LetterController extends Controller
     {
         abort_unless(Letter::enabled(), 404);
 
-        return view('letters.create', ['price' => Letter::price(), 'max' => Letter::maxLength(), 't' => Letter::page()]);
+        return view('letters.create', ['price' => Letter::price(), 'max' => Letter::maxLength(), 't' => Letter::texts()]);
     }
 
     public function store(Request $request): RedirectResponse
