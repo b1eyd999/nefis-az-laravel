@@ -163,6 +163,49 @@ class CorporateTest extends TestCase
         }
     }
 
+    public function test_the_owner_can_switch_the_whole_thing_off(): void
+    {
+        \App\Models\Setting::put(\App\Models\Setting::CORPORATE_ENABLED, '0');
+
+        // Not merely hidden: the page is gone, so an old link or a search
+        // result cannot take a company to something the shop has stopped
+        // making — and the request cannot be posted either.
+        $this->get(route('corporate.index'))->assertNotFound();
+        $this->post(route('corporate.store'), [
+            'company' => 'Kafe', 'phone' => '+994 55 111 22 33', 'quantity' => 500,
+        ])->assertNotFound();
+        $this->assertSame(0, CorporateRequest::count());
+
+        $this->get(route('home'))->assertOk()->assertDontSee(route('corporate.index'), false);
+        $this->get('/sitemap.xml')->assertOk()->assertDontSee('sirketler-ucun', false);
+
+        \App\Models\Setting::put(\App\Models\Setting::CORPORATE_ENABLED, '1');
+
+        $this->get(route('corporate.index'))->assertOk();
+        $this->get(route('home'))->assertSee(route('corporate.index'), false);
+        $this->get('/sitemap.xml')->assertSee('sirketler-ucun', false);
+    }
+
+    public function test_the_switch_is_on_the_panels_own_page(): void
+    {
+        $this->actingAs($this->owner());
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        Livewire::test(CorporateSettings::class)
+            ->assertFormSet(['enabled' => true])
+            ->fillForm(['enabled' => false])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertFalse(CorporatePage::enabled());
+        $this->get(route('corporate.index'))->assertNotFound();
+
+        // And the words he wrote are still there when he turns it back on.
+        Livewire::test(CorporateSettings::class)->fillForm(['enabled' => true])->call('save');
+        $this->assertTrue(CorporatePage::enabled());
+        $this->get(route('corporate.index'))->assertOk()->assertSee(CorporatePage::DEFAULTS['title']);
+    }
+
     public function test_the_owner_rewrites_the_page_in_the_panel(): void
     {
         $this->actingAs($this->owner());

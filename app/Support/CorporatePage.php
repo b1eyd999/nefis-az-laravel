@@ -113,6 +113,16 @@ class CorporatePage
         ['name' => 'Bej', 'hex' => '#E3D2B8'],
     ];
 
+    /**
+     * Whether the shop takes company orders at all. Switched off, the page
+     * is gone and so is its place in the menu — the same way the letters and
+     * the live photos come and go.
+     */
+    public static function enabled(): bool
+    {
+        return Setting::get(Setting::CORPORATE_ENABLED) === '1';
+    }
+
     /** @return array<string, mixed> */
     public static function all(): array
     {

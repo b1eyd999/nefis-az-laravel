@@ -84,6 +84,7 @@
 @php $navWraps = \App\Models\Wrapping::where('is_active', true)->exists(); @endphp
 @php $navLetters = \App\Support\Letter::enabled(); @endphp
 @php $navLive = \App\Support\LiveMaterials::enabled(); @endphp
+@php $navCorporate = \App\Support\CorporatePage::enabled(); @endphp
 @php $navGifts = \App\Models\GiftPage::shown()->inLocale('az')->get(); @endphp
 
 
@@ -111,7 +112,7 @@
     <a href="{{ lroute('home') }}" class="brand"><img src="/images/logo.svg" alt="Nefis"></a>
     <nav class="primary" aria-label="{{ __('Əsas menyu') }}">
       {{-- Everything for sale under one word, so the bar stays short however many there are. --}}
-      @if($navWraps || $navLetters || $navLive || $navGifts->isNotEmpty())
+      @if($navWraps || $navLetters || $navLive || $navCorporate || $navGifts->isNotEmpty())
         <div class="nav-drop">
           <button type="button" aria-expanded="false" aria-haspopup="true">
             {{ __('Məhsullar') }}
@@ -131,15 +132,17 @@
             @if($navLive)
               <a class="nav-item" href="{{ lroute('live.create') }}"><span class="ni-ico">🎬</span><span><b>{{ __('Canlı şəkil') }}</b><small>{{ __('Telefonda canlanan şəkil (AR)') }}</small></span></a>
             @endif
-            {{-- Not a present for one person: a company ordering hundreds with
-                 its own logo. It sits in the same menu because it is still
-                 something the shop makes. --}}
-            <a class="nav-item" href="{{ lroute('corporate.index') }}"><span class="ni-ico">🏢</span><span><b>{{ __('Şirkətlər üçün') }}</b><small>{{ __('Loqonuzla mini şokolad') }}</small></span></a>
+            @if($navCorporate)
+              {{-- Not a present for one person: a company ordering hundreds
+                   with its own logo. It sits in the same menu because it is
+                   still something the shop makes. --}}
+              <a class="nav-item" href="{{ lroute('corporate.index') }}"><span class="ni-ico">🏢</span><span><b>{{ __('Şirkətlər üçün') }}</b><small>{{ __('Loqonuzla mini şokolad') }}</small></span></a>
+            @endif
           </div>
         </div>
       @else
         <a href="{{ lroute('designs.index') }}">{{ __('Dizaynlar') }}</a>
-        <a href="{{ lroute('corporate.index') }}">{{ __('Şirkətlər üçün') }}</a>
+        @if($navCorporate)<a href="{{ lroute('corporate.index') }}">{{ __('Şirkətlər üçün') }}</a>@endif
       @endif
       <a href="{{ lroute('home') }}#how">{{ __('Necə İşləyir') }}</a>
       <a href="{{ lroute('home') }}#faq">{{ __('Suallar') }}</a>
@@ -204,6 +207,7 @@
     @if($navWraps)<a href="{{ lroute('wrappings.index') }}">🎁 {{ __('Qablaşdırma') }}</a>@endif
     @if($navLetters)<a href="{{ lroute('letters.create') }}">💌 {{ \App\Support\Letter::text('menu') }}</a>@endif
     @if($navLive)<a href="{{ lroute('live.create') }}">🎬 {{ __('Canlı şəkil') }}</a>@endif
+    @if($navCorporate)<a href="{{ lroute('corporate.index') }}">🏢 {{ __('Şirkətlər üçün') }}</a>@endif
   </div>
   @if(\App\Support\Contact::has())
     <div class="mn-group">
@@ -252,7 +256,7 @@
       </div>
       <div class="footer-col">
         <h4>{{ __('Naviqasiya') }}</h4>
-        <a href="{{ lroute('designs.index') }}">{{ __('Dizaynlar') }}</a>@if($navWraps)<a href="{{ lroute('wrappings.index') }}">{{ __('Qablaşdırma') }}</a>@endif @if($navLetters)<a href="{{ lroute('letters.create') }}">{{ \App\Support\Letter::text('menu') }}</a>@endif @if($navLive)<a href="{{ lroute('live.create') }}">{{ __('Canlı şəkil') }}</a>@endif
+        <a href="{{ lroute('designs.index') }}">{{ __('Dizaynlar') }}</a>@if($navWraps)<a href="{{ lroute('wrappings.index') }}">{{ __('Qablaşdırma') }}</a>@endif @if($navLetters)<a href="{{ lroute('letters.create') }}">{{ \App\Support\Letter::text('menu') }}</a>@endif @if($navLive)<a href="{{ lroute('live.create') }}">{{ __('Canlı şəkil') }}</a>@endif@if($navCorporate)<a href="{{ lroute('corporate.index') }}">{{ __('Şirkətlər üçün') }}</a>@endif
         <a href="{{ lroute('home') }}#how">{{ __('Necə İşləyir') }}</a>
         <a href="{{ lroute('home') }}#faq">Suallar</a>
       </div>

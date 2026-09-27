@@ -44,7 +44,7 @@ class CorporateSettings extends Page implements HasForms
 
     public function mount(): void
     {
-        $this->form->fill(CorporatePage::all());
+        $this->form->fill(CorporatePage::all() + ['enabled' => CorporatePage::enabled()]);
     }
 
     public function form(Form $form): Form
@@ -55,6 +55,15 @@ class CorporateSettings extends Page implements HasForms
         return $form
             ->statePath('data')
             ->schema([
+                Forms\Components\Section::make('Satış')
+                    ->schema([
+                        Forms\Components\Toggle::make('enabled')
+                            ->label('Bu xidmət işləsin')
+                            ->helperText('Söndürsəniz, menyudakı «Şirkətlər üçün» yazısı və səhifənin özü yox olur — '
+                                . 'köhnə link də açılmır. Gələn müraciətlər yerində qalır.')
+                            ->columnSpanFull(),
+                    ]),
+
                 Forms\Components\Section::make('Başlıq')
                     ->schema([
                         $text('eyebrow', 'Yuxarıdakı kiçik yazı', 60),
@@ -206,7 +215,11 @@ class CorporateSettings extends Page implements HasForms
 
         Setting::put(Setting::CORPORATE, json_encode($page, JSON_UNESCAPED_UNICODE));
 
+        $on = (bool) ($data['enabled'] ?? false);
+        Setting::put(Setting::CORPORATE_ENABLED, $on ? '1' : '0');
+
         Notification::make()->success()->title('Saxlanıldı')
-            ->body('Səhifə yeniləndi: /sirketler-ucun')->send();
+            ->body($on ? 'Səhifə yeniləndi: /sirketler-ucun' : 'Bu xidmət söndürüldü — səhifə saytda görünmür.')
+            ->send();
     }
 }

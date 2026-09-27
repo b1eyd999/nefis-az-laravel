@@ -20,11 +20,18 @@ class CorporateController extends Controller
 {
     public function index(): View
     {
+        // Switched off in the panel, the page is not merely hidden from the
+        // menu — it is not there, so an old link or a search result cannot
+        // let a company order something the shop has stopped making.
+        abort_unless(CorporatePage::enabled(), 404);
+
         return view('corporate.index', ['page' => CorporatePage::all()]);
     }
 
     public function store(Request $request): RedirectResponse
     {
+        abort_unless(CorporatePage::enabled(), 404);
+
         $minimum = CorporatePage::minimum();
 
         $data = $request->validate([

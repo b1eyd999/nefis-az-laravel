@@ -40,6 +40,9 @@ class Setting extends Model
     /** The whole corporate page — its words, lists, colours and pictures — as one JSON blob. */
     public const CORPORATE = 'corporate_page';
 
+    /** Whether the shop offers companies their own boxes at all. */
+    public const CORPORATE_ENABLED = 'corporate_enabled';
+
     /** How many orders one payment account takes before the next one is offered. */
     public const PAYMENT_LIMIT = 'payment_limit';
 
@@ -152,6 +155,7 @@ class Setting extends Model
         self::AR_VIDEO_MB => '18',
         self::YANDEX_FOLDER => 'Nefis canlı şəkillər',
         self::LETTER_ENABLED => '1',
+        self::CORPORATE_ENABLED => '1',
         self::LETTER_PRICE => '3',
         self::LETTER_MAX => '180',
         self::HERO_AUTOPLAY => '1',
