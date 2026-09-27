@@ -24,6 +24,9 @@ use Illuminate\Support\Facades\DB;
  */
 class Accounting
 {
+    /** The line the profit nobody has been given is shown under. */
+    public const BUSINESS = 'Biznesin inkişafı';
+
     /** Takes an order's materials out of stock and records what they cost. */
     public static function consume(Order $order): void
     {
@@ -158,14 +161,12 @@ class Accounting
             ? $holders->map(fn (User $u) => ['user_id' => $u->id, 'name' => $u->name, 'percent' => $u->profit_percent])
             : collect(Setting::profitShares())->map(fn ($s) => ['user_id' => null, 'name' => $s['name'], 'percent' => (float) $s['percent']]);
 
-        // Whatever is not handed out belongs to the owner. Without this line the
-        // split listed the managers and left the person who owns the shop off his
-        // own page; he does not have to type his own percentage to appear.
+        // What nobody takes home stays in the shop. It is a real part of the
+        // profit and belongs on the page: the owner wants to see how much is
+        // left for the business itself, not to work it out in his head.
         $rest = round(100 - $shares->sum('percent'), 2);
         if ($holders->isNotEmpty() && $rest > 0.005) {
-            $owner = User::where('role', User::ADMIN)->where('profit_percent', '<=', 0)->orderBy('id')->first()
-                ?? User::where('role', User::ADMIN)->orderBy('id')->first();
-            $shares->push(['user_id' => $owner?->id, 'name' => $owner?->name ?? 'Sahibkar', 'percent' => $rest, 'rest' => true]);
+            $shares->push(['user_id' => null, 'name' => self::BUSINESS, 'percent' => $rest, 'rest' => true]);
         }
 
         $shares = $shares->map(fn ($s) => $s + ['amount' => round($net * $s['percent'] / 100, 2)])->values()->all();

@@ -86,7 +86,7 @@
           <div class="k">{{ $share['name'] }} · {{ rtrim(rtrim(number_format($share['percent'], 2, '.', ''), '0'), '.') }}%</div>
           <div class="v {{ $share['amount'] < 0 ? 'bl-neg' : '' }}">{{ $fmt($share['amount']) }}</div>
           @if($share['rest'] ?? false)
-            <div class="s">paylanmamış qalan — sahibin payı</div>
+            <div class="s">paylanmamış qalan — biznesə qalır</div>
           @endif
         </div>
       @empty

@@ -101,26 +101,32 @@ class AccountingTest extends TestCase
         $this->assertEqualsWithDelta($r['revenue'] - 5.38 - 9.80 - 3, $r['cash'], 0.01);
     }
 
-    public function test_what_is_not_given_to_the_managers_is_the_owners_share(): void
+    public function test_what_no_one_takes_home_is_shown_as_the_shops_own_share(): void
     {
         $this->order(1);
-        $owner = User::factory()->create(['name' => 'Sahib', 'role' => User::ADMIN, 'profit_percent' => 0]);
+        User::factory()->create(['name' => 'Sahib', 'role' => User::ADMIN, 'profit_percent' => 22]);
         User::factory()->create(['name' => 'Isa', 'role' => User::MANAGER, 'profit_percent' => 22]);
         User::factory()->create(['name' => 'Vugar', 'role' => User::MANAGER, 'profit_percent' => 22]);
 
-        $r = Accounting::report();
-        $shares = collect($r['shares']);
-
-        $this->assertSame(['Isa', 'Vugar', 'Sahib'], $shares->pluck('name')->all());
-        $this->assertEqualsWithDelta(56.0, $shares->last()['percent'], 0.001, 'the rest is the owner share');
-        $this->assertSame($owner->id, $shares->last()['user_id']);
-        $this->assertTrue($shares->last()['rest']);
-        $this->assertEqualsWithDelta($r['net'], $shares->sum('amount'), 0.02, 'the whole profit is accounted for');
-
-        // Once he writes his own percentage down, there is no rest to add.
-        $owner->forceFill(['profit_percent' => 56])->save();
         $shares = collect(Accounting::report()['shares']);
-        $this->assertCount(3, $shares);
+        $rest = $shares->last();
+
+        $this->assertEqualsCanonicalizing(['Isa', 'Sahib', 'Vugar', Accounting::BUSINESS], $shares->pluck('name')->all());
+        $this->assertSame(Accounting::BUSINESS, $rest['name']);
+        $this->assertEqualsWithDelta(34.0, $rest['percent'], 0.001, 'three equal shares leave a third with the shop');
+        $this->assertNull($rest['user_id'], 'nobody is paid this line');
+        $this->assertEqualsWithDelta(Accounting::report()['net'], $shares->sum('amount'), 0.02);
+    }
+
+    public function test_nothing_is_left_over_when_the_shares_add_up(): void
+    {
+        $this->order(1);
+        User::factory()->create(['name' => 'Sahib', 'role' => User::ADMIN, 'profit_percent' => 50]);
+        User::factory()->create(['name' => 'Isa', 'role' => User::MANAGER, 'profit_percent' => 50]);
+
+        $shares = collect(Accounting::report()['shares']);
+
+        $this->assertCount(2, $shares);
         $this->assertNull($shares->firstWhere('rest', true));
     }
 
