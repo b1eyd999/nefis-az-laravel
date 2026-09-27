@@ -36,6 +36,10 @@ class PosterTest extends TestCase
         ob_start();
         imagepng($im);
         $png = ob_get_clean();
+        // Freed at once: this runs in most of the tests here, and a 1080×1350
+        // canvas left behind in each of them is what pushes the whole suite
+        // past PHP's memory limit.
+        imagedestroy($im);
 
         Http::fake([
             'cloud-api.yandex.net/v1/disk/public/resources/download*' => Http::response(['href' => 'https://downloader.disk.yandex.ru/disk/qara']),

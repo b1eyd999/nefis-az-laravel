@@ -9,6 +9,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CorporateController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LetterController;
@@ -26,6 +27,11 @@ Route::get('/qablasdirma', [WrappingController::class, 'index'])->name('wrapping
 
 Route::get('/mektub', [LetterController::class, 'create'])->name('letters.create');
 Route::post('/mektub', [LetterController::class, 'store'])->name('letters.store');
+
+/* The small chocolate a company puts its own logo on. Priced by the number,
+   so the page ends in a request rather than a basket. */
+Route::get('/sirketler-ucun', [CorporateController::class, 'index'])->name('corporate.index');
+Route::post('/sirketler-ucun', [CorporateController::class, 'store'])->name('corporate.store');
 
 Route::get('/canli-sekil', [LivePhotoController::class, 'create'])->name('live.create');
 Route::post('/canli-sekil', [LivePhotoController::class, 'store'])->name('live.store');

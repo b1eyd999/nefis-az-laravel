@@ -37,6 +37,9 @@ class Setting extends Model
     /** JSON list of brand names shown first, in orange, in the customer's bar picker. */
     public const TOP_BRANDS = 'chocolate_top_brands';
 
+    /** The whole corporate page — its words, lists, colours and pictures — as one JSON blob. */
+    public const CORPORATE = 'corporate_page';
+
     /** How many orders one payment account takes before the next one is offered. */
     public const PAYMENT_LIMIT = 'payment_limit';
 

@@ -63,6 +63,9 @@ class SitemapController extends Controller
             if ($live) {
                 $this->add(fn () => [route($name('live.create'))]);
             }
+            // The page for companies is always on: it is not a product that
+            // can be switched off, it is a line of business.
+            $this->add(fn () => [route($name('corporate.index'))]);
             foreach ($products as $product) {
                 $this->add(fn () => [
                     route($name('products.customize'), $product->slug),

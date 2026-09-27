@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\CorporateRequest;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Setting;
@@ -177,6 +178,41 @@ class Telegram
     }
 
     /** A new order, written the way the owner wants to read it on a phone. */
+    /**
+     * A company asking for chocolates with its own logo. It arrives in the
+     * same group as the orders, because it is the same kind of news: someone
+     * is waiting for an answer.
+     */
+    public static function corporate(CorporateRequest $request): void
+    {
+        $lines = [
+            '🏢 <b>Şirkət müraciəti</b>',
+            '',
+            '<b>' . e($request->company) . '</b>',
+            '📦 ' . $request->quantity . ' ədəd',
+            '📞 ' . e($request->phone) . ($request->person ? ' · ' . e($request->person) : ''),
+        ];
+
+        if ($request->email) {
+            $lines[] = '✉️ ' . e($request->email);
+        }
+        if ($request->slogan) {
+            $lines[] = '💬 ' . e($request->slogan);
+        }
+        if ($request->qr_target) {
+            $lines[] = '🔗 QR: ' . e($request->qr_target);
+        }
+        if ($request->note) {
+            $lines[] = '';
+            $lines[] = '<i>' . e($request->note) . '</i>';
+        }
+
+        $lines[] = '';
+        $lines[] = url('/admin/corporate-requests/' . $request->id . '/edit');
+
+        self::send(implode("\n", $lines));
+    }
+
     public static function order(Order $order): void
     {
         $order->loadMissing(['items', 'user']);

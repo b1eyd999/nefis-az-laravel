@@ -131,10 +131,15 @@
             @if($navLive)
               <a class="nav-item" href="{{ lroute('live.create') }}"><span class="ni-ico">🎬</span><span><b>{{ __('Canlı şəkil') }}</b><small>{{ __('Telefonda canlanan şəkil (AR)') }}</small></span></a>
             @endif
+            {{-- Not a present for one person: a company ordering hundreds with
+                 its own logo. It sits in the same menu because it is still
+                 something the shop makes. --}}
+            <a class="nav-item" href="{{ lroute('corporate.index') }}"><span class="ni-ico">🏢</span><span><b>{{ __('Şirkətlər üçün') }}</b><small>{{ __('Loqonuzla mini şokolad') }}</small></span></a>
           </div>
         </div>
       @else
         <a href="{{ lroute('designs.index') }}">{{ __('Dizaynlar') }}</a>
+        <a href="{{ lroute('corporate.index') }}">{{ __('Şirkətlər üçün') }}</a>
       @endif
       <a href="{{ lroute('home') }}#how">{{ __('Necə İşləyir') }}</a>
       <a href="{{ lroute('home') }}#faq">{{ __('Suallar') }}</a>
