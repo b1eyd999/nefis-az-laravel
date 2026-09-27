@@ -742,6 +742,28 @@
     showSong();
   }
 
+  /* How big a photograph the preview keeps in memory. The box is printed
+     from the file the customer sends, not from this, so a long side of
+     1600 is far more than the screen can show and far less than a phone
+     chokes on. */
+  var PREVIEW_MAX = 1600;
+
+  function forPreview(img){
+    var w = img.naturalWidth || img.width;
+    var h = img.naturalHeight || img.height;
+    var k = Math.min(1, PREVIEW_MAX / Math.max(w, h));
+    if (k === 1) return img;
+
+    var small = document.createElement('canvas');
+    small.width = Math.max(1, Math.round(w * k));
+    small.height = Math.max(1, Math.round(h * k));
+    small.getContext('2d').drawImage(img, 0, 0, small.width, small.height);
+    /* Let the full-size bitmap go now rather than at the whim of the
+       collector: on a phone those tens of megabytes are the whole problem. */
+    img.src = '';
+    return small;
+  }
+
   var canvas = document.getElementById('preview-canvas');
   var ctx = canvas.getContext('2d');
   var dropHint = document.getElementById('drop-hint');
@@ -1115,23 +1137,32 @@
         });
       }
 
-      var reader = new FileReader();
-      reader.onload = function(e){
-        var img = new Image();
-        img.onload = function(){
-          photos[index].img = img;
-          applyAutoFraming(index, img);
-          zoomRow.hidden = false;
-          rotateRow.hidden = false;
-          if (rotate) rotate.value = 0;
-          if (hint) hint.hidden = false;
-          if (dropHint) dropHint.style.display = 'none';
-          if (allSlotsFilled() && !cutting) addBtn.disabled = false;
-          draw();
-        };
-        img.src = e.target.result;
+      /* A photograph off a phone is twelve to forty-eight megapixels. Read
+         as a data URL it becomes a base64 string of several megabytes and a
+         bitmap of tens of megabytes on top, and iOS Safari answers that by
+         quietly throwing the page away and loading it again — which is what
+         a customer saw a few seconds after choosing a picture.
+
+         So: no data URL, and the preview keeps a copy cut down to a size a
+         phone can carry. The file itself is sent to us untouched, so nothing
+         about the printing changes. */
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function(){
+        URL.revokeObjectURL(url);
+        var shown = forPreview(img);
+        photos[index].img = shown;
+        applyAutoFraming(index, shown);
+        zoomRow.hidden = false;
+        rotateRow.hidden = false;
+        if (rotate) rotate.value = 0;
+        if (hint) hint.hidden = false;
+        if (dropHint) dropHint.style.display = 'none';
+        if (allSlotsFilled() && !cutting) addBtn.disabled = false;
+        draw();
       };
-      reader.readAsDataURL(file);
+      img.onerror = function(){ URL.revokeObjectURL(url); };
+      img.src = url;
     });
 
     if (fixBg) {

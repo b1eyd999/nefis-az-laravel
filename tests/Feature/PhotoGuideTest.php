@@ -52,4 +52,20 @@ class PhotoGuideTest extends TestCase
         $this->assertStringNotContainsString('class="photo-guide"', $html);
         $this->assertStringNotContainsString('id="photo-guide-modal"', $html);
     }
+
+    public function test_the_page_does_not_carry_a_whole_phone_photograph(): void
+    {
+        // A picture off a phone is 12 to 48 megapixels. Read as a data URL it
+        // is a base64 string of megabytes plus a bitmap of tens of megabytes,
+        // and iOS Safari answers that by reloading the page a few seconds
+        // after the customer picks a photo. The preview keeps a small copy;
+        // the file that is sent, and printed from, is untouched.
+        $page = file_get_contents(resource_path('views/products/customize.blade.php'));
+
+        $this->assertStringNotContainsString('readAsDataURL', $page);
+        $this->assertStringContainsString('URL.createObjectURL(file)', $page);
+        $this->assertStringContainsString('URL.revokeObjectURL(url)', $page);
+        $this->assertStringContainsString('var PREVIEW_MAX = 1600;', $page);
+        $this->assertStringContainsString('photos[index].img = shown;', $page);
+    }
 }
