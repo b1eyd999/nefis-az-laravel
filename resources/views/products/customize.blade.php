@@ -285,12 +285,15 @@
       <p class="lede" style="margin-inline:auto;">{{ $product->tr('description') }}</p>
     @endif
     @if($gifts->isNotEmpty())
-      <nav class="occ-chips" style="margin-top:1.25rem;" aria-label="{{ __('Hədiyyə fikirləri') }}">
+      {{-- The occasions this design fits: a label, not a way out. The visitor
+           has already chosen the design and is about to upload a photo; a row
+           of links here only invites them to leave half-way. --}}
+      <div class="occ-chips" style="margin-top:1.25rem;">
         <span style="width:100%; font-size:.8125rem; color:var(--cocoa-faint);">{{ __('Bu dizayn bu münasibətlərə uyğundur:') }}</span>
         @foreach($gifts as $gift)
-          <a class="occ-chip" href="{{ $gift->url() }}">{{ $gift->emoji }} {{ $gift->menu_label }}</a>
+          <span class="occ-chip is-static">{{ $gift->emoji }} {{ $gift->menu_label }}</span>
         @endforeach
-      </nav>
+      </div>
     @endif
   </div>
 </section>

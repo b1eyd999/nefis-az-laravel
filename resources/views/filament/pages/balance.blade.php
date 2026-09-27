@@ -85,6 +85,9 @@
         <div class="bl-card">
           <div class="k">{{ $share['name'] }} · {{ rtrim(rtrim(number_format($share['percent'], 2, '.', ''), '0'), '.') }}%</div>
           <div class="v {{ $share['amount'] < 0 ? 'bl-neg' : '' }}">{{ $fmt($share['amount']) }}</div>
+          @if($share['rest'] ?? false)
+            <div class="s">paylanmamış qalan — sahibin payı</div>
+          @endif
         </div>
       @empty
         <p class="bl-note">Pay "İstifadəçilər" bölməsində, rol verəndə təyin olunur.</p>

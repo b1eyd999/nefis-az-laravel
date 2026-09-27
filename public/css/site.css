@@ -799,6 +799,9 @@
   .occ-chip{ display:inline-flex; align-items:center; gap:.35rem; padding:.5rem .95rem; border-radius:999px; border:1px solid var(--line);
     background:var(--paper); font-size:.875rem; font-weight:500; color:var(--cocoa-soft); transition:border-color .2s, color .2s, transform .2s; }
   .occ-chip:hover{ border-color:var(--gold); color:var(--cocoa); transform:translateY(-2px); }
+  /* a chip that only names an occasion: nothing to click, so nothing moves */
+  .occ-chip.is-static{ cursor:default; }
+  .occ-chip.is-static:hover{ border-color:var(--line); color:var(--cocoa-soft); transform:none; }
   .prose{ max-width:44rem; margin-inline:auto; color:var(--cocoa-soft); font-size:1.0625rem; }
   .prose h2{ font-size:clamp(1.4rem, 2.6vw, 1.75rem); margin:2.25rem 0 .75rem; }
   .prose h2:first-child{ margin-top:0; }

@@ -154,10 +154,21 @@ class Accounting
         // Each staff member's share, as the admin gave it with the role. Until
         // anyone has one, the older list of names from the settings stands.
         $holders = User::shareholders();
-        $shares = ($holders->isNotEmpty()
+        $shares = $holders->isNotEmpty()
             ? $holders->map(fn (User $u) => ['user_id' => $u->id, 'name' => $u->name, 'percent' => $u->profit_percent])
-            : collect(Setting::profitShares())->map(fn ($s) => ['user_id' => null, 'name' => $s['name'], 'percent' => (float) $s['percent']])
-        )->map(fn ($s) => $s + ['amount' => round($net * $s['percent'] / 100, 2)])->values()->all();
+            : collect(Setting::profitShares())->map(fn ($s) => ['user_id' => null, 'name' => $s['name'], 'percent' => (float) $s['percent']]);
+
+        // Whatever is not handed out belongs to the owner. Without this line the
+        // split listed the managers and left the person who owns the shop off his
+        // own page; he does not have to type his own percentage to appear.
+        $rest = round(100 - $shares->sum('percent'), 2);
+        if ($holders->isNotEmpty() && $rest > 0.005) {
+            $owner = User::where('role', User::ADMIN)->where('profit_percent', '<=', 0)->orderBy('id')->first()
+                ?? User::where('role', User::ADMIN)->orderBy('id')->first();
+            $shares->push(['user_id' => $owner?->id, 'name' => $owner?->name ?? 'Sahibkar', 'percent' => $rest, 'rest' => true]);
+        }
+
+        $shares = $shares->map(fn ($s) => $s + ['amount' => round($net * $s['percent'] / 100, 2)])->values()->all();
 
         return [
             'orders' => $rows->count(),
