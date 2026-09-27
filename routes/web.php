@@ -7,6 +7,10 @@ use App\Http\Controllers\FeedController;
 use App\Http\Controllers\GiftPageController;
 use App\Http\Controllers\LivePhotoController;
 use App\Http\Controllers\MapController;
+use App\Http\Controllers\Phone\LiveController as PhoneLive;
+use App\Http\Controllers\Phone\MoneyController as PhoneMoney;
+use App\Http\Controllers\Phone\OrderController as PhoneOrders;
+use App\Http\Controllers\Phone\StockController as PhoneStock;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\SceneEditorController;
 use App\Http\Controllers\SitemapController;
@@ -80,6 +84,36 @@ Route::get('/podarki/{slug}', fn (string $slug) => redirect('/ru/podarki/' . $sl
 // ---------------------------------------------------------------------------
 // The owner's own tools, in Azerbaijani only.
 // ---------------------------------------------------------------------------
+
+/*
+ * The shop in a pocket. Its own small pages rather than the desktop panel
+ * squeezed into a phone: the owner runs the day from here — what is due, whose
+ * order it is, where the money stands, what the stock is down to. Azerbaijani
+ * only and outside the language prefixes, because it is not a page for
+ * customers; 'locale' with no argument keeps it Azerbaijani whatever the app
+ * default says.
+ */
+Route::middleware(['auth', 'locale', 'staff'])->prefix('admin-phone')->name('phone.')->group(function () {
+    Route::get('/', [PhoneOrders::class, 'index'])->name('orders.index');
+    Route::get('/sifarish/{order}', [PhoneOrders::class, 'show'])->whereNumber('order')->name('orders.show');
+    Route::post('/sifarish/{order}/status', [PhoneOrders::class, 'status'])->whereNumber('order')->name('orders.status');
+    Route::post('/sifarish/{order}/odenis-tesdiq', [PhoneOrders::class, 'confirmPayment'])
+        ->whereNumber('order')->name('orders.pay');
+
+    // The books, the shelves and the customers' videos are the owner's alone.
+    Route::middleware('owner')->group(function () {
+        Route::get('/kassa', [PhoneMoney::class, 'index'])->name('money.index');
+        Route::post('/kassa/xerc', [PhoneMoney::class, 'storeExpense'])->name('money.expense');
+        Route::post('/kassa/magaza', [PhoneMoney::class, 'toggleShop'])->name('money.shop');
+
+        Route::get('/anbar', [PhoneStock::class, 'index'])->name('stock.index');
+        Route::post('/anbar/{material}/alis', [PhoneStock::class, 'purchase'])->whereNumber('material')->name('stock.purchase');
+        Route::post('/anbar/{material}/sayim', [PhoneStock::class, 'adjust'])->whereNumber('material')->name('stock.adjust');
+
+        Route::get('/canli', [PhoneLive::class, 'index'])->name('live.index');
+        Route::post('/canli/kocur', [PhoneLive::class, 'push'])->name('live.push');
+    });
+});
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

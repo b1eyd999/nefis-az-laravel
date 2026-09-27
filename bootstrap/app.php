@@ -14,7 +14,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // The owner's maintenance switch; staff and the admin panel stay open.
         $middleware->web(append: [\App\Http\Middleware\MaintenanceMode::class]);
         // Which language a page is written in comes from its address.
-        $middleware->alias(['locale' => \App\Http\Middleware\SetLocale::class]);
+        // Who may open which part of the phone admin: the shop's people see
+        // the orders, the owner alone sees the books, the stock and the videos.
+        $middleware->alias([
+            'locale' => \App\Http\Middleware\SetLocale::class,
+            'staff' => \App\Http\Middleware\StaffOnly::class,
+            'owner' => \App\Http\Middleware\OwnerOnly::class,
+        ]);
         // Telegram carries no session and no form token; its own secret guards it.
         $middleware->validateCsrfTokens(except: ['telegram/kuryer/*', 'telegram/sohbet/*']);
     })
