@@ -508,12 +508,13 @@
               <summary>
                 {{-- The row says what is chosen, open or closed. --}}
                 <span id="wrap-chosen">{{ __('Qablaşdırmasız') }}</span>
-                <b id="wrap-chosen-price">{{ __('pulsuz') }}</b>
+                {{-- Nothing chosen costs nothing: the row says so by staying empty. --}}
+                <b id="wrap-chosen-price"></b>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
               </summary>
               <label class="wrap-none">
                 <input type="radio" name="wrapping_id" value="" data-price="0" data-name="" @checked(! old('wrapping_id'))>
-                <span>{{ __('Qablaşdırmasız') }}</span><b>{{ __('pulsuz') }}</b>
+                <span>{{ __('Qablaşdırmasız') }}</span><b></b>
               </label>
             @foreach($wrappings->groupBy(fn ($w) => number_format($w['price'], 2, '.', '')) as $price => $group)
               <div class="wrap-group">
@@ -1411,7 +1412,7 @@
     if (!chosen) return;
     var none = !r || !r.value;
     chosen.textContent = none ? @json(__('Qablaşdırmasız')) : r.dataset.name;
-    chosenPrice.textContent = none ? @json(__('pulsuz')) : '+' + r.dataset.price.replace(/\.00$/, '') + ' ₼';
+    chosenPrice.textContent = none ? '' : '+' + r.dataset.price.replace(/\.00$/, '') + ' ₼';
   }
   document.querySelectorAll('input[name="wrapping_id"]').forEach(function(r){
     r.addEventListener('change', function(){ if (r.checked) { show(r); label(r); } });
