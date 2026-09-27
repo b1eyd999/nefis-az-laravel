@@ -128,6 +128,10 @@ class PosterTest extends TestCase
         $box = $this->box(['poster_url' => self::LINK]);
         $done = $this->box(['name' => 'Başqa', 'slug' => 'basqa', 'poster_url' => self::LINK]);
         $done->forceFill(['poster_image' => 'boxes/9/poster-x.webp'])->save();
+        // "Already fetched" means the picture is on the disk, not merely that
+        // the column is filled in: a column pointing at nothing is exactly the
+        // case the catalogue showed as a broken square.
+        \Illuminate\Support\Facades\Storage::disk('public')->put('boxes/9/poster-x.webp', 'a picture');
 
         Artisan::call('products:fetch-posters');
 
