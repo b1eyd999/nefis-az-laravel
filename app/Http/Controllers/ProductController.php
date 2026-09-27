@@ -22,7 +22,7 @@ class ProductController extends Controller
             ->get()
             ->groupBy('category');
 
-        $gifts = GiftPage::shown()->inLocale('az')->get();
+        $gifts = GiftPage::shown()->inLocale(\App\Support\Locale::current())->get();
 
         return view('designs.index', compact('designs', 'gifts'));
     }
@@ -42,7 +42,7 @@ class ProductController extends Controller
 
         // Where this design is offered, and what else looks like it — so a
         // visitor (and a crawler) always has somewhere to go from here.
-        $gifts = GiftPage::shown()->inLocale('az')
+        $gifts = GiftPage::shown()->inLocale(\App\Support\Locale::current())
             ->whereHas('products', fn ($q) => $q->whereKey($product->id))->get();
         $related = Product::where('is_active', true)->whereKeyNot($product->id)
             ->where('category', $product->category)

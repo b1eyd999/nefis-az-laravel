@@ -85,7 +85,7 @@
 @php $navLetters = \App\Support\Letter::enabled(); @endphp
 @php $navLive = \App\Support\LiveMaterials::enabled(); @endphp
 @php $navCorporate = \App\Support\CorporatePage::enabled(); @endphp
-@php $navGifts = \App\Models\GiftPage::shown()->inLocale('az')->get(); @endphp
+@php $navGifts = \App\Models\GiftPage::shown()->inLocale(\App\Support\Locale::current())->get(); @endphp
 
 
 <a href="#main" class="skip-link">{{ __('Əsas məzmuna keç') }}</a>
@@ -277,7 +277,7 @@
         @endif
         <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener">Instagram</a>
         @if(\App\Support\Contact::hours())
-          <span class="f-hours">{{ \App\Support\Contact::hours() }}</span>
+          <span class="f-hours">{{ __(\App\Support\Contact::hours()) }}</span>
         @endif
       </div>
     </div>

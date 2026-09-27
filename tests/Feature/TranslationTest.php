@@ -94,4 +94,33 @@ class TranslationTest extends TestCase
         app()->setLocale('az');
         $this->assertSame($door->name, $door->tr('name'));
     }
+
+    public function test_the_shipped_design_translations_only_fill_what_is_empty(): void
+    {
+        $all = require database_path('data/design-translations.php');
+        $this->assertGreaterThan(20, count($all), 'the catalogue is translated, not a sample of it');
+
+        // Every row must carry both languages, or a visitor gets Azerbaijani
+        // on a page that promised him his own.
+        foreach ($all as $slug => $langs) {
+            $this->assertArrayHasKey('ru', $langs, $slug);
+            $this->assertArrayHasKey('en', $langs, $slug);
+            $this->assertNotEmpty($langs['ru']['description'] ?? null, $slug);
+            $this->assertNotEmpty($langs['en']['description'] ?? null, $slug);
+        }
+
+        $slug = array_key_first($all);
+        $design = \App\Models\Product::create(['name' => 'Test', 'slug' => $slug, 'is_active' => true, 'price' => 4.90]);
+        // The owner got there first in Russian; his words must survive.
+        $design->setTranslations('ru', ['description' => 'Моё описание']);
+        $design->saveQuietly();
+
+        // Run the migration's own code: the suite has already applied it once
+        // on an empty catalogue, so artisan would find nothing left to do.
+        (require database_path('migrations/2026_09_27_000300_the_designs_speak_russian_and_english.php'))->up();
+
+        $design->refresh();
+        $this->assertSame('Моё описание', $design->translationsFor('ru')['description']);
+        $this->assertSame($all[$slug]['en']['description'], $design->translationsFor('en')['description']);
+    }
 }
