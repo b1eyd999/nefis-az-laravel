@@ -66,7 +66,7 @@
               @else
                 <h2 class="hero-title hero-in d2">{!! nl2br(e($s->tr('title'))) !!}</h2>
               @endif
-              @if($s->text)<p class="lede hero-in d3">{{ $s->tr('text') }}</p>@endif
+              @if($s->text)<p class="lede hero-in d3">{{ \App\Models\HeroSlide::numbers($s->tr('text')) }}</p>@endif
               @php
                 $b1 = \App\Models\HeroSlide::href($s->button1_url);
                 $b2 = \App\Models\HeroSlide::href($s->button2_url);
@@ -88,7 +88,7 @@
               @if($s->badges)
                 <div class="hero-badges hero-in d5">
                   @foreach(($s->tr('badges') ?: []) as $badge)
-                    <div class="hero-badge"><span class="dot"></span> {{ $badge }}</div>
+                    <div class="hero-badge"><span class="dot"></span> {{ \App\Models\HeroSlide::numbers($badge) }}</div>
                   @endforeach
                 </div>
               @endif

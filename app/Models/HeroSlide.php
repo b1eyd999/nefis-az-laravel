@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Support\Media;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 /** One slide of the home page's opening banner. */
@@ -39,6 +40,25 @@ class HeroSlide extends Model
     public function scopeShown(Builder $query): Builder
     {
         return $query->where('is_active', true)->orderBy('sort_order')->orderBy('id');
+    }
+
+    /**
+     * A number that would otherwise go stale. The owner writes "{dizayn}" in a
+     * slide's words or badges and the page prints how many designs the shop
+     * actually has, so the banner never promises a catalogue that has moved on.
+     */
+    public static function numbers(?string $text): string
+    {
+        $text = (string) $text;
+
+        if (! str_contains($text, '{dizayn}')) {
+            return $text;
+        }
+
+        $count = Cache::remember('hero.designs', now()->addMinutes(10),
+            fn () => Product::where('is_active', true)->count());
+
+        return str_replace('{dizayn}', (string) $count, $text);
     }
 
     public function imageUrl(): ?string

@@ -73,7 +73,9 @@ class HeroSlideResource extends Resource
                         Forms\Components\TagsInput::make('badges')
                             ->label('Nöqtəli yazılar')
                             ->placeholder('Məs. Premium Şokolad')
-                            ->helperText('Başlığın altındakı qısa üstünlüklər — yazıb Enter basın.')
+                            ->helperText('Başlığın altındakı qısa üstünlüklər — yazıb Enter basın. '
+                                . '«{dizayn}» yazsanız, saytda satışdakı dizaynların sayı görünəcək: '
+                                . 'kataloq dəyişəndə rəqəmi əl ilə düzəltmək lazım gəlməyəcək.')
                             ->reorderable(),
                     ]),
                 Forms\Components\Section::make('Düymələr')

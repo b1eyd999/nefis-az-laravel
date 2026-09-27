@@ -5,11 +5,13 @@ namespace Tests\Feature;
 use App\Filament\Resources\HeroSlideResource\Pages\CreateHeroSlide;
 use App\Filament\Resources\HeroSlideResource\Pages\ListHeroSlides;
 use App\Models\HeroSlide;
+use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -96,5 +98,30 @@ class HeroSlideTest extends TestCase
         $this->get(route('home'))->assertDontSee('Görünməz');
 
         $this->actingAs(User::factory()->create(['role' => User::MANAGER]))->get('/admin/hero-slides')->assertForbidden();
+    }
+
+    public function test_the_banner_counts_the_designs_instead_of_promising_a_number(): void
+    {
+        Product::create(['name' => 'Bir', 'slug' => 'bir', 'is_active' => true]);
+        Product::create(['name' => 'İki', 'slug' => 'iki', 'is_active' => true]);
+        Product::create(['name' => 'Gizli', 'slug' => 'gizli', 'is_active' => false]);
+
+        $slide = HeroSlide::first();
+        $slide->update([
+            'text' => '{dizayn} dizayn arasından seçin.',
+            'badges' => ['{dizayn} dizayn', '4.90 ₼-dən'],
+        ]);
+
+        $this->get(route('home'))->assertOk()
+            ->assertSee('2 dizayn arasından seçin.')
+            ->assertSee('2 dizayn')
+            ->assertDontSee('{dizayn}');
+
+        // A design goes on sale and the banner follows it, without anyone
+        // retyping the number.
+        Cache::forget('hero.designs');
+        Product::create(['name' => 'Üç', 'slug' => 'uc', 'is_active' => true]);
+
+        $this->get(route('home'))->assertOk()->assertSee('3 dizayn');
     }
 }
