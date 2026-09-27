@@ -23,7 +23,7 @@
       <span class="chat-mark"><img src="/images/logo.svg" alt="Nefis"></span>
       <span class="chat-who">
         <b>{{ __('Nefis') }}</b>
-        <small>{{ \App\Support\Contact::hours() ?: __('Sualınızı yazın, cavab yazacağıq') }}</small>
+        <small>{{ \App\Support\Contact::hours() ? __(\App\Support\Contact::hours()) : __('Sualınızı yazın, cavab yazacağıq') }}</small>
       </span>
       <button type="button" class="chat-bell" id="chat-bell" aria-label="{{ __('Səs') }}" title="{{ __('Cavab gələndə səs') }}" aria-pressed="true">
         <svg class="bell-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

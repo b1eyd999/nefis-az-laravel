@@ -123,4 +123,27 @@ class TranslationTest extends TestCase
         $this->assertSame('Моё описание', $design->translationsFor('ru')['description']);
         $this->assertSame($all[$slug]['en']['description'], $design->translationsFor('en')['description']);
     }
+
+    public function test_a_design_is_read_in_the_visitors_language_everywhere_it_appears(): void
+    {
+        $design = \App\Models\Product::create(['name' => 'Alpen gold', 'slug' => 'alpen-gold',
+            'description' => 'Azərbaycanca təsvir', 'is_active' => true, 'price' => 4.90,
+            'template_width' => 969, 'template_height' => 1895]);
+        $design->layers()->create(['name' => 'Qutu', 'image' => 'boxes/art.webp', 'x' => 0, 'y' => 0,
+            'width' => 969, 'height' => 1895, 'rotation' => 0, 'opacity' => 100, 'placement' => 'below', 'sort_order' => 0]);
+        $design->setTranslations('ru', ['name' => 'Русское имя', 'description' => 'Русское описание']);
+        $design->saveQuietly();
+
+        // The catalogue and the design's own page printed the Azerbaijani
+        // columns straight out, so a translated design still read Azerbaijani
+        // to a Russian visitor — the translation was in the database all along.
+        $this->get('/ru/dizaynlar')->assertOk()->assertSee('Русское имя')->assertDontSee('Alpen gold');
+        $this->get('/ru/products/alpen-gold/customize')->assertOk()
+            ->assertSee('Русское имя')
+            ->assertSee('Русское описание')
+            ->assertDontSee('Azərbaycanca təsvir');
+
+        // And Azerbaijani still reads Azerbaijani.
+        $this->get('/products/alpen-gold/customize')->assertOk()->assertSee('Alpen gold');
+    }
 }

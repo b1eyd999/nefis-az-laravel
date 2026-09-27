@@ -41,7 +41,7 @@
       \App\Support\Seo::breadcrumbs([
           [__('Ana səhifə'), lroute('home')],
           ['Dizaynlar', lroute('designs.index')],
-          [$product->name, lroute('products.customize', $product->slug)],
+          [$product->tr('name'), lroute('products.customize', $product->slug)],
       ]),
   ]))]) }}
 @endpush
@@ -277,12 +277,12 @@
     <nav class="crumbs" aria-label="{{ __('Səhifənin yeri') }}">
       <a href="{{ lroute('home') }}">{{ __('Ana səhifə') }}</a><span aria-hidden="true">›</span>
       <a href="{{ lroute('designs.index') }}">Dizaynlar</a><span aria-hidden="true">›</span>
-      <span aria-current="page">{{ $product->name }}</span>
+      <span aria-current="page">{{ $product->tr('name') }}</span>
     </nav>
     <span class="eyebrow" style="justify-content:center;">{{ __('Fərdiləşdirmə') }}</span>
-    <h1>{{ $product->name }}</h1>
-    @if($product->description)
-      <p class="lede" style="margin-inline:auto;">{{ $product->description }}</p>
+    <h1>{{ $product->tr('name') }}</h1>
+    @if($product->tr('description'))
+      <p class="lede" style="margin-inline:auto;">{{ $product->tr('description') }}</p>
     @endif
     @if($gifts->isNotEmpty())
       <nav class="occ-chips" style="margin-top:1.25rem;" aria-label="{{ __('Hədiyyə fikirləri') }}">
@@ -328,12 +328,12 @@
           <div class="angle-thumbs" id="angle-thumbs">
             @foreach($viewData as $view)
               <button type="button" class="angle-thumb{{ $loop->first ? ' active' : '' }}" data-angle="{{ $loop->index }}"
-                      title="{{ $view['label'] ?? $product->name }}" aria-label="{{ $view['label'] ?? $product->name }}">
+                      title="{{ $view['label'] ?? $product->tr('name') }}" aria-label="{{ $view['label'] ?? $product->tr('name') }}">
                 @if(array_key_exists('scene', $view))
                   {{-- Drawn live, so every thumbnail shows the customer's own box. --}}
                   <canvas></canvas>
                 @else
-                  <img src="{{ $view['bg'] ?: $view['url'] }}" alt="{{ $view['label'] ?? $product->name }}">
+                  <img src="{{ $view['bg'] ?: $view['url'] }}" alt="{{ $view['label'] ?? $product->tr('name') }}">
                 @endif
               </button>
             @endforeach

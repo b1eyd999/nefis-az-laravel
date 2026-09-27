@@ -152,8 +152,8 @@
                     <img src="{{ \App\Support\Media::url($design->catalogImage()) }}" alt="{{ $design->tr('name') }}, {{ __('şəkilli şokolad qutusu') }}" loading="lazy">
                   </div>
                   <div class="d-card-body">
-                    <h3>{{ $design->name }}</h3>
-                    <span>{{ $label }}</span>
+                    <h3>{{ $design->tr('name') }}</h3>
+                    <span>{{ __($label) }}</span>
                   </div>
                 </a>
               @endforeach
