@@ -49,9 +49,17 @@ class Letter
         return array_merge(self::PAGE_DEFAULTS, array_filter(is_array($saved) ? $saved : [], fn ($v) => $v !== null && $v !== ''));
     }
 
+    /**
+     * One line of the page, in the language the customer is reading — the
+     * Azerbaijani sentence is itself the key, exactly as on the live-photo
+     * and company pages. Without this the letter was the one part of the
+     * shop that stayed Azerbaijani in every language.
+     */
     public static function text(string $key): string
     {
-        return (string) (self::page()[$key] ?? '');
+        $value = (string) (self::page()[$key] ?? '');
+
+        return $value === '' ? '' : __($value);
     }
 
     /** The Polaroid's look as custom properties for its figure's style. */
