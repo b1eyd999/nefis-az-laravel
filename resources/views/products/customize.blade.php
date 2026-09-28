@@ -91,6 +91,8 @@
   }
   .rotate-reset:hover{ border-color:var(--gold); }
   .slot-hint{ font-size:.8125rem; color:var(--cocoa-soft); margin-top:.5rem; }
+  .add-hint{ font-size:.8125rem; color:var(--cocoa-soft); text-align:center; margin:.6rem 0 0; }
+  .add-hint.bad{ color:#c2410c; font-weight:600; }
   .lead-note{ display:flex; gap:.75rem; align-items:flex-start; margin-bottom:1.25rem; padding:.85rem 1rem;
     border:1px solid rgba(250,117,18,.35); border-radius:.9rem;
     background:linear-gradient(120deg, rgba(255,132,1,.12) 0%, rgba(240,84,32,.06) 60%, transparent 100%); }
@@ -661,6 +663,10 @@
 
         <button type="submit" class="btn btn-primary btn-block btn-flame" id="add-to-cart-btn"
                 @if($photoSlots->isNotEmpty()) disabled @endif>{{ __('Səbətə Əlavə Et') }}</button>
+        @if($photoSlots->isNotEmpty())
+          {{-- The button is shut until the picture is there; say so, or it looks broken. --}}
+          <p class="add-hint" id="add-hint">{{ __('Əvvəlcə şəklinizi yükləyin — sonra düymə işə düşür.') }}</p>
+        @endif
       </form>
     </div>
   </div>
@@ -787,6 +793,17 @@
   var ctx = canvas.getContext('2d');
   var dropHint = document.getElementById('drop-hint');
   var addBtn = document.getElementById('add-to-cart-btn');
+  var addHint = document.getElementById('add-hint');
+  /* A shut button with nothing said about it reads as a broken one, so the
+     line under it always tells the customer what is still missing. */
+  function markAdd(bad){
+    if (!addHint) return;
+    addHint.hidden = ! (bad || addBtn.disabled);
+    addHint.classList.toggle('bad', ! ! bad);
+    addHint.textContent = cutting
+      ? @json(__('Şəkil hazırlanır, bir neçə saniyə…'))
+      : @json(__('Əvvəlcə şəklinizi yükləyin — sonra düymə işə düşür.'));
+  }
   /* Cutting the face out takes seconds on the first photo. The button
      stays shut while it runs: otherwise a customer who taps straight
      after choosing would order the uncut photo — background, room and
@@ -1091,6 +1108,29 @@
     return photos.every(function(p){ return p.img !== null; });
   }
 
+  /* The photo inputs are required and hidden under the preview. The browser
+     refuses such a form before any submit handler runs and says nothing the
+     customer can see ("An invalid form control is not focusable"), so the
+     refusal is caught here — `invalid` does not bubble, hence the capture —
+     and answered with the line under the button. */
+  var customizeForm = document.getElementById('customize-form');
+  function pointAtEmptySlot(index){
+    markAdd(true);
+    var block = slotBlocks.filter(function(b){ return Number(b.dataset.slot) === index; })[0];
+    (block || slotBlocks[0] || addBtn).scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  customizeForm.addEventListener('invalid', function(e){
+    var slot = /^photos\[(\d+)\]$/.exec((e.target && e.target.name) || '');
+    if (! slot) return;
+    e.preventDefault();
+    pointAtEmptySlot(Number(slot[1]));
+  }, true);
+  customizeForm.addEventListener('submit', function(e){
+    if (e.defaultPrevented || allSlotsFilled()) return;
+    e.preventDefault();
+    pointAtEmptySlot(photos.findIndex(function(p){ return p.img === null; }));
+  });
+
   slotBlocks.forEach(function(block){
     var index = Number(block.dataset.slot);
     var input = block.querySelector('.photo-input');
@@ -1123,6 +1163,7 @@
         if (fixBg) fixBg.hidden = true;
         cutting++;
         addBtn.disabled = true;
+        markAdd();
         /* prepare() answers with null instead of throwing, so every way out
            of it has to come through here or the button never opens again. */
         var settled = false;
@@ -1131,6 +1172,7 @@
           settled = true;
           cutting--;
           if (!cutting && allSlotsFilled()) addBtn.disabled = false;
+          markAdd();
         };
         window.NefisCutout.prepare(file).then(function(cut){
           if (!cut) {
@@ -1174,6 +1216,7 @@
         if (hint) hint.hidden = false;
         if (dropHint) dropHint.style.display = 'none';
         if (allSlotsFilled() && !cutting) addBtn.disabled = false;
+        markAdd();
         draw();
       }).catch(function(){});
     });
