@@ -102,6 +102,39 @@ class AccountingTest extends TestCase
         $this->assertEqualsWithDelta($r['revenue'] - 5.38 - 9.80 - 3, $r['cash'], 0.01);
     }
 
+    /**
+     * An order still waiting for its money is a promise, not income. With the
+     * card the only way to pay, a payment page closed half-way is an everyday
+     * thing, and each one used to inflate the takings and every share of them.
+     */
+    public function test_an_order_nobody_has_paid_for_is_not_income_yet(): void
+    {
+        $order = $this->order(1);
+        $order->forceFill(['status' => 'awaiting_payment'])->save();
+
+        $r = Accounting::report();
+        $this->assertSame(0, $r['orders']);
+        $this->assertSame(0.0, $r['revenue']);
+
+        $order->forceFill(['status' => 'confirmed', 'payment_confirmed_at' => now()])->save();
+
+        $r = Accounting::report();
+        $this->assertSame(1, $r['orders']);
+        $this->assertEqualsWithDelta($order->fresh()->total(), $r['revenue'], 0.001);
+    }
+
+    /** What the bank settles is what the books show — the rush fee included. */
+    public function test_the_rush_fee_is_income_like_everything_else(): void
+    {
+        $order = $this->order(1);
+        $order->forceFill(['rush_fee' => 3])->save();
+
+        $r = Accounting::report();
+        $this->assertEqualsWithDelta($order->fresh()->total(), $r['revenue'], 0.001);
+        $this->assertSame(3.0, $r['rush']);
+        $this->assertSame(3.0, $r['rows'][0]['rush']);
+    }
+
     public function test_what_no_one_takes_home_is_shown_as_the_shops_own_share(): void
     {
         $this->order(1);

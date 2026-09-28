@@ -25,7 +25,9 @@
       <div class="v {{ $r['cash'] < 0 ? 'bad' : '' }}">{{ $money($r['cash']) }}</div>
       <div class="n">gəlir − şokolad − anbara alış {{ $money($r['purchases']) }} − xərclər</div>
       @if($unpaid > 0)
-        <div class="n" style="margin-top:.3rem;"><b>Bunun {{ $money($unpaid) }} manatı hələ ödənilməyib.</b></div>
+        {{-- Not in the figure above any more: an order still waiting for its
+             money is a promise, and the till counts only money that came. --}}
+        <div class="n" style="margin-top:.3rem;"><b>Ödəniş gözləyən sifarişlər: {{ $money($unpaid) }}</b> — kassaya daxil deyil.</div>
       @endif
     </div>
 

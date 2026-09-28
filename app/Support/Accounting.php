@@ -118,8 +118,12 @@ class Accounting
      */
     public static function report(?CarbonInterface $from = null, ?CarbonInterface $to = null): array
     {
+        // Paid, or at least taken on by hand. An order still waiting for its
+        // money is a promise, not income — and with the card the only way to
+        // pay, a payment page closed half-way is an everyday thing. Counting
+        // those inflated the takings, the profit and every share of it.
         $orders = Order::with('items')
-            ->where('status', '!=', 'cancelled')
+            ->whereNotIn('status', ['cancelled', 'awaiting_payment', 'payment_check'])
             ->when($from, fn ($q) => $q->where('created_at', '>=', $from))
             ->when($to, fn ($q) => $q->where('created_at', '<=', $to))
             ->latest()
@@ -130,11 +134,14 @@ class Accounting
             $delivery = (float) ($o->delivery_price ?? 0);
             $chocolate = (float) $o->items->sum(fn ($i) => (float) ($i->chocolate_cost ?? 0) * $i->quantity);
             $materials = (float) ($o->materials_cost ?? 0);
-            $revenue = $goods + $delivery;
+            // The rush fee is charged and settled by the bank like everything
+            // else; the books used to leave it out, three manat at a time.
+            $rush = (float) ($o->rush_fee ?? 0);
+            $revenue = $goods + $delivery + $rush;
 
             return [
                 'order' => $o, 'boxes' => (int) $o->items->whereNotNull('product_id')->sum('quantity'),
-                'revenue' => $revenue, 'goods' => $goods, 'delivery' => $delivery,
+                'revenue' => $revenue, 'goods' => $goods, 'delivery' => $delivery, 'rush' => $rush,
                 'chocolate' => $chocolate, 'materials' => $materials,
                 'profit' => $revenue - $chocolate - $materials,
             ];
@@ -185,6 +192,7 @@ class Accounting
             'boxes' => $rows->sum('boxes'),
             'revenue' => round($revenue, 2),
             'delivery' => round($rows->sum('delivery'), 2),
+            'rush' => round($rows->sum('rush'), 2),
             'chocolate' => round($chocolate, 2),
             'materials' => round($materials, 2),
             'gross' => round($gross, 2),

@@ -33,16 +33,16 @@ class MoneyController extends Controller
         [$from, $to] = $this->range($period);
         $report = Accounting::report($from, $to);
 
-        // "Kassa" counts every order that was not cancelled, paid or not. This
-        // is how much of it is still a promise, so the number is not read as
-        // money in hand.
+        // The books count only money that came. This is what is still out
+        // there waiting to be paid, shown beside the till so the owner knows
+        // what may yet arrive — and what may not.
         $unpaid = Order::query()
             ->with('items:id,order_id,quantity,price,chocolate_price,wrapping_price,letter_price,ar_price')
             ->whereIn('status', ['awaiting_payment', 'payment_check'])
             ->when($from, fn ($q) => $q->where('created_at', '>=', $from))
             ->when($to, fn ($q) => $q->where('created_at', '<=', $to))
             ->get()
-            ->sum(fn (Order $o) => $o->itemsTotal() + (float) ($o->delivery_price ?? 0));
+            ->sum(fn (Order $o) => $o->itemsTotal() + (float) ($o->delivery_price ?? 0) + (float) ($o->rush_fee ?? 0));
 
         return view('phone.money', [
             'period' => $period,

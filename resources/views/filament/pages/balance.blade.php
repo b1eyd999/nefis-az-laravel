@@ -54,7 +54,7 @@
     <div class="bl-card">
       <div class="k">Gəlir (satış)</div>
       <div class="v">{{ $fmt($r['revenue']) }}</div>
-      <div class="s">qutular və şokolad + çatdırılma {{ $fmt($r['delivery']) }}</div>
+      <div class="s">qutular və şokolad + çatdırılma {{ $fmt($r['delivery']) }}@if(($r['rush'] ?? 0) > 0) + təcili {{ $fmt($r['rush']) }}@endif</div>
     </div>
     <div class="bl-card">
       <div class="k">Maya dəyəri</div>
