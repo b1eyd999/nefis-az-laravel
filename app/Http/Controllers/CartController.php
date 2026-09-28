@@ -192,6 +192,6 @@ class CartController extends Controller
     {
         Cart::remove($id);
 
-        return back()->with('status', 'Məhsul səbətdən silindi.');
+        return back()->with('status', __('Məhsul səbətdən silindi.'));
     }
 }

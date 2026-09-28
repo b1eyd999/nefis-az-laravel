@@ -133,9 +133,9 @@ class Letter
     public static function messages(): array
     {
         return [
-            'letter_text.max' => 'Məktubun mətni ' . self::maxLength() . ' simvoldan uzun ola bilməz.',
-            'letter_photo.image' => 'Məktubun şəkli şəkil faylı olmalıdır (JPG, PNG və s.).',
-            'letter_photo.max' => 'Məktubun şəkli 8 MB-dan böyük ola bilməz.',
+            'letter_text.max' => __('Məktubun mətni :n simvoldan uzun ola bilməz.', ['n' => self::maxLength()]),
+            'letter_photo.image' => __('Məktubun şəkli şəkil faylı olmalıdır (JPG, PNG və s.).'),
+            'letter_photo.max' => __('Məktubun şəkli 8 MB-dan böyük ola bilməz.'),
         ];
     }
 

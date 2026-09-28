@@ -533,7 +533,7 @@
               <div class="choc-brands" aria-label="{{ __('Marka seçin') }}">
                 @foreach($brands as $brand => $bars)
                   <button type="button" class="choc-brand{{ in_array($brand, $top, true) ? ' top' : '' }}{{ $brand === $openBrand ? ' active' : '' }}{{ $picked && $picked['brand'] === $brand ? ' has-pick' : '' }}"
-                          data-brand="{{ $brand }}" aria-pressed="{{ $brand === $openBrand ? 'true' : 'false' }}">{{ $brand }} <span>{{ $bars->count() }}</span></button>
+                          data-brand="{{ $brand }}" aria-pressed="{{ $brand === $openBrand ? 'true' : 'false' }}">{{ $brand === \App\Support\ChocolateBrand::OTHER ? __($brand) : $brand }} <span>{{ $bars->count() }}</span></button>
                 @endforeach
               </div>
             @endif
@@ -571,7 +571,7 @@
                 </div>
               @endforeach
             </div>
-            <p class="choc-error" id="choc-error" role="alert" @unless($errors->has('chocolate_id')) hidden @endunless>{{ $errors->first('chocolate_id') ?: 'Qutunun içinə şokolad seçin.' }}</p>
+            <p class="choc-error" id="choc-error" role="alert" @unless($errors->has('chocolate_id')) hidden @endunless>{{ $errors->first('chocolate_id') ?: __('Qutunun içinə şokolad seçin.') }}</p>
           </div>
         @endif
 

@@ -4,8 +4,16 @@ deployment:
     - export APPPATH=/home/darkftga/nefis-laravel
     - export WEBROOT=/home/darkftga/public_html/nefis.az
     - /bin/mkdir -p $APPPATH
-    - /bin/cp -R * $APPPATH
+    # A copy only ever adds, so a file taken out of the repo kept running on
+    # the server. rsync mirrors the checkout instead: what the repo dropped is
+    # dropped here too. The server's own things — .env, storage, the caches,
+    # the database file if any — are never touched.
+    - if command -v rsync >/dev/null 2>&1; then rsync -a --delete --exclude .git --exclude .env --exclude storage/ --exclude public/ --exclude bootstrap/cache/ --exclude 'database/*.sqlite' ./ $APPPATH/; else /bin/cp -R * $APPPATH; fi
     - /bin/rm -rf $APPPATH/public
+    # The web root serves any PHP file that exists there, before Laravel ever
+    # sees the request — so a one-off script left behind stays reachable by
+    # URL. Only index.php belongs there.
+    - /usr/bin/find $WEBROOT -maxdepth 1 -type f -name '*.php' ! -name index.php -delete
     - /bin/cp -R public/* $WEBROOT/
     - /bin/cp -R public/.htaccess $WEBROOT/ 2>/dev/null || true
     - /bin/ln -sfn $APPPATH/storage/app/public $WEBROOT/storage

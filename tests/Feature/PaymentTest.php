@@ -167,6 +167,21 @@ class PaymentTest extends TestCase
         $this->assertSame('Ləğv edildi', $order->fresh()->statusLabel());
     }
 
+    /** An account orders were paid through keeps their payment history; it is switched off, not deleted. */
+    public function test_an_account_with_orders_behind_it_cannot_be_deleted(): void
+    {
+        $used = $this->card();
+        $spare = $this->card('Ehtiyat', '4169738122222222', 1);
+        $order = $this->order($this->box());
+        $this->assertSame($used->id, $order->payment_account_id);
+
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(\App\Filament\Resources\PaymentAccountResource\Pages\ListPaymentAccounts::class)
+            ->assertTableActionDisabled('delete', $used)
+            ->assertTableActionEnabled('delete', $spare);
+    }
+
     public function test_without_any_account_an_order_goes_through_as_before(): void
     {
         $box = $this->box();

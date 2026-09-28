@@ -79,13 +79,14 @@ class LiveMaterials
     public static function messages(): array
     {
         return [
-            'ar_video.required' => 'Canlı şəkil üçün videonu yükləyin.',
-            'ar_video.mimetypes' => 'Video MP4, MOV və ya WEBM olmalıdır.',
-            'ar_video.max' => 'Video ' . self::videoMb() . ' MB-dan böyük ola bilməz, qısaldın və ya sıxın.',
-            'ar_video.uploaded' => 'Video yüklənmədi, ' . self::videoMb() . ' MB-dan kiçik olmalıdır.',
-            'ar_photo.required' => 'Canlanacaq şəkli yükləyin.',
-            'ar_photo.image' => 'Şəkil JPG, PNG və ya WEBP olmalıdır.',
-            'ar_photo.max' => 'Şəkil 10 MB-dan böyük ola bilməz.',
+            'ar_video.required' => __('Canlı şəkil üçün videonu yükləyin.'),
+            'ar_video.mimetypes' => __('Video MP4, MOV və ya WEBM olmalıdır.'),
+            // One key for every limit the owner may set, so the translation holds.
+            'ar_video.max' => __('Video :mb MB-dan böyük ola bilməz, qısaldın və ya sıxın.', ['mb' => self::videoMb()]),
+            'ar_video.uploaded' => __('Video yüklənmədi, :mb MB-dan kiçik olmalıdır.', ['mb' => self::videoMb()]),
+            'ar_photo.required' => __('Canlanacaq şəkli yükləyin.'),
+            'ar_photo.image' => __('Şəkil JPG, PNG və ya WEBP olmalıdır.'),
+            'ar_photo.max' => __('Şəkil 10 MB-dan böyük ola bilməz.'),
         ];
     }
 

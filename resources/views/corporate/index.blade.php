@@ -189,6 +189,7 @@
   </div>
 </section>
 
+@if(! empty($page['whom']))
 <section>
   <div class="wrap">
     <h2>{{ __($page['whom_title']) }}</h2>
@@ -203,7 +204,9 @@
     </div>
   </div>
 </section>
+@endif
 
+@if(! empty($page['perks']))
 <section>
   <div class="wrap">
     <h2>{{ __($page['perks_title']) }}</h2>
@@ -217,6 +220,7 @@
     </div>
   </div>
 </section>
+@endif
 
 @if(! empty($page['gallery']))
   <section>

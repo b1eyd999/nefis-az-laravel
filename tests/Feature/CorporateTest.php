@@ -64,6 +64,19 @@ class CorporateTest extends TestCase
         $this->assertSame(250, CorporatePage::minimum());
     }
 
+    /** Emptying a list is a decision, not a mistake: the built-in rows do not creep back. */
+    public function test_a_list_the_owner_emptied_stays_empty(): void
+    {
+        Setting::put(Setting::CORPORATE, json_encode(['whom' => [], 'perks' => []], JSON_UNESCAPED_UNICODE));
+
+        $this->get(route('corporate.index'))->assertOk()
+            ->assertDontSee(CorporatePage::WHOM[0]['title'])
+            ->assertDontSee(CorporatePage::DEFAULTS['whom_title'])
+            ->assertDontSee(CorporatePage::DEFAULTS['perks_title'])
+            // The colours he never touched are still the page's own.
+            ->assertSee(CorporatePage::COLORS[0]['name']);
+    }
+
     public function test_a_half_filled_row_does_not_leave_a_blank_card(): void
     {
         Setting::put(Setting::CORPORATE, json_encode([

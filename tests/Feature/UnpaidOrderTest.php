@@ -53,6 +53,26 @@ class UnpaidOrderTest extends TestCase
         $this->actingAs($user)->get(route('cart.index'))->assertSee('Səbətiniz hələ boşdur', false);
     }
 
+    /** A day at the bank with no answer: the order is cancelled, its stock and the bar are freed. */
+    public function test_an_order_nobody_paid_for_expires_on_its_own(): void
+    {
+        $user = User::factory()->create();
+        $old = $this->order($user);
+        $this->travel(25)->hours();
+        $fresh = $old->replicate(['payment_started_at', 'payment_asked_for']);
+        $fresh->save();
+        // One at the bank this very minute is left alone.
+        $busy = $old->replicate();
+        $busy->forceFill(['created_at' => now()->subDay()->subHour(), 'payment_started_at' => now()->subMinutes(5)])->save();
+
+        $this->artisan('orders:expire-unpaid')->expectsOutputToContain('#' . $old->id)->assertSuccessful();
+
+        $this->assertSame(['cancelled', 'awaiting_payment', 'awaiting_payment'],
+            [$old->fresh()->status, $fresh->fresh()->status, $busy->fresh()->status]);
+        // The bar no longer sends him to pay for the one that is gone.
+        $this->actingAs($user)->get(route('home'))->assertOk()->assertDontSee(route('orders.pay', $old), false);
+    }
+
     public function test_it_is_not_shown_on_the_payment_page_itself(): void
     {
         $user = User::factory()->create();

@@ -72,7 +72,7 @@
                      style="text-decoration:underline;">{{ __('Spotify-da yoxla') }}</a></p>
               @endif
               @if(! empty($item['letter']))
-                <p style="margin-top:.2rem;">💌 {{ $isLetter ? '' : __('Polaroid məktub') . ' · ' }}{{ \Illuminate\Support\Str::limit(str_replace("\n", ' ', $item['letter']['text'] ?? ''), 60) ?: 'şəkilli' }}
+                <p style="margin-top:.2rem;">💌 {{ $isLetter ? '' : __('Polaroid məktub') . ' · ' }}{{ \Illuminate\Support\Str::limit(str_replace("\n", ' ', $item['letter']['text'] ?? ''), 60) ?: __('şəkilli') }}
                   @unless($isLetter) &middot; {{ \App\Support\Price::format($item['letter']['price']) }} @endunless</p>
               @endif
             </div>

@@ -95,6 +95,27 @@ class LivePhotoTest extends TestCase
             ->assertSee('Hədəfi hazırla')->assertSee(route('live.show', $live->code))->assertSee('SVG yüklə');
     }
 
+    /** A customer's old browser sent no picture: the owner can still keep the record, just not switch it on. */
+    public function test_a_live_photo_without_its_picture_can_still_be_saved(): void
+    {
+        $this->fakeYandex();
+        $this->admin();
+        $live = LivePhoto::create(['title' => 'Sifariş #9, Test', 'target_image' => '', 'video_url' => self::LINK, 'is_active' => false]);
+
+        Livewire::test(\App\Filament\Resources\LivePhotoResource\Pages\EditLivePhoto::class, ['record' => $live->id])
+            ->assertSee('Müştərinin brauzeri şəkil göndərməyib')
+            ->fillForm(['title' => 'Sifariş #9, Aysel'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+        $this->assertSame(['Sifariş #9, Aysel', ''], [$live->fresh()->title, $live->fresh()->target_image]);
+
+        // Switching it on without a picture is what is refused.
+        Livewire::test(\App\Filament\Resources\LivePhotoResource\Pages\EditLivePhoto::class, ['record' => $live->id])
+            ->fillForm(['is_active' => true])
+            ->call('save')
+            ->assertHasFormErrors(['target_image' => 'required']);
+    }
+
     public function test_a_link_that_is_not_a_video_is_refused(): void
     {
         $this->admin();

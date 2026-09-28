@@ -112,7 +112,16 @@ class PaymentAccountResource extends Resource
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order')
-            ->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                // Orders remember which account they were paid through; deleting
+                // it would wipe the payment section from every one of them.
+                Tables\Actions\DeleteAction::make()
+                    ->disabled(fn (PaymentAccount $r) => $r->orders()->exists())
+                    ->tooltip(fn (PaymentAccount $r) => $r->orders()->exists()
+                        ? $r->orders()->count() . ' sifariş bu hesabla ödənilib — silinmir, "İşləkdir"i söndürün.'
+                        : null),
+            ])
             ->emptyStateHeading('Hələ ödəniş hesabı yoxdur')
             ->emptyStateDescription('Hesab əlavə edilməyincə müştəri ödəniş səhifəsini görmür, sifariş sadəcə qeydə alınır.');
     }

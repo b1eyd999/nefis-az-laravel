@@ -218,6 +218,31 @@
     <div class="toast" id="toast">✨ Şəkil tapıldı!</div>
     <button type="button" class="sound muted" id="sound" hidden>🔇 Səsi aç</button>
 
+    {{-- Import maps arrived in iOS 16.4; older phones get them from this
+         polyfill, and it steps aside where the browser has its own. --}}
+    <script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1.10.0/dist/es-module-shims.js" crossorigin="anonymous"></script>
+    <script>
+      /* Outside the module on purpose: when the module cannot be resolved
+         (an old phone, a blocked CDN) none of it runs, and the button below
+         would answer with nothing at all. So the tap is watched from here,
+         and if the module has not reported in, the customer is told. */
+      (function(){
+        var MSG = @json(__('Bu telefon bunu aça bilmir: linki Chrome-da açın və ya telefonu yeniləyin.'));
+        function dead(){
+          if (window.__arModule) return;
+          var err = document.getElementById('err');
+          err.textContent = MSG;
+          err.hidden = false;
+          document.getElementById('loading').hidden = true;
+          document.getElementById('start').hidden = false;
+        }
+        window.addEventListener('error', function(e){
+          var t = e.target;
+          if (t && t.tagName === 'SCRIPT') dead();
+        }, true);
+        document.getElementById('go').addEventListener('click', function(){ setTimeout(dead, 4000); });
+      })();
+    </script>
     <script type="importmap">
     {
       "imports": {
@@ -230,6 +255,7 @@
     <script type="module">
       import { MindARThree } from 'mindar-image-three';
       import { CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
+      window.__arModule = true;   // the guard above stands down
 
       const PIC = {{ $aspect }};          // the picture's height over its width
       const $ = id => document.getElementById(id);

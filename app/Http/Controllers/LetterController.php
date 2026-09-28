@@ -27,8 +27,8 @@ class LetterController extends Controller
         abort_unless(Letter::enabled(), 404);
 
         $request->validate(Letter::rules() + ['quantity' => ['nullable', 'integer', 'min:1', 'max:20']], Letter::messages() + [
-            'quantity.min' => 'Say 1 ilə 20 arasında olmalıdır.',
-            'quantity.max' => 'Say 1 ilə 20 arasında olmalıdır.',
+            'quantity.min' => __('Say 1 ilə 20 arasında olmalıdır.'),
+            'quantity.max' => __('Say 1 ilə 20 arasında olmalıdır.'),
         ]);
         $letter = Letter::fromRequest($request);
         if (! $letter) {

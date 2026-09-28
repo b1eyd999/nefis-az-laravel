@@ -57,12 +57,20 @@ class LivePhotoResource extends Resource
                             }),
                         Forms\Components\FileUpload::make('target_image')
                             ->label('Qutudakı şəkil (çap olunan kimi)')
-                            ->helperText('Kamera məhz bu şəkli axtaracaq: qutuda necə çap olunubsa, elə olsun. Çox detallı, kontrastlı şəkillər daha yaxşı tanınır.')
+                            ->helperText(fn (?LivePhoto $record) => $record && blank($record->target_image)
+                                ? 'Müştərinin brauzeri şəkil göndərməyib: qutuya çap olunan şəkli özünüz yükləyin, sonra "İşləsin"i açın.'
+                                : 'Kamera məhz bu şəkli axtaracaq: qutuda necə çap olunubsa, elə olsun. Çox detallı, kontrastlı şəkillər daha yaxşı tanınır.')
                             ->image()
                             ->disk('public')
                             ->directory('live')
                             ->maxSize(8192)
-                            ->required()
+                            // A picture is needed to work, not to be saved: a customer's
+                            // old browser may have sent none, and the owner still has to
+                            // be able to keep the title and paste the video's link.
+                            ->required(fn (Forms\Get $get) => (bool) $get('is_active'))
+                            ->validationMessages(['required' => 'İşləmək üçün qutudakı şəkil lazımdır — yükləyin, ya da "İşləsin"i söndürün.'])
+                            // The column is NOT NULL; an empty upload stays the empty string it was seeded as.
+                            ->dehydrateStateUsing(fn (?array $state) => array_values($state ?? [])[0] ?? '')
                             ->columnSpanFull(),
                         Forms\Components\Toggle::make('is_active')->label('İşləsin')->default(true),
                         Forms\Components\Hidden::make('order_item_id'),

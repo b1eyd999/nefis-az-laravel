@@ -160,7 +160,9 @@ class CorporatePage
     }
 
     /**
-     * A list the owner has edited, or the one the page was written with.
+     * A list the owner has edited, or the one the page was written with —
+     * the latter only while he has never saved the list at all: a list he
+     * emptied on purpose stays empty, the page drops that section.
      * Rows missing the fields that make them worth showing are dropped, so a
      * half-filled row in the admin cannot leave a blank card on the page.
      *
@@ -185,6 +187,6 @@ class CorporatePage
             return true;
         }));
 
-        return $rows ?: $fallback;
+        return $rows;
     }
 }

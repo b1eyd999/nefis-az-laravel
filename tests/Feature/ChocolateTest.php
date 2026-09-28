@@ -200,6 +200,11 @@ class ChocolateTest extends TestCase
         $this->assertMatchesRegularExpression('/class="choc-group" data-brand="Alenka"\s*hidden/', $html);
         $this->assertStringContainsString('Milka <span>2</span>', $html);
 
+        // The unbranded bucket is the one chip with a word to translate; its key stays.
+        Setting::put(Setting::SITE_LANGUAGES, 'az,ru,en');
+        $ru = $this->get(route('ru.products.customize', $box->slug))->assertOk()->getContent();
+        $this->assertStringContainsString('data-brand="Digər" aria-pressed="false">Другие <span>1</span>', $ru);
+
         // The owner's own top list, in his order.
         Setting::put(Setting::TOP_BRANDS, json_encode(['Bianca', 'Alenka']));
         $html = $this->get(route('products.customize', $box->slug))->getContent();
