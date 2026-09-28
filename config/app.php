@@ -65,7 +65,21 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    /*
+     * The shop, its owner and every customer are in Baku, and Azerbaijan has
+     * kept a single offset (UTC+4) with no summer time since 2016. Running on
+     * UTC put every hour the owner reads four hours behind the clock on his
+     * wall, and — worse — made "today" start at 04:00: between midnight and
+     * four the delivery picker offered a day the shop cannot make, and an
+     * order taken at 01:00 was booked into the day before.
+     *
+     * Rows written before this changed keep their UTC digits and are read as
+     * if they were Baku time, which is the same four-hour error they were
+     * already displayed with; correcting those is a separate, deliberate step
+     * because it would move night orders across month boundaries in books the
+     * owner has already paid shares from.
+     */
+    'timezone' => 'Asia/Baku',
 
     /*
     |--------------------------------------------------------------------------

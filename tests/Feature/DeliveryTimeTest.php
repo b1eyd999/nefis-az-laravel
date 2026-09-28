@@ -58,6 +58,26 @@ class DeliveryTimeTest extends TestCase
         ]);
     }
 
+    /**
+     * The shop runs on the clock its customers read. On UTC, "today" began at
+     * four in the morning Baku time: an order taken at one o'clock was offered
+     * a delivery day the shop could not make, and booked into the day before.
+     */
+    public function test_the_shop_keeps_baku_time(): void
+    {
+        $this->assertSame('Asia/Baku', config('app.timezone'));
+
+        // One in the morning in Baku is still the previous day in UTC.
+        $this->travelTo(Carbon::parse('2026-10-01 01:00', 'Asia/Baku'));
+
+        $this->assertSame('2026-10-01', now()->toDateString());
+        $this->assertSame('2026-10-01', Carbon::today()->toDateString());
+        $this->assertSame(
+            Carbon::parse('2026-10-01')->addDays(DeliveryTime::leadDays())->toDateString(),
+            DeliveryTime::earliest()->toDateString(),
+        );
+    }
+
     public function test_checkout_says_when_the_box_can_be_ready_and_offers_the_times(): void
     {
         $this->actingAs($this->customer)->get(route('checkout.index'))->assertOk()
