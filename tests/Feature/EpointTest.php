@@ -266,6 +266,42 @@ class EpointTest extends TestCase
         $this->assertSame(route('epoint.result'), SiteSettings::resultUrl());
     }
 
+    /**
+     * The owner cannot see what he pasted into a password field, and the
+     * browser likes to paste its own saved password there, so the admin has a
+     * button that asks the gateway itself whether the keys are the right ones.
+     */
+    public function test_the_admin_can_ask_the_gateway_whether_the_keys_work(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => User::ADMIN]));
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $this->switchOn();
+
+        Livewire::test(SiteSettings::class)->callAction('epointCheck')->assertHasNoActionErrors();
+
+        Http::assertSent(function ($request) {
+            $body = Epoint::decode($request['data']);
+
+            return $request->url() === Epoint::API
+                && Epoint::verify($request['data'], $request['signature'])
+                && $body['amount'] === '1.00'
+                && str_starts_with((string) $body['order_id'], 'yoxlama-');
+        });
+
+        // Nothing was ordered and nothing was paid.
+        $this->assertSame(0, \App\Models\Order::count());
+    }
+
+    public function test_the_check_says_so_when_the_keys_are_missing(): void
+    {
+        Http::preventStrayRequests();       // nothing may be asked of the gateway
+
+        $this->actingAs(User::factory()->create(['role' => User::ADMIN]));
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $this->assertSame('error', Epoint::check()['status']);
+    }
+
     public function test_the_private_key_is_not_kept_in_the_open(): void
     {
         $this->switchOn();

@@ -160,6 +160,30 @@ class Epoint
     }
 
     /**
+     * Asks the gateway for a payment page worth one manat and gives back its
+     * answer. Nothing is charged — a page is only offered — so this is a way
+     * to find out whether the keys in the admin are the right ones without
+     * placing an order and without anyone typing a card number.
+     *
+     * @return array<string, mixed>
+     */
+    public static function check(): array
+    {
+        if (self::publicKey() === '' || self::privateKey() === null) {
+            return ['status' => 'error', 'message' => 'Açarlar yazılmayıb.'];
+        }
+
+        return self::post([
+            'public_key' => self::publicKey(),
+            'amount' => '1.00',
+            'currency' => self::CURRENCY,
+            'language' => 'az',
+            'order_id' => 'yoxlama-' . now()->format('ymdHis'),
+            'description' => 'Nefis.az: açarların yoxlanması',
+        ]);
+    }
+
+    /**
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */

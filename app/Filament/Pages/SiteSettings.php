@@ -88,6 +88,30 @@ class SiteSettings extends Page implements HasActions, HasForms
     protected function getHeaderActions(): array
     {
         return [
+            // Whether the keys in the admin are the ones the gateway knows,
+            // answered by the gateway itself. Nothing is charged: it only
+            // offers a payment page, and we throw the address away.
+            Actions\Action::make('epointCheck')
+                ->label('Kart: açarları yoxla')
+                ->icon('heroicon-o-credit-card')
+                ->color('gray')
+                ->action(function () {
+                    $answer = Epoint::check();
+
+                    if (($answer['status'] ?? null) === Epoint::SUCCESS && ! empty($answer['redirect_url'])) {
+                        Notification::make()->success()
+                            ->title('Açarlar düzgündür — epoint ödəniş səhifəsi verdi')
+                            ->body('İndi sınaq sifarişi verib "Kartla ödə" düyməsini yoxlaya bilərsiniz.')
+                            ->persistent()->send();
+
+                        return;
+                    }
+
+                    Notification::make()->danger()
+                        ->title('Epoint qəbul etmədi: ' . ($answer['message'] ?? 'cavab gəlmədi'))
+                        ->body('Açıq və şəxsi açarı kabinetdən yenidən köçürün. Brauzerin öz parolu "Private key" xanasına düşə bilər — əvvəlcə xananı boşaldın.')
+                        ->persistent()->send();
+                }),
             Actions\Action::make('findChat')
                 ->label('Telegram: chat-ı tap')
                 ->icon('heroicon-o-magnifying-glass')
