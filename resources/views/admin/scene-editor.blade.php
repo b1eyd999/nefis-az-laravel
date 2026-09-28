@@ -1155,7 +1155,7 @@
   });
 
   function request(method, url, body){
-    var headers = { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' };
+    var headers = { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
     if (body && !(body instanceof FormData)) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(body); }
     return fetch(url, { method: method, headers: headers, body: body, credentials: 'same-origin' })
       .then(function(r){

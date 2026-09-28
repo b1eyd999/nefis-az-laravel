@@ -36,7 +36,7 @@
   }
 
   function getJSON(url) {
-    return fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+    return fetch(url, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
       .then(function (r) { return r.ok ? r.json() : {}; })
       .catch(function () { return {}; });
   }

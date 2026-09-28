@@ -150,7 +150,9 @@
   }
 
   function poll(){
-    fetch(@json(route('chat.poll')) + '?after=' + last, { headers:{ 'Accept':'application/json' } })
+    /* X-Requested-With: this is the page asking, not the visitor — otherwise
+       Laravel remembers this address as the page to come back to. */
+    fetch(@json(route('chat.poll')) + '?after=' + last, { headers:{ 'Accept':'application/json', 'X-Requested-With':'XMLHttpRequest' } })
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(d){
         if (!d || !d.messages) return;
@@ -235,7 +237,7 @@
     var sending = picked; picked = null; shot.hidden = true; file.value = '';
     say('');
 
-    fetch(@json(route('chat.send')), { method:'POST', body:data, headers:{ 'Accept':'application/json' } })
+    fetch(@json(route('chat.send')), { method:'POST', body:data, headers:{ 'Accept':'application/json', 'X-Requested-With':'XMLHttpRequest' } })
       .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
       .then(function(res){
         if (!res.ok){ say(@json(__('Mesaj getmədi, bir azdan yenidən yoxlayın.'))); return; }

@@ -20,6 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'locale' => \App\Http\Middleware\SetLocale::class,
             'staff' => \App\Http\Middleware\StaffOnly::class,
             'owner' => \App\Http\Middleware\OwnerOnly::class,
+            // Addresses a page fetches from, so `back()` never lands on them.
+            'data' => \App\Http\Middleware\AnswerIsNotAPage::class,
         ]);
         // Telegram and the ePoint callback carry no session and no form token;
         // their own secret and signature guard them.
