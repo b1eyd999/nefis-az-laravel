@@ -239,13 +239,17 @@
     }
   }
 
+  /* Every refusal is answered here, not only the ones on hidden controls:
+     iOS Safari shows no bubble of its own, so a visible field left empty
+     looked just as dead as a hidden one. */
   form.addEventListener('invalid', function(e){
     var field = e.target;
     if (! field.name) return;
-    // A field the customer can see: let the browser say it in its own way.
-    if (field.offsetParent !== null && field.type !== 'radio') return;
     e.preventDefault();
     complain(field, WORDS[field.name] || field.validationMessage);
+    if (field.offsetParent !== null && field.focus) {
+      try { field.focus({ preventScroll: true }); } catch (err) { field.focus(); }
+    }
   }, true);
 
   form.addEventListener('submit', function(e){
