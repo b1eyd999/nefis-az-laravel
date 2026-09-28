@@ -93,6 +93,26 @@ class Order extends Model
         return in_array($this->status, ['awaiting_payment', 'payment_check'], true);
     }
 
+    /**
+     * The order a customer walked away from without paying.
+     *
+     * Placing the order empties the basket, so a visitor who left the payment
+     * page and came back to the shop found nothing anywhere and thought his
+     * order had vanished. Every page tells him it is waiting.
+     */
+    public static function unpaidFor(?User $user): ?self
+    {
+        if (! $user) {
+            return null;
+        }
+
+        return self::where('user_id', $user->id)
+            ->where('status', 'awaiting_payment')
+            ->whereNull('payment_confirmed_at')
+            ->latest('id')
+            ->first();
+    }
+
     public function receiptUrl(): ?string
     {
         return $this->payment_receipt ? \App\Support\Media::url($this->payment_receipt) : null;

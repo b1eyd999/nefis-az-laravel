@@ -245,6 +245,7 @@
 </div>
 
 <main id="main">
+@include('partials.unpaid-order')
 @yield('content')
 </main>
 

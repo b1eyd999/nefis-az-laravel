@@ -818,6 +818,25 @@
   /* a chip that only names an occasion: nothing to click, so nothing moves */
   .occ-chip.is-static{ cursor:default; }
   .price-from{ margin:.4rem 0 0; font-weight:700; color:var(--gold-deep); font-size:1.0625rem; }
+
+  /* An order left unpaid: carried on every page until it is paid or dropped. */
+  .unpaid-bar{ display:flex; align-items:center; gap:.7rem; flex-wrap:wrap;
+    margin:0 auto; padding:.85rem 1.15rem; max-width:min(64rem, calc(100% - 2rem));
+    border:1px solid var(--gold); border-radius:1rem; background:linear-gradient(140deg, rgba(214,163,90,.16), transparent 70%);
+    color:var(--cocoa); text-decoration:none; font-size:.9375rem; }
+  .unpaid-bar:hover{ border-color:var(--gold-deep); }
+  .unpaid-dot{ width:.6rem; height:.6rem; border-radius:50%; background:var(--gold-deep); flex:none;
+    animation:unpaid-pulse 1.8s ease-in-out infinite; }
+  .unpaid-text{ min-width:0; }
+  .unpaid-text b{ color:var(--gold-deep); }
+  .unpaid-go{ margin-left:auto; display:inline-flex; align-items:center; gap:.35rem; font-weight:700; color:var(--gold-deep); white-space:nowrap; }
+  .unpaid-go svg{ width:1rem; height:1rem; }
+  @keyframes unpaid-pulse{ 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.45; transform:scale(.8); } }
+  @media (max-width:560px){
+    .unpaid-bar{ font-size:.875rem; padding:.75rem .9rem; }
+    .unpaid-go{ margin-left:0; width:100%; justify-content:flex-end; }
+  }
+  @media (prefers-reduced-motion: reduce){ .unpaid-dot{ animation:none; } }
   .occ-chip.is-static:hover{ border-color:var(--line); color:var(--cocoa-soft); transform:none; }
   .prose{ max-width:44rem; margin-inline:auto; color:var(--cocoa-soft); font-size:1.0625rem; }
   .prose h2{ font-size:clamp(1.4rem, 2.6vw, 1.75rem); margin:2.25rem 0 .75rem; }
