@@ -143,6 +143,8 @@ class EpointController extends Controller
     public function done(Request $request, Order $order): RedirectResponse
     {
         abort_unless($order->user_id === $request->user()->id, 403);
+        // These two addresses carry no language of their own; the order remembers his.
+        app()->setLocale(\App\Support\CustomerNotice::locale($order));
 
         return redirect(lroute('orders.index'))->with('status', $order->payment_confirmed_at
             ? __('Ödəniş qəbul edildi, sifarişiniz təsdiqləndi.')
@@ -152,8 +154,9 @@ class EpointController extends Controller
     public function failed(Request $request, Order $order): RedirectResponse
     {
         abort_unless($order->user_id === $request->user()->id, 403);
+        app()->setLocale(\App\Support\CustomerNotice::locale($order));
 
         return redirect(lroute('orders.pay', $order))
-            ->with('error', __('Ödəniş baş tutmadı. Yenidən cəhd edə və ya köçürmə ilə ödəyə bilərsiniz.'));
+            ->with('error', __('Ödəniş baş tutmadı. Yenidən cəhd edə bilərsiniz.'));
     }
 }

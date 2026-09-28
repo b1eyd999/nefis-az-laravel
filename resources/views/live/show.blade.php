@@ -6,7 +6,7 @@
   $frameW = 'min(72vw, ' . round(58 / $aspect, 2) . 'vh)';
 @endphp
 <!DOCTYPE html>
-<html lang="az">
+<html lang="{{ app()->getLocale() }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -16,7 +16,7 @@
 <meta name="referrer" content="no-referrer">
 {{-- A customer's own video: not for search engines. --}}
 <meta name="robots" content="noindex, nofollow">
-<title>{{ $live->title }}, Canlı şəkil · Nefis</title>
+<title>{{ $live->title }}, {{ __('Canlı şəkil') }} · Nefis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -169,7 +169,7 @@
 
     <div class="screen" id="start">
       <img src="/images/logo.svg" alt="Nefis" class="logo">
-      <h1>Bu şəkil canlanır <span class="spark">✨</span></h1>
+      <h1>{{ __('Bu şəkil canlanır') }} <span class="spark">✨</span></h1>
       <div class="demo" aria-hidden="true">
         <div class="demo-pic"><img src="{{ $live->imageUrl() }}" alt=""></div>
         <span class="demo-spark" style="--x:-7rem; --y:-5rem;">✨</span>
@@ -186,26 +186,26 @@
         </div>
       </div>
       <ol class="steps">
-        <li><span class="ico">📷</span>Kameranı aç</li>
-        <li><span class="ico">📱</span>Telefonu şəklə tut</li>
-        <li><span class="ico">🎬</span>Video canlanır</li>
+        <li><span class="ico">📷</span>{{ __('Kameranı aç') }}</li>
+        <li><span class="ico">📱</span>{{ __('Telefonu şəklə tut') }}</li>
+        <li><span class="ico">🎬</span>{{ __('Video canlanır') }}</li>
       </ol>
-      <button type="button" class="btn" id="go">📷 Kameranı aç</button>
-      <p class="note">🔒 Brauzer kameraya icazə soruşacaq, <b>«İcazə ver»</b> basın. Heç nə yazılmır və saxlanmır.</p>
+      <button type="button" class="btn" id="go">📷 {{ __('Kameranı aç') }}</button>
+      <p class="note">🔒 {!! __('Brauzer kameraya icazə soruşacaq, <b>«İcazə ver»</b> basın. Heç nə yazılmır və saxlanmır.') !!}</p>
       <p class="err" id="err" hidden></p>
     </div>
 
     <div class="screen" id="loading" hidden>
       <div class="spinner"><span>📷</span></div>
-      <h1 style="font-size:1.4rem;">Kamera açılır…</h1>
-      <p>İcazə pəncərəsi çıxsa, <b>«İcazə ver»</b> basın.</p>
+      <h1 style="font-size:1.4rem;">{{ __('Kamera açılır…') }}</h1>
+      <p>{!! __('İcazə pəncərəsi çıxsa, <b>«İcazə ver»</b> basın.') !!}</p>
     </div>
 
     <div class="scan off" id="scan" hidden>
       <div class="frame"><i></i><i></i><i></i><i></i><span class="line"></span></div>
       <div class="scan-card">
         <img src="{{ $live->imageUrl() }}" alt="">
-        <div><b id="scan-title">Bu şəkli kameraya göstərin</b><small id="tip">Şəkli çərçivəyə sığışdırın</small></div>
+        <div><b id="scan-title">{{ __('Bu şəkli kameraya göstərin') }}</b><small id="tip">{{ __('Şəkli çərçivəyə sığışdırın') }}</small></div>
       </div>
     </div>
 
@@ -247,7 +247,7 @@
       video.addEventListener('loadedmetadata', fit);
 
       /* Tips while looking, one after another. */
-      const TIPS = ['Şəkli çərçivəyə sığışdırın', 'Telefonu sabit saxlayın', 'Bir az uzaqlaşdırın, şəkil tam görünsün', 'İşıqlı yerdə daha yaxşı işləyir'];
+      const TIPS = [@json(__('Şəkli çərçivəyə sığışdırın')), @json(__('Telefonu sabit saxlayın')), @json(__('Bir az uzaqlaşdırın, şəkil tam görünsün')), @json(__('İşıqlı yerdə daha yaxşı işləyir'))];
       let tipAt = 0, tipTimer = null;
       function tips(on){
         clearInterval(tipTimer);
@@ -260,7 +260,7 @@
       }
       let lostTimer = null;
       function looking(again){
-        $('scan-title').textContent = again ? 'Şəkli yenidən kameraya göstərin' : 'Bu şəkli kameraya göstərin';
+        $('scan-title').textContent = again ? @json(__('Şəkli yenidən kameraya göstərin')) : @json(__('Bu şəkli kameraya göstərin'));
         scan.hidden = false;
         requestAnimationFrame(() => scan.classList.remove('off'));
         tips(true);
@@ -270,8 +270,8 @@
       function soundButton(){
         sound.hidden = broken;
         sound.className = 'sound ' + (video.muted ? 'muted' : 'on');
-        sound.textContent = video.muted ? '🔇 Səsi aç' : '🔊';
-        sound.setAttribute('aria-label', video.muted ? 'Səsi aç' : 'Səsi bağla');
+        sound.textContent = video.muted ? '🔇 ' + @json(__('Səsi aç')) : '🔊';
+        sound.setAttribute('aria-label', video.muted ? @json(__('Səsi aç')) : @json(__('Səsi bağla')));
       }
       sound.addEventListener('click', () => { video.muted = !video.muted; if (!video.muted) video.play().catch(() => {}); soundButton(); });
 
@@ -279,8 +279,8 @@
       const failed = () => {
         broken = true;
         sound.hidden = true;
-        $('scan-title').textContent = 'Video hazırda açılmır';
-        $('tip').textContent = 'Bir az sonra yenidən cəhd edin.';
+        $('scan-title').textContent = @json(__('Video hazırda açılmır'));
+        $('tip').textContent = @json(__('Bir az sonra yenidən cəhd edin.'));
         tips(false);
       };
       video.addEventListener('error', failed);
@@ -346,7 +346,7 @@
           $('loading').hidden = true;
           $('start').hidden = false;
           state('start');
-          $('err').textContent = 'Kamera açılmadı. Brauzerə kameradan istifadəyə icazə verin və yenidən cəhd edin.';
+          $('err').textContent = @json(__('Kamera açılmadı. Brauzerə kameradan istifadəyə icazə verin və yenidən cəhd edin.'));
           $('err').hidden = false;
         }
       });
@@ -355,8 +355,8 @@
     <div class="screen">
       <img src="/images/logo.svg" alt="Nefis" class="logo">
       <div class="spinner"><span>⏳</span></div>
-      <h1>Canlı şəkil hazırlanır</h1>
-      <p>Bu şəkil tezliklə canlanacaq. Bir az sonra QR kodu yenidən oxudun.</p>
+      <h1>{{ __('Canlı şəkil hazırlanır') }}</h1>
+      <p>{{ __('Bu şəkil tezliklə canlanacaq. Bir az sonra QR kodu yenidən oxudun.') }}</p>
     </div>
   @endif
 </body>

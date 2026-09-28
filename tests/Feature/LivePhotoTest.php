@@ -175,6 +175,27 @@ class LivePhotoTest extends TestCase
         $this->get('/canli/nosuchcode')->assertNotFound();
     }
 
+    /** The address on the box carries no language; the order it came from does. */
+    public function test_the_camera_page_speaks_the_buyers_language(): void
+    {
+        $box = $this->box();
+        $order = Order::create(['user_id' => User::factory()->create()->id, 'status' => 'confirmed', 'locale' => 'ru',
+            'contact_phone' => '1', 'delivery_address' => 'x']);
+        $item = $order->items()->create(['product_id' => $box->id, 'product_name' => 'Test', 'customer_photos' => [], 'custom_texts' => [],
+            'quantity' => 1, 'ar_video' => 'cart-videos/old.mp4', 'ar_price' => 5]);
+        $live = $this->live();
+        $live->forceFill(['order_item_id' => $item->id])->saveQuietly();
+
+        $this->get('/canli/' . $live->code)->assertOk()
+            ->assertSee('<html lang="ru">', false)
+            ->assertSee('Эта фотография оживает')->assertSee('Открыть камеру')
+            ->assertSee(json_encode('Поместите фото в рамку'), false)   // the tips the script rotates
+            ->assertDontSee('Kameranı aç');
+
+        // Without an order behind it the page stays Azerbaijani.
+        $this->get('/canli/' . $this->live()->code)->assertOk()->assertSee('<html lang="az">', false)->assertSee('Kameranı aç');
+    }
+
     public function test_the_video_streams_from_yandex_disk(): void
     {
         Http::fake(fn ($request) => str_contains($request->url(), 'gone')

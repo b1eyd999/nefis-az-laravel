@@ -423,7 +423,7 @@
               <div class="upload-label">{{ __('Şəkil seçmək üçün klikləyin') }}</div>
             </label>
             <input type="file" class="photo-input" id="photo-input-{{ $index }}" name="photos[{{ $index }}]"
-                   accept="image/*" required style="display:none;">
+                   accept="image/jpeg,image/png,image/webp" required style="display:none;">
             <div class="range-row zoom-row" hidden>
               <span class="lbl">{{ __('Yaxınlaşdır') }}</span>
               <input type="range" class="zoom-range" min="50" max="500" value="100">
@@ -854,6 +854,7 @@
      1600 is far more than the screen can show and far less than a phone
      chokes on. NefisPhoto decodes straight to this size. */
   var PREVIEW_MAX = 1600;
+  var PHOTO_MAX_BYTES = @json(\App\Http\Controllers\CartController::PHOTO_MAX_KB * 1024);
 
   var canvas = document.getElementById('preview-canvas');
   var ctx = canvas.getContext('2d');
@@ -1232,11 +1233,53 @@
     var flipBtn = block.querySelector('.flip-btn');
     var hint = block.querySelector('.slot-hint');
     var fixBg = block.querySelector('.fix-bg');
+    var labelWas = label.textContent;
+
+    /* A file the browser cannot open: say so and take it out — or the box
+       shows its name, the preview stays empty, the hint asks for a photo that
+       seems already given, and on a second choice the old picture stays in
+       the preview while another one is sent. */
+    function badFile(){
+      input.value = '';
+      photos[index].img = null;
+      label.textContent = labelWas;
+      if (hint){ hint.hidden = false; hint.textContent = @json(__('Bu fayl açılmadı. JPG və ya PNG şəkil seçin.')); }
+      addBtn.disabled = true;
+      markAdd();
+      draw();
+    }
 
     input.addEventListener('change', function(){
       var file = input.files && input.files[0];
       if (!file) return;
       label.textContent = file.name;
+
+      /* A phone photo weighs ten to eighteen megabytes, and the shop refuses
+         it only after the upload — with a refusal that comes back without
+         the customer's other files. Anything over the limit is re-encoded
+         here, at a size that still prints, and goes in instead. It comes back
+         through this same handler, marked, so it is not shrunk twice. */
+      if (file.size > PHOTO_MAX_BYTES && !file.__shrunk && window.NefisPhoto && typeof DataTransfer !== 'undefined') {
+        if (hint){ hint.hidden = false; hint.textContent = @json(__('Şəkil kiçildilir…')); }
+        window.NefisPhoto.load(file, 3000).then(function(pic){
+          var c = pic;
+          if (!pic.tagName || pic.tagName !== 'CANVAS') {
+            c = document.createElement('canvas');
+            c.width = pic.naturalWidth || pic.width;
+            c.height = pic.naturalHeight || pic.height;
+            c.getContext('2d').drawImage(pic, 0, 0, c.width, c.height);
+          }
+          return new Promise(function(ok, bad){ c.toBlob(function(b){ b ? ok(b) : bad(new Error('blob')); }, 'image/jpeg', 0.9); });
+        }).then(function(b){
+          var small = new File([b], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+          small.__shrunk = true;
+          var box = new DataTransfer();
+          box.items.add(small);
+          input.files = box.files;
+          input.dispatchEvent(new Event('change'));
+        }).catch(function(){ badFile(); });
+        return;
+      }
 
       /* A face slot keeps only the head: the background is cut away here, in
          the customer's own browser, and the cut-out picture is what is sent.
@@ -1306,7 +1349,7 @@
         if (allSlotsFilled() && !cutting) addBtn.disabled = false;
         markAdd();
         draw();
-      }).catch(function(){});
+      }).catch(function(){ badFile(); });
     });
 
     if (fixBg) {

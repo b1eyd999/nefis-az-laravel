@@ -33,6 +33,24 @@ window.NefisLive = (function(){
   }
 
   function loadFile(file){
+    /* With the shrinker on the page the photo is decoded straight to a size
+       that still prints; a fifty-megapixel picture opened whole is a bitmap
+       iOS Safari drops the tab for. The caller still gets an <img> with a
+       natural size and a src it can show. */
+    if (window.NefisPhoto && window.NefisPhoto.load) {
+      return window.NefisPhoto.load(file, 3000).then(function(pic){
+        if (!pic.tagName || pic.tagName !== 'CANVAS') return pic;
+        return new Promise(function(ok, bad){
+          pic.toBlob(function(b){
+            if (!b) { bad(new Error('blob')); return; }
+            var img = new Image();
+            img.onload = function(){ ok(img); };
+            img.onerror = function(){ bad(new Error('image')); };
+            img.src = URL.createObjectURL(b);
+          }, 'image/jpeg', 0.92);
+        });
+      });
+    }
     return new Promise(function(ok, bad){
       var url = URL.createObjectURL(file);
       var img = new Image();

@@ -48,8 +48,16 @@ class ProductController extends Controller
 
         // Where this design is offered, and what else looks like it — so a
         // visitor (and a crawler) always has somewhere to go from here.
-        $gifts = GiftPage::shown()->inLocale(\App\Support\Locale::current())
-            ->whereHas('products', fn ($q) => $q->whereKey($product->id))->get();
+        // The designs are picked once, on the Azerbaijani page; the other
+        // languages hang off it. So the roots are found by the design, and
+        // each is read in the visitor's language where that page is written.
+        $locale = \App\Support\Locale::current();
+        $gifts = GiftPage::shown()->inLocale('az')
+            ->whereHas('products', fn ($q) => $q->whereKey($product->id))->get()
+            ->map(fn (GiftPage $root) => $locale === 'az'
+                ? $root
+                : ($root->alternates()->where('locale', $locale)->where('is_active', true)->first() ?? $root))
+            ->values();
         // What else suits the same occasion. Nearly every design sits in the
         // same category, so ordering by category recommended the same four
         // boxes everywhere — a Valentine's design under a christening one.

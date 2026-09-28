@@ -21,6 +21,9 @@ use Illuminate\View\View;
 
 class CartController extends Controller
 {
+    /** The most a photo may weigh; the design page shrinks anything heavier before sending. */
+    public const PHOTO_MAX_KB = 8192;
+
     public function index(): View
     {
         $items = collect(Cart::items())
@@ -51,7 +54,7 @@ class CartController extends Controller
         }
 
         foreach ($product->photoSlots as $index => $slot) {
-            $rules["photos.$index"] = ['required', 'image', 'max:8192'];
+            $rules["photos.$index"] = ['required', 'image', 'max:' . self::PHOTO_MAX_KB];
         }
 
         // Gift wrap is a choice, never a must.

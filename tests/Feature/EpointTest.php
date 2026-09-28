@@ -441,6 +441,22 @@ class EpointTest extends TestCase
         $this->assertSame('confirmed', $order->fresh()->status);
     }
 
+    /** The bank sends him back to an address with no language in it; the order remembers his. */
+    public function test_back_from_the_bank_he_reads_his_own_language(): void
+    {
+        $this->switchOn();
+        $user = User::factory()->create();
+        $order = $this->order($user);
+        $order->forceFill(['locale' => 'ru'])->save();
+
+        $this->actingAs($user)->get(route('epoint.done', $order))
+            ->assertRedirect(route('ru.orders.index'))
+            ->assertSessionHas('status', 'Платёж принят. Заказ будет подтверждён, как только придёт подтверждение от банка.');
+        $this->actingAs($user)->get(route('epoint.failed', $order))
+            ->assertRedirect(route('ru.orders.pay', $order))
+            ->assertSessionHas('error', 'Платёж не прошёл. Можно попробовать снова.');
+    }
+
     public function test_the_private_key_is_not_kept_in_the_open(): void
     {
         $this->switchOn();

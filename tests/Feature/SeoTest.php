@@ -130,6 +130,14 @@ class SeoTest extends TestCase
             ->assertSee('Подарок на день рождения')
             ->assertSee('href="' . route('ru.gifts.show', 'vmesto-cvetov') . '"', false);
 
+        // The design page names its occasions in the reader's language too: the
+        // designs were picked on the Azerbaijani page, the words come from its twin.
+        $this->get(route('ru.products.customize', 'love-story-vol-1'))->assertOk()
+            ->assertSee('href="' . $ru . '"', false)
+            ->assertDontSee('href="' . $az . '"', false);
+        $this->get(route('products.customize', 'love-story-vol-1'))->assertOk()
+            ->assertSee('href="' . $az . '"', false);
+
         // Each address belongs to one language only. (An old /podarki address
         // is sent on first, and only then found to be the wrong language.)
         $this->get('/ru/podarki/ad-gunu')->assertNotFound();

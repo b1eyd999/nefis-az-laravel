@@ -32,7 +32,9 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 Route::get('/feed.xml', [FeedController::class, 'index'])->name('feed');
 
 // A live photo's own page: the address is printed on the box, so it never moves.
-Route::get('/canli/{code}', [LivePhotoController::class, 'show'])->where('code', '[a-z0-9]{4,16}')->name('live.show');
+// Azerbaijani unless the order it belongs to was placed in another language
+// (the controller looks); never whatever the server's own locale happens to be.
+Route::get('/canli/{code}', [LivePhotoController::class, 'show'])->where('code', '[a-z0-9]{4,16}')->middleware('locale')->name('live.show');
 Route::get('/canli/{code}/video', [LivePhotoController::class, 'video'])->where('code', '[a-z0-9]{4,16}')->name('live.video');
 Route::post('/canli-hazirla/{livePhoto}', [LivePhotoController::class, 'storeMind'])->middleware('auth')->name('live.mind');
 

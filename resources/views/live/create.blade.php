@@ -152,6 +152,10 @@
 @endsection
 
 @section('page_script')
+{{-- Before the page opens a customer's photograph: decoded straight to the
+     size wanted, so a phone picture never becomes a bitmap the tab cannot
+     carry. This page used to open one twice, whole. --}}
+<script src="{{ asset('js/photo-shrink.js') }}"></script>
 <script src="{{ asset('js/live-target.js') }}"></script>
 <script>
 (function(){

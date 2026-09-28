@@ -48,6 +48,13 @@ class LivePhotoController extends Controller
             $live->increment('views');
         }
 
+        // This address is printed on the box and carries no language of its
+        // own; the order it came from remembers the language it was bought in,
+        // and the person holding the box most likely reads the same one.
+        if ($order = $live->orderItem?->order) {
+            app()->setLocale(\App\Support\CustomerNotice::locale($order));
+        }
+
         return view('live.show', ['live' => $live]);
     }
 
