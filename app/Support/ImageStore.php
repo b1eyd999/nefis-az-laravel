@@ -61,4 +61,76 @@ class ImageStore
 
         return [$path, (int) $width, (int) $height];
     }
+
+    /**
+     * A smaller copy of a picture already kept here, for the catalogue cards.
+     *
+     * A card is about 160 points wide on a phone and the posters are 1080
+     * across, so without this every visitor downloads roughly twelve times
+     * the pixels the screen paints. The copy is written once, beside the
+     * original as `name@400.webp`, and this is safe to call again: it returns
+     * the copy it already made.
+     *
+     * @return string|null the path on the public disk, or null when there is
+     *                     nothing to shrink and the original must be used
+     */
+    public static function smaller(?string $path, int $side = 400, bool $make = false): ?string
+    {
+        if (blank($path)) {
+            return null;
+        }
+
+        $disk = Storage::disk('public');
+        // Always a WebP, whatever the original is: it is the smallest thing
+        // every phone in use can read.
+        $small = Str::beforeLast($path, '.') . '@' . $side . '.webp';
+
+        if ($disk->exists($small)) {
+            return $small;
+        }
+
+        // A page only ever serves a copy that is already there; making them is
+        // the deploy's job, so no visitor waits on twenty-seven resizes.
+        if (! $make || ! $disk->exists($path) || ! function_exists('imagewebp')) {
+            return null;
+        }
+
+        $source = match (Str::lower(Str::afterLast($path, '.'))) {
+            'webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($disk->path($path)) : false,
+            'png' => function_exists('imagecreatefrompng') ? @imagecreatefrompng($disk->path($path)) : false,
+            'jpg', 'jpeg' => function_exists('imagecreatefromjpeg') ? @imagecreatefromjpeg($disk->path($path)) : false,
+            default => false,
+        };
+
+        if (! $source) {
+            return null;
+        }
+
+        try {
+            $w = imagesx($source);
+            $h = imagesy($source);
+
+            if (max($w, $h) <= $side) {
+                return null;            // already small enough to serve as it is
+            }
+
+            $k = $side / max($w, $h);
+            $scaled = imagecreatetruecolor((int) round($w * $k), (int) round($h * $k));
+            imagepalettetotruecolor($source);
+            imagealphablending($scaled, false);
+            imagesavealpha($scaled, true);
+            imagecopyresampled($scaled, $source, 0, 0, 0, 0, imagesx($scaled), imagesy($scaled), $w, $h);
+
+            ob_start();
+            imagewebp($scaled, null, 82);
+            $disk->put($small, ob_get_clean());
+            imagedestroy($scaled);
+
+            return $small;
+        } catch (\Throwable) {
+            return null;
+        } finally {
+            imagedestroy($source);
+        }
+    }
 }

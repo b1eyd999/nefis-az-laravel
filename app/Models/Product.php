@@ -96,6 +96,22 @@ class Product extends Model
     }
 
     /**
+     * The catalogue picture at the size a phone actually paints it, when one
+     * has been made. Remote artwork has none, and the card then serves the
+     * full picture as it always did.
+     */
+    public function catalogImageSmall(int $side = 400, bool $make = false): ?string
+    {
+        $path = $this->catalogImage();
+
+        if (blank($path) || Media::isRemote($path)) {
+            return null;
+        }
+
+        return ImageStore::smaller($path, $side, $make);
+    }
+
+    /**
      * Brings the poster in from its Yandex Disk link and keeps it as a small
      * WebP beside the box's other artwork.
      *

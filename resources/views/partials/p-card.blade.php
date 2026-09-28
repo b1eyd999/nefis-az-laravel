@@ -21,7 +21,10 @@
         <b>HOT</b>
       </span>
     @endif
+    @php $small = $product->catalogImageSmall(); @endphp
     <img src="{{ \App\Support\Media::url($product->catalogImage()) }}"
+         @if($small) srcset="{{ \App\Support\Media::url($small) }} 400w, {{ \App\Support\Media::url($product->catalogImage()) }} 1080w"
+                     sizes="(max-width: 760px) 45vw, 300px" @endif
          alt="{{ $product->tr('name') }}, {{ __('şəkilli şokolad qutusu') }}"
          width="1080" height="1350" decoding="async"
          @if($first) fetchpriority="high" @else loading="lazy" @endif>

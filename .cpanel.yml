@@ -26,6 +26,8 @@ deployment:
     - cd $APPPATH && $PHPBIN artisan media:warm 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
     # Catalogue posters linked from Yandex Disk that are not downloaded yet.
     - cd $APPPATH && $PHPBIN artisan products:fetch-posters 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
+    # The catalogue cards' small copies, written once beside each poster.
+    - cd $APPPATH && $PHPBIN artisan products:card-pictures 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
     # Chocolate bars and their prices (promotions included) from Araz Market.
     # A failure only reports; the bars keep their last prices.
     - cd $APPPATH && $PHPBIN artisan chocolates:sync 2>&1 | tee -a $APPPATH/storage/logs/deploy.log

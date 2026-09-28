@@ -50,10 +50,30 @@ class ProductController extends Controller
         // visitor (and a crawler) always has somewhere to go from here.
         $gifts = GiftPage::shown()->inLocale(\App\Support\Locale::current())
             ->whereHas('products', fn ($q) => $q->whereKey($product->id))->get();
-        $related = Product::where('is_active', true)->whereKeyNot($product->id)
-            ->where('category', $product->category)
-            ->orderBy('sort_order')->orderBy('name')->get()
-            ->filter->isCustomizable()->take(4)->values();
+        // What else suits the same occasion. Nearly every design sits in the
+        // same category, so ordering by category recommended the same four
+        // boxes everywhere — a Valentine's design under a christening one.
+        // The occasions the owner picked say far more about what goes with
+        // what; category is only the fallback for a design on no page yet.
+        $occasions = $product->giftPages()->pluck('gift_pages.id');
+
+        // The count is a sub-select, so it cannot be filtered in SQL; the list
+        // is short and the counting is done once, so it is filtered here.
+        $related = $occasions->isNotEmpty()
+            ? Product::where('is_active', true)->whereKeyNot($product->id)
+                ->withCount(['giftPages' => fn ($q) => $q->whereIn('gift_pages.id', $occasions)])
+                ->orderByDesc('gift_pages_count')->orderBy('sort_order')->orderBy('name')
+                ->get()->filter(fn (Product $p) => $p->gift_pages_count > 0)
+                ->filter->isCustomizable()->take(4)->values()
+            : collect();
+
+        // A design nobody has put on an occasion page yet still needs company.
+        if ($related->isEmpty()) {
+            $related = Product::where('is_active', true)->whereKeyNot($product->id)
+                ->where('category', $product->category)
+                ->orderBy('sort_order')->orderBy('name')->get()
+                ->filter->isCustomizable()->take(4)->values();
+        }
 
         // The bar that goes inside: chosen here, priced with the owner's markup.
         $chocolates = Chocolate::shown()->get()->map->toCustomer()->values();

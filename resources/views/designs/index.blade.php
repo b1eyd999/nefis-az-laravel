@@ -161,7 +161,10 @@
                     @endif
                     {{-- The first cards of the first family are the phone's
                          largest paint; they are asked for at once. --}}
+                    @php $small = $design->catalogImageSmall(); @endphp
                     <img src="{{ \App\Support\Media::url($design->catalogImage()) }}"
+                         @if($small) srcset="{{ \App\Support\Media::url($small) }} 400w, {{ \App\Support\Media::url($design->catalogImage()) }} 1080w"
+                                     sizes="(max-width: 760px) 45vw, 300px" @endif
                          alt="{{ $design->tr('name') }}, {{ __('şəkilli şokolad qutusu') }}"
                          width="1080" height="1350" decoding="async"
                          @if($loop->parent->first && $loop->index < 2) fetchpriority="high" @else loading="lazy" @endif>
