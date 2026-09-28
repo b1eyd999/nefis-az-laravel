@@ -39,6 +39,9 @@ class Setting extends Model
 
     public const MAINTENANCE_MESSAGE = 'maintenance_message';
 
+    /** When the scheduler last ran. Written by the scheduler itself, once a minute. */
+    public const SCHEDULE_SEEN = 'schedule_seen';
+
     /** JSON list of {name, percent}: how the net profit is shared out. */
     public const PROFIT_SHARES = 'profit_shares';
 

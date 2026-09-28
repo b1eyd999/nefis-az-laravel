@@ -9,6 +9,7 @@ use App\Support\Contact;
 use App\Support\CustomerNotice;
 use App\Support\DeliveryTime;
 use App\Support\Epoint;
+use App\Support\Scheduler;
 use App\Support\Telegram;
 use App\Support\Seo;
 use Filament\Actions;
@@ -228,6 +229,37 @@ class SiteSettings extends Page implements HasActions, HasForms
                     ->schema([
                         Forms\Components\Toggle::make('maintenance')->label('Saytı texniki işlərə bağla')->onColor('danger'),
                         Forms\Components\Textarea::make('maintenance_message')->label('Müştərilərə yazı')->rows(3)->required()->maxLength(500),
+                    ]),
+                Forms\Components\Section::make('Avtomatik işlər')
+                    ->description('Sayt özü gördüyü işlər: ödənilməmiş sifarişlərin ləğvi və materialların anbara qayıtması. '
+                        . 'Bunlar hostinqdəki bir "cron" yazısı ilə işə düşür — o yazı yoxdursa, heç biri baş vermir.')
+                    ->schema([
+                        Forms\Components\Placeholder::make('schedule_seen')
+                            ->label('Vəziyyət')
+                            ->content(function () {
+                                $last = Scheduler::lastRun();
+
+                                if (Scheduler::isRunning()) {
+                                    return new \Illuminate\Support\HtmlString(
+                                        '<span style="color:#16a34a; font-weight:600;">✓ İşləyir</span> — son yoxlama '
+                                        . e($last->format('d.m.Y H:i')) . '.'
+                                    );
+                                }
+
+                                return new \Illuminate\Support\HtmlString(
+                                    '<span style="color:#dc2626; font-weight:600;">⚠ İşləmir</span> — '
+                                    . ($last ? 'son yoxlama ' . e($last->format('d.m.Y H:i')) . '.' : 'heç vaxt işə düşməyib.')
+                                    . '<br>cPanel → <b>Cron Jobs</b> → hər xanaya <b>*</b> yazın (dəqiqə, saat, gün, ay, həftə günü), '
+                                    . '<b>Command</b> xanasına aşağıdakı sətri yapışdırın və <b>Add New Cron Job</b> basın. '
+                                    . 'Bir neçə dəqiqədən sonra bu sətir "İşləyir" olacaq.'
+                                );
+                            }),
+                        Forms\Components\Placeholder::make('schedule_cron')
+                            ->label('Cron sətri')
+                            ->content(fn () => new \Illuminate\Support\HtmlString(
+                                '<code style="user-select:all; word-break:break-all; font-size:.8rem;">' . e(Scheduler::cronCommand()) . '</code>'
+                            ))
+                            ->visible(fn () => ! Scheduler::isRunning()),
                     ]),
                 Forms\Components\Section::make('Ödəniş')
                     ->description('Müştəri "Ödəniş hesabları"ndakı hesaba köçürür və çeki yükləyir. Bir hesab limitini doldurduqda növbəti hesaba keçilir.')
