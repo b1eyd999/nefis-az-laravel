@@ -15,8 +15,16 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class MaintenanceMode
 {
-    /** What stays open while the site is closed — live photos too: their QR codes are printed on boxes out there. */
-    private const OPEN = ['admin', 'admin/*', 'login', 'logout', 'livewire/*', 'filament/*', 'up', 'canli/*'];
+    /**
+     * What stays open while the site is closed.
+     *
+     * Live photos: their QR codes are printed on boxes already out there.
+     * The gateway's and Telegram's own addresses: a payment made a minute
+     * before the shop closed is confirmed a minute after, and a 503 to that
+     * message means the money arrives and the order stays unpaid for ever.
+     */
+    private const OPEN = ['admin', 'admin/*', 'login', 'logout', 'livewire/*', 'filament/*', 'up',
+        'canli/*', 'epoint/*', 'telegram/*'];
 
     public function handle(Request $request, Closure $next): Response
     {

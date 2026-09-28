@@ -31,6 +31,12 @@ class EpointController extends Controller
             return redirect(lroute('orders.index'));
         }
 
+        // One payment at a time: the bank's answer about the last one may
+        // still be on its way, and a second page would be a second charge.
+        if ($order->paymentInFlight()) {
+            return redirect(lroute('orders.pay', $order));
+        }
+
         $url = Epoint::start(
             $order,
             route('epoint.done', ['order' => $order->id]),
@@ -70,24 +76,33 @@ class EpointController extends Controller
 
         $paid = ($body['status'] ?? null) === Epoint::SUCCESS;
         $amount = (float) ($body['amount'] ?? 0);
+        $transaction = $body['transaction'] ?? null;
+        $seen = $order->epoint_transaction;
 
-        // The amount comes back with the answer; if it is not what the order
-        // costs, something is wrong and the order stays unpaid until a human
-        // has looked at it.
-        if ($paid && abs($amount - $order->total()) > 0.01) {
+        // What was asked of the bank when the customer left for it, not a
+        // total worked out again now: the owner may have edited the order in
+        // the meantime, and that must not turn a good payment into a wrong one.
+        $expected = (float) ($order->payment_asked_for ?? $order->total());
+
+        if ($paid && abs($amount - $expected) > 0.01) {
             Log::error('epoint: paid amount does not match the order', [
-                'order' => $order->id, 'paid' => $amount, 'expected' => $order->total(),
+                'order' => $order->id, 'paid' => $amount, 'expected' => $expected,
             ]);
+            // Money has been taken. Nobody reads a log file, so the owner is told.
+            defer(fn () => Telegram::paymentProblem($order,
+                'Ödənilən məbləğ uyğun gəlmir: ' . $amount . ' AZN, gözlənilən ' . $expected . ' AZN. Bank pulu götürüb.'));
 
             return response('amount mismatch', 200);
         }
 
-        $order->forceFill([
-            'payment_method' => 'card',
-            'epoint_transaction' => $body['transaction'] ?? $order->epoint_transaction,
-        ])->save();
-
         if (! $paid) {
+            $order->forceFill([
+                'payment_method' => 'card',
+                'epoint_transaction' => $transaction ?: $seen,
+                // The attempt is over: he may try again without waiting.
+                'payment_started_at' => null,
+            ])->save();
+
             Log::info('epoint: payment not completed', [
                 'order' => $order->id, 'status' => $body['status'] ?? null, 'message' => $body['message'] ?? null,
             ]);
@@ -95,13 +110,29 @@ class EpointController extends Controller
             return response('ok', 200);
         }
 
-        // Already settled: the gateway repeats itself, and the owner should
-        // not hear about the same order twice.
+        // Already settled. The gateway does repeat itself, and that is fine —
+        // but a DIFFERENT transaction id on a paid order is a second charge,
+        // and the shop is the only one who can see it happen.
         if ($order->payment_confirmed_at) {
+            if ($transaction && $seen && $transaction !== $seen) {
+                Log::error('epoint: a second payment for an order already paid', [
+                    'order' => $order->id, 'first' => $seen, 'second' => $transaction,
+                ]);
+                defer(fn () => Telegram::paymentProblem($order,
+                    'Sifariş ikinci dəfə ödənilib. Əvvəlki əməliyyat: ' . $seen . ', yenisi: ' . $transaction
+                    . '. Müştəriyə pulu qaytarmaq lazımdır.'));
+            }
+
             return response('ok', 200);
         }
 
-        $order->forceFill(['status' => 'confirmed', 'payment_confirmed_at' => now()])->save();
+        $order->forceFill([
+            'payment_method' => 'card',
+            'epoint_transaction' => $transaction ?: $seen,
+            'status' => 'confirmed',
+            'payment_confirmed_at' => now(),
+            'payment_started_at' => null,
+        ])->save();
 
         defer(fn () => Telegram::paid($order));
 

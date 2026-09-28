@@ -85,7 +85,17 @@
         </ol>
       </div>
 
-      @if($card)
+      @if($order->paymentInFlight())
+        {{-- He is at the bank, or has just come back and the bank's own word
+             to us is still on its way. Offering the button now is offering a
+             second charge on the same card. --}}
+        <div class="pay-card pay-now">
+          <label>{{ __('Ödəniş yoxlanılır') }}</label>
+          <p class="pay-note" style="margin:.4rem 0 0;">{{ __('Bankdan cavab gözləyirik. Bu bir neçə dəqiqə çəkə bilər — səhifəni yeniləyin.') }}</p>
+          <a class="btn btn-block" style="margin-top:.85rem;" href="{{ lroute('orders.pay', $order) }}">{{ __('Yenilə') }}</a>
+          <p class="pay-note">{{ __('Kartınızdan pul çıxıbsa, ikinci dəfə ödəməyin — sifariş özü təsdiqlənəcək.') }}</p>
+        </div>
+      @elseif($card)
         <div class="pay-card pay-now">
           <label>{{ __('Kartla onlayn ödəniş') }}</label>
           <p class="pay-note" style="margin:.4rem 0 0;">{{ __('Visa və ya Mastercard ilə indi ödəyin — çek göndərmək lazım deyil.') }}</p>
@@ -104,7 +114,7 @@
         @endif
       @endif
 
-      @if($offered)
+      @if($offered && ! $order->paymentInFlight())
         <div class="pay-card">
           <label>{{ __('Ödəniş üsulu') }}</label>
           <div class="pay-methods">

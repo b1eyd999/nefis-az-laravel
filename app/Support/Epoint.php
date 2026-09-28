@@ -30,6 +30,9 @@ class Epoint
     /** Answers we are given for a payment. */
     public const SUCCESS = 'success';
 
+    /** How long a payment may be on its way before the shop asks again. */
+    public const IN_FLIGHT_MINUTES = 30;
+
     public static function publicKey(): string
     {
         return trim((string) Setting::get(Setting::EPOINT_PUBLIC_KEY));
@@ -154,6 +157,11 @@ class Epoint
             'payment_method' => 'card',
             'epoint_ref' => $reference,
             'epoint_transaction' => $answer['transaction'] ?? null,
+            // The bank sends the customer back before it answers our server,
+            // so from here until the answer arrives the shop must not offer
+            // to take his money a second time.
+            'payment_started_at' => now(),
+            'payment_asked_for' => $payload['amount'],
         ])->save();
 
         return $answer['redirect_url'];

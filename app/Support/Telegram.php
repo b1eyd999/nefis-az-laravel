@@ -381,6 +381,20 @@ class Telegram
             . "\n" . url('/admin/orders/' . $order->id . '/edit'));
     }
 
+    /**
+     * Something about the money needs a person: the bank took an amount that
+     * is not the order's, or paid the same order twice. A log line is not
+     * enough — nobody reads one.
+     */
+    public static function paymentProblem(Order $order, string $what): void
+    {
+        self::send('⚠️ <b>Sifariş #' . $order->id . '</b> — ödənişdə problem'
+            . "
+" . $what
+            . "
+" . url('/admin/orders/' . $order->id . '/edit'));
+    }
+
     /** Paid by card: the money is already in, nothing to check by hand. */
     public static function paid(Order $order): void
     {

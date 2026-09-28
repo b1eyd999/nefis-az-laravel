@@ -352,6 +352,95 @@ class EpointTest extends TestCase
         $this->assertSame('error', Epoint::check()['status']);
     }
 
+    /**
+     * The bank sends the customer back before it tells our server anything, so
+     * for a minute the shop still believes nothing was paid. It must not offer
+     * to take his money again in that minute.
+     */
+    public function test_while_a_payment_is_on_its_way_the_shop_does_not_ask_again(): void
+    {
+        $this->switchOn();
+        $user = User::factory()->create();
+        $order = $this->order($user);
+
+        $this->actingAs($user)->post(route('orders.pay.card', $order))->assertRedirect('https://epoint.az/pay/abc');
+        $order->refresh();
+
+        $this->assertNotNull($order->payment_started_at);
+        $this->assertSame(number_format($order->total(), 2, '.', ''), number_format($order->payment_asked_for, 2, '.', ''));
+        $this->assertTrue($order->paymentInFlight());
+
+        // No button, no second page at the bank, and no bar carrying him back.
+        $this->actingAs($user)->get(route('orders.pay', $order))->assertOk()
+            ->assertSee('Ödəniş yoxlanılır', false)
+            // "Kartla ödəyin" in the steps starts the same way and the class
+            // is in the page's own styles, so the form's address is the tell.
+            ->assertDontSee('action="' . route('orders.pay.card', $order) . '"', false);
+        $this->actingAs($user)->post(route('orders.pay.card', $order))
+            ->assertRedirect(route('orders.pay', $order));
+        $this->assertNull(Order::unpaidFor($user));
+
+        // Half an hour later he may try again — he never did pay.
+        $this->travel(31)->minutes();
+        $this->assertFalse($order->fresh()->paymentInFlight());
+        $this->actingAs($user)->get(route('orders.pay', $order))->assertOk()->assertSee('action="' . route('orders.pay.card', $order) . '"', false);
+    }
+
+    /** A refused card is over at once: he may try again without waiting. */
+    public function test_a_refusal_ends_the_wait(): void
+    {
+        $this->switchOn();
+        $user = User::factory()->create();
+        $order = $this->order($user);
+        $this->actingAs($user)->post(route('orders.pay.card', $order));
+
+        $this->answer(['order_id' => Epoint::reference($order), 'status' => 'failed', 'code' => '116',
+            'transaction' => 'tx-5', 'amount' => $order->total()])->assertOk();
+
+        $this->assertFalse($order->fresh()->paymentInFlight());
+        $this->actingAs($user)->get(route('orders.pay', $order))->assertOk()->assertSee('action="' . route('orders.pay.card', $order) . '"', false);
+    }
+
+    /** Two real charges on one order: the owner has to hear about it. */
+    public function test_a_second_charge_is_not_swallowed(): void
+    {
+        $this->switchOn();
+        $order = $this->order();
+        $body = ['order_id' => Epoint::reference($order), 'status' => 'success', 'amount' => $order->total()];
+
+        $this->answer($body + ['transaction' => 'tx-first'])->assertOk();
+        $this->assertSame('tx-first', $order->fresh()->epoint_transaction);
+
+        \Illuminate\Support\Facades\Log::shouldReceive('error')->once()
+            ->withArgs(fn ($m, $c) => str_contains($m, 'second payment') && $c['first'] === 'tx-first' && $c['second'] === 'tx-second');
+        \Illuminate\Support\Facades\Log::shouldReceive('info')->zeroOrMoreTimes();
+        \Illuminate\Support\Facades\Log::shouldReceive('warning')->zeroOrMoreTimes();
+
+        $this->answer($body + ['transaction' => 'tx-second'])->assertOk();
+
+        // The id that actually confirmed the order is the one kept.
+        $this->assertSame('tx-first', $order->fresh()->epoint_transaction);
+    }
+
+    /** The gateway's answer is checked against what was asked of it. */
+    public function test_an_order_edited_mid_payment_still_settles(): void
+    {
+        $this->switchOn();
+        $user = User::factory()->create();
+        $order = $this->order($user);
+        $asked = $order->total();
+
+        $this->actingAs($user)->post(route('orders.pay.card', $order));
+
+        // The owner adds delivery while the customer is at the bank.
+        $order->forceFill(['delivery_price' => ($order->delivery_price ?? 0) + 5])->save();
+
+        $this->answer(['order_id' => Epoint::reference($order), 'status' => 'success',
+            'transaction' => 'tx-ok', 'amount' => $asked])->assertOk();
+
+        $this->assertSame('confirmed', $order->fresh()->status);
+    }
+
     public function test_the_private_key_is_not_kept_in_the_open(): void
     {
         $this->switchOn();

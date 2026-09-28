@@ -52,6 +52,8 @@ class Order extends Model
         'courier_message_id',
         // Paying by transfer: which account the money goes to, and the receipt.
         'payment_account_id',
+        'payment_started_at',
+        'payment_asked_for',
         // Card payments through ePoint: which way it was paid, the reference
         // the gateway was given and the gateway's own transaction id.
         'payment_method',
@@ -74,6 +76,8 @@ class Order extends Model
             'courier_taken_at' => 'datetime',
             'receipt_at' => 'datetime',
             'payment_confirmed_at' => 'datetime',
+            'payment_started_at' => 'datetime',
+            'payment_asked_for' => 'float',
         ];
     }
 
@@ -110,7 +114,25 @@ class Order extends Model
             ->where('status', 'awaiting_payment')
             ->whereNull('payment_confirmed_at')
             ->latest('id')
-            ->first();
+            ->first()
+            ?->whenNotInFlight();
+    }
+
+    /**
+     * The customer is at the bank, or has just come back from it and the
+     * bank's own message to us is still on its way. Asking him to pay again
+     * now is asking for a second charge.
+     */
+    public function paymentInFlight(): bool
+    {
+        return $this->payment_started_at !== null
+            && $this->payment_confirmed_at === null
+            && $this->payment_started_at->gt(now()->subMinutes(\App\Support\Epoint::IN_FLIGHT_MINUTES));
+    }
+
+    private function whenNotInFlight(): ?self
+    {
+        return $this->paymentInFlight() ? null : $this;
     }
 
     public function receiptUrl(): ?string
