@@ -236,7 +236,9 @@
     background:rgba(255,236,219,.45); transition:border-color .25s, background .25s;
     font-weight:600; font-size:.85rem; margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .letter-file:hover{ border-color:var(--flame); background:rgba(255,236,219,.85); }
-  .letter-file input{ display:none; }
+  /* Out of sight but still a control: display:none cannot be focused, and a
+     browser that cannot point at a required field refuses the form in silence. */
+  .letter-file input{ position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
   .wrap-preview-name small{ display:block; font-weight:500; font-size:.72rem; color:var(--cocoa-faint); margin-top:.15rem; }
   .wrap-preview .gift{ max-width:15rem; margin-inline:auto; }
   .wrap-preview-name{ text-align:center; font-size:.85rem; font-weight:600; color:var(--cocoa); margin:0; }
@@ -708,10 +710,10 @@
 
         <button type="submit" class="btn btn-primary btn-block btn-flame" id="add-to-cart-btn"
                 @if($photoSlots->isNotEmpty()) disabled @endif>{{ __('Səbətə Əlavə Et') }}</button>
-        @if($photoSlots->isNotEmpty())
-          {{-- The button is shut until the picture is there; say so, or it looks broken. --}}
-          <p class="add-hint" id="add-hint">{{ __('Əvvəlcə şəklinizi yükləyin — sonra düymə işə düşür.') }}</p>
-        @endif
+        {{-- The button is shut until the picture is there; say so, or it looks
+             broken. On a design that needs no photo the line is still here,
+             empty, because anything else the form refuses is said in it too. --}}
+        <p class="add-hint" id="add-hint" @if($photoSlots->isEmpty()) hidden @endif>{{ $photoSlots->isNotEmpty() ? __('Əvvəlcə şəklinizi yükləyin — sonra düymə işə düşür.') : '' }}</p>
       </form>
     </div>
   </div>
@@ -1183,11 +1185,33 @@
     var block = slotBlocks.filter(function(b){ return Number(b.dataset.slot) === index; })[0];
     (block || slotBlocks[0] || addBtn).scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
+  /* Whatever the browser refuses, the customer hears about. Most of these
+     controls are invisible by design — the photo inputs under the preview,
+     the video behind its label — and a browser that cannot point at a field
+     says nothing at all, which leaves the button looking broken. */
+  var WHY = {
+    ar_video: @json(__('Canlı şəkil üçün videonu yükləyin, ya da bu seçimi söndürün.')),
+    letter_photo: @json(__('Məktub üçün şəkli yükləyin, ya da bu seçimi söndürün.')),
+    quantity: @json(__('Neçə ədəd olduğunu yazın.')),
+    chocolate_id: @json(__('Şokoladı seçin.'))
+  };
+  var WHY_ANY = @json(__('Bu xananı doldurun.'));
+
   customizeForm.addEventListener('invalid', function(e){
-    var slot = /^photos\[(\d+)\]$/.exec((e.target && e.target.name) || '');
-    if (! slot) return;
+    var field = e.target;
+    if (! field || ! field.name) return;
+    var slot = /^photos\[(\d+)\]$/.exec(field.name);
     e.preventDefault();
-    pointAtEmptySlot(Number(slot[1]));
+
+    if (slot) { pointAtEmptySlot(Number(slot[1])); return; }
+
+    if (addHint) {
+      addHint.hidden = false;
+      addHint.classList.add('bad');
+      addHint.textContent = WHY[field.name] || field.validationMessage || WHY_ANY;
+    }
+    var block = field.closest('.slot-block, .extra-row, .field, label') || field.parentElement;
+    (block || addBtn).scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, true);
   customizeForm.addEventListener('submit', function(e){
     if (e.defaultPrevented || allSlotsFilled()) return;
@@ -1577,6 +1601,29 @@
     var f = file.files && file.files[0];
     name.textContent = f ? '📷 ' + f.name : '📷 ' + @json(__('Şəkil (istəyə görə)'));
   });
+
+  /* The shop refuses a letter with neither words nor a picture, and a refusal
+     that travels to the server and back cannot put the customer's files into
+     the form again — his photo and his video are gone and he uploads them
+     twice. So the same rule is kept here, before anything is sent, and before
+     the live photo below spends several seconds preparing a target for
+     nothing: it stands down when the form is already refused. */
+  var text = document.getElementById('letter-text');
+  var addHint = document.getElementById('add-hint');
+  document.getElementById('customize-form').addEventListener('submit', function(e){
+    if (e.defaultPrevented || ! on.checked) return;
+    var hasText = text && text.value.trim() !== '';
+    var hasPhoto = file && file.files && file.files.length > 0;
+    if (hasText || hasPhoto) return;
+
+    e.preventDefault();
+    if (addHint) {
+      addHint.hidden = false;
+      addHint.classList.add('bad');
+      addHint.textContent = @json(__('Məktub üçün şəkil və ya mətn əlavə edin, ya da məktubu söndürün.'));
+    }
+    (fields || on).scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
 })();
 
 /* The live photo: switched on, the video field opens. On sending, the box's
@@ -1603,6 +1650,18 @@
   file.addEventListener('change', function(){
     var f = file.files && file.files[0];
     name.textContent = f ? '🎬 ' + f.name + (f.size > MAX ? ', ' + @json(__(':mb MB-dan böyükdür!', ['mb' => \App\Support\LiveMaterials::videoMb()])) : '') : label;
+  });
+
+  /* Coming back with the browser's own back button restores this page as it
+     was left: the button still disabled, still reading "Göndərilir…", and the
+     flag still saying the live photo was already prepared — so the next send
+     would carry the PREVIOUS design's picture and target. Put it all back. */
+  var sendLabel = btn.textContent;
+  window.addEventListener('pageshow', function(e){
+    if (! e.persisted) return;
+    delete form.dataset.live;
+    btn.disabled = false;
+    btn.textContent = sendLabel;
   });
 
   form.addEventListener('submit', function(e){

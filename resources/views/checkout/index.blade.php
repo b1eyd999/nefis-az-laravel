@@ -257,7 +257,22 @@
     }
   }, true);
 
+  /* The order takes a moment to write — items, files, stock — and a second
+     tap in that moment makes a whole second order, takes the materials twice
+     and leaves a phantom waiting for money. The button shuts after the form
+     is really on its way, and opens again if the browser brings the page
+     back. */
+  var sendLabel = null;
+  var sendBtn = form.querySelector('button[type="submit"]');
+  window.addEventListener('pageshow', function(e){
+    if (! e.persisted || ! sendBtn) return;
+    sendBtn.disabled = false;
+    if (sendLabel !== null) sendBtn.textContent = sendLabel;
+    delete form.dataset.sent;
+  });
+
   form.addEventListener('submit', function(e){
+    if (form.dataset.sent) { e.preventDefault(); return; }
     if (sendError) sendError.hidden = true;
     var door = document.querySelector('input[name="delivery_method_id"]:checked');
     if (door && door.dataset.type === 'door' && !mapFailed && !lat.value) {
@@ -265,7 +280,17 @@
       say(@json(__('Çatdırılma yerini xəritədə seçin.')), 'err');
       if (sendError) { sendError.textContent = @json(__('Çatdırılma yerini xəritədə seçin.')); sendError.hidden = false; }
       box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      return;
     }
+
+    // Nothing refused it: this one is really going.
+    if (sendBtn) {
+      if (sendLabel === null) sendLabel = sendBtn.textContent;
+      sendBtn.disabled = true;
+      sendBtn.textContent = @json(__('Göndərilir…'));
+    }
+    form.dataset.sent = '1';
   });
 })();
 </script>

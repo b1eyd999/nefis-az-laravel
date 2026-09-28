@@ -51,7 +51,10 @@ class AddToCartButtonTest extends TestCase
 
         $page->assertSee('id="add-to-cart-btn"', false);
         $page->assertDontSee('Əvvəlcə şəklinizi yükləyin', false);
-        $page->assertDontSee('id="add-hint"', false);
+        // The line is there but empty and hidden: anything else the form
+        // refuses — an empty letter, a missing video — is said in it.
+        $page->assertSee('id="add-hint"', false);
+        $page->assertSee('hidden', false);
     }
 
     /**
