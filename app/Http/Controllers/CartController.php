@@ -55,6 +55,9 @@ class CartController extends Controller
 
         foreach ($product->photoSlots as $index => $slot) {
             $rules["photos.$index"] = ['required', 'image', 'max:' . self::PHOTO_MAX_KB];
+            // How the photo sits in its window, as the page's own JSON; a
+            // browser without the script simply sends none.
+            $rules["photo_frames.$index"] = ['nullable', 'string', 'max:300', 'json'];
         }
 
         // Gift wrap is a choice, never a must.
@@ -136,8 +139,10 @@ class CartController extends Controller
         }
 
         $paths = [];
+        $frames = [];
         foreach ($product->photoSlots as $index => $slot) {
             $paths[] = $request->file("photos.$index")->store('cart-photos', 'public');
+            $frames[] = OrderItem::frameOrNull(json_decode((string) $request->input("photo_frames.$index"), true));
         }
 
         $texts = [];
@@ -164,7 +169,7 @@ class CartController extends Controller
         Cart::add($product->id, $paths, $texts, $quantity,
             OrderItem::photoLabelsFor($product), OrderItem::textLabelsFor($product), $chocolate, $wrapping,
             $withLetter ? Letter::fromRequest($request) : null,
-            $withAr ? LiveMaterials::fromRequest($request) : null, $song);
+            $withAr ? LiveMaterials::fromRequest($request) : null, $song, $frames);
 
         // The line as it was just added — box, bar, paper, letter and video.
         $line = Cart::items()[array_key_last(Cart::items())] ?? [];

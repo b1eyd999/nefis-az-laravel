@@ -95,6 +95,45 @@ class OrderFieldsTest extends TestCase
         $this->assertSame('1. Şəkil', $item->fields()['photos'][0]['label']);
     }
 
+    /** The preview the customer approved goes with the order, and the shop sees it. */
+    public function test_the_order_keeps_how_the_photo_was_framed(): void
+    {
+        $box = $this->box();
+        Storage::fake('public');
+        $user = User::factory()->create();
+        $frame = ['scale' => 1.4, 'rotate' => -6, 'flip' => true, 'panX' => 0.12, 'panY' => -0.05, 'ratio' => 0.881, 'shape' => 'rectangle'];
+
+        $this->actingAs($user)->post(route('cart.add'), [
+            'product_id' => $box->id,
+            'photos' => [UploadedFile::fake()->image('me.jpg', 50, 50)],
+            'photo_frames' => [json_encode($frame)],
+            'custom_texts' => ['Salam', 'Aysel', 'Aysel', 'ignored', '03:15'],
+        ])->assertSessionHasNoErrors();
+        $this->actingAs($user)->post(route('checkout.store'), [
+            'delivery_method_id' => \App\Models\DeliveryMethod::where('type', 'door')->value('id'),
+            'contact_phone' => '+994 50 000 00 00', 'delivery_address' => 'Bakı, Nizami küç. 5',
+        ])->assertRedirect(route('orders.index'));
+
+        $item = Order::firstOrFail()->items()->firstOrFail();
+        $this->assertSame(1.4, $item->fields()['photos'][0]['frame']['scale']);
+        $this->assertTrue($item->fields()['photos'][0]['frame']['flip']);
+
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(ItemsRelationManager::class, ['ownerRecord' => $order = Order::firstOrFail(), 'pageClass' => EditOrder::class])
+            ->assertSee('Müştərinin kadrı')
+            ->assertSee('böyütmə ×1.4')->assertSee('dönmə -6°')->assertSee('güzgü')->assertSee('sürüşdürmə 12% / -5%')
+            ->assertSee('scaleX(-1)', false);
+
+        // A photo left as it fell in is not remarked on; a bad frame is not an error.
+        $this->assertNull(\App\Models\OrderItem::frameOrNull(['scale' => 1, 'rotate' => 0, 'panX' => 0.001]));
+        $this->assertNull(\App\Models\OrderItem::frameOrNull('nonsense'));
+        $this->actingAs($user)->post(route('cart.add'), [
+            'product_id' => $box->id, 'photos' => [UploadedFile::fake()->image('me.jpg', 50, 50)],
+            'photo_frames' => ['{not json'], 'custom_texts' => ['Salam', 'Aysel', 'Aysel', 'ignored', '03:15'],
+        ])->assertSessionHasErrors('photo_frames.0');
+    }
+
     public function test_the_admin_sees_each_field_under_its_name(): void
     {
         $order = $this->order($this->box());

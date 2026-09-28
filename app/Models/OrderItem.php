@@ -18,6 +18,8 @@ class OrderItem extends Model
         'custom_texts',
         'photo_labels',
         'text_labels',
+        // How each photo was zoomed, turned and shifted in its window.
+        'photo_frames',
         // The song on the box, as spotify:track:… — the canonical form, so the
         // code can be redrawn at any size years after the order.
         'spotify_uri',
@@ -47,6 +49,7 @@ class OrderItem extends Model
             'custom_texts' => 'array',
             'photo_labels' => 'array',
             'text_labels' => 'array',
+            'photo_frames' => 'array',
             'chocolate_price' => 'float',
             'wrapping_price' => 'float',
             'letter_price' => 'float',
@@ -117,7 +120,9 @@ class OrderItem extends Model
 
     /**
      * What the customer sent, paired with the field names they filled it in:
-     * ['photos' => [[label, path]], 'texts' => [[label, value, fixed]]].
+     * ['photos' => [[label, path, frame]], 'texts' => [[label, value, fixed]]].
+     * `frame` is how the photo sat in its window when the order was placed,
+     * or null for orders from before that was kept, or an untouched photo.
      * Orders from before names were kept borrow them from the design, if it
      * is still there.
      */
@@ -128,8 +133,10 @@ class OrderItem extends Model
         $textLabels = $this->text_labels ?? ($product ? self::textLabelsFor($product) : []);
 
         $photos = [];
+        $frames = array_values((array) $this->photo_frames);
         foreach (array_values((array) $this->customer_photos) as $i => $path) {
-            $photos[] = ['label' => $photoLabels[$i] ?? ($i + 1) . '. Şəkil', 'path' => $path];
+            $photos[] = ['label' => $photoLabels[$i] ?? ($i + 1) . '. Şəkil', 'path' => $path,
+                'frame' => self::frameOrNull($frames[$i] ?? null)];
         }
 
         $texts = [];
@@ -142,6 +149,30 @@ class OrderItem extends Model
         }
 
         return ['photos' => $photos, 'texts' => $texts];
+    }
+
+    /**
+     * A frame worth showing: one the customer (or the face finder) actually
+     * changed. The default — fit, upright, centred — says nothing.
+     */
+    public static function frameOrNull(mixed $frame): ?array
+    {
+        if (! is_array($frame)) {
+            return null;
+        }
+        $f = [
+            'scale' => round((float) ($frame['scale'] ?? 1), 3),
+            'rotate' => round((float) ($frame['rotate'] ?? 0), 1),
+            'flip' => (bool) ($frame['flip'] ?? false),
+            'panX' => round((float) ($frame['panX'] ?? 0), 3),
+            'panY' => round((float) ($frame['panY'] ?? 0), 3),
+            'ratio' => round((float) ($frame['ratio'] ?? 1), 3),
+            'shape' => ($frame['shape'] ?? 'rectangle') === 'ellipse' ? 'ellipse' : 'rectangle',
+        ];
+        $untouched = abs($f['scale'] - 1) < 0.005 && abs($f['rotate']) < 0.05 && ! $f['flip']
+            && abs($f['panX']) < 0.005 && abs($f['panY']) < 0.005;
+
+        return $untouched ? null : $f;
     }
 
     /** The page a phone opens when the printed code is scanned. */

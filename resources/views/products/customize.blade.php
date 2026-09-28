@@ -422,6 +422,7 @@
               <div class="ico">@include('partials.camera-icon')</div>
               <div class="upload-label">{{ __('Şəkil seçmək üçün klikləyin') }}</div>
             </label>
+            <input type="hidden" name="photo_frames[{{ $index }}]" class="photo-frame">
             <input type="file" class="photo-input" id="photo-input-{{ $index }}" name="photos[{{ $index }}]"
                    accept="image/jpeg,image/png,image/webp" required style="display:none;">
             <div class="range-row zoom-row" hidden>
@@ -922,6 +923,22 @@
 
   function currentAngle(){ return ANGLES[activeAngle]; }
   function areaFor(slotIndex){ return currentAngle().areas[slotIndex] || null; }
+
+  /* What the preview shows is what the shop has to make: the zoom, turn,
+     mirror and shift of each photo go with it, in the window's own units.
+     Filled on the way out, in capture, before any other submit handler can
+     stop or redirect the form. */
+  document.getElementById('customize-form').addEventListener('submit', function(){
+    document.querySelectorAll('.slot-block[data-slot]').forEach(function(block){
+      var i = Number(block.dataset.slot), st = photos[i], area = areaFor(i), field = block.querySelector('.photo-frame');
+      if (!field || !st || !st.img) return;
+      field.value = JSON.stringify({
+        scale: +(st.scale || 1).toFixed(3), rotate: +(st.rotate || 0).toFixed(1), flip: !!st.flip,
+        panX: +(st.panX || 0).toFixed(3), panY: +(st.panY || 0).toFixed(3),
+        ratio: area ? +(area.w / area.h).toFixed(3) : 1, shape: area && area.shape === 'ellipse' ? 'ellipse' : 'rectangle'
+      });
+    });
+  }, true);
 
   /* ---------- fonts ---------- */
   ANGLES.forEach(function(a){

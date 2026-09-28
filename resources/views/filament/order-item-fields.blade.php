@@ -30,6 +30,28 @@
           </a>
           <a href="{{ $url }}" download style="font-size:.75rem; opacity:.8; text-decoration:underline; color:inherit;">Yüklə</a>
         </div>
+        @if($f = $photo['frame'])
+          {{-- The same photo as it sat in its window when the customer approved
+               the preview: the same zoom, turn, mirror and shift the design
+               page drew with (cover the window, then move about its centre). --}}
+          @php
+            $w = 120; $h = (int) round($w / max(0.2, $f['ratio']));
+            $move = 'translate(' . round($f['panX'] * $w) . 'px,' . round($f['panY'] * $h) . 'px) rotate(' . $f['rotate'] . 'deg) scaleX(' . ($f['flip'] ? -1 : 1) . ') scale(' . $f['scale'] . ')';
+            $said = array_filter([
+                abs($f['scale'] - 1) >= 0.005 ? 'böyütmə ×' . $f['scale'] : null,
+                abs($f['rotate']) >= 0.05 ? 'dönmə ' . $f['rotate'] . '°' : null,
+                $f['flip'] ? 'güzgü' : null,
+                (abs($f['panX']) >= 0.005 || abs($f['panY']) >= 0.005) ? 'sürüşdürmə ' . round($f['panX'] * 100) . '% / ' . round($f['panY'] * 100) . '%' : null,
+            ]);
+          @endphp
+          <div>
+            <div style="font-size:.75rem; font-weight:600; opacity:.75; margin-bottom:.3rem;">Müştərinin kadrı</div>
+            <div style="width:{{ $w }}px; height:{{ $h }}px; overflow:hidden; border:1px solid rgba(128,128,128,.35); background:#ddd; {{ $f['shape'] === 'ellipse' ? 'border-radius:50%;' : 'border-radius:.4rem;' }}">
+              <img src="{{ $url }}" alt="" style="width:100%; height:100%; object-fit:cover; display:block; transform-origin:50% 50%; transform:{{ $move }};">
+            </div>
+            <div style="font-size:.7rem; opacity:.75; margin-top:.25rem; max-width:{{ $w }}px; white-space:normal;">{{ implode(', ', $said) }}</div>
+          </div>
+        @endif
       @endforeach
     </div>
   @endif
