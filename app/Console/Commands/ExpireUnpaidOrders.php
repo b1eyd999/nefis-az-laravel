@@ -22,9 +22,18 @@ class ExpireUnpaidOrders extends Command
 
     public function handle(): int
     {
+        $quiet = now()->subHours(max(1, (int) $this->option('hours')));
+
         $stale = Order::where('status', 'awaiting_payment')
             ->whereNull('payment_confirmed_at')
-            ->where('created_at', '<', now()->subHours(max(1, (int) $this->option('hours'))))
+            // A receipt on file is the owner's to judge, not the clock's.
+            ->whereNull('payment_receipt')
+            ->where('created_at', '<', $quiet)
+            // And nothing has happened to it since — an order the owner put
+            // back to waiting this morning, so the customer can pay the rest,
+            // is being worked on; cancelling it would take his materials back
+            // and tell him by email that the order he is paying for is gone.
+            ->where('updated_at', '<', $quiet)
             ->get()
             // Not one whose payment is at the bank this minute.
             ->reject(fn (Order $order) => $order->paymentInFlight());

@@ -33,8 +33,8 @@
   </ul>
   <a class="btn" id="back" href="{{ $back }}" hidden>Geri qayıt</a>
 </div>
-<script src="{{ asset('js/scene-render.js') }}"></script>
-<script src="{{ asset('js/cover.js') }}"></script>
+<script src="{{ asset('js/scene-render.js') }}?v={{ \App\Support\Assets::version('js/scene-render.js') }}"></script>
+<script src="{{ asset('js/cover.js') }}?v={{ \App\Support\Assets::version('js/cover.js') }}"></script>
 <script>
 (function(){
   var jobs = @json($jobs), back = @json($back);

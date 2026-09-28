@@ -218,9 +218,9 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="{{ asset('js/box-render.js') }}"></script>
-<script src="{{ asset('js/scene-render.js') }}"></script>
-<script src="{{ asset('js/cover.js') }}"></script>
+<script src="{{ asset('js/box-render.js') }}?v={{ \App\Support\Assets::version('js/box-render.js') }}"></script>
+<script src="{{ asset('js/scene-render.js') }}?v={{ \App\Support\Assets::version('js/scene-render.js') }}"></script>
+<script src="{{ asset('js/cover.js') }}?v={{ \App\Support\Assets::version('js/cover.js') }}"></script>
 <script>
 (function(){
   'use strict';

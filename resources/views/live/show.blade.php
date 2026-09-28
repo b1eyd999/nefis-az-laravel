@@ -215,7 +215,7 @@
       <span class="sp" style="--x:-6rem; --y:6rem;">⭐</span><span class="sp" style="--x:6.5rem; --y:6.5rem;">✨</span>
       <span class="sp" style="--x:0; --y:-8.5rem;">🎉</span>
     </div>
-    <div class="toast" id="toast">✨ Şəkil tapıldı!</div>
+    <div class="toast" id="toast">✨ {{ __('Şəkil tapıldı!') }}</div>
     <button type="button" class="sound muted" id="sound" hidden>🔇 Səsi aç</button>
 
     {{-- Import maps arrived in iOS 16.4; older phones get them from this
@@ -228,19 +228,44 @@
          and if the module has not reported in, the customer is told. */
       (function(){
         var MSG = @json(__('Bu telefon bunu aça bilmir: linki Chrome-da açın və ya telefonu yeniləyin.'));
+        var timer = null, tapped = false, go = document.getElementById('go');
+
         function dead(){
           if (window.__arModule) return;
           var err = document.getElementById('err');
           err.textContent = MSG;
+          err.dataset.guard = '1';
           err.hidden = false;
           document.getElementById('loading').hidden = true;
           document.getElementById('start').hidden = false;
         }
-        window.addEventListener('error', function(e){
-          var t = e.target;
-          if (t && t.tagName === 'SCRIPT') dead();
-        }, true);
-        document.getElementById('go').addEventListener('click', function(){ setTimeout(dead, 4000); });
+
+        /* A megabyte of camera library over a village connection is slow, not
+           broken. So the wait is long, and the moment the module reports in
+           the message is taken back — and a tap that arrived while it was
+           still loading is honoured instead of being lost. */
+        window.nefisArGuard = {
+          ready: function(){
+            if (timer) { clearTimeout(timer); timer = null; }
+            var err = document.getElementById('err');
+            if (err && err.dataset.guard === '1') {
+              err.hidden = true;
+              err.textContent = '';
+              delete err.dataset.guard;
+              document.getElementById('start').hidden = false;
+            }
+            var early = tapped;
+            tapped = false;
+
+            return early;
+          },
+        };
+
+        go.addEventListener('click', function(){
+          tapped = true;
+          if (timer) clearTimeout(timer);
+          timer = setTimeout(dead, 15000);
+        });
       })();
     </script>
     <script type="importmap">
@@ -256,6 +281,8 @@
       import { MindARThree } from 'mindar-image-three';
       import { CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
       window.__arModule = true;   // the guard above stands down
+      // Did he tap while this was still arriving? Answered once the button works.
+      const tappedEarly = window.nefisArGuard ? window.nefisArGuard.ready() : false;
 
       const PIC = {{ $aspect }};          // the picture's height over its width
       const $ = id => document.getElementById(id);
@@ -376,6 +403,8 @@
           $('err').hidden = false;
         }
       });
+
+      if (tappedEarly) $('go').click();
     </script>
   @else
     <div class="screen">

@@ -23,7 +23,7 @@
     x-effect="$wire.data && [$wire.data.ribbon, $wire.data.ribbon_color, $wire.data.pattern_scale, JSON.stringify($wire.data.pattern)]; window.NefisWrap && draw()"
     style="display:flex; gap:1.25rem; align-items:flex-start; flex-wrap:wrap;"
 >
-    <script src="{{ asset('js/wrap-render.js') }}"></script>
+    <script src="{{ asset('js/wrap-render.js') }}?v={{ \App\Support\Assets::version('js/wrap-render.js') }}"></script>
     <canvas x-ref="c" width="969" height="1895" style="width:190px; height:auto; border-radius:.5rem; box-shadow:0 8px 24px rgba(0,0,0,.28);"></canvas>
     <p style="font-size:.85rem; opacity:.75; max-width:22rem; line-height:1.6; margin:0;">
         Müştərinin səhifəsində qutu mokaplarda belə bükülmüş görünür — səhnənin işığı və kölgəsi ilə.

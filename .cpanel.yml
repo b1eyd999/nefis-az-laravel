@@ -8,7 +8,12 @@ deployment:
     # the server. rsync mirrors the checkout instead: what the repo dropped is
     # dropped here too. The server's own things — .env, storage, the caches,
     # the database file if any — are never touched.
-    - if command -v rsync >/dev/null 2>&1; then rsync -a --delete --exclude .git --exclude .env --exclude storage/ --exclude public/ --exclude bootstrap/cache/ --exclude 'database/*.sqlite' ./ $APPPATH/; else /bin/cp -R * $APPPATH; fi
+    # The excludes are not tidiness: each one names a file that exists ONLY on
+    # the server and is in .gitignore because this repository is public —
+    # yandex-media.txt holds the Yandex Disk share key the artwork is served
+    # through, .env* the database password and the ePoint keys. --delete would
+    # take them, and nothing in git could put them back.
+    - if command -v rsync >/dev/null 2>&1; then rsync -a --delete --exclude .git --exclude '.env*' --exclude /yandex-media.txt --exclude /auth.json --exclude storage/ --exclude public/ --exclude bootstrap/cache/ --exclude 'database/*.sqlite' ./ $APPPATH/; else /bin/cp -R * $APPPATH; fi
     - /bin/rm -rf $APPPATH/public
     # The web root serves any PHP file that exists there, before Laravel ever
     # sees the request — so a one-off script left behind stays reachable by

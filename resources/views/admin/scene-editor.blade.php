@@ -196,8 +196,8 @@
 <canvas class="loupe" id="loupe" width="180" height="180" hidden></canvas>
 <div class="toast" id="toast"></div>
 
-<script src="{{ asset('js/scene-render.js') }}"></script>
-<script src="{{ asset('js/cover.js') }}"></script>
+<script src="{{ asset('js/scene-render.js') }}?v={{ \App\Support\Assets::version('js/scene-render.js') }}"></script>
+<script src="{{ asset('js/cover.js') }}?v={{ \App\Support\Assets::version('js/cover.js') }}"></script>
 <script>
 (function(){
   'use strict';

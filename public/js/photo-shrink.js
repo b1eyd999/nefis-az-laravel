@@ -65,10 +65,19 @@
       var url = URL.createObjectURL(file);
       var img = new Image();
       img.onload = function () {
-        URL.revokeObjectURL(url);
         var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
         var k = Math.min(1, max / Math.max(w, h));
-        if (k === 1) { resolve(img); return; }
+        if (k === 1) {
+          /* Small enough already, so the <img> itself is the answer — and its
+             address has to stay alive with it. Revoking here left a picture
+             that still draws but can no longer be handed to another <img>,
+             which is how the live-photo page's preview went blank for every
+             photograph that did not need shrinking. The browser frees the
+             address with the page. */
+          resolve(img);
+          return;
+        }
+        URL.revokeObjectURL(url);
         var c = document.createElement('canvas');
         c.width = Math.max(1, Math.round(w * k));
         c.height = Math.max(1, Math.round(h * k));

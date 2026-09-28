@@ -122,7 +122,7 @@
   update();
 })();
 </script>
-<script src="{{ asset('js/map-picker.js') }}"></script>
+<script src="{{ asset('js/map-picker.js') }}?v={{ \App\Support\Assets::version('js/map-picker.js') }}"></script>
 <script>
 /* The door-delivery map: loaded only once that way is chosen. A point is
    required while the map works; the address fills itself in from it. */

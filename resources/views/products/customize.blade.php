@@ -767,18 +767,18 @@
 {{-- Before anything that opens a customer's photograph: it decodes straight
      to the size wanted, so a phone picture never becomes a bitmap the tab
      cannot carry. --}}
-<script src="{{ asset('js/photo-shrink.js') }}"></script>
+<script src="{{ asset('js/photo-shrink.js') }}?v={{ \App\Support\Assets::version('js/photo-shrink.js') }}"></script>
 @if($cutsFaces)
-<script defer src="{{ asset('js/face-cutout.js') }}"></script>
-<script defer src="{{ asset('js/cutout-brush.js') }}"></script>
+<script defer src="{{ asset('js/face-cutout.js') }}?v={{ \App\Support\Assets::version('js/face-cutout.js') }}"></script>
+<script defer src="{{ asset('js/cutout-brush.js') }}?v={{ \App\Support\Assets::version('js/cutout-brush.js') }}"></script>
 @endif
-<script src="{{ asset('js/box-render.js') }}"></script>
-<script src="{{ asset('js/scene-render.js') }}"></script>
-<script src="{{ asset('js/wrap-render.js') }}"></script>
-<script src="{{ asset('js/gift-box.js') }}"></script>
-<script src="{{ asset('js/polaroid.js') }}"></script>
+<script src="{{ asset('js/box-render.js') }}?v={{ \App\Support\Assets::version('js/box-render.js') }}"></script>
+<script src="{{ asset('js/scene-render.js') }}?v={{ \App\Support\Assets::version('js/scene-render.js') }}"></script>
+<script src="{{ asset('js/wrap-render.js') }}?v={{ \App\Support\Assets::version('js/wrap-render.js') }}"></script>
+<script src="{{ asset('js/gift-box.js') }}?v={{ \App\Support\Assets::version('js/gift-box.js') }}"></script>
+<script src="{{ asset('js/polaroid.js') }}?v={{ \App\Support\Assets::version('js/polaroid.js') }}"></script>
 @if(\App\Support\LiveMaterials::enabled())
-<script src="{{ asset('js/live-target.js') }}"></script>
+<script src="{{ asset('js/live-target.js') }}?v={{ \App\Support\Assets::version('js/live-target.js') }}"></script>
 @endif
 <script>
 (function(){
@@ -1251,6 +1251,7 @@
     var hint = block.querySelector('.slot-hint');
     var fixBg = block.querySelector('.fix-bg');
     var labelWas = label.textContent;
+    var hintWas = hint ? hint.textContent : '';
 
     /* A file the browser cannot open: say so and take it out — or the box
        shows its name, the preview stays empty, the hint asks for a photo that
@@ -1361,7 +1362,11 @@
         zoomRow.hidden = false;
         rotateRow.hidden = false;
         if (rotate) rotate.value = 0;
-        if (hint) hint.hidden = false;
+        /* Back to the slot's own words: this line may have been left saying
+           the photo was being shrunk, or that the last file would not open —
+           both of which are over by the time the picture is in. The cut-out
+           branch writes its own ending, so it is left alone. */
+        if (hint){ hint.hidden = false; if (! cutting) hint.textContent = hintWas; }
         if (dropHint) dropHint.style.display = 'none';
         if (allSlotsFilled() && !cutting) addBtn.disabled = false;
         markAdd();

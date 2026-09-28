@@ -78,8 +78,8 @@
 @endsection
 
 @section('page_script')
-<script src="{{ asset('js/photo-shrink.js') }}"></script>
-<script src="{{ asset('js/polaroid.js') }}"></script>
+<script src="{{ asset('js/photo-shrink.js') }}?v={{ \App\Support\Assets::version('js/photo-shrink.js') }}"></script>
+<script src="{{ asset('js/polaroid.js') }}?v={{ \App\Support\Assets::version('js/polaroid.js') }}"></script>
 <script>
 (function(){
   var file = document.getElementById('letter-photo');

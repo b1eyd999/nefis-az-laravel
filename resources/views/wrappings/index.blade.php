@@ -79,6 +79,6 @@
 @endsection
 
 @section('page_script')
-<script src="{{ asset('js/wrap-render.js') }}"></script>
-<script src="{{ asset('js/gift-box.js') }}"></script>
+<script src="{{ asset('js/wrap-render.js') }}?v={{ \App\Support\Assets::version('js/wrap-render.js') }}"></script>
+<script src="{{ asset('js/gift-box.js') }}?v={{ \App\Support\Assets::version('js/gift-box.js') }}"></script>
 @endsection
