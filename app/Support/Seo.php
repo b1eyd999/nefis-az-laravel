@@ -153,6 +153,13 @@ class Seo
         }
 
         $cut = mb_substr($text, 0, $limit);
+
+        // A whole sentence when one fits — "…dosta və." reads like a fault —
+        // and only then the last whole word.
+        if (preg_match('/^(.*[.!?])(?=\s|$)/su', $cut, $m) && mb_strlen($m[1]) >= (int) ($limit * 0.45)) {
+            return trim($m[1]);
+        }
+
         $space = mb_strrpos($cut, ' ');
 
         return rtrim($space ? mb_substr($cut, 0, $space) : $cut, " ,.;:—-") . '.';

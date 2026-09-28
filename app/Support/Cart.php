@@ -124,6 +124,10 @@ class Cart
     {
         $items = array_values(array_filter(self::items(), fn ($item) => $item['id'] !== $id));
         Session::put(self::KEY, $items);
+        // An empty basket hurries nothing.
+        if ($items === []) {
+            Session::forget(self::RUSH);
+        }
     }
 
     public static function clear(): void

@@ -80,7 +80,13 @@ class UserResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('name')->label('Ad')->required()->maxLength(255),
                         Forms\Components\TextInput::make('email')->label('E-poçt')->email()->required()->unique(ignoreRecord: true),
-                        Forms\Components\TextInput::make('phone')->label('Telefon')->tel(),
+                        Forms\Components\TextInput::make('phone')->label('Telefon')->tel()
+                            ->rule(fn (?\App\Models\User $record) => function (string $attribute, $value, \Closure $fail) use ($record) {
+                                $phone = \App\Support\Contact::az((string) $value);
+                                if ($phone && \App\Models\User::where('phone', $phone)->whereKeyNot($record?->id)->exists()) {
+                                    $fail('Bu nömrə başqa hesabdadır.');
+                                }
+                            }),
                         Forms\Components\Placeholder::make('created')
                             ->label('Qeydiyyat')
                             ->content(fn (?User $record) => $record?->created_at?->format('d.m.Y H:i') ?? '—'),

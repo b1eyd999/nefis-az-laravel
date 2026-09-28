@@ -15,7 +15,9 @@ deployment:
     # No SSH on this account, so the release migrates itself here. The design
     # seeders are gone: the catalogue was cleared on 2026-09-18 for a new approach.
     - export PHPBIN=$(command -v ea-php82 || echo /opt/cpanel/ea-php82/root/usr/bin/php)
-    - cd $APPPATH && $PHPBIN artisan migrate --force 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
+    # No pipe here on purpose: cPanel reads the exit code of the last command,
+    # and `tee` always succeeds — a half-applied migration used to deploy green.
+    - cd $APPPATH && $PHPBIN artisan migrate --force >> $APPPATH/storage/logs/deploy.log 2>&1
     # Settings are remembered for ever in the application cache, so a value
     # that was cached before its default existed could never come back on its
     # own — that is how the corporate page stayed switched off. Cleared here,

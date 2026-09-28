@@ -142,6 +142,14 @@ class Order extends Model
 
     protected static function booted(): void
     {
+        // An order taken off the books altogether: what its boxes took out of
+        // stock goes back — unless it was cancelled first and already did.
+        static::deleting(function (Order $order) {
+            if ($order->status !== 'cancelled') {
+                Accounting::restore($order);
+            }
+        });
+
         // Cancelling puts the boxes' materials back in stock; bringing an
         // order back from cancelled takes them again.
         static::updated(function (Order $order) {

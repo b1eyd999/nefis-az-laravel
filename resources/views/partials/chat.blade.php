@@ -171,15 +171,26 @@
       .catch(function(){});
   }
 
+  /* Somebody who has never opened the window on this phone has no thread
+     and nothing to hear; asking the server every 25 seconds from every idle
+     tab was a lock on the shop's one database for nothing. The window only
+     listens once it has been opened here, and holds its breath while the
+     tab is out of sight. */
+  function engaged(){ try { return localStorage.getItem('nefis-chat-active') === '1'; } catch (e) { return false; } }
+  function engage(){ try { localStorage.setItem('nefis-chat-active', '1'); } catch (e) {} }
+
   function watch(on){
     if (timer) clearInterval(timer);
-    timer = on ? setInterval(poll, 5000) : setInterval(poll, 25000);
+    timer = null;
+    if (document.hidden || (!on && !engaged())) return;
+    timer = setInterval(poll, on ? 5000 : 25000);
   }
+  document.addEventListener('visibilitychange', function(){ watch(!panel.hidden); });
 
   open.addEventListener('click', function(){
     panel.hidden = !panel.hidden;
     open.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
-    if (!panel.hidden){ dot.hidden = true; text.focus(); wakeAudio(); poll(); }
+    if (!panel.hidden){ engage(); dot.hidden = true; text.focus(); wakeAudio(); poll(); }
     watch(!panel.hidden);
   });
   document.getElementById('chat-close').addEventListener('click', function(){
@@ -247,9 +258,9 @@
       .finally(function(){ if (sending) URL.revokeObjectURL(mine.image); });
   });
 
-  /* Even closed, the window listens now and then: an answer lights the dot. */
-  poll();
-  watch(false);
+  /* Even closed, the window listens now and then — once it has been opened
+     on this phone at all: an answer lights the dot. */
+  if (engaged()) { poll(); watch(false); }
 })();
 </script>
 @endpush

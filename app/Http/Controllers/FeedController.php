@@ -38,7 +38,9 @@ class FeedController extends Controller
                 . ($image ? $this->tag('g:image_link', Seo::canonical($image)) : '')
                 . $this->tag('g:condition', 'new')
                 . $this->tag('g:availability', 'in_stock')
-                . $this->tag('g:price', number_format((float) $product->price, 2, '.', '') . ' AZN')
+                // What the landing page names as the least a customer pays;
+                // a feed price the checkout contradicts gets the item refused.
+                . $this->tag('g:price', number_format((float) ($product->priceFrom() ?? $product->price), 2, '.', '') . ' AZN')
                 . $this->tag('g:brand', 'Nefis')
                 . $this->tag('g:identifier_exists', 'no')
                 . $this->tag('g:google_product_category', self::CATEGORY)

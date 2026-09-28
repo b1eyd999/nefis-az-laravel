@@ -87,6 +87,23 @@ class Product extends Model
     }
 
     /**
+     * The least a customer can pay for this box: its price plus the cheapest
+     * bar on sale, because a bar always goes in. The bar is looked up once
+     * per request — a catalogue page prices twenty-seven boxes.
+     */
+    public function priceFrom(): ?float
+    {
+        if (! $this->price) {
+            return null;
+        }
+
+        static $bar = null;
+        $bar ??= (float) (Chocolate::shown()->get()->map->toCustomer()->pluck('price')->filter(fn ($p) => $p > 0)->min() ?? 0);
+
+        return round((float) $this->price + $bar, 2);
+    }
+
+    /**
      * The picture on the catalogue card: the owner's poster photo, else the
      * cover drawn in his chosen scene, else the plain visual.
      */

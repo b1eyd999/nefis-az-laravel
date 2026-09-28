@@ -25,7 +25,8 @@ class StockLeft extends TableWidget
 
     public static function canView(): bool
     {
-        return (bool) auth()->user()?->isStaff();
+        // Anbar is the owner's everywhere else in the panel; this must agree.
+        return (bool) auth()->user()?->isAdmin();
     }
 
     public function table(Table $table): Table

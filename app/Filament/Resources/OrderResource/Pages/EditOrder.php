@@ -22,7 +22,9 @@ class EditOrder extends EditRecord
                 ->color('success')
                 ->url(fn (Order $record) => CustomerNotice::whatsapp($record), shouldOpenInNewTab: true)
                 ->visible(fn (Order $record) => filled(CustomerNotice::whatsapp($record))),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->visible(fn () => (bool) auth()->user()?->isAdmin())
+                ->modalDescription('Sifariş kitablardan çıxır, materialları anbara qayıdır. Adətən silmək yox, ləğv etmək lazımdır.'),
         ];
     }
 }

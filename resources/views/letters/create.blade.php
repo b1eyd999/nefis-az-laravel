@@ -65,7 +65,7 @@
             <p class="letter-hint">{{ __(':max simvola qədər.', ['max' => $max]) }} {{ $t['hint'] }}</p>
           </div>
           <div>
-            <label for="letter-qty">Say</label>
+            <label for="letter-qty">{{ __('Say') }}</label>
             <input type="number" id="letter-qty" name="quantity" value="{{ old('quantity', 1) }}" min="1" max="20" style="max-width:7rem;">
           </div>
           <div class="letter-price"><span>{{ __('Qiymət') }}</span><b>{{ \App\Support\Price::format($price) }}</b></div>

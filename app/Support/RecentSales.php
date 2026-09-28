@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\OrderItem;
+use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -28,11 +29,14 @@ class RecentSales
 
         return Cache::remember("recent-sales.$locale", now()->addMinutes(5), function () use ($locale) {
             return OrderItem::query()
-                ->with(['order:id,user_id,recipient_name,created_at,status', 'order.user:id,name'])
+                ->with(['order:id,user_id,recipient_name,created_at,status', 'order.user:id,name,role', 'product'])
                 ->whereNotNull('product_id')
+                // Orders that were really taken on — paid, or at least confirmed —
+                // and not the shop's own people trying the site out.
                 ->whereHas('order', fn ($q) => $q
-                    ->where('status', '!=', 'cancelled')
-                    ->where('created_at', '>=', now()->subDays(self::DAYS)))
+                    ->whereIn('status', ['confirmed', 'ready', 'completed'])
+                    ->where('created_at', '>=', now()->subDays(self::DAYS))
+                    ->whereDoesntHave('user', fn ($u) => $u->whereIn('role', [User::ADMIN, User::MANAGER])))
                 ->latest('id')
                 ->limit(self::KEEP)
                 ->get()
@@ -40,7 +44,9 @@ class RecentSales
                     // The buyer's own name where there is one; a parcel sent to
                     // someone else falls back to the name on the parcel.
                     'who' => self::shortName($item->order?->user?->name ?: $item->order?->recipient_name),
-                    'what' => $item->product_name,
+                    // The design's name in the reader's language when the design
+                    // is still here; the name frozen on the order otherwise.
+                    'what' => $item->product?->tr('name') ?: $item->product_name,
                     'qty' => max(1, (int) $item->quantity),
                     'ago' => $item->order?->created_at?->locale($locale)->diffForHumans(),
                 ])

@@ -1491,6 +1491,10 @@
     if (t && dragSlot >= 0) { moveDrag(t.clientX, t.clientY); e.preventDefault(); }
   }, { passive: false });
   canvas.addEventListener('touchend', function(){ dragSlot = -1; });
+  /* iOS takes the touch away for a call or the notification shade; without
+     this the next swipe pans the photo instead of the page, by the whole
+     stale distance at once. */
+  canvas.addEventListener('touchcancel', function(){ dragSlot = -1; });
 })();
 
 /* Brand chips: one brand's bars at a time. */

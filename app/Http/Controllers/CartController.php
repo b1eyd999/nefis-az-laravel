@@ -10,6 +10,7 @@ use App\Models\TextSlot;
 use App\Models\Wrapping;
 use App\Support\Analytics;
 use App\Support\Cart;
+use App\Support\DeliveryTime;
 use App\Support\Letter;
 use App\Support\SpotifyCode;
 use Illuminate\Http\RedirectResponse;
@@ -144,9 +145,12 @@ class CartController extends Controller
         }
 
         // Asked for here, paid once at the end: the whole order is hurried,
-        // not this one box, so ticking it anywhere turns it on for the order.
-        if ($request->boolean('rush')) {
-            Cart::setRush(true);
+        // not this one box, so the box's own tick sets it for the order — and
+        // unticking it clears it, or three manat the customer said no to
+        // would be charged from the checkout page's pre-ticked box. A page
+        // rendered without the control (no fee offered) touches nothing.
+        if (DeliveryTime::rushFee() > 0) {
+            Cart::setRush($request->boolean('rush'));
         }
 
         if ($product->spotify_code) {

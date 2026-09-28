@@ -66,7 +66,9 @@ class ItemsRelationManager extends RelationManager
                         : null),
             ])
             ->actions([
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn () => (bool) auth()->user()?->isAdmin())
+                    ->modalDescription('Bu qutunun materialları anbara qayıtmır və sifarişin məbləği dəyişir. Səhv sifarişi ləğv etmək daha düzgündür.'),
             ]);
     }
 }

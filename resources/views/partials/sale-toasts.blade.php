@@ -47,7 +47,9 @@
   var sales = @json($sales, JSON_UNESCAPED_UNICODE);
   var box = document.getElementById('sale-toast');
   if (!box || !sales.length) return;
-  if (sessionStorage.getItem('nefis-sales-off') === '1') return;
+  var off = false;
+  try { off = sessionStorage.getItem('nefis-sales-off') === '1'; } catch (e) {}
+  if (off) return;
 
   var line = document.getElementById('sale-line'), ago = document.getElementById('sale-ago');
   var qtyWord = @json(__('qutu'), JSON_UNESCAPED_UNICODE);

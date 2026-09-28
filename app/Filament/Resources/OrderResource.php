@@ -293,7 +293,9 @@ class OrderResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => (bool) auth()->user()?->isAdmin())
+                        ->modalDescription('Silinən sifarişlərin materialları anbara qayıdır, kitablardan çıxır. Adətən silmək yox, ləğv etmək lazımdır.'),
                 ]),
             ]);
     }
