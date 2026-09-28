@@ -69,6 +69,7 @@ class SiteSettings extends Page implements HasActions, HasForms
             'chocolate_min_g' => (int) Setting::get(Setting::CHOCOLATE_MIN_G),
             'chocolate_max_g' => (int) Setting::get(Setting::CHOCOLATE_MAX_G),
             'notify_email' => Setting::get(Setting::NOTIFY_EMAIL) === '1',
+            'sale_toasts' => Setting::get(Setting::SALE_TOASTS) === '1',
             'telegram_token' => Telegram::token(),
             'telegram_chat' => Telegram::chat(),
             'telegram_courier_token' => Setting::get(Setting::TELEGRAM_COURIER_TOKEN) ? Telegram::courierToken() : null,
@@ -263,6 +264,10 @@ class SiteSettings extends Page implements HasActions, HasForms
                         Forms\Components\Toggle::make('notify_email')
                             ->label('Status dəyişəndə müştəriyə e-poçt göndər')
                             ->helperText('Yuxarıdakı "Test e-poçtu" düyməsi ilə yoxlaya bilərsiniz.'),
+                        Forms\Components\Toggle::make('sale_toasts')
+                            ->label('Saytda "kim nə sifariş etdi" bildirişi görünsün')
+                            ->helperText('Sağ aşağı küncdə son sifarişlər növbə ilə göstərilir: ad və soyadın ilk hərfi, '
+                                . 'neçə qutu və hansı dizayn. Səbət və ödəniş səhifələrində görünmür.'),
                     ]),
                 Forms\Components\Section::make('Telegram bildirişləri')
                     ->description('Sifariş gələn kimi Telegram-a mesaj gəlir. Bot sizindir: Telegram-da @BotFather-ə "/newbot" yazıb bot yaradın, verdiyi tokeni bura yapışdırın, sonra öz botunuza "/start" yazıb "Chat-ı tap" düyməsini basın.')
@@ -368,6 +373,7 @@ class SiteSettings extends Page implements HasActions, HasForms
         Setting::put(Setting::CHOCOLATE_MIN_G, max(1, (int) ($data['chocolate_min_g'] ?? 90)));
         Setting::put(Setting::CHOCOLATE_MAX_G, max((int) ($data['chocolate_min_g'] ?? 90), (int) ($data['chocolate_max_g'] ?? 105)));
         Setting::put(Setting::NOTIFY_EMAIL, ! empty($data['notify_email']));
+        Setting::put(Setting::SALE_TOASTS, ! empty($data['sale_toasts']));
         Telegram::saveToken($data['telegram_token'] ?? '');
         Setting::put(Setting::TELEGRAM_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['telegram_chat'] ?? '')));
         Telegram::saveCourierToken($data['telegram_courier_token'] ?? '');

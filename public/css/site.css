@@ -509,6 +509,22 @@
     position:absolute; top:.9rem; left:.9rem; background:var(--glass); color:var(--cocoa);
     font-size:.6875rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:.3rem .7rem; border-radius:999px;
   }
+  /* The flame on a design people are actually buying. It breathes rather than
+     blinks: enough to catch the eye while scrolling, not enough to nag. */
+  .p-card-media .p-hot, .d-card-media .p-hot{
+    position:absolute; top:.9rem; right:.9rem; z-index:2; display:inline-flex; align-items:center; gap:.25rem;
+    padding:.28rem .6rem .28rem .45rem; border-radius:999px; background:var(--flame-grad); color:#fff;
+    font-size:.6875rem; font-weight:800; letter-spacing:.06em;
+    box-shadow:0 8px 18px -8px var(--flame-shadow);
+    animation:hot-breathe 2.6s var(--ease) infinite;
+  }
+  .p-card-media .p-hot svg, .d-card-media .p-hot svg{ width:.95rem; height:.95rem; transform-origin:50% 90%; animation:hot-flicker 1.3s ease-in-out infinite alternate; }
+  @keyframes hot-breathe{ 0%,100%{ transform:translateY(0) scale(1); } 50%{ transform:translateY(-2px) scale(1.04); } }
+  @keyframes hot-flicker{ from{ transform:scale(1) rotate(-3deg); opacity:.9; } to{ transform:scale(1.12) rotate(3deg); opacity:1; } }
+  @media (prefers-reduced-motion:reduce){
+    .p-card-media .p-hot, .p-card-media .p-hot svg,
+    .d-card-media .p-hot, .d-card-media .p-hot svg{ animation:none; }
+  }
   .p-card-body{ padding:1.25rem 1.25rem 1.5rem; display:flex; flex-direction:column; gap:.6rem; flex:1; }
   .p-card-body h3{ font-size:1.1875rem; }
   .p-card-body p{ font-size:.875rem; color:var(--cocoa-soft); flex:1; }

@@ -229,6 +229,18 @@
   .dh-narrow{ display:none; }
   @media (max-width:959px){ .dh-wide{ display:none; } .dh-narrow{ display:inline; } }
   .choc-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(8.5rem, 1fr)); gap:.625rem; margin-top:.5rem; }
+  /* Folded: six bars on a phone, nine on a wide screen, the rest behind the button. */
+  .choc-group:not(.open) .choc-grid > .choc-card:nth-child(n+7){ display:none; }
+  @media (min-width:700px){ .choc-group:not(.open) .choc-grid > .choc-card:nth-child(n+10){ display:none; } }
+  .choc-more{ display:flex; align-items:center; justify-content:center; gap:.4rem; width:100%; margin-top:.6rem;
+    padding:.6rem 1rem; border:1.5px solid var(--line); border-radius:999px; background:var(--paper);
+    color:var(--cocoa); font:inherit; font-size:.875rem; font-weight:600; cursor:pointer;
+    transition:border-color .2s, background .2s; }
+  .choc-more:hover{ border-color:rgba(250,117,18,.55); }
+  .choc-more b{ font-weight:700; color:var(--cocoa-soft); }
+  .choc-more svg{ width:1.05rem; height:1.05rem; transition:transform .25s var(--ease); }
+  .choc-group.open .choc-more svg{ transform:rotate(180deg); }
+  .choc-group.open .choc-more .m, .choc-group:not(.open) .choc-more .l{ display:none; }
   .choc-card{ position:relative; display:flex; flex-direction:column; gap:.3rem; padding:.6rem; border:1.5px solid var(--line); border-radius:.9rem;
     background:var(--paper); cursor:pointer; margin:0; font-weight:400;
     transition:border-color .25s, box-shadow .3s, transform .3s var(--ease); }
@@ -478,7 +490,15 @@
             @endif
             <div role="radiogroup" aria-label="{{ __('Şokolad seçin') }}">
               @foreach($brands as $brand => $bars)
-                <div class="choc-group" data-brand="{{ $brand }}" @if($brand !== $openBrand) hidden @endif>
+                {{-- A brand with many bars fills a phone screen on its own, so only the
+                     first few show and the rest wait behind one button. The group opens
+                     by itself when the bar already chosen is further down the list. --}}
+                @php
+                  $pickedHere = $picked && $picked['brand'] === $brand
+                      ? $bars->values()->search(fn ($b) => $b['id'] === $picked['id'])
+                      : false;
+                @endphp
+                <div class="choc-group{{ $pickedHere !== false && $pickedHere >= 6 ? ' open' : '' }}" data-brand="{{ $brand }}" @if($brand !== $openBrand) hidden @endif>
                   <div class="choc-grid">
                     @foreach($bars as $choc)
                       <label class="choc-card">
@@ -492,6 +512,13 @@
                       </label>
                     @endforeach
                   </div>
+                  @if($bars->count() > 6)
+                    <button type="button" class="choc-more">
+                      <span class="m">{{ __('Hamısını göstər') }} <b>{{ $bars->count() }}</b></span>
+                      <span class="l">{{ __('Yığ') }}</span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                  @endif
                 </div>
               @endforeach
             </div>
@@ -1363,9 +1390,19 @@
   var error = document.getElementById('choc-error');
   function show(brand){
     chips.forEach(function(c){ var on = c.dataset.brand === brand; c.classList.toggle('active', on); c.setAttribute('aria-pressed', on ? 'true' : 'false'); });
-    groups.forEach(function(g){ g.hidden = g.dataset.brand !== brand; });
+    groups.forEach(function(g){
+      g.hidden = g.dataset.brand !== brand;
+      if (g.hidden) g.classList.remove('open');     // the next brand starts folded again
+    });
   }
   chips.forEach(function(c){ c.addEventListener('click', function(){ show(c.dataset.brand); }); });
+  block.querySelectorAll('.choc-more').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var group = btn.closest('.choc-group');
+      group.classList.toggle('open');
+      if (!group.classList.contains('open')) group.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  });
   radios.forEach(function(r){
     r.addEventListener('change', function(){
       chips.forEach(function(c){ c.classList.toggle('has-pick', c.dataset.brand === r.dataset.brand); });

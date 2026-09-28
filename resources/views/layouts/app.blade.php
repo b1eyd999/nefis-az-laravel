@@ -101,6 +101,12 @@
   </a>
 </div>
 
+{{-- What other people are ordering, in the same corner but above the buttons.
+     Not while someone is paying: the basket and the checkout are left alone. --}}
+@if(\App\Models\Setting::get(\App\Models\Setting::SALE_TOASTS) === '1' && ! request()->routeIs('*cart.*', '*checkout*', '*orders.*'))
+  @include('partials.sale-toasts')
+@endif
+
 <div class="blobs" aria-hidden="true">
   <div class="blob" style="width:26rem;height:26rem;background:var(--gold);top:-8rem;right:-6rem;"></div>
   <div class="blob b2" style="width:20rem;height:20rem;background:var(--terracotta);top:20rem;left:-8rem;opacity:.28;"></div>

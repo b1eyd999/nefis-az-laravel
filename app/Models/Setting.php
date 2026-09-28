@@ -28,6 +28,8 @@ class Setting extends Model
     public const SITE_LANGUAGES = 'site_languages';
 
     public const MAINTENANCE = 'maintenance';
+    /** The corner notice that says what other people have just ordered. */
+    public const SALE_TOASTS = 'sale_toasts';
 
     public const MAINTENANCE_MESSAGE = 'maintenance_message';
 
@@ -178,6 +180,7 @@ class Setting extends Model
         self::CHAT_ENABLED => '0',
         self::SITE_LANGUAGES => 'az',
         self::MAINTENANCE => '0',
+        self::SALE_TOASTS => '1',
         self::MAINTENANCE_MESSAGE => 'Saytda texniki işlər aparılır. Tezliklə qayıdacağıq!',
         self::PROFIT_SHARES => '[{"name":"Sahibkar","percent":33.34},{"name":"Menecer 1","percent":33.33},{"name":"Menecer 2","percent":33.33}]',
     ];

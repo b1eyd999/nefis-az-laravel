@@ -74,7 +74,7 @@
     <div class="bl-card">
       <div class="k">Kassa</div>
       <div class="v {{ $r['cash'] < 0 ? 'bl-neg' : '' }}">{{ $fmt($r['cash']) }}</div>
-      <div class="s">gəlir − şokolad − anbara alış {{ $fmt($r['purchases']) }} − xərclər</div>
+      <div class="s">gəlir − şokolad − anbara alış {{ $fmt($r['purchases']) }} − xərclər @if($r['withdrawn'] > 0)− çıxarılan {{ $fmt($r['withdrawn']) }}@endif</div>
     </div>
   </div>
 
@@ -94,6 +94,28 @@
       @endforelse
     </div>
   </div>
+
+  @if($r['withdrawals'])
+    <div>
+      <div class="bl-h">Çıxarılan pul · {{ $fmt($r['withdrawn']) }}</div>
+      <div style="overflow-x:auto;">
+        <table class="bl-table">
+          <thead><tr><th>Tarix</th><th>Nə üçün</th><th>Kim</th><th style="text-align:right;">Məbləğ</th></tr></thead>
+          <tbody>
+            @foreach($r['withdrawals'] as $w)
+              <tr>
+                <td>{{ $w->taken_on?->format('d.m.Y') }}</td>
+                <td>{{ $w->purpose }}@if($w->note)<span class="bl-note"> · {{ $w->note }}</span>@endif</td>
+                <td>{{ $w->user?->name ?? '—' }}</td>
+                <td style="text-align:right;">{{ $fmt($w->amount) }}</td>
+              </tr>
+            @endforeach
+          </tbody>
+        </table>
+      </div>
+      <p class="bl-note">Çıxarılan pul mənfəəti azaltmır — qazanılan qazanılıb. Yalnız kassada qalan məbləğ azalır.</p>
+    </div>
+  @endif
 
   <div>
     <div class="bl-h">Sifarişlər üzrə</div>

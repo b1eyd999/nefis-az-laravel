@@ -7,6 +7,7 @@ use App\Models\Material;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Models\StockMovement;
+use App\Models\Withdrawal;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -147,6 +148,14 @@ class Accounting
             ->when($from, fn ($q) => $q->where('created_at', '>=', $from))
             ->when($to, fn ($q) => $q->where('created_at', '<=', $to))
             ->sum('amount');
+        // Money carried out of the till. It is not a cost of making the boxes,
+        // so the profit stands; only what is left in hand goes down.
+        $taken = Withdrawal::query()
+            ->when($from, fn ($q) => $q->whereDate('taken_on', '>=', $from))
+            ->when($to, fn ($q) => $q->whereDate('taken_on', '<=', $to))
+            ->orderByDesc('taken_on')->orderByDesc('id')
+            ->get();
+        $withdrawn = (float) $taken->sum('amount');
 
         $revenue = $rows->sum('revenue');
         $chocolate = $rows->sum('chocolate');
@@ -183,8 +192,11 @@ class Accounting
             'net' => round($net, 2),
             'purchases' => round($purchases, 2),
             // Money in hand: what came in, less everything paid out (chocolate
-            // is bought for each order; stock in packs, ahead of time).
-            'cash' => round($revenue - $chocolate - $purchases - $expenses, 2),
+            // is bought for each order; stock in packs, ahead of time) and less
+            // whatever has been taken out of the till.
+            'cash' => round($revenue - $chocolate - $purchases - $expenses - $withdrawn, 2),
+            'withdrawn' => round($withdrawn, 2),
+            'withdrawals' => $taken->all(),
             'shares' => $shares,
             'rows' => $rows->take(100)->all(),
         ];

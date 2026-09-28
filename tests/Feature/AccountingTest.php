@@ -12,6 +12,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
+use App\Models\Withdrawal;
 use App\Support\Accounting;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -128,6 +129,27 @@ class AccountingTest extends TestCase
 
         $this->assertCount(2, $shares);
         $this->assertNull($shares->firstWhere('rest', true));
+    }
+
+    public function test_money_taken_out_leaves_the_till_but_not_the_profit(): void
+    {
+        $this->order(1);
+        $before = Accounting::report();
+
+        Withdrawal::create(['taken_on' => now(), 'amount' => 5, 'purpose' => 'Pay ödənişi']);
+        Withdrawal::create(['taken_on' => now(), 'amount' => 2.5, 'purpose' => 'Şəxsi', 'note' => 'taksi']);
+
+        $after = Accounting::report();
+
+        $this->assertEqualsWithDelta($before['net'], $after['net'], 0.001, 'the profit was earned either way');
+        $this->assertEqualsWithDelta($before['cash'] - 7.5, $after['cash'], 0.001, 'the till is lighter');
+        $this->assertEqualsWithDelta(7.5, $after['withdrawn'], 0.001);
+        $this->assertEqualsCanonicalizing(['Şəxsi', 'Pay ödənişi'], collect($after['withdrawals'])->pluck('purpose')->all());
+
+        // Another month's page does not count money taken out this one.
+        $old = Accounting::report(now()->startOfMonth()->subMonth(), now()->startOfMonth()->subDay());
+        $this->assertSame(0.0, $old['withdrawn']);
+        $this->assertSame([], $old['withdrawals']);
     }
 
     public function test_the_site_can_be_closed_for_maintenance(): void

@@ -31,8 +31,9 @@
         @csrf
         <div class="field">
           <label for="login">{{ __('E-poçt və ya telefon') }}</label>
+          {{-- No example inside the field: the label above already says what goes here. --}}
           <input type="text" id="login" name="login" value="{{ old('login') }}" required autofocus
-                 autocomplete="username" inputmode="email" placeholder="{{ __('ad@mail.com və ya +994 XX XXX XX XX') }}">
+                 autocomplete="username" inputmode="email">
         </div>
         <div class="field">
           <label for="password">{{ __('Şifrə') }}</label>
