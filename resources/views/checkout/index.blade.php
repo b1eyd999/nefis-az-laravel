@@ -222,8 +222,12 @@
     metro_station: @json(__('Metro stansiyasını seçin.')),
     contact_phone: @json(__('Telefon nömrənizi yazın.')),
     delivery_address: @json(__('Ünvanı yazın.')),
-    recipient_name: @json(__('Alıcının adını yazın.'))
+    recipient_name: @json(__('Alıcının adını yazın.')),
+    postal_index: @json(__('Poçt şöbəsinin indeksini yazın.')),
+    recipient_phone: @json(__('Alıcının telefonunu yazın.')),
+    note: @json(__('Bu xananı doldurun.'))
   };
+  var ANY = @json(__('Bu xananı doldurun.'));
 
   function complain(field, text){
     if (sendError) {
@@ -246,7 +250,8 @@
     var field = e.target;
     if (! field.name) return;
     e.preventDefault();
-    complain(field, WORDS[field.name] || field.validationMessage);
+    // Never the browser's own English: the shop speaks the visitor's language.
+    complain(field, WORDS[field.name] || ANY);
     if (field.offsetParent !== null && field.focus) {
       try { field.focus({ preventScroll: true }); } catch (err) { field.focus(); }
     }
