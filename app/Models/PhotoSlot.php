@@ -7,8 +7,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class PhotoSlot extends Model
 {
+    use \App\Models\Concerns\Translatable;
+
     protected $fillable = [
         'label',
+        'i18n',
         'x',
         'y',
         'width',
@@ -21,7 +24,7 @@ class PhotoSlot extends Model
 
     protected function casts(): array
     {
-        return ['cutout' => 'boolean'];
+        return ['cutout' => 'boolean', 'i18n' => 'array'];
     }
 
     public function slotable(): MorphTo

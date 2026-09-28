@@ -45,12 +45,12 @@ class BoxEditorController extends Controller
                 'placement' => $l->placement, 'locked' => $l->locked,
             ])->values(),
             'photos' => $product->photoSlots->map(fn ($s) => [
-                'label' => $s->label, 'x' => $s->x, 'y' => $s->y,
+                'label' => $s->label, 'i18n' => $s->i18n, 'x' => $s->x, 'y' => $s->y,
                 'width' => $s->width, 'height' => $s->height,
                 'rotation' => $s->rotation, 'shape' => $s->shape, 'cutout' => (bool) $s->cutout,
             ])->values(),
             'texts' => $product->textSlots->map(fn ($s) => [
-                'label' => $s->label, 'kind' => $s->kind ?: TextSlot::KIND_TEXT, 'fixed' => (bool) $s->fixed,
+                'label' => $s->label, 'i18n' => $s->i18n, 'kind' => $s->kind ?: TextSlot::KIND_TEXT, 'fixed' => (bool) $s->fixed,
                 'default_value' => $s->default_value, 'placeholder' => $s->placeholder,
                 'x' => $s->x, 'y' => $s->y, 'max_width' => $s->max_width, 'font_size' => $s->font_size,
                 'color' => $s->color, 'align' => $s->align, 'rotation' => (int) $s->rotation,
@@ -88,6 +88,8 @@ class BoxEditorController extends Controller
 
             'photos' => ['present', 'array'],
             'photos.*.label' => ['nullable', 'string', 'max:60'],
+            'photos.*.i18n' => ['nullable', 'array'],
+            'photos.*.i18n.*.label' => ['nullable', 'string', 'max:60'],
             'photos.*.x' => ['required', 'numeric'],
             'photos.*.y' => ['required', 'numeric'],
             'photos.*.width' => ['required', 'numeric', 'min:1'],
@@ -98,6 +100,9 @@ class BoxEditorController extends Controller
 
             'texts' => ['present', 'array'],
             'texts.*.label' => ['nullable', 'string', 'max:60'],
+            'texts.*.i18n' => ['nullable', 'array'],
+            'texts.*.i18n.*.label' => ['nullable', 'string', 'max:60'],
+            'texts.*.i18n.*.placeholder' => ['nullable', 'string', 'max:255'],
             'texts.*.kind' => ['nullable', 'in:text,time'],
             'texts.*.fixed' => ['boolean'],
             'texts.*.default_value' => ['nullable', 'string', 'max:255'],
@@ -172,6 +177,7 @@ class BoxEditorController extends Controller
             foreach (array_values($data['photos']) as $order => $p) {
                 $product->photoSlots()->create([
                     'label' => $p['label'] ?? null,
+                    'i18n' => self::slotTranslations($p['i18n'] ?? null, ['label']),
                     'x' => (int) round($p['x']), 'y' => (int) round($p['y']),
                     'width' => (int) round($p['width']), 'height' => (int) round($p['height']),
                     'rotation' => (int) round($p['rotation']), 'shape' => $p['shape'],
@@ -187,6 +193,7 @@ class BoxEditorController extends Controller
             foreach (array_values($data['texts']) as $order => $t) {
                 $product->textSlots()->create([
                     'label' => $t['label'] ?? null,
+                    'i18n' => self::slotTranslations($t['i18n'] ?? null, ['label', 'placeholder']),
                     'kind' => $t['kind'] ?? TextSlot::KIND_TEXT,
                     'fixed' => (bool) ($t['fixed'] ?? false),
                     'default_value' => $t['default_value'] ?? null,
@@ -223,6 +230,32 @@ class BoxEditorController extends Controller
             // have changed it.
             'cover' => $product->fresh()->coverJob(),
         ]);
+    }
+
+    /**
+     * What the editor sent for the other languages, kept only where a word
+     * was actually written — the shape the Translatable trait reads.
+     *
+     * @param  array<int, string>  $fields
+     */
+    private static function slotTranslations(mixed $sent, array $fields): ?array
+    {
+        if (! is_array($sent)) {
+            return null;
+        }
+
+        $kept = [];
+        foreach (\App\Support\Locale::all() as $locale) {
+            if ($locale === \App\Support\Locale::DEFAULT || ! is_array($sent[$locale] ?? null)) {
+                continue;
+            }
+            $words = array_filter(array_intersect_key($sent[$locale], array_flip($fields)), fn ($v) => is_string($v) && trim($v) !== '');
+            if ($words !== []) {
+                $kept[$locale] = array_map('trim', $words);
+            }
+        }
+
+        return $kept ?: null;
     }
 
     public function uploadAsset(Request $request, Product $product): JsonResponse

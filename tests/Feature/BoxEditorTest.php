@@ -123,6 +123,34 @@ class BoxEditorTest extends TestCase
         $page->assertSee('Mahnı');
     }
 
+    /** The names the form asks by, in the reader's language: the owner's word first, the site's own after. */
+    public function test_the_fields_are_asked_for_in_the_customers_language(): void
+    {
+        \App\Models\Setting::put(\App\Models\Setting::SITE_LANGUAGES, 'az,ru,en');
+        $image = $this->actingAs($this->admin)
+            ->post(route('box.asset', $this->box->slug), ['file' => $this->transparentPng(969, 1895)], ['Accept' => 'application/json'])
+            ->json('image');
+        $design = $this->design($image);
+        $design['photos'][0]['label'] = 'Hədiyyə veriləcək şəxsin şəkli';
+        $design['photos'][0]['i18n'] = ['ru' => ['label' => 'Фото получателя'], 'en' => ['label' => '  ']];
+        $design['texts'][0]['label'] = 'Hədiyyə veriləcək şəxsin adı';   // no translation written: the site knows this one
+
+        $this->actingAs($this->admin)->postJson(route('box.save', $this->box->slug), $design)->assertOk();
+        $this->assertSame(['ru' => ['label' => 'Фото получателя']], $this->box->photoSlots()->first()->i18n);
+        $this->assertNull($this->box->textSlots()->first()->i18n);
+
+        $this->get(route('ru.products.customize', $this->box->slug))->assertOk()
+            ->assertSee('1. Фото получателя')->assertSee('Имя того, кому дарите');
+        $this->get(route('en.products.customize', $this->box->slug))->assertOk()
+            ->assertSee('1. Hədiyyə veriləcək şəxsin şəkli')->assertSee('Name of the person you are giving it to');
+        $this->get(route('products.customize', $this->box->slug))->assertOk()
+            ->assertSee('1. Hədiyyə veriləcək şəxsin şəkli')->assertSee('Hədiyyə veriləcək şəxsin adı');
+
+        // The editor hands the words back to be edited.
+        $this->actingAs($this->admin)->get(route('box.edit', $this->box->slug))->assertOk()
+            ->assertSee(json_encode('Фото получателя'), false);
+    }
+
     public function test_a_layer_from_another_box_is_refused(): void
     {
         $this->actingAs($this->admin)

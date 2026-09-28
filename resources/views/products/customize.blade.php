@@ -415,7 +415,7 @@
 
         @foreach($photoSlots as $index => $slot)
           <div class="slot-block" data-slot="{{ $index }}">
-            <label>{{ $loop->iteration }}. {{ $slot->label ?: __('Şəkil') }}</label>
+            <label>{{ $loop->iteration }}. {{ $slot->label ? __($slot->tr('label')) : __('Şəkil') }}</label>
             {{-- Drawn, not described: what the shot has to look like. --}}
             @include('partials.photo-guide', ['small' => true])
             <label class="upload-box" for="photo-input-{{ $index }}">
@@ -456,7 +456,7 @@
           @else
             @php if ($slot->link_key) $seenLinks[] = $slot->link_key; @endphp
             <div>
-              <label for="text-input-{{ $index }}">{{ $slot->label ?: __('Mətn') }}</label>
+              <label for="text-input-{{ $index }}">{{ $slot->label ? __($slot->tr('label')) : __('Mətn') }}</label>
               @if($slot->isTime())
                 {{-- Four digits; the colon is put in as the customer types. --}}
                 <input type="text" class="text-input time-input" id="text-input-{{ $index }}" name="custom_texts[{{ $index }}]"
@@ -472,13 +472,13 @@
                           @if($slot->link_key) data-link="{{ $slot->link_key }}" data-link-lead @endif
                           maxlength="{{ $slot->limit() }}"
                           rows="{{ min(4, max(2, substr_count((string) $value, "\n") + 1)) }}"
-                          placeholder="{{ $slot->placeholder ?: __('Məs. Ad Soyad və ya qısa mesaj') }}">{{ $value }}</textarea>
+                          placeholder="{{ $slot->placeholder ? __($slot->tr('placeholder')) : __('Məs. Ad Soyad və ya qısa mesaj') }}">{{ $value }}</textarea>
                 <p class="slot-hint">{{ __('Yeni sətir üçün Enter basın.') }}</p>
               @else
                 <input type="text" class="text-input" id="text-input-{{ $index }}" name="custom_texts[{{ $index }}]"
                        @if($slot->link_key) data-link="{{ $slot->link_key }}" data-link-lead @endif
                        maxlength="{{ $slot->limit() }}"
-                       placeholder="{{ $slot->placeholder ?: __('Məs. Ad Soyad və ya qısa mesaj') }}"
+                       placeholder="{{ $slot->placeholder ? __($slot->tr('placeholder')) : __('Məs. Ad Soyad və ya qısa mesaj') }}"
                        value="{{ old('custom_texts.' . $index, $slot->default_value) }}">
               @endif
             </div>

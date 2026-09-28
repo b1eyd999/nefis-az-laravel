@@ -985,6 +985,12 @@
   function field(label, html){ return '<div class="field"><label>' + label + '</label>' + html + '</div>'; }
   function num(key, val, step){ return '<input type="number" data-k="' + key + '" value="' + (val == null ? '' : +(+val).toFixed(2)) + '"' + (step ? ' step="' + step + '"' : '') + '>'; }
   function txt(key, val, ph){ return '<input type="text" data-k="' + key + '" value="' + esc(val) + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '>'; }
+  /* The same name in the other two languages. Left empty, the customer reads
+     the Azerbaijani one — or its translation, when the site knows the words. */
+  function i18nFields(it, key){
+    var w = it.i18n || {};
+    return '<div class="row">' + field('Rusca', txt('i18n.ru.' + key, (w.ru || {})[key], 'boş: azərbaycanca')) + field('İngiliscə', txt('i18n.en.' + key, (w.en || {})[key], 'boş: azərbaycanca')) + '</div>';
+  }
   function color(key, val){ return '<input type="color" data-k="' + key + '" value="' + esc((val || '#000000').slice(0, 7)) + '">'; }
   function seg(key, val, opts){
     return '<div class="seg">' + opts.map(function(o){
@@ -1057,6 +1063,7 @@
       h += '<h3>Foto sahəsi</h3>';
       h += '<p class="hint">Müştərinin yüklədiyi şəkil bura düşür. "Fotonun üstündə" olan qatlar onu örtür.</p>';
       h += '<div class="row one">' + field('Müştəriyə görünən ad', txt('label', it.label, 'Şəkil')) + '</div>';
+      h += i18nFields(it, 'label');
       h += '<div class="row one">' + field('Forma', seg('shape', it.shape, [['rectangle', 'Düzbucaqlı'], ['ellipse', 'Oval']])) + '</div>';
       h += '<div class="row one">' + field('Üz kəsilsin', seg('cutout', it.cutout ? 1 : 0, [[0, 'Xeyr'], [1, 'Bəli, fonu at']])) + '</div>';
       h += '<p class="hint">"Bəli" olanda müştərinin şəklindən yalnız başı götürülür, fon şəffaf qalır — üzün gövdənin üstünə oturduğu dizaynlar üçün.</p>';
@@ -1071,7 +1078,7 @@
       h += '<div class="row one">' + field('Növ', seg('kind', it.kind || 'text', [['text', 'Mətn'], ['time', 'Vaxt (dəq:san)']])) + '</div>';
       h += '<label class="check" style="margin-bottom:.6rem"><input type="checkbox" data-k="fixed"' + (it.fixed ? ' checked' : '') + '> Müştəri dəyişə bilməz (sabit)</label>';
       if (it.fixed) h += '<p class="hint" style="margin-top:0">Qutuda olduğu kimi çap olunur; müştəriyə sahə göstərilmir.</p>';
-      else h += '<div class="row one">' + field('Müştəriyə görünən sahə adı', txt('label', it.label, isTime ? 'Məs. Başlanğıc vaxtı' : 'Məs. Mahnının adı')) + '</div>';
+      else h += '<div class="row one">' + field('Müştəriyə görünən sahə adı', txt('label', it.label, isTime ? 'Məs. Başlanğıc vaxtı' : 'Məs. Mahnının adı')) + '</div>' + i18nFields(it, 'label');
       h += '<div class="row one">' + (isTime
         ? field('Vaxt (ilkin dəyər)', '<input type="text" data-k="default_value" inputmode="numeric" maxlength="5" placeholder="00:00" value="' + esc(it.default_value) + '">')
         : field('Mətn (ilkin dəyər)', '<textarea data-k="default_value">' + esc(it.default_value) + '</textarea>')) + '</div>';
@@ -1104,6 +1111,12 @@
     var it = itemOf(selection);
     if (!it) return;
     if (k === 'locked') it.locked = el.checked;
+    else if (k.indexOf('i18n.') === 0) {
+      var path = k.split('.');   // i18n.ru.label
+      it.i18n = it.i18n || {};
+      it.i18n[path[1]] = it.i18n[path[1]] || {};
+      it.i18n[path[1]][path[2]] = el.value;
+    }
     else if (k === 'fixed') { it.fixed = el.checked; renderProps(); renderList(); }
     else if (k === 'font') {
       var f = FONTS[+el.value];
@@ -1489,7 +1502,7 @@
     var payload = {
       layers: doc.layers.map(function(l){ return { name: l.name, image: l.image, x: l.x, y: l.y, width: l.width, height: l.height,
         rotation: l.rotation || 0, opacity: l.opacity == null ? 100 : l.opacity, placement: l.placement, locked: !!l.locked }; }),
-      photos: doc.photos.map(function(p){ return { label: p.label, x: p.x, y: p.y, width: p.width, height: p.height, rotation: p.rotation || 0, shape: p.shape, cutout: p.cutout ? 1 : 0 }; }),
+      photos: doc.photos.map(function(p){ return { label: p.label, i18n: p.i18n || null, x: p.x, y: p.y, width: p.width, height: p.height, rotation: p.rotation || 0, shape: p.shape, cutout: p.cutout ? 1 : 0 }; }),
       texts: doc.texts.map(function(t){ var o = clone(t); o.rotation = o.rotation || 0; o.max_lines = Math.max(1, +o.max_lines || 1); o.max_length = Math.max(1, +o.max_length || 255); return o; }),
       box_color: doc.box_color || null
     };

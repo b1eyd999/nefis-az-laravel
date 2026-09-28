@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class TextSlot extends Model
 {
+    use \App\Models\Concerns\Translatable;
+
     public const KIND_TEXT = 'text';
 
     /** A duration typed as four digits and shown as mm:ss. */
@@ -16,6 +18,7 @@ class TextSlot extends Model
 
     protected $fillable = [
         'label',
+        'i18n',
         'kind',
         'fixed',
         'x',
@@ -46,6 +49,7 @@ class TextSlot extends Model
     {
         return [
             'fixed' => 'boolean',
+            'i18n' => 'array',
         ];
     }
 
