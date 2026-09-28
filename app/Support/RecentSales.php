@@ -28,7 +28,7 @@ class RecentSales
 
         return Cache::remember("recent-sales.$locale", now()->addMinutes(5), function () use ($locale) {
             return OrderItem::query()
-                ->with('order:id,recipient_name,created_at,status')
+                ->with(['order:id,user_id,recipient_name,created_at,status', 'order.user:id,name'])
                 ->whereNotNull('product_id')
                 ->whereHas('order', fn ($q) => $q
                     ->where('status', '!=', 'cancelled')
@@ -37,7 +37,9 @@ class RecentSales
                 ->limit(self::KEEP)
                 ->get()
                 ->map(fn (OrderItem $item) => [
-                    'who' => self::shortName($item->order?->recipient_name),
+                    // The buyer's own name where there is one; a parcel sent to
+                    // someone else falls back to the name on the parcel.
+                    'who' => self::shortName($item->order?->user?->name ?: $item->order?->recipient_name),
                     'what' => $item->product_name,
                     'qty' => max(1, (int) $item->quantity),
                     'ago' => $item->order?->created_at?->locale($locale)->diffForHumans(),

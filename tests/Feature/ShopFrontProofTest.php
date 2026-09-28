@@ -32,8 +32,8 @@ class ShopFrontProofTest extends TestCase
         $product = Product::create(['name' => $name, 'slug' => \Illuminate\Support\Str::slug($name),
             'is_active' => true, 'price' => 4.90]);
 
-        $order = Order::create(['user_id' => User::factory()->create()->id, 'status' => 'confirmed',
-            'recipient_name' => $buyer, 'contact_phone' => '1']);
+        $order = Order::create(['user_id' => User::factory()->create(['name' => $buyer])->id,
+            'status' => 'confirmed', 'contact_phone' => '1']);
         $order->forceFill(['created_at' => now()->subDays($daysAgo)])->save();
 
         OrderItem::create(['order_id' => $order->id, 'product_id' => $product->id,
