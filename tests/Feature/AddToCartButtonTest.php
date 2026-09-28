@@ -54,6 +54,28 @@ class AddToCartButtonTest extends TestCase
         $page->assertDontSee('id="add-hint"', false);
     }
 
+    /**
+     * The same defect on the checkout page, and the one the owner actually hit
+     * on his phone: the radios that choose a delivery are invisible under their
+     * cards, so with none picked the browser refused the form without a word
+     * and "Sifarişi Göndər" looked dead.
+     */
+    public function test_the_checkout_says_what_is_missing_instead_of_going_quiet(): void
+    {
+        $box = $this->box(false);
+        $user = \App\Models\User::factory()->create();
+
+        $this->actingAs($user)->post(route('cart.add'), ['product_id' => $box->id])->assertSessionHasNoErrors();
+
+        $this->actingAs($user)->get(route('checkout.index'))->assertOk()
+            ->assertSee("addEventListener('invalid'", false)
+            ->assertSee('id="send-error"', false)
+            // @json() escapes the Azerbaijani letters, so the words are looked
+            // for by the name they hang on rather than by their own spelling.
+            ->assertSee('delivery_method_id:', false)
+            ->assertSee('metro_station:', false);
+    }
+
     public function test_the_line_is_read_in_the_visitors_language(): void
     {
         $this->box(true);

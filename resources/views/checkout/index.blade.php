@@ -82,6 +82,8 @@
   .map-hint{ font-size:.8125rem; color:var(--cocoa-soft); margin-top:.45rem; }
   .map-hint.ok{ color:var(--gold-deep); }
   .map-hint.err{ color:var(--red, #c0392b); }
+  .send-error{ margin:.7rem 0 0; text-align:center; font-weight:600; font-size:.9375rem; color:#c0392b; }
+  .field-bad{ outline:2px solid #c0392b; outline-offset:4px; border-radius:.9rem; }
   @media (max-width:520px){ .map-btn span{ display:none; } .map-box{ height:17rem; } }
 @endsection
 
@@ -207,11 +209,52 @@
     });
   });
 
-  document.getElementById('checkout-form').addEventListener('submit', function(e){
+  var form = document.getElementById('checkout-form');
+  var sendError = document.getElementById('send-error');
+
+  /* A radio that is hidden under its own card cannot be pointed at, so the
+     browser refuses the form without a word and the button looks broken.
+     `invalid` does not bubble, hence the capture. */
+  var WORDS = {
+    delivery_method_id: @json(__('Çatdırılma üsulunu seçin.')),
+    delivery_date: @json(__('Çatdırılma gününü seçin.')),
+    delivery_slot: @json(__('Çatdırılma vaxtını seçin.')),
+    metro_station: @json(__('Metro stansiyasını seçin.')),
+    contact_phone: @json(__('Telefon nömrənizi yazın.')),
+    delivery_address: @json(__('Ünvanı yazın.')),
+    recipient_name: @json(__('Alıcının adını yazın.'))
+  };
+
+  function complain(field, text){
+    if (sendError) {
+      sendError.textContent = text;
+      sendError.hidden = false;
+    }
+    var block = field.closest('.field, .dlv-fields, .dlv-list, .slots') || field.parentElement;
+    document.querySelectorAll('.field-bad').forEach(function(b){ b.classList.remove('field-bad'); });
+    if (block) {
+      block.classList.add('field-bad');
+      block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(function(){ block.classList.remove('field-bad'); }, 4000);
+    }
+  }
+
+  form.addEventListener('invalid', function(e){
+    var field = e.target;
+    if (! field.name) return;
+    // A field the customer can see: let the browser say it in its own way.
+    if (field.offsetParent !== null && field.type !== 'radio') return;
+    e.preventDefault();
+    complain(field, WORDS[field.name] || field.validationMessage);
+  }, true);
+
+  form.addEventListener('submit', function(e){
+    if (sendError) sendError.hidden = true;
     var door = document.querySelector('input[name="delivery_method_id"]:checked');
     if (door && door.dataset.type === 'door' && !mapFailed && !lat.value) {
       e.preventDefault();
       say(@json(__('Çatdırılma yerini xəritədə seçin.')), 'err');
+      if (sendError) { sendError.textContent = @json(__('Çatdırılma yerini xəritədə seçin.')); sendError.hidden = false; }
       box.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   });
@@ -423,6 +466,11 @@
         </div>
 
         <button type="submit" class="btn btn-primary btn-block">{{ __('Sifarişi Göndər') }}</button>
+        {{-- The radios that choose a delivery are invisible by design, and a
+             browser cannot show its "choose one" bubble on something it cannot
+             point at: it refuses the form and says nothing, so the button looks
+             dead. What is missing is said here instead. --}}
+        <p class="send-error" id="send-error" hidden></p>
       </form>
     </div>
   </div>
