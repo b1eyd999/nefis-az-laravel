@@ -55,7 +55,17 @@ window.NefisCutout = (function () {
     try { load().catch(function () {}); } catch (e) {}
   }
 
+  /**
+   * The photograph at working size. NefisPhoto asks the browser to decode it
+   * straight to MAX_SIDE where it can, so a 48 MP picture off a phone never
+   * becomes a 190 MB bitmap on the way in — that peak is what used to throw
+   * the page away on iOS in the middle of an order.
+   */
   function readImage(file) {
+    if (window.NefisPhoto) {
+      return window.NefisPhoto.load(file, MAX_SIDE);
+    }
+
     return new Promise(function (resolve, reject) {
       var url = URL.createObjectURL(file);
       var img = new Image();
@@ -66,10 +76,14 @@ window.NefisCutout = (function () {
   }
 
   function toCanvas(img) {
-    var k = Math.min(1, MAX_SIDE / Math.max(img.width, img.height));
+    var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    var k = Math.min(1, MAX_SIDE / Math.max(w, h));
+    if (k === 1 && img.getContext) {
+      return img;                 // already a canvas at working size
+    }
     var c = document.createElement('canvas');
-    c.width = Math.round(img.width * k);
-    c.height = Math.round(img.height * k);
+    c.width = Math.round(w * k);
+    c.height = Math.round(h * k);
     c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
     return c;
   }

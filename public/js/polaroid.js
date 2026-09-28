@@ -30,6 +30,18 @@
     }
   }
 
+  /** Whatever NefisPhoto hands back, as a small JPEG the <img> can wear. */
+  function small(pic) {
+    if (pic.toDataURL) {
+      return pic.toDataURL('image/jpeg', 0.85);
+    }
+    var c = document.createElement('canvas');
+    c.width = pic.naturalWidth || pic.width;
+    c.height = pic.naturalHeight || pic.height;
+    c.getContext('2d').drawImage(pic, 0, 0);
+    return c.toDataURL('image/jpeg', 0.85);
+  }
+
   function bind(fig, fileInput, textInput) {
     var photo = null;
     function redraw() { update(fig, photo, textInput ? textInput.value.trim() : ''); }
@@ -37,10 +49,26 @@
       fileInput.addEventListener('change', function () {
         var f = fileInput.files && fileInput.files[0];
         if (!f) { photo = null; redraw(); return; }
-        var r = new FileReader();
-        r.onload = function (e) { photo = e.target.result; redraw(); };
-        r.readAsDataURL(f);
+
+        /* A phone photograph read as a data URL is megabytes of base64 and a
+           bitmap of tens of megabytes behind it — enough for iOS to throw the
+           page away mid-order. The preview is a few centimetres wide, so the
+           picture is decoded small and kept small. */
+        if (global.NefisPhoto) {
+          global.NefisPhoto.load(f, 900).then(function (pic) {
+            photo = small(pic);
+            redraw();
+          }).catch(function () { readWhole(f); });
+          return;
+        }
+        readWhole(f);
       });
+    }
+
+    function readWhole(f) {
+      var r = new FileReader();
+      r.onload = function (e) { photo = e.target.result; redraw(); };
+      r.readAsDataURL(f);
     }
     if (textInput) textInput.addEventListener('input', redraw);
     redraw();

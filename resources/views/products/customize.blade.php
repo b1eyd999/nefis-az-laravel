@@ -691,6 +691,10 @@
 @if($cutsFaces || $photoSlots->where('shape', 'ellipse')->isNotEmpty())
 <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 @endif
+{{-- Before anything that opens a customer's photograph: it decodes straight
+     to the size wanted, so a phone picture never becomes a bitmap the tab
+     cannot carry. --}}
+<script src="{{ asset('js/photo-shrink.js') }}"></script>
 @if($cutsFaces)
 <script defer src="{{ asset('js/face-cutout.js') }}"></script>
 <script defer src="{{ asset('js/cutout-brush.js') }}"></script>
@@ -776,24 +780,8 @@
   /* How big a photograph the preview keeps in memory. The box is printed
      from the file the customer sends, not from this, so a long side of
      1600 is far more than the screen can show and far less than a phone
-     chokes on. */
+     chokes on. NefisPhoto decodes straight to this size. */
   var PREVIEW_MAX = 1600;
-
-  function forPreview(img){
-    var w = img.naturalWidth || img.width;
-    var h = img.naturalHeight || img.height;
-    var k = Math.min(1, PREVIEW_MAX / Math.max(w, h));
-    if (k === 1) return img;
-
-    var small = document.createElement('canvas');
-    small.width = Math.max(1, Math.round(w * k));
-    small.height = Math.max(1, Math.round(h * k));
-    small.getContext('2d').drawImage(img, 0, 0, small.width, small.height);
-    /* Let the full-size bitmap go now rather than at the whim of the
-       collector: on a phone those tens of megabytes are the whole problem. */
-    img.src = '';
-    return small;
-  }
 
   var canvas = document.getElementById('preview-canvas');
   var ctx = canvas.getContext('2d');
@@ -1177,11 +1165,7 @@
          So: no data URL, and the preview keeps a copy cut down to a size a
          phone can carry. The file itself is sent to us untouched, so nothing
          about the printing changes. */
-      var url = URL.createObjectURL(file);
-      var img = new Image();
-      img.onload = function(){
-        URL.revokeObjectURL(url);
-        var shown = forPreview(img);
+      window.NefisPhoto.load(file, PREVIEW_MAX).then(function(shown){
         photos[index].img = shown;
         applyAutoFraming(index, shown);
         zoomRow.hidden = false;
@@ -1191,9 +1175,7 @@
         if (dropHint) dropHint.style.display = 'none';
         if (allSlotsFilled() && !cutting) addBtn.disabled = false;
         draw();
-      };
-      img.onerror = function(){ URL.revokeObjectURL(url); };
-      img.src = url;
+      }).catch(function(){});
     });
 
     if (fixBg) {

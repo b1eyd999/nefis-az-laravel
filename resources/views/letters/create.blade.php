@@ -71,6 +71,7 @@
 @endsection
 
 @section('page_script')
+<script src="{{ asset('js/photo-shrink.js') }}"></script>
 <script src="{{ asset('js/polaroid.js') }}"></script>
 <script>
 (function(){
