@@ -88,6 +88,25 @@ class EpointTest extends TestCase
             ->assertOk()->assertSee('Kartla ödə', false);
     }
 
+    /**
+     * What the owner wants once the card works: the transfer accounts switched
+     * off in the admin, and the page down to one button.
+     */
+    public function test_with_the_accounts_switched_off_the_card_is_the_whole_page(): void
+    {
+        $this->switchOn();
+        $user = User::factory()->create();
+        $order = $this->order($user);
+        PaymentAccount::query()->update(['is_active' => false]);
+
+        $this->actingAs($user)->get(route('orders.pay', $order))->assertOk()
+            ->assertSee('Kartla ödə', false)
+            // Nothing about transfers is left to confuse him.
+            ->assertDontSee('Çeki göndər', false)
+            ->assertDontSee('Ödəniş üsulu', false)
+            ->assertDontSee('Ödəniş hesabları hazırda əlçatan deyil', false);
+    }
+
     public function test_asking_to_pay_sends_the_customer_to_the_gateway(): void
     {
         $this->switchOn();
