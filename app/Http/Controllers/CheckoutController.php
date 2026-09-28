@@ -12,6 +12,7 @@ use App\Support\Accounting;
 use App\Support\Analytics;
 use App\Support\Cart;
 use App\Support\DeliveryTime;
+use App\Support\Epoint;
 use App\Support\Telegram;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -56,14 +57,18 @@ class CheckoutController extends Controller
 
         $delivery = $this->validateDelivery($request);
 
-        // Paid by transfer: the order waits for the money and the receipt.
-        // Without an account set up it simply goes through as before.
+        // Two ways to pay: a transfer to one of the owner's accounts, or a
+        // card through ePoint. Either one means the order waits for money and
+        // the customer goes to the payment page. With neither — the owner has
+        // switched everything off — the order goes through as before and he
+        // rings the customer himself.
         $account = PaymentAccount::pick();
+        $payable = $account !== null || Epoint::enabled();
 
         $order = Order::create($delivery + [
             'user_id' => $request->user()->id,
             'locale' => \App\Support\Locale::current(),
-            'status' => $account ? 'awaiting_payment' : 'pending',
+            'status' => $payable ? 'awaiting_payment' : 'pending',
             'payment_account_id' => $account?->id,
             'note' => $request->input('note'),
         ]);
@@ -153,7 +158,7 @@ class CheckoutController extends Controller
 
         Cart::clear();
 
-        return $account
+        return $payable
             ? redirect(lroute('orders.pay', $order))
             : redirect(lroute('orders.index'))->with('status', __('Sifarişiniz qəbul edildi! Tezliklə sizinlə əlaqə saxlayacağıq.'));
     }

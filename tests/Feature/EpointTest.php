@@ -107,6 +107,56 @@ class EpointTest extends TestCase
             ->assertDontSee('Ödəniş hesabları hazırda əlçatan deyil', false);
     }
 
+    /**
+     * The order's status used to be decided by whether a transfer account was
+     * set up, because that was once the only way to pay. With the accounts
+     * switched off and the card on, every order went through as "pending" and
+     * the customer was never shown a way to pay at all.
+     */
+    public function test_the_card_alone_is_enough_to_send_a_customer_to_pay(): void
+    {
+        $this->switchOn();
+        PaymentAccount::query()->delete();      // nothing but the card is left
+
+        $user = User::factory()->create();
+        $box = Product::create(['name' => 'Test', 'slug' => 'test', 'is_active' => true, 'price' => 20,
+            'template_width' => 969, 'template_height' => 1895]);
+        $box->layers()->create(['name' => 'BG', 'image' => 'boxes/bg.webp', 'x' => 0, 'y' => 0,
+            'width' => 969, 'height' => 1895, 'rotation' => 0, 'opacity' => 100, 'placement' => 'above', 'sort_order' => 0]);
+
+        $this->actingAs($user)->post(route('cart.add'), ['product_id' => $box->id])->assertSessionHasNoErrors();
+        $this->actingAs($user)->post(route('checkout.store'), [
+            'delivery_method_id' => DeliveryMethod::where('type', 'door')->value('id'),
+            'contact_phone' => '1', 'delivery_address' => 'Bakı, Nizami küç. 5',
+        ])->assertRedirect(route('orders.pay', Order::latest('id')->first()));
+
+        $order = Order::latest('id')->firstOrFail();
+        $this->assertSame('awaiting_payment', $order->status);
+        $this->assertTrue($order->awaitsPayment());
+
+        $this->actingAs($user)->get(route('orders.pay', $order))->assertOk()->assertSee('Kartla ödə', false);
+    }
+
+    /** With no card and no accounts the shop still takes the order by hand. */
+    public function test_with_no_way_to_pay_the_order_goes_through_as_before(): void
+    {
+        $user = User::factory()->create();
+        $order = $this->order($user);
+        PaymentAccount::query()->delete();
+
+        $this->assertFalse(Epoint::enabled());
+        $this->assertSame('awaiting_payment', $order->status, 'an account existed when it was placed');
+
+        // A second order, now that nothing is left.
+        $this->actingAs($user)->post(route('cart.add'), ['product_id' => Product::first()->id])->assertSessionHasNoErrors();
+        $this->actingAs($user)->post(route('checkout.store'), [
+            'delivery_method_id' => DeliveryMethod::where('type', 'door')->value('id'),
+            'contact_phone' => '1', 'delivery_address' => 'Bakı, Nizami küç. 5',
+        ])->assertRedirect(route('orders.index'));
+
+        $this->assertSame('pending', Order::latest('id')->first()->status);
+    }
+
     public function test_asking_to_pay_sends_the_customer_to_the_gateway(): void
     {
         $this->switchOn();
