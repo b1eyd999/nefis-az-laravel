@@ -61,11 +61,9 @@
           <div class="wrap">
             <div>
               @if($s->eyebrow)<span class="eyebrow hero-in d1">{{ $s->tr('eyebrow') }}</span>@endif
-              @if($i === 0)
-                <h1 class="hero-title hero-in d2">{!! nl2br(e($s->tr('title'))) !!}</h1>
-              @else
-                <h2 class="hero-title hero-in d2">{!! nl2br(e($s->tr('title'))) !!}</h2>
-              @endif
+              {{-- The banner carries the owner's own words and can be switched
+                   off altogether, so the page's heading is not kept in it. --}}
+              <h2 class="hero-title hero-in d2">{!! nl2br(e($s->tr('title'))) !!}</h2>
               @if($s->text)<p class="lede hero-in d3">{{ \App\Models\HeroSlide::numbers($s->tr('text')) }}</p>@endif
               @php
                 $b1 = \App\Models\HeroSlide::href($s->button1_url);
@@ -123,17 +121,15 @@
     <div class="wrap">
       <div class="section-head reveal">
         <span class="eyebrow">{{ __('Kolleksiya') }}</span>
-        {{-- Without a banner above, this is the page's main heading. --}}
-        @if($slides->isEmpty())
-          <h1 class="hero-title" style="font-size:clamp(2rem, 4.2vw, 3rem);">{{ __('Hər Zövqə Uyğun Dizaynlar') }}</h1>
-        @else
-          <h2>{{ __('Hər Zövqə Uyğun Dizaynlar') }}</h2>
-        @endif
+        {{-- The page's one heading, whatever the banner above is doing. --}}
+        <h1 class="hero-title" style="font-size:clamp(2rem, 4.2vw, 3rem);">{{ __('Bakıda şəkilli şokolad qutuları və fərdi hədiyyələr') }}</h1>
+        <p class="lede">{{ \App\Models\HeroSlide::numbers(__('Öz şəklinizi və sözlərinizi seçdiyiniz dizaynın üzərinə əlavə edin, önizləməni elə burada görün — qutunu biz yığıb Bakıya çatdırırıq. Ad günü, sevgiliyə, toya, yeni doğulana və korporativ hədiyyələr üçün {dizayn} hazır dizayn.')) }}</p>
+        <h2 style="margin-top:1.25rem;">{{ __('Hər Zövqə Uyğun Dizaynlar') }}</h2>
         <p class="lede">{{ __('Bir dizayn seçin, öz şəklinizi yükləyin və canlı önizləməni görün.') }}</p>
       </div>
       <div class="cards-grid">
         @forelse($products as $product)
-          @include('partials.p-card', ['product' => $product])
+          @include('partials.p-card', ['product' => $product, 'first' => $loop->index < 2])
         @empty
           <div class="p-card reveal">
             <div class="p-card-media"><span class="tag">{{ __('Milli Ornament') }}</span><span class="ph-ico">🍫</span></div>

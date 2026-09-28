@@ -69,12 +69,13 @@
 <link rel="icon" type="image/png" sizes="96x96" href="{{ \App\Support\Assets::url('images/icon-96.png') }}">
 <link rel="icon" type="image/png" sizes="192x192" href="{{ \App\Support\Assets::url('images/icon-192.png') }}">
 <link rel="apple-touch-icon" href="{{ \App\Support\Assets::url('images/apple-touch-icon.png') }}">
-<link rel="preconnect" href="https://fonts.googleapis.com">
+{{-- The type is the phone's own — San Francisco on Apple — and Inter stands
+     in for it everywhere else, so that one family is all a page loads. The
+     twenty display faces belong to the box designs and the polaroid letter;
+     the pages that draw those ask for them themselves, and every other page
+     stops waiting on 50 KB it never paints. --}}
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-{{-- The families after Poppins stand in for the designs' own display faces,
-     which are not licensed for the web. --}}
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=Great+Vibes&family=Poppins:wght@600&family=Titan+One&family=Bungee&family=Fredoka:wght@500;600&family=Sacramento&family=Creepster&family=Source+Sans+3:wght@400;600&family=Orbitron:wght@600;800&family=Anton&family=Cinzel:wght@400;700&family=Bangers&family=Luckiest+Guy&family=Oswald:wght@500;700&family=Bevan&family=Archivo+Black&family=Caveat:wght@600&family=Pacifico&family=Montserrat:wght@300;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ asset('css/polaroid.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ asset('css/site.css') }}?v={{ \App\Support\Assets::version('css/site.css') }}">
 <style>
   @yield('page_style')
@@ -261,14 +262,14 @@
         </div>
       </div>
       <div class="footer-col">
-        <h4>{{ __('Naviqasiya') }}</h4>
+        <h3>{{ __('Naviqasiya') }}</h3>
         <a href="{{ lroute('designs.index') }}">{{ __('Dizaynlar') }}</a>@if($navWraps)<a href="{{ lroute('wrappings.index') }}">{{ __('Qablaşdırma') }}</a>@endif @if($navLetters)<a href="{{ lroute('letters.create') }}">{{ \App\Support\Letter::text('menu') }}</a>@endif @if($navLive)<a href="{{ lroute('live.create') }}">{{ __('Canlı şəkil') }}</a>@endif@if($navCorporate)<a href="{{ lroute('corporate.index') }}">{{ __('Şirkətlər üçün') }}</a>@endif
         <a href="{{ lroute('home') }}#how">{{ __('Necə İşləyir') }}</a>
-        <a href="{{ lroute('home') }}#faq">Suallar</a>
+        <a href="{{ lroute('home') }}#faq">{{ __('Suallar') }}</a>
       </div>
       @if($navGifts->isNotEmpty())
         <div class="footer-col">
-          <h4>{{ __('Hədiyyə fikirləri') }}</h4>
+          <h3>{{ __('Hədiyyə fikirləri') }}</h3>
           @foreach($navGifts->take(7) as $gift)
             <a href="{{ lroute('gifts.show', $gift->slug) }}">{{ $gift->linkText() }}</a>
           @endforeach
@@ -276,7 +277,7 @@
         </div>
       @endif
       <div class="footer-col">
-        <h4>{{ __('Əlaqə') }}</h4>
+        <h3>{{ __('Əlaqə') }}</h3>
         @if(\App\Support\Contact::has())
           <a href="tel:{{ \App\Support\Contact::dial() }}" class="f-phone">{{ \App\Support\Contact::display() }}</a>
           <a href="{{ \App\Support\Contact::whatsapp() }}" target="_blank" rel="noopener">WhatsApp</a>

@@ -1,7 +1,14 @@
 @extends('layouts.app')
 
+@push('head')
+  {{-- The faces the designs are lettered in; a slot without a file of its own
+       is drawn in one of these by name. --}}
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=Great+Vibes&family=Poppins:wght@600&family=Titan+One&family=Bungee&family=Fredoka:wght@500;600&family=Sacramento&family=Creepster&family=Source+Sans+3:wght@400;600&family=Orbitron:wght@600;800&family=Anton&family=Cinzel:wght@400;700&family=Bangers&family=Luckiest+Guy&family=Oswald:wght@500;700&family=Bevan&family=Archivo+Black&family=Caveat:wght@600&family=Pacifico&family=Montserrat:wght@300;500&display=swap" rel="stylesheet">
+@endpush
+
 @section('title', __($page['title']) . ' — ' . __('Şirkətlər üçün') . ', Nefis')
-@section('meta_description', \Illuminate\Support\Str::limit(__($page['lede']), 155))
+@section('meta_description', \App\Support\Seo::snippet(__($page['lede'])))
 
 @section('page_style')
   .co-hero{ display:grid; gap:2rem; align-items:center; }

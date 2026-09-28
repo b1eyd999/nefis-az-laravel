@@ -53,7 +53,7 @@ class SeoTest extends TestCase
             ->getContent();
 
         $this->get(route('gifts.index'))->assertOk()
-            ->assertSee('<h1>Hədiyyə fikirləri</h1>', false)
+            ->assertSee('<h1>Hədiyyə fikirləri: şəkilli şokolad qutusu</h1>', false)
             ->assertSee('Gül əvəzinə hədiyyə')
             ->assertSee('8 Mart hədiyyəsi');
 
@@ -126,7 +126,7 @@ class SeoTest extends TestCase
             ->assertSee('href="' . $ru . '"', false);
 
         $this->get(route('ru.gifts.index'))->assertOk()
-            ->assertSee('<h1>Идеи подарков</h1>', false)
+            ->assertSee('<h1>Идеи подарков: шоколадная коробка с фото</h1>', false)
             ->assertSee('Подарок на день рождения')
             ->assertSee('href="' . route('ru.gifts.show', 'vmesto-cvetov') . '"', false);
 
@@ -308,7 +308,8 @@ class SeoTest extends TestCase
 
         $product = collect($this->jsonLd($html))->flatMap(fn ($b) => $b['@graph'] ?? [$b])->firstWhere('@type', 'Product');
         $this->assertSame('Frame & Player, şəkilli şokolad qutusu', $product['name']);
-        $this->assertSame('4.90', $product['offers']['price']);
+        $this->assertSame('AggregateOffer', $product['offers']['@type']);
+        $this->assertSame('4.90', $product['offers']['lowPrice']);
         $this->assertSame('AZN', $product['offers']['priceCurrency']);
         $this->assertStringContainsString('4.90 ₼-dan', $product['description']);
 
@@ -323,6 +324,51 @@ class SeoTest extends TestCase
             'https://schema.org/MerchantReturnNotPermitted',
             $product['offers']['hasMerchantReturnPolicy']['returnPolicyCategory'],
         );
+    }
+
+    /**
+     * A box on its own is not something anyone can buy — a bar always goes in —
+     * so the price the page and the markup name is the box plus the cheapest
+     * bar, and the range runs to the dearest.
+     */
+    public function test_the_price_offered_is_a_price_a_customer_can_pay(): void
+    {
+        $this->box('Frame & Player', 'frame-player', 4.9);
+        \App\Models\Chocolate::create(['name' => 'Ucuz', 'base_price' => 1.49]);
+        \App\Models\Chocolate::create(['name' => 'Baha', 'base_price' => 8.00]);
+        \App\Models\Chocolate::create(['name' => 'Gizli', 'base_price' => 0.50, 'is_active' => false]);
+
+        $cheapest = \App\Models\Chocolate::shown()->get()->map->toCustomer()->pluck('price')->min();
+        $dearest = \App\Models\Chocolate::shown()->get()->map->toCustomer()->pluck('price')->max();
+
+        $html = $this->get(route('products.customize', 'frame-player'))->assertOk()
+            ->assertSee(\App\Support\Price::format(4.9 + $cheapest) . '-dan', false)
+            ->getContent();
+
+        $offers = collect($this->jsonLd($html))->flatMap(fn ($b) => $b['@graph'] ?? [$b])
+            ->firstWhere('@type', 'Product')['offers'];
+
+        $this->assertSame('AggregateOffer', $offers['@type']);
+        $this->assertSame(number_format(4.9 + $cheapest, 2, '.', ''), $offers['lowPrice']);
+        $this->assertSame(number_format(4.9 + $dearest, 2, '.', ''), $offers['highPrice']);
+        $this->assertSame(2, $offers['offerCount']);
+        $this->assertArrayNotHasKey('price', $offers, 'a single price would be one nobody can pay');
+    }
+
+    /** The snippet Google shows must end on a word, and keep its last sentence. */
+    public function test_the_snippet_is_cut_on_a_word_and_keeps_the_promise(): void
+    {
+        $box = $this->box('Kinder', 'kinder');
+        $box->forceFill(['description' => 'Şirniyyat sevən böyüklər və uşaqlar üçün hazırlanmış, tamamilə '
+            . 'fərdiləşdirilə bilən, içərisinə istədiyiniz şokoladı seçdiyiniz qutu dizaynı.'])->save();
+
+        $html = $this->get(route('products.customize', 'kinder'))->assertOk()->getContent();
+        preg_match('/<meta name="description" content="([^"]*)"/u', $html, $m);
+        $text = html_entity_decode($m[1] ?? '', ENT_QUOTES, 'UTF-8');
+
+        $this->assertStringContainsString('Bakıda çatdırılma.', $text, 'the promise must survive the cut');
+        $this->assertLessThanOrEqual(158, mb_strlen($text));
+        $this->assertDoesNotMatchRegularExpression('/\p{L}\.\.\.\s/u', $text, 'no word is cut in half');
     }
 
     public function test_a_design_with_its_own_words_uses_them_everywhere(): void

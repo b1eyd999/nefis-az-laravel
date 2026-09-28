@@ -82,7 +82,7 @@
   .lb-img img{ width:100%; height:100%; max-height:52vh; object-fit:contain; }
   @media (min-width:800px){ .lb-img img{ max-height:90vh; } }
   .lb-side{ padding:1.75rem; display:flex; flex-direction:column; gap:.9rem; justify-content:center; min-width:0; }
-  .lb-side h3{ font-size:1.375rem; }
+  .lb-side h3, .lb-title{ font-size:1.375rem; font-weight:700; margin:0; }
   .lb-side .cat{ font-size:.8125rem; color:var(--gold-deep); font-weight:600; }
   .lb-side p{ font-size:.9375rem; color:var(--cocoa-soft); }
   .lb-side .soon{
@@ -101,7 +101,7 @@
   <section class="page-hero">
     <div class="wrap">
       <span class="eyebrow">{{ __('Kolleksiya') }}</span>
-      <h1>{{ __('Dizaynlar') }}</h1>
+      <h1>{{ __('Şəkilli şokolad qutusu dizaynları') }}</h1>
       <p class="lede">{{ __('Şokolad qutularından posterlərə qədər, bəyəndiyiniz dizaynı seçin, sonra öz şəklinizi və sözünüzü əlavə edin.') }}</p>
       @if($gifts->isNotEmpty())
         <nav class="occ-chips" style="margin-top:1.75rem;" aria-label="{{ __('Hədiyyə fikirləri') }}">
@@ -159,7 +159,12 @@
                         <b>HOT</b>
                       </span>
                     @endif
-                    <img src="{{ \App\Support\Media::url($design->catalogImage()) }}" alt="{{ $design->tr('name') }}, {{ __('şəkilli şokolad qutusu') }}" loading="lazy">
+                    {{-- The first cards of the first family are the phone's
+                         largest paint; they are asked for at once. --}}
+                    <img src="{{ \App\Support\Media::url($design->catalogImage()) }}"
+                         alt="{{ $design->tr('name') }}, {{ __('şəkilli şokolad qutusu') }}"
+                         width="1080" height="1350" decoding="async"
+                         @if($loop->parent->first && $loop->index < 2) fetchpriority="high" @else loading="lazy" @endif>
                   </div>
                   <div class="d-card-body">
                     <h3>{{ $design->tr('name') }}</h3>
@@ -196,7 +201,7 @@
       <div class="lb-img"><img id="lb-image" src="" alt=""></div>
       <div class="lb-side">
         <span class="cat" id="lb-cat"></span>
-        <h3 id="lb-title"></h3>
+        <p class="lb-title" id="lb-title"></p>
         <p>{{ __('Öz şəklinizi və istədiyiniz mətni bu dizaynın üzərinə əlavə edə bilərsiniz.') }}</p>
         <a class="btn btn-primary" id="lb-action" href="#">
           {{ __('Fərdiləşdir') }}

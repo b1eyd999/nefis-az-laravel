@@ -73,6 +73,29 @@ class GiftPage extends Model
         return route(\App\Support\Locale::route('gifts.index', $locale));
     }
 
+    /**
+     * This page in another language. The Azerbaijani row is the original and
+     * the translations hang off it, so the walk always goes through it. With
+     * no translation written yet the reader lands on that language's hub
+     * rather than on the home page, which at least keeps him among the ideas.
+     */
+    public function localisedUrl(string $locale): string
+    {
+        if ($this->locale === $locale) {
+            return $this->url();
+        }
+
+        $root = $this->alt ?: $this;
+
+        if ($root->locale === $locale) {
+            return $root->is_active ? $root->url() : self::hubUrl($locale);
+        }
+
+        $twin = $root->alternates()->where('locale', $locale)->where('is_active', true)->first();
+
+        return $twin?->url() ?? self::hubUrl($locale);
+    }
+
     public function label(): string
     {
         return trim(($this->emoji ? $this->emoji . ' ' : '') . $this->menu_label);
@@ -99,7 +122,7 @@ class GiftPage extends Model
 
     public function metaDescription(): string
     {
-        return $this->meta_description ?: Str::limit((string) $this->intro, 160);
+        return $this->meta_description ?: \App\Support\Seo::snippet($this->intro);
     }
 
     /**

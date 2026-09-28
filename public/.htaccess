@@ -1,3 +1,12 @@
+# The host already caches css, images and fonts for a week; the scripts were
+# the one kind it did not. Seven round trips on every repeat visit to a
+# design page were spent asking whether they had changed.
+<IfModule mod_headers.c>
+    <FilesMatch "\.js$">
+        Header set Cache-Control "public, max-age=604800"
+    </FilesMatch>
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
@@ -5,14 +14,19 @@
 
     RewriteEngine On
 
-    # Force HTTPS
-    RewriteCond %{HTTPS} off
-    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-
-    # One address for the site: www.nefis.az sends everyone to nefis.az, so
-    # search engines do not see two copies of every page.
+    # One address for the site, in one hop: http, www, or both, everyone ends
+    # up on https://nefis.az, so search engines do not see two copies of every
+    # page and nobody walks a chain of redirects.
+    RewriteCond %{HTTPS} off [OR]
     RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
-    RewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]
+    RewriteRule ^ https://nefis.az%{REQUEST_URI} [L,R=301]
+
+    # The front controller's own name is not an address. Without this,
+    # /index.php/dizaynlar answers 200 and calls itself canonical, and the
+    # whole site exists twice. THE_REQUEST holds what the browser actually
+    # asked for, so the internal rewrite at the bottom does not loop into it.
+    RewriteCond %{THE_REQUEST} \s/+index\.php(/[^\s?]*)?[\s?] [NC]
+    RewriteRule ^index\.php(/(.*))?$ /$2 [L,R=301]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .

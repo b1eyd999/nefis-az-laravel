@@ -7,6 +7,7 @@ use App\Models\Wrapping;
 use App\Support\Letter;
 use App\Support\LiveMaterials;
 use App\Support\Locale;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 /**
@@ -22,22 +23,21 @@ class GiftPageController extends Controller
         $locale = Locale::current();
         $pages = GiftPage::shown()->inLocale($locale)->get();
 
-        // The same ideas in whichever other language the owner has written them.
-        $otherHub = null;
-        foreach (array_diff(Locale::all(), [$locale]) as $other) {
-            if (GiftPage::shown()->inLocale($other)->exists()) {
-                $otherHub = GiftPage::hubUrl($other);
-                break;
-            }
-        }
-
-        return view('gifts.index', compact('pages', 'locale', 'otherHub'));
+        // The hub exists in all three languages at a fixed address each, so the
+        // layout's own hreflang loop is right for this page and it keeps none.
+        return view('gifts.index', compact('pages', 'locale'));
     }
 
-    public function show(GiftPage $giftPage): View
+    public function show(GiftPage $giftPage): View|RedirectResponse
     {
         $locale = Locale::current();
         abort_unless($giftPage->is_active && $giftPage->locale === $locale, 404);
+
+        // The database matches a slug whatever its case, so /hediyye/AD-GUNU
+        // answers as well as the real address. One of them is the page.
+        if ((string) request()->route()->originalParameter('giftPage') !== $giftPage->slug) {
+            return redirect($giftPage->url(), 301);
+        }
 
         $products = $giftPage->shownProducts();
         $from = $products->pluck('price')->filter(fn ($p) => $p > 0)->min();

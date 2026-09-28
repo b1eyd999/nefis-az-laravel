@@ -31,6 +31,12 @@ class ProductController extends Controller
     {
         abort_unless($product->is_active && $product->isCustomizable(), 404);
 
+        // Slugs match whatever their case, so every design has an endless
+        // family of addresses. Send them all to the one we publish.
+        if ((string) request()->route()->originalParameter('product') !== $product->slug) {
+            return redirect(lroute('products.customize', $product->slug), 301);
+        }
+
         $product->load(['layers', 'photoSlots', 'textSlots', 'angles.photoSlots', 'angles.textSlots']);
 
         $viewData = $product->layers->isNotEmpty()

@@ -2,11 +2,24 @@
 
 @php
   $seoImage = \App\Support\Media::url($product->catalogImage());
-  $seoText = $product->description
-      ? \Illuminate\Support\Str::limit((string) $product->tr('description'), 110) . ' ' . __('Şəklinizi və sözlərinizi əlavə edin, Bakıda çatdırılma.')
+  // Google shows about 155 characters. Str::limit() used to cut at an exact
+  // count, mid-word, and then the sentence below was glued on top — so every
+  // design page offered a broken word and lost its delivery promise off the
+  // end. Cut on a space, and only as far as the tail leaves room for.
+  $seoTail = ' ' . __('Şəklinizi və sözlərinizi əlavə edin, Bakıda çatdırılma.');
+  $seoIntro = \App\Support\Seo::snippet($product->tr('description'), 155 - mb_strlen($seoTail));
+  $seoText = $seoIntro !== ''
+      ? $seoIntro . $seoTail
       : '«' . $product->tr('name') . '» ' . __('dizaynında fərdi şokolad qutusu: şəklinizi və sözlərinizi əlavə edin, önizləməni dərhal görün')
         . ($product->price ? ', ' . \App\Support\Price::format($product->price) . '-dan' : '')
         . '. ' . __('Ad günü və sevdiklərinizə hədiyyə, Bakıda çatdırılma.');
+
+  // What a box actually costs: the box plus the cheapest bar that has to go
+  // in it. The offer says the same, so the marked-up price is one a customer
+  // can really pay.
+  $chocFrom = $chocolates->pluck('price')->filter(fn ($p) => $p > 0);
+  $priceFrom = $product->price ? (float) $product->price + (float) ($chocFrom->min() ?? 0) : null;
+  $priceTo = $product->price ? (float) $product->price + (float) ($chocFrom->max() ?? 0) : null;
 @endphp
 @section('title', $product->tr('name') . ', ' . __('şəkilli şokolad qutusu') . ' | Nefis')
 @section('meta_description', $seoText)
@@ -15,24 +28,53 @@
 @endif
 @section('og_type', 'product')
 
+@push('head')
+  {{-- The first view's own pictures. Their addresses are otherwise buried in
+       a data block near the end of a very long document, so nothing starts
+       fetching them until the whole page has been read. --}}
+  @php
+    $firstView = $viewData[0] ?? null;
+    $firstArt = array_values(array_filter(array_unique([
+        $firstView['bg'] ?? null,
+        $firstView['url'] ?? null,
+        ...array_map(fn ($l) => $l['url'] ?? null, array_merge(
+            $firstView['layers']['below'] ?? [], $firstView['layers']['above'] ?? [])),
+    ])));
+  @endphp
+  @foreach(array_slice($firstArt, 0, 3) as $art)
+    <link rel="preload" as="image" fetchpriority="high" href="{{ $art }}">
+  @endforeach
+  {{-- The faces the designs are lettered in; a slot without a file of its own
+       is drawn in one of these by name. --}}
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=Great+Vibes&family=Poppins:wght@600&family=Titan+One&family=Bungee&family=Fredoka:wght@500;600&family=Sacramento&family=Creepster&family=Source+Sans+3:wght@400;600&family=Orbitron:wght@600;800&family=Anton&family=Cinzel:wght@400;700&family=Bangers&family=Luckiest+Guy&family=Oswald:wght@500;700&family=Bevan&family=Archivo+Black&family=Caveat:wght@600&family=Pacifico&family=Montserrat:wght@300;500&display=swap" rel="stylesheet">
+@endpush
+
+
 @push('jsonld')
   {{ \App\Support\Seo::jsonLd(['@graph' => array_values(array_filter([
       array_filter([
           '@type' => 'Product',
           'name' => $product->tr('name') . ', ' . __('şəkilli şokolad qutusu'),
           'image' => $seoImage ? [$seoImage] : null,
-          'description' => $seoText,
+          '@id' => lroute('products.customize', $product->slug) . '#product',
+          'description' => $product->tr('description') ? (string) $product->tr('description') : $seoText,
           'sku' => 'nefis-' . $product->id,
           'category' => __('Fərdi şokolad qutusu'),
           'brand' => ['@type' => 'Brand', 'name' => 'Nefis'],
-          'offers' => $product->price ? [
-              '@type' => 'Offer',
+          // A bar always goes inside, so the box alone is not a price anyone
+          // pays: what is offered is a range, from the cheapest bar to the
+          // dearest.
+          'offers' => $priceFrom ? [
+              '@type' => 'AggregateOffer',
               'url' => lroute('products.customize', $product->slug),
               'priceCurrency' => 'AZN',
-              'price' => number_format((float) $product->price, 2, '.', ''),
+              'lowPrice' => number_format($priceFrom, 2, '.', ''),
+              'highPrice' => number_format((float) $priceTo, 2, '.', ''),
+              'offerCount' => max(1, $chocFrom->count()),
               'availability' => 'https://schema.org/InStock',
               'itemCondition' => 'https://schema.org/NewCondition',
-              'seller' => ['@type' => 'Organization', 'name' => 'Nefis Şokolad Evi'],
+              'seller' => ['@id' => url('/') . '#store'],
               // Google asks every offer these two as well.
               'shippingDetails' => \App\Support\Seo::shipping(),
               'hasMerchantReturnPolicy' => \App\Support\Seo::returns(),
@@ -40,7 +82,7 @@
       ]),
       \App\Support\Seo::breadcrumbs([
           [__('Ana səhifə'), lroute('home')],
-          ['Dizaynlar', lroute('designs.index')],
+          [__('Dizaynlar'), lroute('designs.index')],
           [$product->tr('name'), lroute('products.customize', $product->slug)],
       ]),
   ]))]) }}
@@ -290,11 +332,14 @@
   <div class="wrap">
     <nav class="crumbs" aria-label="{{ __('Səhifənin yeri') }}">
       <a href="{{ lroute('home') }}">{{ __('Ana səhifə') }}</a><span aria-hidden="true">›</span>
-      <a href="{{ lroute('designs.index') }}">Dizaynlar</a><span aria-hidden="true">›</span>
+      <a href="{{ lroute('designs.index') }}">{{ __('Dizaynlar') }}</a><span aria-hidden="true">›</span>
       <span aria-current="page">{{ $product->tr('name') }}</span>
     </nav>
     <span class="eyebrow" style="justify-content:center;">{{ __('Fərdiləşdirmə') }}</span>
     <h1>{{ $product->tr('name') }}</h1>
+    @if($priceFrom)
+      <p class="price-from">{{ __(':price-dan', ['price' => \App\Support\Price::format($priceFrom)]) }}</p>
+    @endif
     @if($product->tr('description'))
       <p class="lede" style="margin-inline:auto;">{{ $product->tr('description') }}</p>
     @endif
@@ -671,6 +716,25 @@
     </div>
   </div>
 </section>
+
+@if($gifts->isNotEmpty())
+  {{-- Above the chips are a label, deliberately: a visitor mid-upload should
+       not be invited away. Here, past the basket button, the same occasions
+       are a way on — and they carry this page's weight to the pages written
+       to be found. --}}
+  <section>
+    <div class="wrap">
+      <div class="section-head center">
+        <h2>{{ __('Bu dizayn hansı münasibətlərə uyğundur') }}</h2>
+      </div>
+      <div class="occ-chips">
+        @foreach($gifts as $gift)
+          <a class="occ-chip" href="{{ $gift->url() }}">{{ $gift->emoji }} {{ $gift->linkText() }}</a>
+        @endforeach
+      </div>
+    </div>
+  </section>
+@endif
 
 @if($related->isNotEmpty())
   <section class="tinted">

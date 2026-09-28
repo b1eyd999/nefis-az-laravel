@@ -65,7 +65,7 @@ class Seo
                     '@type' => 'ContactPoint',
                     'contactType' => 'customer service',
                     'telephone' => $phone,
-                    'availableLanguage' => ['az', 'ru'],
+                    'availableLanguage' => \App\Support\Locale::published(),
                 ] : null,
                 'sameAs' => [self::INSTAGRAM],
             ]),
@@ -74,7 +74,8 @@ class Seo
                 '@id' => $home . '#website',
                 'url' => $home,
                 'name' => 'Nefis',
-                'inLanguage' => 'az',
+                // One site, read in three languages; the block is shared by all of them.
+                'inLanguage' => \App\Support\Locale::published(),
                 'publisher' => ['@id' => $home . '#store'],
             ],
         ]];
@@ -137,6 +138,24 @@ class Seo
             'applicableCountry' => 'AZ',
             'returnPolicyCategory' => 'https://schema.org/MerchantReturnNotPermitted',
         ];
+    }
+
+    /**
+     * A snippet Google can show whole: cut on a space, never through a word,
+     * and ending in a full stop rather than three dots mid-syllable.
+     */
+    public static function snippet(?string $text, int $limit = 155): string
+    {
+        $text = trim((string) preg_replace('/\s+/u', ' ', (string) $text));
+
+        if ($text === '' || mb_strlen($text) <= $limit) {
+            return $text;
+        }
+
+        $cut = mb_substr($text, 0, $limit);
+        $space = mb_strrpos($cut, ' ');
+
+        return rtrim($space ? mb_substr($cut, 0, $space) : $cut, " ,.;:—-") . '.';
     }
 
     public static function breadcrumbs(array $trail): array

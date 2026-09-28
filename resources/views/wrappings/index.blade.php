@@ -1,7 +1,14 @@
 @extends('layouts.app')
 
-@section('title', __('Hədiyyə qablaşdırması') . ', Nefis Şokolad Evi')
+@section('title', __('Hədiyyə qablaşdırması, kağız və lent, Bakı') . ' | Nefis')
 @section('meta_description', __('Şokolad qutunuzu hədiyyə kağızına büküb lentlə bağlayırıq. Naxışları və qiymətləri burada görün.'))
+
+@push('jsonld')
+  {{ \App\Support\Seo::jsonLd(['@graph' => [\App\Support\Seo::breadcrumbs([
+      [__('Ana səhifə'), lroute('home')],
+      [__('Hədiyyə qablaşdırması'), lroute('wrappings.index')],
+  ])]]) }}
+@endpush
 
 @section('page_style')
   .wr-group{ margin-bottom:3.5rem; }
@@ -31,7 +38,7 @@
   <section class="page-hero">
     <div class="wrap">
       <span class="eyebrow">{{ __('Hədiyyə üçün') }}</span>
-      <h1>{{ __('Qablaşdırma') }}</h1>
+      <h1>{{ __('Şokolad qutusu üçün hədiyyə qablaşdırması') }}</h1>
       <p class="lede">{{ __('Qutunuzu seçdiyiniz kağıza büküb lentlə bağlayırıq, açılana qədər sürpriz qalsın.') }}</p>
     </div>
   </section>

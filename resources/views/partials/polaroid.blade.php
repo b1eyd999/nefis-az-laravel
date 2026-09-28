@@ -1,6 +1,15 @@
 {{-- A Polaroid letter: the photo in the window with the words written under it, or — with no photo —
      the words alone in the window like a note. Its look is the owner's (Admin → Polaroid məktub);
      live previews update it with public/js/polaroid.js. --}}
+@once
+  @push('head')
+    {{-- The handwriting the letter is written in, and the sheet it is drawn
+         on. Asked for here so the pages that never show a letter do not. --}}
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Pacifico&family=Great+Vibes&family=Sacramento&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/polaroid.css') }}">
+  @endpush
+@endonce
 @php
   $photo = $photo ?? null;
   $text = $text ?? null;

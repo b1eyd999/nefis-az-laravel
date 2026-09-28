@@ -98,7 +98,7 @@
         </div>
         <div class="cards-grid">
           @foreach($products as $product)
-            @include('partials.p-card', ['product' => $product])
+            @include('partials.p-card', ['product' => $product, 'first' => $loop->index < 2])
           @endforeach
         </div>
       </div>

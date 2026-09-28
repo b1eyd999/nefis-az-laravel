@@ -8,15 +8,6 @@
 @section('meta_description', __('Kimə və hansı münasibətə hədiyyə axtarırsınız?') . ' ' . $labels . ', '
     . __('şəkil və sözlərinizlə fərdi şokolad qutusu fikirləri.'))
 
-@section('own_hreflang', 1)
-@if($otherHub)
-  @push('head')
-    <link rel="alternate" hreflang="{{ $locale }}" href="{{ \App\Support\Seo::canonical(\App\Models\GiftPage::hubUrl($locale)) }}">
-    <link rel="alternate" hreflang="{{ \App\Support\Locale::current() === 'az' ? 'ru' : 'az' }}" href="{{ \App\Support\Seo::canonical($otherHub) }}">
-    <link rel="alternate" hreflang="x-default" href="{{ \App\Support\Seo::canonical(\App\Models\GiftPage::hubUrl('az')) }}">
-  @endpush
-@endif
-
 @push('jsonld')
   {{ \App\Support\Seo::jsonLd(['@graph' => [
       \App\Support\Seo::breadcrumbs([
@@ -47,7 +38,7 @@
         @endforeach
       </nav>
       <span class="eyebrow">{{ __('Kimə, nə üçün?') }}</span>
-      <h1>{{ __('Hədiyyə fikirləri') }}</h1>
+      <h1>{{ __('Hədiyyə fikirləri: şəkilli şokolad qutusu') }}</h1>
       <p class="lede">
         {{ __('Ad günü, sevgiliyə, anaya, körpəyə və ya bayrama, kimə hədiyyə axtardığınızı seçin, sizə uyğun dizaynları göstərək.') }}
       </p>

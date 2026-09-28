@@ -64,7 +64,7 @@ SVG;
   <div class="pg-modal" id="photo-guide-modal" hidden>
     <div class="pg-sheet" role="dialog" aria-modal="true" aria-labelledby="pg-title">
       <button type="button" class="pg-close" id="photo-guide-close" aria-label="{{ __('Bağla') }}">×</button>
-      <h3 id="pg-title">{{ __('Şəkil necə olmalıdır?') }}</h3>
+      <h2 id="pg-title">{{ __('Şəkil necə olmalıdır?') }}</h2>
       <p class="pg-lead">{{ __('Şəkil qutunun üzərinə çap olunur, ona görə üz aydın görünməlidir.') }}</p>
 
       <div class="pg-grid">

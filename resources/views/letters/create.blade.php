@@ -1,7 +1,14 @@
 @extends('layouts.app')
 
-@section('title', \App\Support\Letter::text('title') . ', Nefis Şokolad Evi')
+@section('title', __('Polaroid məktub, şəkilli hədiyyə kartı') . ' | Nefis')
 @section('meta_description', __('Şəkliniz və sözlərinizlə polaroid kimi çap olunan məktub, qutunun içinə və ya ayrıca hədiyyə.'))
+
+@push('jsonld')
+  {{ \App\Support\Seo::jsonLd(['@graph' => [\App\Support\Seo::breadcrumbs([
+      [__('Ana səhifə'), lroute('home')],
+      [__('Polaroid məktub'), lroute('letters.create')],
+  ])]]) }}
+@endpush
 
 @section('page_style')
   .letter-grid{ display:grid; gap:2.5rem; align-items:center; }

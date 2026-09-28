@@ -1,7 +1,14 @@
 @extends('layouts.app')
 
-@section('title', __('Canlı şəkil') . ', Nefis Şokolad Evi')
+@section('title', __('Canlı şəkil (AR), QR ilə oynayan video hədiyyə') . ' | Nefis')
 @section('meta_description', __('Şəklinizi canlandırın: QR kodu oxudub telefonu şəklə tutanda üstündə sizin videonuz oynayır, tətbiq yükləmədən.'))
+
+@push('jsonld')
+  {{ \App\Support\Seo::jsonLd(['@graph' => [\App\Support\Seo::breadcrumbs([
+      [__('Ana səhifə'), lroute('home')],
+      [__('Canlı şəkil (AR)'), lroute('live.create')],
+  ])]]) }}
+@endpush
 
 @section('page_style')
   .live-grid{ display:grid; gap:2.5rem; align-items:start; }

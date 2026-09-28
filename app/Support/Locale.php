@@ -69,9 +69,25 @@ class Locale
         return $locale === self::DEFAULT ? $name : $locale . '.' . $name;
     }
 
-    /** The address of the page being looked at, in another language. */
+    /**
+     * The address of the page being looked at, in another language.
+     *
+     * A page whose address is a word — a gift page — does not keep the same
+     * word in every language, so a model that knows its own translations is
+     * asked first. Everything else keeps its parameters.
+     */
     public static function switchUrl(string $locale): string
     {
+        foreach (request()->route()?->parameters() ?? [] as $parameter) {
+            if (is_object($parameter) && method_exists($parameter, 'localisedUrl')) {
+                $url = $parameter->localisedUrl($locale);
+
+                if (is_string($url) && $url !== '') {
+                    return $url;
+                }
+            }
+        }
+
         $name = (string) request()->route()?->getName();
         $bare = preg_replace('/^(?:' . implode('|', array_diff(self::all(), [self::DEFAULT])) . ')\./', '', $name);
         $wanted = self::route((string) $bare, $locale);
@@ -81,7 +97,9 @@ class Locale
         }
 
         try {
-            return route($wanted, request()->route()->parameters() + request()->query());
+            // Only the page's own parameters: a utm_ tag copied in here would
+            // make every hreflang point at an address that is not canonical.
+            return route($wanted, request()->route()->parameters());
         } catch (\Throwable) {
             return self::home($locale);
         }

@@ -1,6 +1,13 @@
 {{-- A design on a catalogue card: its picture, name, price and the way to fill it in. --}}
-@php $link = $product->isCustomizable() ? lroute('products.customize', $product->slug) : lroute('designs.index'); @endphp
-<div class="p-card reveal">
+@php
+  $link = $product->isCustomizable() ? lroute('products.customize', $product->slug) : lroute('designs.index');
+  // The first cards are what a phone paints first. Hidden behind lazy loading
+  // and a fade, that picture is fetched late and counted later still, which is
+  // the page's largest paint. The ones above the fold are asked for at once
+  // and start visible; the rest behave as before.
+  $first = ($first ?? false);
+@endphp
+<div class="p-card{{ $first ? '' : ' reveal' }}">
   <a href="{{ $link }}" class="p-card-media">
     @if($product->tag)<span class="tag">{{ $product->tag }}</span>@endif
     {{-- Counted from the orders themselves, so the flame moves to whatever is
@@ -14,7 +21,10 @@
         <b>HOT</b>
       </span>
     @endif
-    <img src="{{ \App\Support\Media::url($product->catalogImage()) }}" alt="{{ $product->tr('name') }}, {{ __('şəkilli şokolad qutusu') }}" loading="lazy">
+    <img src="{{ \App\Support\Media::url($product->catalogImage()) }}"
+         alt="{{ $product->tr('name') }}, {{ __('şəkilli şokolad qutusu') }}"
+         width="1080" height="1350" decoding="async"
+         @if($first) fetchpriority="high" @else loading="lazy" @endif>
   </a>
   <div class="p-card-body">
     <h3>{{ $product->tr('name') }}</h3>

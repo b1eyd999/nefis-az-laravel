@@ -817,6 +817,7 @@
   .occ-chip:hover{ border-color:var(--gold); color:var(--cocoa); transform:translateY(-2px); }
   /* a chip that only names an occasion: nothing to click, so nothing moves */
   .occ-chip.is-static{ cursor:default; }
+  .price-from{ margin:.4rem 0 0; font-weight:700; color:var(--gold-deep); font-size:1.0625rem; }
   .occ-chip.is-static:hover{ border-color:var(--line); color:var(--cocoa-soft); transform:none; }
   .prose{ max-width:44rem; margin-inline:auto; color:var(--cocoa-soft); font-size:1.0625rem; }
   .prose h2{ font-size:clamp(1.4rem, 2.6vw, 1.75rem); margin:2.25rem 0 .75rem; }
