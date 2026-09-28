@@ -65,6 +65,18 @@ class SchedulerTest extends TestCase
             ->assertDontSee('schedule:run');
     }
 
+    /** The artwork lives on Yandex Disk behind a key that only the server has; its absence must be visible. */
+    public function test_the_admin_says_whether_the_picture_key_is_there(): void
+    {
+        $this->admin();
+
+        config()->set('media.yandex_public_key', null);
+        Livewire::test(SiteSettings::class)->assertSee('Açar yoxdur')->assertSee('yandex-media.txt');
+
+        config()->set('media.yandex_public_key', 'abc');
+        Livewire::test(SiteSettings::class)->assertSee('Açar yerindədir')->assertDontSee('Açar yoxdur');
+    }
+
     public function test_the_abandoned_order_job_is_scheduled(): void
     {
         $this->artisan('schedule:list')->expectsOutputToContain('orders:expire-unpaid');

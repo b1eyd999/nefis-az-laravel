@@ -261,6 +261,20 @@ class SiteSettings extends Page implements HasActions, HasForms
                             ))
                             ->visible(fn () => ! Scheduler::isRunning()),
                     ]),
+                Forms\Components\Section::make('Dizayn şəkilləri (Yandex Disk)')
+                    ->description('Qutu şəkilləri yüzlərlə meqabaytdır, ona görə saytda yox, Yandex Diskdə saxlanılır — sayt yalnız linki verir. '
+                        . 'Paylaşım açarı serverdəki yandex-media.txt faylındadır və git-ə heç vaxt düşmür.')
+                    ->schema([
+                        Forms\Components\Placeholder::make('media_key')
+                            ->label('Vəziyyət')
+                            ->content(fn () => new \Illuminate\Support\HtmlString(
+                                filled(config('media.yandex_public_key'))
+                                    ? '<span style="color:#16a34a; font-weight:600;">✓ Açar yerindədir</span> — Yandex Diskdəki şəkillər açılır.'
+                                    : '<span style="color:#dc2626; font-weight:600;">⚠ Açar yoxdur</span> — yalnız serverdə olan şəkillər görünür; '
+                                        . 'Yandex Diskdə saxlananlar açılmayacaq.<br>Faylı geri qoyun: '
+                                        . '<code style="user-select:all;">/home/darkftga/nefis-laravel/yandex-media.txt</code> — içində yalnız paylaşım linki olmalıdır.'
+                            )),
+                    ]),
                 Forms\Components\Section::make('Ödəniş')
                     ->description('Müştəri "Ödəniş hesabları"ndakı hesaba köçürür və çeki yükləyir. Bir hesab limitini doldurduqda növbəti hesaba keçilir.')
                     ->schema([
