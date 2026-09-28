@@ -8,6 +8,7 @@ use App\Support\ChatBot;
 use App\Support\Contact;
 use App\Support\CustomerNotice;
 use App\Support\DeliveryTime;
+use App\Support\Epoint;
 use App\Support\Telegram;
 use App\Support\Seo;
 use Filament\Actions;
@@ -57,6 +58,9 @@ class SiteSettings extends Page implements HasActions, HasForms
             'payment_limit' => (int) Setting::get(Setting::PAYMENT_LIMIT),
             'payment_window_hours' => (int) Setting::get(Setting::PAYMENT_WINDOW_HOURS),
             'payment_note' => Setting::get(Setting::PAYMENT_NOTE),
+            'epoint_enabled' => Setting::get(Setting::EPOINT_ENABLED) === '1',
+            'epoint_public_key' => Epoint::publicKey(),
+            'epoint_private_key' => Epoint::privateKey(),
             'seo_google' => Setting::get(Setting::SEO_GOOGLE),
             'seo_yandex' => Setting::get(Setting::SEO_YANDEX),
             'seo_bing' => Setting::get(Setting::SEO_BING),
@@ -213,6 +217,27 @@ class SiteSettings extends Page implements HasActions, HasForms
                             ->label('Ödəniş səhifəsindəki yazı')->rows(2)->maxLength(300)->columnSpanFull(),
                     ])
                     ->columns(2),
+                Forms\Components\Section::make('Kartla onlayn ödəniş (ePoint)')
+                    ->description('Açıq olanda ödəniş səhifəsində "Kartla ödə" düyməsi görünür: müştəri epoint.az-da kartla ödəyir və sifariş '
+                        . 'bank təsdiqi gəldiyi kimi özü təsdiqlənir — çek gözləmək lazım deyil. Açarları epoint.az kabinetindən götürürsünüz '
+                        . '(Ayarlar → API). Kabinetdə "Nəticə" ünvanı olaraq bunu yazın: ' . self::resultUrl())
+                    ->schema([
+                        Forms\Components\Toggle::make('epoint_enabled')
+                            ->label('Kartla ödəniş açıq olsun')
+                            ->helperText('Hər iki açar yazılmayınca düymə görünmür.')
+                            ->columnSpanFull(),
+                        Forms\Components\TextInput::make('epoint_public_key')
+                            ->label('Public key')
+                            ->autocomplete(false)
+                            ->maxLength(190),
+                        Forms\Components\TextInput::make('epoint_private_key')
+                            ->label('Private key')
+                            ->password()->revealable()->autocomplete(false)
+                            ->maxLength(190)
+                            ->helperText('Şifrələnmiş saxlanılır. Heç kimə göndərməyin.'),
+                    ])
+                    ->columns(2)
+                    ->collapsible(),
                 Forms\Components\Section::make('Əlaqə')
                     ->description('Saytın aşağısında və mobil menyuda görünür. Nömrə həm zəng, həm də WhatsApp üçün işlədilir.')
                     ->schema([
@@ -352,6 +377,12 @@ class SiteSettings extends Page implements HasActions, HasForms
             ]);
     }
 
+    /** The address ePoint reports payments to; the owner copies it into his cabinet. */
+    public static function resultUrl(): string
+    {
+        return route('epoint.result');
+    }
+
     public function save(): void
     {
         $data = $this->form->getState();
@@ -359,6 +390,9 @@ class SiteSettings extends Page implements HasActions, HasForms
         Setting::put(Setting::PAYMENT_LIMIT, (int) $data['payment_limit']);
         Setting::put(Setting::PAYMENT_WINDOW_HOURS, (int) $data['payment_window_hours']);
         Setting::put(Setting::PAYMENT_NOTE, $data['payment_note'] ?? '');
+        Setting::put(Setting::EPOINT_PUBLIC_KEY, trim((string) ($data['epoint_public_key'] ?? '')));
+        Epoint::savePrivateKey($data['epoint_private_key'] ?? '');
+        Setting::put(Setting::EPOINT_ENABLED, ! empty($data['epoint_enabled']));
         Setting::put(Setting::MAINTENANCE, (bool) $data['maintenance']);
         Setting::put(Setting::MAINTENANCE_MESSAGE, $data['maintenance_message']);
         Setting::put(Setting::SEO_GOOGLE, Seo::cleanCode($data['seo_google'] ?? ''));

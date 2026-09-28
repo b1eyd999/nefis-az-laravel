@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BoxEditorController;
 use App\Http\Controllers\CoverController;
+use App\Http\Controllers\EpointController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\GiftPageController;
 use App\Http\Controllers\LivePhotoController;
@@ -34,6 +35,16 @@ Route::get('/feed.xml', [FeedController::class, 'index'])->name('feed');
 Route::get('/canli/{code}', [LivePhotoController::class, 'show'])->where('code', '[a-z0-9]{4,16}')->name('live.show');
 Route::get('/canli/{code}/video', [LivePhotoController::class, 'video'])->where('code', '[a-z0-9]{4,16}')->name('live.video');
 Route::post('/canli-hazirla/{livePhoto}', [LivePhotoController::class, 'storeMind'])->middleware('auth')->name('live.mind');
+
+/* ePoint, paying by card. The result address is the one the gateway itself
+   calls, server to server: no session, no language prefix, and the signature
+   inside is what makes it trustworthy. The other two are where the bank sends
+   the customer back, and they decide nothing. */
+Route::post('/epoint/result', [EpointController::class, 'result'])->name('epoint.result');
+Route::get('/epoint/ugurlu/{order}', [EpointController::class, 'done'])
+    ->whereNumber('order')->middleware('auth')->name('epoint.done');
+Route::get('/epoint/xeta/{order}', [EpointController::class, 'failed'])
+    ->whereNumber('order')->middleware('auth')->name('epoint.failed');
 
 // A courier taps "I'll take it" in the group and Telegram calls this address.
 Route::post('/telegram/kuryer/{secret}', [\App\Http\Controllers\TelegramController::class, 'courier'])

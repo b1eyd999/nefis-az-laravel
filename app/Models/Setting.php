@@ -31,6 +31,12 @@ class Setting extends Model
     /** The corner notice that says what other people have just ordered. */
     public const SALE_TOASTS = 'sale_toasts';
 
+    /* Paying by card through ePoint. The private key signs every request and
+       every answer, so it is a secret: it lives here, never in the repository. */
+    public const EPOINT_ENABLED = 'epoint_enabled';
+    public const EPOINT_PUBLIC_KEY = 'epoint_public_key';
+    public const EPOINT_PRIVATE_KEY = 'epoint_private_key';
+
     public const MAINTENANCE_MESSAGE = 'maintenance_message';
 
     /** JSON list of {name, percent}: how the net profit is shared out. */
@@ -181,6 +187,9 @@ class Setting extends Model
         self::SITE_LANGUAGES => 'az',
         self::MAINTENANCE => '0',
         self::SALE_TOASTS => '1',
+        self::EPOINT_ENABLED => '0',
+        self::EPOINT_PUBLIC_KEY => '',
+        self::EPOINT_PRIVATE_KEY => '',
         self::MAINTENANCE_MESSAGE => 'Saytda texniki işlər aparılır. Tezliklə qayıdacağıq!',
         self::PROFIT_SHARES => '[{"name":"Sahibkar","percent":33.34},{"name":"Menecer 1","percent":33.33},{"name":"Menecer 2","percent":33.33}]',
     ];

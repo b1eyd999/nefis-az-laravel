@@ -380,4 +380,11 @@ class Telegram
         self::send('🧾 <b>Sifariş #' . $order->id . '</b> üçün ödəniş çeki yükləndi, ' . Price::format($order->total())
             . "\n" . url('/admin/orders/' . $order->id . '/edit'));
     }
+
+    /** Paid by card: the money is already in, nothing to check by hand. */
+    public static function paid(Order $order): void
+    {
+        self::send('💳 <b>Sifariş #' . $order->id . '</b> kartla ödənildi, ' . Price::format($order->total())
+            . "\n" . url('/admin/orders/' . $order->id . '/edit'));
+    }
 }

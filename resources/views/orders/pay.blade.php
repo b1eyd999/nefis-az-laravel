@@ -21,6 +21,11 @@
   .pay-method.on{ border-color:var(--gold); background:linear-gradient(160deg, rgba(214,163,90,.14), transparent 70%); box-shadow:0 0 0 3px var(--ring); }
   .pay-method.on .ico{ background:var(--gold); color:#fff; }
   .pay-method.on .name{ color:var(--gold-deep); }
+  .pay-now{ border-color:var(--gold); box-shadow:0 0 0 3px var(--ring); }
+  .pay-card-btn{ margin-top:.85rem; display:flex; align-items:center; justify-content:center; gap:.6rem; flex-wrap:wrap; }
+  .pay-card-btn .cards{ font-size:.7rem; letter-spacing:.08em; font-weight:800; opacity:.85; border:1px solid currentColor; border-radius:.4rem; padding:.1rem .35rem; }
+  .pay-or{ display:flex; align-items:center; gap:.75rem; color:var(--cocoa-soft); font-size:.8125rem; }
+  .pay-or::before, .pay-or::after{ content:''; height:1px; flex:1; background:var(--line); }
   .pay-method .tick{ position:absolute; top:.5rem; right:.55rem; width:1.35rem; height:1.35rem; border-radius:50%;
     background:#16a34a; color:#fff; font-size:.8rem; display:grid; place-items:center; }
   .pay-account{ display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-top:.75rem;
@@ -50,6 +55,10 @@
 
 <section>
   <div class="wrap">
+    @if(session('error'))
+      <div class="alert alert-error" style="max-width:44rem; margin-inline:auto;">{{ session('error') }}</div>
+    @endif
+
     @if($errors->any())
       <div class="alert alert-error" style="max-width:44rem; margin-inline:auto;">
         <ul style="margin:0; padding-left:1.1rem;">
@@ -65,11 +74,35 @@
           <b>{{ \App\Support\Price::format($order->total()) }}</b>
         </div>
         <ol class="pay-steps">
-          <li>{{ __('Aşağıdakı hesablardan birini seçin və məbləği köçürün.') }}</li>
-          <li>{{ __('Çeki (qəbzi) bu səhifədə yükləyin.') }}</li>
+          @if($card)
+            <li>{{ __('Kartla ödəyin — ödəniş dərhal təsdiqlənir.') }}</li>
+            <li>{{ __('Yaxud hesablardan birinə köçürüb çeki bu səhifədə yükləyin.') }}</li>
+          @else
+            <li>{{ __('Aşağıdakı hesablardan birini seçin və məbləği köçürün.') }}</li>
+            <li>{{ __('Çeki (qəbzi) bu səhifədə yükləyin.') }}</li>
+          @endif
           <li>{{ __('Ödənişi yoxlayıb sifarişinizi təsdiqləyirik.') }}</li>
         </ol>
       </div>
+
+      @if($card)
+        <div class="pay-card pay-now">
+          <label>{{ __('Kartla onlayn ödəniş') }}</label>
+          <p class="pay-note" style="margin:.4rem 0 0;">{{ __('Visa və ya Mastercard ilə indi ödəyin — çek göndərmək lazım deyil.') }}</p>
+          <form method="POST" action="{{ lroute('orders.pay.card', $order) }}">
+            @csrf
+            <button type="submit" class="btn btn-primary btn-block pay-card-btn">
+              <span class="cards" aria-hidden="true">VISA · MC</span>
+              {{ __('Kartla ödə') }} — {{ \App\Support\Price::format($order->total()) }}
+            </button>
+          </form>
+          <p class="pay-note">{{ __('Ödəniş epoint.az-ın qorunan səhifəsində aparılır, kart məlumatları bizdə saxlanmır.') }}</p>
+        </div>
+
+        @if($offered)
+          <div class="pay-or"><span>{{ __('və ya köçürmə ilə') }}</span></div>
+        @endif
+      @endif
 
       @if($offered)
         <div class="pay-card">
@@ -102,12 +135,13 @@
 
           @if($note)<p class="pay-note">{{ $note }}</p>@endif
         </div>
-      @else
+      @elseif(! $card)
         <div class="pay-card">
           <p class="pay-note">{{ __('Ödəniş hesabları hazırda əlçatan deyil. Sifarişiniz qeydə alınıb, sizinlə əlaqə saxlayacağıq.') }}</p>
         </div>
       @endif
 
+      @if($offered)
       <div class="pay-card">
         <label>{{ __('Çek (qəbz)') }}</label>
         @if($order->payment_receipt)
@@ -126,6 +160,7 @@
         </form>
         <p class="pay-note">{{ __('Şəkil (PNG, JPG, WEBP) və ya PDF, 8 MB-a qədər.') }}</p>
       </div>
+      @endif
 
       <div style="text-align:center;">
         <a href="{{ lroute('orders.index') }}" style="font-size:.9rem; text-decoration:underline; color:var(--cocoa-soft);">{{ __('Sifarişlərim') }}</a>

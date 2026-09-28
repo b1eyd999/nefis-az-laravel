@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\PaymentAccount;
 use App\Models\Setting;
+use App\Support\Epoint;
 use App\Support\ImageStore;
 use App\Support\Telegram;
 use Illuminate\Http\RedirectResponse;
@@ -41,6 +42,7 @@ class PaymentController extends Controller
             'order' => $order->load('items', 'paymentAccount'),
             'offered' => PaymentAccount::offered(),
             'note' => Setting::get(Setting::PAYMENT_NOTE),
+            'card' => Epoint::enabled(),
         ]);
     }
 

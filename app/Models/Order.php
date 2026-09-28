@@ -52,6 +52,11 @@ class Order extends Model
         'courier_message_id',
         // Paying by transfer: which account the money goes to, and the receipt.
         'payment_account_id',
+        // Card payments through ePoint: which way it was paid, the reference
+        // the gateway was given and the gateway's own transaction id.
+        'payment_method',
+        'epoint_ref',
+        'epoint_transaction',
         'payment_receipt',
         'receipt_at',
         'payment_confirmed_at',

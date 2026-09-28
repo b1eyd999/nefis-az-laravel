@@ -49,17 +49,27 @@ class OrderResource extends Resource
                             ->columnSpanFull(),
                     ])->columns(2),
                 // Paid by transfer: which account, and the receipt the customer sent.
+                // Paid by card: the gateway's own answer, and nothing to check.
                 Forms\Components\Section::make('Ödəniş')
                     ->schema([
+                        Forms\Components\Placeholder::make('paid_by_card')
+                            ->label('Kartla ödənilib')
+                            ->content(fn (?Order $record) => 'ePoint'
+                                . ($record?->epoint_transaction ? ' · ' . $record->epoint_transaction : '')
+                                . ($record?->payment_confirmed_at ? ' · ' . $record->payment_confirmed_at->format('d.m.Y H:i') : ' · təsdiq gözlənilir'))
+                            ->visible(fn (?Order $record) => $record?->payment_method === 'card')
+                            ->columnSpanFull(),
                         Forms\Components\Placeholder::make('payment_account')
                             ->label('Hesab')
                             ->content(fn (?Order $record) => $record?->paymentAccount
                                 ? $record->paymentAccount->typeLabel() . ' · ' . $record->paymentAccount->label . ' · ' . $record->paymentAccount->formatted()
-                                : 'Təyin olunmayıb'),
+                                : 'Təyin olunmayıb')
+                            ->visible(fn (?Order $record) => $record?->payment_method !== 'card'),
                         Forms\Components\Placeholder::make('receipt_at')
                             ->label('Çek göndərilib')
                             ->content(fn (?Order $record) => $record?->receipt_at?->format('d.m.Y H:i')
-                                ?? ($record?->payment_confirmed_at ? 'Çeksiz təsdiqlənib' : 'Hələ yox')),
+                                ?? ($record?->payment_confirmed_at ? 'Çeksiz təsdiqlənib' : 'Hələ yox'))
+                            ->visible(fn (?Order $record) => $record?->payment_method !== 'card'),
                         Forms\Components\Placeholder::make('receipt')
                             ->label('Çek')
                             ->content(function (?Order $record) {
@@ -73,10 +83,12 @@ class OrderResource extends Resource
                                     ? '<a href="' . e($url) . '" target="_blank" rel="noopener" style="text-decoration:underline;">PDF çeki aç</a>'
                                     : '<a href="' . e($url) . '" target="_blank" rel="noopener"><img src="' . e($url) . '" alt="" style="max-height:320px;border-radius:.6rem"></a>');
                             })
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->visible(fn (?Order $record) => $record?->payment_method !== 'card'),
                     ])
                     ->columns(2)
-                    ->visible(fn (?Order $record) => $record?->payment_account_id || $record?->payment_receipt),
+                    ->visible(fn (?Order $record) => $record?->payment_account_id || $record?->payment_receipt
+                        || $record?->payment_method === 'card'),
                 // How it goes out, as the customer chose it at checkout.
                 Forms\Components\Section::make('Çatdırılma')
                     ->schema([

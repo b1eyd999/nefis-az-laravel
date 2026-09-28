@@ -21,8 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'staff' => \App\Http\Middleware\StaffOnly::class,
             'owner' => \App\Http\Middleware\OwnerOnly::class,
         ]);
-        // Telegram carries no session and no form token; its own secret guards it.
-        $middleware->validateCsrfTokens(except: ['telegram/kuryer/*', 'telegram/sohbet/*']);
+        // Telegram and the ePoint callback carry no session and no form token;
+        // their own secret and signature guard them.
+        $middleware->validateCsrfTokens(except: ['telegram/kuryer/*', 'telegram/sohbet/*', 'epoint/result']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // More than the hosting takes in one sending (a long video): a plain

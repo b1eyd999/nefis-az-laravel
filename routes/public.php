@@ -10,6 +10,7 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CorporateController;
+use App\Http\Controllers\EpointController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LetterController;
@@ -57,5 +58,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/odenis', [PaymentController::class, 'show'])->name('pay');
         Route::post('/odenis/usul', [PaymentController::class, 'method'])->name('pay.method');
         Route::post('/odenis/cek', [PaymentController::class, 'receipt'])->name('pay.receipt');
+        // Paying by card: the customer is sent to the bank's own page.
+        Route::post('/odenis/kart', [EpointController::class, 'start'])->name('pay.card');
     });
 });
