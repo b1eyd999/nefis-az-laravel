@@ -21,7 +21,7 @@
 <style>
   .sale-toast{
     position:fixed; right:1rem; bottom:9.5rem; z-index:60; display:flex; align-items:center; gap:.7rem;
-    max-width:min(21rem, calc(100vw - 2rem)); padding:.7rem .95rem .7rem .7rem;
+    max-width:min(21rem, calc(100vw - 2rem)); padding:.7rem 1.6rem .7rem .7rem;
     background:var(--paper); color:var(--cocoa); border:1px solid var(--line); border-radius:1rem;
     box-shadow:0 18px 40px -20px rgba(58,38,23,.55);
     opacity:0; transform:translateY(12px) scale(.98); pointer-events:none;
@@ -37,7 +37,9 @@
   .sale-x{ position:absolute; top:.25rem; right:.4rem; border:0; background:none; color:var(--cocoa-faint);
     font-size:1rem; line-height:1; cursor:pointer; padding:.15rem; }
   .sale-x:hover{ color:var(--cocoa); }
-  @media (max-width:640px){ .sale-toast{ right:.75rem; left:.75rem; bottom:5.5rem; max-width:none; } }
+  /* On a phone it sits beside the chat and Instagram buttons, not on top of
+     them: the same baseline, and it stops where they start. */
+  @media (max-width:640px){ .sale-toast{ left:.75rem; right:5.75rem; bottom:1.25rem; max-width:none; } }
   @media (prefers-reduced-motion:reduce){ .sale-toast{ transition:none; } }
 </style>
 <script>
