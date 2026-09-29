@@ -175,6 +175,7 @@
   <nav class="toolbar">
     <button class="tool" id="tool-asset" title="Şəffaf PNG qatları yüklə"><span class="ico">🖼️</span>Qat yüklə</button>
     <button class="tool" id="tool-photo" title="Müştərinin şəkli üçün sahə"><span class="ico">👤</span>Foto sahəsi</button>
+    <button class="tool" id="tool-shape" title="Forma: düzbucaqlı, dairə, xətt, ürək, ulduz"><span class="ico">◼</span>Forma</button>
     <button class="tool" id="tool-text" title="Mətn əlavə et (T)"><span class="ico">T</span>Mətn</button>
     <button class="tool" id="tool-time" title="4 rəqəmli vaxt sahəsi (dəq:san), məs. mahnının 00:34 / 04:39"><span class="ico">⏱</span>Vaxt</button>
     <hr>
@@ -244,6 +245,7 @@
   var FONTS = @json($fonts);
   var doc = {
     layers: @json($design['layers']),
+    shapes: @json($design['shapes']),
     photos: @json($design['photos']),
     texts: @json($design['texts']),
     box_color: @json($design['box_color'])
@@ -302,6 +304,16 @@
   function formatTime(v){
     var d = String(v || '').replace(/\D/g, '').slice(0, 4);
     return d.length > 2 ? d.slice(0, 2) + ':' + d.slice(2) : d;
+  }
+
+  /* The drawing code speaks one language for every surface; the editor keeps
+     its items the way the database does. This is the one place they meet. */
+  function renderShape(s){
+    return {
+      kind: s.kind, x: s.x, y: s.y, width: s.width, height: s.height, rotation: s.rotation || 0,
+      fill: s.fill, strokeColor: s.stroke_color, strokeWidth: +s.stroke_width || 0,
+      radius: +s.radius || 0, opacity: s.opacity == null ? 100 : s.opacity
+    };
   }
 
   function renderText(t){
@@ -437,8 +449,8 @@
      ================================================================ */
   function itemOf(sel){
     if (!sel) return null;
-    var list = sel.kind === 'layer' ? doc.layers : sel.kind === 'photo' ? doc.photos : doc.texts;
-    return list[sel.index] || null;
+
+    return listOf(sel.kind)[sel.index] || null;
   }
 
   var measureCtx = document.createElement('canvas').getContext('2d');
@@ -469,7 +481,7 @@
   }
 
   function hitItem(kind, index, x, y){
-    var it = (kind === 'layer' ? doc.layers : kind === 'photo' ? doc.photos : doc.texts)[index];
+    var it = listOf(kind)[index];
     var b = boxOf(kind, it);
     var p = localPoint(b, x, y);
     if (p.x < b.left || p.x > b.left + b.w || p.y < b.top || p.y > b.top + b.h) return false;
@@ -494,7 +506,9 @@
     var out = [], i;
     for (i = doc.texts.length - 1; i >= 0; i--) out.push({ kind: 'text', index: i });
     for (i = doc.layers.length - 1; i >= 0; i--) if (doc.layers[i].placement === 'above') out.push({ kind: 'layer', index: i });
+    for (i = doc.shapes.length - 1; i >= 0; i--) if (doc.shapes[i].placement === 'above') out.push({ kind: 'shape', index: i });
     for (i = doc.photos.length - 1; i >= 0; i--) out.push({ kind: 'photo', index: i });
+    for (i = doc.shapes.length - 1; i >= 0; i--) if (doc.shapes[i].placement === 'below') out.push({ kind: 'shape', index: i });
     for (i = doc.layers.length - 1; i >= 0; i--) if (doc.layers[i].placement === 'below') out.push({ kind: 'layer', index: i });
     return out;
   }
@@ -574,7 +588,9 @@
     doc.layers.forEach(function(l, i){
       if (l.placement === 'below' && !hiddenLayers[i]) { var e = loadImage(l.url); NefisBox.drawLayer(ctx, e && e.img, l); }
     });
+    doc.shapes.forEach(function(s){ if (s.placement === 'below') NefisBox.drawShape(ctx, renderShape(s)); });
     doc.photos.forEach(drawPhotoArea);
+    doc.shapes.forEach(function(s){ if (s.placement !== 'below') NefisBox.drawShape(ctx, renderShape(s)); });
     doc.layers.forEach(function(l, i){
       if (l.placement === 'above' && !hiddenLayers[i]) { var e = loadImage(l.url); NefisBox.drawLayer(ctx, e && e.img, l); }
     });
@@ -951,6 +967,15 @@
     commit();
   }
 
+  function addShape(){
+    var w = round(W * 0.6), h = round(H * 0.12);
+    doc.shapes.push({ kind: 'rect', x: round((W - w) / 2), y: round((H - h) / 2), width: w, height: h,
+      rotation: 0, fill: '#ffffff', stroke_color: '#000000', stroke_width: 0, radius: 0,
+      opacity: 100, placement: 'above' });
+    select({ kind: 'shape', index: doc.shapes.length - 1 });
+    commit();
+  }
+
   function addText(kind){
     var time = kind === 'time';
     var f = lastFont || fontByName('SF Regular') || FONTS[0] || { family: 'Inter', file: null, weight: 600 };
@@ -968,7 +993,12 @@
 
   function fontByName(n){ for (var i = 0; i < FONTS.length; i++) if (FONTS[i].name === n) return FONTS[i]; return null; }
 
-  function listOf(kind){ return kind === 'layer' ? doc.layers : kind === 'photo' ? doc.photos : doc.texts; }
+  function listOf(kind){
+    return kind === 'layer' ? doc.layers
+      : kind === 'shape' ? doc.shapes
+      : kind === 'photo' ? doc.photos
+      : doc.texts;
+  }
 
   function removeSelected(){
     if (!selection) return;
@@ -1087,6 +1117,26 @@
          + '<button class="btn small" data-act="down">Bir geri</button><button class="btn small" data-act="back">Ən arxaya</button></div>';
       h += '<h4>Ölçü</h4><div class="actions"><button class="btn small" data-act="natural">Orijinal ölçü</button><button class="btn small" data-act="fill">Bütün kətan</button>'
          + '<button class="btn small" data-act="center-h">Üfüqi mərkəz</button><button class="btn small" data-act="center-v">Şaquli mərkəz</button></div>';
+      h += '<div class="actions"><button class="btn small" data-act="dup">Təkrarla</button><button class="btn small danger" data-act="del">Sil</button></div>';
+    } else if (selection.kind === 'shape') {
+      h += '<h3>Forma</h3>';
+      h += '<p class="hint">Rəngli zolaq, xətt, dairə — Photoshop-da çəkib PNG kimi yükləməyə ehtiyac yoxdur. İstənilən ölçüdə kəskin çap olunur.</p>';
+      h += '<div class="row one">' + field('Növ', seg('kind', it.kind, [['rect', 'Düzbucaqlı'], ['ellipse', 'Dairə'], ['line', 'Xətt'], ['triangle', 'Üçbucaq'], ['heart', 'Ürək'], ['star', 'Ulduz']])) + '</div>';
+      h += '<div class="row one">' + field('Yeri', seg('placement', it.placement, [['below', 'Fotonun altında'], ['above', 'Fotonun üstündə']])) + '</div>';
+      if (it.kind !== 'line') {
+        h += '<div class="row">' + field('Doldurma', seg('fill_on', it.fill ? 1 : 0, [[1, 'Var'], [0, 'Yox']]))
+           + (it.fill ? field('Rəng', color('fill', it.fill)) : '') + '</div>';
+      }
+      h += '<div class="row">' + field('Kontur rəngi', color('stroke_color', it.stroke_color))
+         + field('Qalınlıq', num('stroke_width', it.stroke_width, 0.5)) + '</div>';
+      if (it.kind === 'rect') {
+        h += '<div class="row one">' + field('Künclərin yumruluğu', num('radius', it.radius)) + '</div>';
+      }
+      h += '<div class="row one">' + field('Görünmə ' + (it.opacity == null ? 100 : it.opacity) + '%',
+            '<input type="range" min="0" max="100" data-k="opacity" value="' + (it.opacity == null ? 100 : it.opacity) + '">') + '</div>';
+      h += '<div class="row four">' + field('X', num('x', it.x)) + field('Y', num('y', it.y)) + field('En', num('width', it.width)) + field('Hünd.', num('height', it.height)) + '</div>';
+      h += '<div class="row">' + field('Bucaq °', num('rotation', it.rotation)) + '</div>';
+      h += '<div class="actions"><button class="btn small" data-act="fill">Bütün kətan</button><button class="btn small" data-act="center-h">Üfüqi mərkəz</button><button class="btn small" data-act="center-v">Şaquli mərkəz</button></div>';
       h += '<div class="actions"><button class="btn small" data-act="dup">Təkrarla</button><button class="btn small danger" data-act="del">Sil</button></div>';
     } else if (selection.kind === 'photo') {
       h += '<h3>Foto sahəsi</h3>';
@@ -1218,6 +1268,12 @@
       }
       commit(); refresh(); return;
     }
+    if (b.dataset.seg === 'fill_on' && it) {
+      /* "No fill" is an absent colour, not white: an outline must let the
+         artwork behind it through. */
+      it.fill = +b.dataset.v ? (it.fill || '#ffffff') : null;
+      commit(); refresh(); return;
+    }
     if (b.dataset.seg && b.dataset.seg.indexOf('choice_') === 0 && it) {
       /* Which switches the shop page offers is kept as one comma-separated
          word, because that is what the design carries; here it is five
@@ -1274,8 +1330,12 @@
     var above = [], below = [];
     doc.layers.forEach(function(l, j){ (l.placement === 'above' ? above : below).push(j); });
     above.reverse().forEach(function(j){ rows.push({ kind: 'layer', index: j }); });
+    var sAbove = [], sBelow = [];
+    doc.shapes.forEach(function(s, j){ (s.placement === 'below' ? sBelow : sAbove).push(j); });
+    sAbove.reverse().forEach(function(j){ rows.push({ kind: 'shape', index: j }); });
     rows.push({ sep: 'Müştərinin şəkli' });
     for (var p = doc.photos.length - 1; p >= 0; p--) rows.push({ kind: 'photo', index: p });
+    sBelow.reverse().forEach(function(j){ rows.push({ kind: 'shape', index: j }); });
     below.reverse().forEach(function(j){ rows.push({ kind: 'layer', index: j }); });
 
     rows.forEach(function(r){
@@ -1284,6 +1344,12 @@
       var on = selection && selection.kind === r.kind && selection.index === r.index;
       var thumb, name, kind;
       if (r.kind === 'layer') { thumb = '<img src="' + esc(it.url) + '" alt="">'; name = it.name || 'Qat'; kind = it.placement === 'above' ? 'fotonun üstündə' : 'fotonun altında'; }
+      else if (r.kind === 'shape') {
+        var SHAPE_NAMES = { rect: 'Düzbucaqlı', ellipse: 'Dairə', line: 'Xətt', triangle: 'Üçbucaq', heart: 'Ürək', star: 'Ulduz' };
+        thumb = '◼';
+        name = SHAPE_NAMES[it.kind] || 'Forma';
+        kind = it.fill ? 'dolu' : 'konturlu';
+      }
       else if (r.kind === 'photo') {
         var sky = it.fill === 'sky';
         thumb = sky ? '✨' : '👤';
@@ -1413,6 +1479,7 @@
   document.getElementById('tool-asset').onclick = function(){ document.getElementById('file-asset').click(); };
   document.getElementById('file-asset').onchange = function(){ uploadAssets(this.files); this.value = ''; };
   document.getElementById('tool-photo').onclick = addPhoto;
+  document.getElementById('tool-shape').onclick = addShape;
   document.getElementById('tool-text').onclick = function(){ addText('text'); };
   document.getElementById('tool-time').onclick = function(){ addText('time'); };
   document.getElementById('tool-visual').onclick = function(){ document.getElementById('file-visual').click(); };
@@ -1581,6 +1648,10 @@
     var payload = {
       layers: doc.layers.map(function(l){ return { name: l.name, image: l.image, x: l.x, y: l.y, width: l.width, height: l.height,
         rotation: l.rotation || 0, opacity: l.opacity == null ? 100 : l.opacity, placement: l.placement, locked: !!l.locked }; }),
+      shapes: doc.shapes.map(function(s){ return { kind: s.kind, x: s.x, y: s.y, width: s.width, height: s.height,
+        rotation: s.rotation || 0, fill: s.fill || null, stroke_color: s.stroke_color || null,
+        stroke_width: +s.stroke_width || 0, radius: +s.radius || 0,
+        opacity: s.opacity == null ? 100 : s.opacity, placement: s.placement || 'above' }; }),
       photos: doc.photos.map(function(p){ return { label: p.label, i18n: p.i18n || null, x: p.x, y: p.y, width: p.width, height: p.height, rotation: p.rotation || 0, shape: p.shape, cutout: p.cutout ? 1 : 0,
         fill: p.fill || 'photo', sky_style: p.sky_style || 'night',
         sky_ring_kind: p.sky_ring_kind || 'degrees',

@@ -200,6 +200,53 @@ class BoxEditorTest extends TestCase
         $this->actingAs($this->admin)->postJson(route('box.save', $this->box->slug), $design)->assertStatus(422);
     }
 
+    /** Shapes: a coloured band or a rule, drawn here instead of exported from Photoshop. */
+    public function test_the_owner_draws_shapes_into_the_design(): void
+    {
+        $image = $this->actingAs($this->admin)
+            ->post(route('box.asset', $this->box->slug), ['file' => $this->transparentPng(969, 1895)], ['Accept' => 'application/json'])
+            ->json('image');
+
+        $design = $this->design($image);
+        $design['shapes'] = [
+            ['kind' => 'rect', 'x' => 0, 'y' => 1100, 'width' => 969, 'height' => 500, 'rotation' => 0,
+                'fill' => '#ffffff', 'stroke_color' => null, 'stroke_width' => 0, 'radius' => 24,
+                'opacity' => 100, 'placement' => 'above'],
+            ['kind' => 'line', 'x' => 200, 'y' => 1650, 'width' => 560, 'height' => 4, 'rotation' => 0,
+                'fill' => null, 'stroke_color' => '#1b1b1b', 'stroke_width' => 3, 'radius' => 0,
+                'opacity' => 80, 'placement' => 'below'],
+        ];
+
+        $this->actingAs($this->admin)->postJson(route('box.save', $this->box->slug), $design)->assertOk();
+
+        $shapes = $this->box->fresh()->shapes;
+        $this->assertCount(2, $shapes);
+        $this->assertSame(['rect', '#ffffff', 24, 'above'], [$shapes[0]->kind, $shapes[0]->fill, $shapes[0]->radius, $shapes[0]->placement]);
+        // A line has no fill at all — an absent colour, not white.
+        $this->assertNull($shapes[1]->fill);
+        $this->assertSame(80, $shapes[1]->opacity);
+
+        // The shop's page is told about them, split the way they are drawn.
+        $html = $this->get(route('products.customize', $this->box->slug))->assertOk()->getContent();
+        $this->assertStringContainsString('"shapes":{"below":[{"kind":"line"', $html);
+        $this->assertStringContainsString('"kind":"rect"', $html);
+
+        // An editor opened before shapes existed sends none, and must not wipe them.
+        $this->actingAs($this->admin)->postJson(route('box.save', $this->box->slug), $this->design($image))->assertOk();
+        $this->assertCount(2, $this->box->fresh()->shapes, 'a silent save leaves the artwork alone');
+
+        // The editor itself offers the tool and is handed what is already drawn.
+        $this->actingAs($this->admin)->get(route('box.edit', $this->box->slug))->assertOk()
+            ->assertSee('id="tool-shape"', false)
+            ->assertSee('Forma</button>', false)
+            ->assertSee('"kind":"rect"', false);
+
+        // A shape the drawing does not know is refused outright.
+        $bad = $this->design($image);
+        $bad['shapes'] = [['kind' => 'blob', 'x' => 0, 'y' => 0, 'width' => 10, 'height' => 10, 'rotation' => 0, 'placement' => 'above']];
+        $this->actingAs($this->admin)->postJson(route('box.save', $this->box->slug), $bad)->assertStatus(422);
+    }
+
     public function test_a_layer_from_another_box_is_refused(): void
     {
         $this->actingAs($this->admin)
