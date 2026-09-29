@@ -165,6 +165,51 @@ class StarMapTest extends TestCase
             ->assertSee('Ulduz xəritəsi')->assertSee('Lənkəran');
     }
 
+    /** The switches the design offers are the customer's; the rest stay as the owner set them. */
+    public function test_the_customer_switches_travel_with_the_order(): void
+    {
+        Storage::fake('public');
+        $box = $this->box();
+        $box->photoSlots()->where('fill', PhotoSlot::SKY)->update([
+            'sky_choices' => 'labels,heart,time', 'sky_lines' => true, 'sky_milky' => true, 'sky_labels' => false,
+        ]);
+        $base = ['x' => 484, 'y' => 1300, 'max_width' => 800, 'font_size' => 40, 'color' => '#fff',
+            'align' => 'center', 'rotation' => 0, 'max_lines' => 1, 'max_length' => 60, 'fixed' => false];
+        $box->textSlots()->create($base + ['label' => 'Tarix', 'auto' => 'date_long', 'sort_order' => 0]);
+
+        // Only the offered ones are shown, and the hour has its own name so it
+        // cannot collide with the clock field beside it.
+        $this->get(route('products.customize', $box->slug))->assertOk()
+            ->assertSee('name="star_labels"', false)
+            ->assertSee('name="star_with_time"', false)
+            ->assertDontSee('name="star_milky"', false)
+            ->assertSee('js/star-extra.js', false);
+
+        $user = User::factory()->create();
+        $this->actingAs($user)->post(route('cart.add'), [
+            'product_id' => $box->id,
+            'star_date' => '2019-06-08', 'star_time' => '23:15',
+            'star_lat' => 38.7925, 'star_lon' => 48.4797, 'star_place' => 'Lənkəran',
+            'star_labels' => '1', 'star_with_time' => '1',
+            // Not offered by this design, so it must not take effect.
+            'star_milky' => '0',
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($user)->post(route('checkout.store'), [
+            'delivery_method_id' => DeliveryMethod::where('type', 'door')->value('id'),
+            'contact_phone' => '1', 'delivery_address' => 'Bakı, Nizami küç. 5',
+        ])->assertSessionHasNoErrors();
+
+        $item = Order::latest('id')->firstOrFail()->items()->firstOrFail();
+        $sky = $item->star_map;
+        $this->assertTrue($sky['labels'], 'he asked for the names');
+        $this->assertTrue($sky['heart'] === false, 'offered but left off');
+        $this->assertTrue($sky['milky'], 'not his to change: the owner set it on');
+        $this->assertTrue($sky['withTime']);
+        $this->assertSame('23:15', $sky['time'], 'the hour itself survived the switch of the same name');
+        $this->assertSame('8 İyun 2019, 23:15', $item->custom_texts[0]);
+    }
+
     public function test_a_night_nobody_named_is_refused(): void
     {
         $box = $this->box();
@@ -209,14 +254,17 @@ class StarMapTest extends TestCase
         $this->actingAs($admin)->postJson(route('box.save', $box->slug), [
             'layers' => [['name' => 'BG', 'image' => $image, 'x' => 0, 'y' => 0, 'width' => 969, 'height' => 1895,
                 'rotation' => 0, 'opacity' => 100, 'placement' => 'above', 'locked' => true]],
-            'photos' => [['label' => null, 'fill' => 'sky', 'sky_style' => 'crimson', 'sky_ring' => 0, 'shape' => 'heart',
+            'photos' => [['label' => null, 'fill' => 'sky', 'sky_style' => 'crimson', 'sky_ring_kind' => 'none',
+                'sky_choices' => 'labels,heart,nonsense', 'sky_labels' => 1, 'sky_milky' => 1, 'shape' => 'heart',
                 'x' => 100, 'y' => 200, 'width' => 700, 'height' => 700, 'rotation' => 0]],
             'texts' => [],
         ])->assertOk();
 
         $slot = $box->fresh()->photoSlots()->firstOrFail();
-        $this->assertSame(['sky', 'crimson', 'heart'], [$slot->fill, $slot->sky_style, $slot->shape]);
-        $this->assertFalse($slot->sky_ring);
+        $this->assertSame(['sky', 'crimson', 'heart', 'none'], [$slot->fill, $slot->sky_style, $slot->shape, $slot->sky_ring_kind]);
+        // A switch the drawing does not know is dropped from the offer.
+        $this->assertSame(['labels', 'heart'], $slot->skyChoices());
+        $this->assertSame(['lines' => true, 'labels' => true, 'milky' => true, 'heart' => false, 'withTime' => false], $slot->skyDefaults());
 
         // A colour the drawing does not know is not stored.
         $this->actingAs($admin)->postJson(route('box.save', $box->slug), [

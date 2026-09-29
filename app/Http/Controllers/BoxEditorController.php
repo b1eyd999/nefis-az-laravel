@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DesignLayer;
+use App\Models\DesignShape;
 use App\Models\Font;
 use App\Models\PhotoSlot;
 use App\Models\Product;
@@ -31,7 +32,7 @@ class BoxEditorController extends Controller
     {
         $this->authorizeAdmin($request);
 
-        $product->load(['layers', 'photoSlots', 'textSlots']);
+        $product->load(['layers', 'shapes', 'photoSlots', 'textSlots']);
         $canvas = config('boxes.canvas');
 
         $design = [
@@ -46,9 +47,17 @@ class BoxEditorController extends Controller
                 'rotation' => $l->rotation, 'opacity' => $l->opacity,
                 'placement' => $l->placement, 'locked' => $l->locked,
             ])->values(),
+            'shapes' => $product->shapes->map(fn ($s) => [
+                'kind' => $s->kind, 'x' => $s->x, 'y' => $s->y, 'width' => $s->width, 'height' => $s->height,
+                'rotation' => $s->rotation, 'fill' => $s->fill, 'stroke_color' => $s->stroke_color,
+                'stroke_width' => (float) $s->stroke_width, 'radius' => (int) $s->radius,
+                'opacity' => (int) $s->opacity, 'placement' => $s->placement,
+            ])->values(),
             'photos' => $product->photoSlots->map(fn ($s) => [
                 'label' => $s->label, 'i18n' => $s->i18n,
-                'fill' => $s->fill ?: PhotoSlot::PHOTO, 'sky_style' => $s->sky_style ?: 'night', 'sky_ring' => (bool) $s->sky_ring,
+                'fill' => $s->fill ?: PhotoSlot::PHOTO, 'sky_style' => $s->sky_style ?: 'night',
+                'sky_ring_kind' => $s->sky_ring_kind ?: 'degrees', 'sky_choices' => $s->sky_choices,
+                'sky_lines' => (bool) $s->sky_lines, 'sky_labels' => (bool) $s->sky_labels, 'sky_milky' => (bool) $s->sky_milky,
                 'x' => $s->x, 'y' => $s->y,
                 'width' => $s->width, 'height' => $s->height,
                 'rotation' => $s->rotation, 'shape' => $s->shape, 'cutout' => (bool) $s->cutout,
@@ -94,6 +103,20 @@ class BoxEditorController extends Controller
             'layers.*.placement' => ['required', 'in:below,above'],
             'layers.*.locked' => ['boolean'],
 
+            'shapes' => ['nullable', 'array'],
+            'shapes.*.kind' => ['required', Rule::in(DesignShape::KINDS)],
+            'shapes.*.x' => ['required', 'numeric'],
+            'shapes.*.y' => ['required', 'numeric'],
+            'shapes.*.width' => ['required', 'numeric', 'min:1'],
+            'shapes.*.height' => ['required', 'numeric', 'min:1'],
+            'shapes.*.rotation' => ['required', 'numeric', 'between:-360,360'],
+            'shapes.*.fill' => ['nullable', 'string', 'max:9'],
+            'shapes.*.stroke_color' => ['nullable', 'string', 'max:9'],
+            'shapes.*.stroke_width' => ['nullable', 'numeric', 'between:0,200'],
+            'shapes.*.radius' => ['nullable', 'integer', 'between:0,2000'],
+            'shapes.*.opacity' => ['nullable', 'integer', 'between:0,100'],
+            'shapes.*.placement' => ['required', 'in:below,above'],
+
             'photos' => ['present', 'array'],
             'photos.*.label' => ['nullable', 'string', 'max:60'],
             'photos.*.i18n' => ['nullable', 'array'],
@@ -103,10 +126,14 @@ class BoxEditorController extends Controller
             'photos.*.width' => ['required', 'numeric', 'min:1'],
             'photos.*.height' => ['required', 'numeric', 'min:1'],
             'photos.*.rotation' => ['required', 'numeric', 'between:-360,360'],
-            'photos.*.shape' => ['required', 'in:rectangle,ellipse,heart'],
+            'photos.*.shape' => ['required', 'in:rectangle,ellipse,heart,full'],
             'photos.*.fill' => ['nullable', 'in:photo,sky'],
             'photos.*.sky_style' => ['nullable', Rule::in(PhotoSlot::SKY_STYLES)],
-            'photos.*.sky_ring' => ['nullable', 'boolean'],
+            'photos.*.sky_ring_kind' => ['nullable', Rule::in(PhotoSlot::SKY_RINGS)],
+            'photos.*.sky_choices' => ['nullable', 'string', 'max:60'],
+            'photos.*.sky_lines' => ['nullable', 'boolean'],
+            'photos.*.sky_labels' => ['nullable', 'boolean'],
+            'photos.*.sky_milky' => ['nullable', 'boolean'],
             'photos.*.cutout' => ['nullable', 'boolean'],
 
             'texts' => ['present', 'array'],
@@ -186,6 +213,30 @@ class BoxEditorController extends Controller
             // face cutting is remembered first, in the order they are in. The
             // order is all we have to match them by, so it is only trusted
             // when the windows were neither added nor removed.
+            /* An editor tab opened before shapes existed sends none at all;
+               taking that as "delete them" would wipe a design's artwork on
+               an ordinary save. Only a save that speaks about shapes rewrites
+               them. */
+            if (array_key_exists('shapes', $data)) {
+                $product->shapes()->delete();
+            }
+            foreach (array_values($data['shapes'] ?? []) as $order => $s) {
+                $product->shapes()->create([
+                    'kind' => $s['kind'],
+                    'x' => (int) round($s['x']), 'y' => (int) round($s['y']),
+                    'width' => (int) round($s['width']), 'height' => (int) round($s['height']),
+                    'rotation' => (int) round($s['rotation']),
+                    // An empty colour is "no fill at all", not black.
+                    'fill' => $s['fill'] ?: null,
+                    'stroke_color' => $s['stroke_color'] ?: null,
+                    'stroke_width' => $s['stroke_width'] ?? 0,
+                    'radius' => (int) ($s['radius'] ?? 0),
+                    'opacity' => (int) ($s['opacity'] ?? 100),
+                    'placement' => $s['placement'],
+                    'sort_order' => $order,
+                ]);
+            }
+
             $kept = $product->photoSlots()->orderBy('sort_order')->pluck('cutout')->all();
             if (count($kept) !== count($data['photos'])) {
                 $kept = [];
@@ -198,7 +249,15 @@ class BoxEditorController extends Controller
                     'i18n' => self::slotTranslations($p['i18n'] ?? null, ['label']),
                     'fill' => ($p['fill'] ?? null) === PhotoSlot::SKY ? PhotoSlot::SKY : PhotoSlot::PHOTO,
                     'sky_style' => in_array($p['sky_style'] ?? null, PhotoSlot::SKY_STYLES, true) ? $p['sky_style'] : 'night',
-                    'sky_ring' => (bool) ($p['sky_ring'] ?? true),
+                    'sky_ring' => true,
+                    'sky_ring_kind' => in_array($p['sky_ring_kind'] ?? null, PhotoSlot::SKY_RINGS, true) ? $p['sky_ring_kind'] : 'degrees',
+                    'sky_choices' => implode(',', array_intersect(
+                        array_filter(array_map('trim', explode(',', (string) ($p['sky_choices'] ?? '')))),
+                        PhotoSlot::SKY_CHOICES
+                    )),
+                    'sky_lines' => (bool) ($p['sky_lines'] ?? true),
+                    'sky_labels' => (bool) ($p['sky_labels'] ?? false),
+                    'sky_milky' => (bool) ($p['sky_milky'] ?? false),
                     'x' => (int) round($p['x']), 'y' => (int) round($p['y']),
                     'width' => (int) round($p['width']), 'height' => (int) round($p['height']),
                     'rotation' => (int) round($p['rotation']), 'shape' => $p['shape'],

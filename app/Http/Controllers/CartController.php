@@ -73,6 +73,9 @@ class CartController extends Controller
             $rules['star_lat'] = ['required', 'numeric', 'between:-90,90'];
             $rules['star_lon'] = ['required', 'numeric', 'between:-180,180'];
             $rules['star_place'] = ['nullable', 'string', 'max:60'];
+            foreach (\App\Models\PhotoSlot::SKY_CHOICES as $choice) {
+                $rules[Sky::field($choice)] = ['nullable', 'boolean'];
+            }
         }
 
         // The song, on the designs built around one. Never required: the box
@@ -160,7 +163,8 @@ class CartController extends Controller
             $frames[] = OrderItem::frameOrNull(json_decode((string) $request->input("photo_frames.$index"), true));
         }
 
-        $star = Sky::wanted($product) ? Sky::fromRequest($request) : null;
+        $skySlot = $product->photoSlots->first(fn ($slot) => $slot->isSky());
+        $star = $skySlot ? Sky::fromRequest($request, $skySlot) : null;
 
         $texts = [];
         foreach ($product->textSlots as $index => $slot) {

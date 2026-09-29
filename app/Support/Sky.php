@@ -18,6 +18,9 @@ class Sky
     /** Azerbaijan keeps one offset all year; a place elsewhere is read off its longitude. */
     public const OFFSET = 4;
 
+    /** How a sky looks when nothing has been chosen about it. */
+    public const LOOK = ['lines' => true, 'labels' => false, 'milky' => false, 'heart' => false, 'withTime' => false];
+
     /**
      * The towns offered in the list, with the coordinates the sky is worked
      * out for. A place that is not here is typed in as coordinates.
@@ -68,9 +71,12 @@ class Sky
      * What the shop keeps on the order line. The hour is the one on the clock
      * in that place, so the offset travels with it.
      *
-     * @return array{date: string, time: string, lat: float, lon: float, tz: int, place: ?string}|null
+     * The switches are only read where the design offers them; anything else
+     * keeps the look the owner set, whatever the page sends.
+     *
+     * @return array<string, mixed>|null
      */
-    public static function fromRequest(\Illuminate\Http\Request $request): ?array
+    public static function fromRequest(\Illuminate\Http\Request $request, ?PhotoSlot $slot = null): ?array
     {
         if (! $request->filled('star_date')) {
             return null;
@@ -79,7 +85,16 @@ class Sky
         $lat = round((float) $request->input('star_lat'), 4);
         $lon = round((float) $request->input('star_lon'), 4);
 
-        return [
+        /* The look starts as the owner set it, and only the switches this
+           design actually offers are taken from the page. The one that says
+           "print the hour too" is kept as `withTime`, because `time` is the
+           hour itself. */
+        $look = $slot ? $slot->skyDefaults() : self::LOOK;
+        foreach ($slot ? $slot->skyChoices() : [] as $choice) {
+            $look[$choice === 'time' ? 'withTime' : $choice] = $request->boolean(self::field($choice));
+        }
+
+        return $look + [
             'date' => (string) $request->input('star_date'),
             'time' => (string) ($request->input('star_time') ?: '21:00'),
             'lat' => $lat,
@@ -89,6 +104,24 @@ class Sky
             // fifteen degrees — enough to matter, not enough to spoil a gift.
             'tz' => abs($lon - 49) < 8 && abs($lat - 40) < 4 ? self::OFFSET : (int) round($lon / 15),
             'place' => $request->filled('star_place') ? mb_substr(trim((string) $request->input('star_place')), 0, 60) : null,
+        ];
+    }
+
+    /** The name the switch travels under. The hour itself is `star_time`. */
+    public static function field(string $choice): string
+    {
+        return $choice === 'time' ? 'star_with_time' : 'star_' . $choice;
+    }
+
+    /** The words on the switches, as the customer reads them. */
+    public static function choiceLabels(): array
+    {
+        return [
+            'lines' => __('Bürc xətləri'),
+            'labels' => __('Bürc adları'),
+            'milky' => __('Süd Yolu'),
+            'heart' => __('Xəritədə ürək'),
+            'time' => __('Tarixdə saat da olsun'),
         ];
     }
 
@@ -110,10 +143,14 @@ class Sky
 
         $date = \Illuminate\Support\Carbon::parse($star['date']);
 
+        // The hour goes with the date only when he asked for it.
+        $withTime = ! empty($star['withTime']) && ! empty($star['time']);
+
         return match ($kind) {
             'coords' => self::coordinates((float) $star['lat'], (float) $star['lon']),
-            'date' => $date->format('d.m.Y'),
-            'date_long' => $date->day . ' ' . (self::MONTHS[$date->month - 1] ?? '') . ' ' . $date->year,
+            'date' => $date->format('d.m.Y') . ($withTime ? ', ' . $star['time'] : ''),
+            'date_long' => $date->day . ' ' . (self::MONTHS[$date->month - 1] ?? '') . ' ' . $date->year
+                . ($withTime ? ', ' . $star['time'] : ''),
             'place' => (string) ($star['place'] ?? ''),
             default => '',
         };

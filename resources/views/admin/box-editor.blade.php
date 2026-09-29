@@ -219,6 +219,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="{{ asset('js/star-data.js') }}?v={{ \App\Support\Assets::version('js/star-data.js') }}"></script>
+<script src="{{ asset('js/star-extra.js') }}?v={{ \App\Support\Assets::version('js/star-extra.js') }}"></script>
 <script src="{{ asset('js/star-map.js') }}?v={{ \App\Support\Assets::version('js/star-map.js') }}"></script>
 <script src="{{ asset('js/box-render.js') }}?v={{ \App\Support\Assets::version('js/box-render.js') }}"></script>
 <script src="{{ asset('js/scene-render.js') }}?v={{ \App\Support\Assets::version('js/scene-render.js') }}"></script>
@@ -519,15 +520,17 @@
      the customer's own night replaces it on the shop page. */
   function drawSkyArea(p){
     if (!window.NefisStarMap) return false;
-    var d = Math.min(p.width, p.height);
+    var d = p.shape === 'full' ? Math.max(p.width, p.height) : Math.min(p.width, p.height);
     ctx.save();
     ctx.translate(p.x + p.width / 2, p.y + p.height / 2);
     ctx.rotate(rad(p.rotation || 0));
     window.NefisStarMap.draw(ctx, {
       date: '2026-02-14', time: '21:30', tzOffset: 4, lat: 40.3777, lon: 49.8920,
       shape: p.shape === 'heart' ? 'heart' : 'circle',
-      style: p.sky_style || 'night', ring: p.sky_ring !== false && p.shape !== 'heart',
-      size: d, radius: d / 2, cx: 0, cy: 0, page: false
+      style: p.sky_style || 'night', ring: p.sky_ring_kind || 'degrees',
+      lines: p.sky_lines !== false, labels: !! p.sky_labels, milkyWay: !! p.sky_milky,
+      size: d, radius: d / 2, cx: 0, cy: 0, page: false,
+      box: { x: -p.width / 2, y: -p.height / 2, w: p.width, h: p.height }
     });
     ctx.restore();
 
@@ -1091,9 +1094,21 @@
       h += '<div class="row one">' + field('Bura nə düşür', seg('fill', it.fill || 'photo', [['photo', 'Müştərinin şəkli'], ['sky', 'Ulduz xəritəsi']])) + '</div>';
       if (it.fill === 'sky') {
         h += '<p class="hint">Müştəri tarixi, saatı və yeri seçir — o gecə o yerin üstündəki səma bura düşür. Yazılar (ad, koordinatlar) ayrıca mətn sahələridir.</p>';
-        h += '<div class="row one">' + field('Forma', seg('shape', it.shape, [['ellipse', 'Dairə'], ['heart', 'Ürək'], ['rectangle', 'Düzbucaqlı']])) + '</div>';
-        h += '<div class="row one">' + field('Rəng', seg('sky_style', it.sky_style || 'night', [['night', 'Gecə'], ['ink', 'Ağ üzərində qara'], ['paper', 'Ağ'], ['navy', 'Tünd mavi'], ['crimson', 'Al'], ['cream', 'Krem'], ['sky', 'Açıq mavi']])) + '</div>';
-        h += '<div class="row one">' + field('Dərəcə halqası', seg('sky_ring', it.sky_ring === false ? 0 : 1, [[1, 'Olsun'], [0, 'Olmasın']])) + '</div>';
+        h += '<div class="row one">' + field('Forma', seg('shape', it.shape, [['ellipse', 'Dairə'], ['heart', 'Ürək'], ['rectangle', 'Düzbucaqlı'], ['full', 'Tam sahə']])) + '</div>';
+        h += '<div class="row one">' + field('Rəng', seg('sky_style', it.sky_style || 'night', [['night', 'Gecə'], ['ink', 'Ağ üzərində qara'], ['paper', 'Ağ'], ['navy', 'Tünd mavi'], ['crimson', 'Al'], ['cream', 'Krem'], ['sky', 'Açıq mavi'], ['cosmos', 'Kosmos'], ['moss', 'Yaşıl duman']])) + '</div>';
+        if (it.shape !== 'full' && it.shape !== 'heart') {
+          h += '<div class="row one">' + field('Halqa', seg('sky_ring_kind', it.sky_ring_kind || 'degrees', [['none', 'Yoxdur'], ['simple', 'Nazik'], ['degrees', 'Dərəcəli'], ['double', 'İkiqat']])) + '</div>';
+        }
+        h += '<h4>Başlanğıc görünüş</h4>';
+        h += '<div class="row one">' + field('Bürc xətləri', seg('sky_lines', it.sky_lines === false ? 0 : 1, [[1, 'Var'], [0, 'Yox']])) + '</div>';
+        h += '<div class="row one">' + field('Bürc adları', seg('sky_labels', it.sky_labels ? 1 : 0, [[1, 'Var'], [0, 'Yox']])) + '</div>';
+        h += '<div class="row one">' + field('Süd Yolu', seg('sky_milky', it.sky_milky ? 1 : 0, [[1, 'Var'], [0, 'Yox']])) + '</div>';
+        h += '<h4>Müştəri dəyişə bilsin</h4>';
+        h += '<p class="hint">Seçdikləriniz sifariş səhifəsində açar kimi görünür; qalanları olduğu kimi çap olunur.</p>';
+        var picked = String(it.sky_choices == null ? 'lines,labels,milky,heart' : it.sky_choices).split(',');
+        [['lines', 'Bürc xətləri'], ['labels', 'Bürc adları'], ['milky', 'Süd Yolu'], ['heart', 'Ürək nişanı'], ['time', 'Tarixdə saat']].forEach(function(c){
+          h += '<div class="row one">' + field(c[1], seg('choice_' + c[0], picked.indexOf(c[0]) >= 0 ? 1 : 0, [[1, 'Seçə bilər'], [0, 'Yox']])) + '</div>';
+        });
         h += '<div class="actions"><button class="btn small" data-act="dup">Təkrarla</button><button class="btn small danger" data-act="del">Sil</button></div>';
 
         return h;
@@ -1203,10 +1218,23 @@
       }
       commit(); refresh(); return;
     }
+    if (b.dataset.seg && b.dataset.seg.indexOf('choice_') === 0 && it) {
+      /* Which switches the shop page offers is kept as one comma-separated
+         word, because that is what the design carries; here it is five
+         separate buttons. */
+      var key = b.dataset.seg.slice(7);
+      var have = String(it.sky_choices == null ? 'lines,labels,milky,heart' : it.sky_choices).split(',').filter(Boolean);
+      var at = have.indexOf(key);
+      if (+b.dataset.v && at < 0) have.push(key);
+      if (! +b.dataset.v && at >= 0) have.splice(at, 1);
+      it.sky_choices = have.join(',');
+      commit(); refresh(); return;
+    }
     if (b.dataset.seg && it) {
-      /* data-v is always text. "Üz kəsilsin" is the one switch with yes/no values,
-         and the string "0" would read as yes — so that one is kept as a number. */
-      it[b.dataset.seg] = b.dataset.seg === 'cutout' ? +b.dataset.v : b.dataset.v;
+      /* data-v is always text. The yes/no switches would read the string "0"
+         as yes, so those are kept as numbers. */
+      var yesNo = ['cutout', 'sky_lines', 'sky_labels', 'sky_milky'];
+      it[b.dataset.seg] = yesNo.indexOf(b.dataset.seg) >= 0 ? +b.dataset.v : b.dataset.v;
       if (b.dataset.seg === 'align' && selection.kind === 'text') {
         /* Keep the text box where it is; only the anchor moves. */
         var box = boxOf('text', it);
@@ -1554,7 +1582,10 @@
       layers: doc.layers.map(function(l){ return { name: l.name, image: l.image, x: l.x, y: l.y, width: l.width, height: l.height,
         rotation: l.rotation || 0, opacity: l.opacity == null ? 100 : l.opacity, placement: l.placement, locked: !!l.locked }; }),
       photos: doc.photos.map(function(p){ return { label: p.label, i18n: p.i18n || null, x: p.x, y: p.y, width: p.width, height: p.height, rotation: p.rotation || 0, shape: p.shape, cutout: p.cutout ? 1 : 0,
-        fill: p.fill || 'photo', sky_style: p.sky_style || 'night', sky_ring: p.sky_ring === false ? 0 : 1 }; }),
+        fill: p.fill || 'photo', sky_style: p.sky_style || 'night',
+        sky_ring_kind: p.sky_ring_kind || 'degrees',
+        sky_choices: p.sky_choices == null ? 'lines,labels,milky,heart' : p.sky_choices,
+        sky_lines: p.sky_lines === false ? 0 : 1, sky_labels: p.sky_labels ? 1 : 0, sky_milky: p.sky_milky ? 1 : 0 }; }),
       texts: doc.texts.map(function(t){
         var o = clone(t);
         o.rotation = o.rotation || 0;

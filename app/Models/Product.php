@@ -252,6 +252,11 @@ class Product extends Model
         return $this->hasMany(DesignLayer::class)->orderBy('sort_order');
     }
 
+    public function shapes(): HasMany
+    {
+        return $this->hasMany(DesignShape::class)->orderBy('sort_order');
+    }
+
     /** Scenes picked for this product; none picked means every active one. */
     public function scenes(): BelongsToMany
     {

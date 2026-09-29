@@ -108,6 +108,12 @@ class ProductController extends Controller
             'rotation' => $l->rotation, 'opacity' => $l->opacity,
         ];
 
+        $shape = fn (\App\Models\DesignShape $s) => [
+            'kind' => $s->kind, 'x' => $s->x, 'y' => $s->y, 'width' => $s->width, 'height' => $s->height,
+            'rotation' => $s->rotation, 'fill' => $s->fill, 'strokeColor' => $s->stroke_color,
+            'strokeWidth' => (float) $s->stroke_width, 'radius' => (int) $s->radius, 'opacity' => (int) $s->opacity,
+        ];
+
         $flat = array_merge($this->viewPayload($product), [
             'url' => null,
             'overlay' => null,
@@ -115,6 +121,10 @@ class ProductController extends Controller
             'layers' => [
                 'below' => $product->layers->where('placement', DesignLayer::BELOW)->map($layer)->values()->all(),
                 'above' => $product->layers->where('placement', DesignLayer::ABOVE)->map($layer)->values()->all(),
+            ],
+            'shapes' => [
+                'below' => $product->shapes->where('placement', DesignLayer::BELOW)->map($shape)->values()->all(),
+                'above' => $product->shapes->where('placement', DesignLayer::ABOVE)->map($shape)->values()->all(),
             ],
             'tw' => $w,
             'th' => $h,
@@ -149,6 +159,7 @@ class ProductController extends Controller
             'url' => Media::url($view->template_image),
             'overlay' => Media::url($view->overlay_image),
             'layers' => ['below' => [], 'above' => []],
+            'shapes' => ['below' => [], 'above' => []],
             'label' => $view instanceof ProductAngle ? $view->label : null,
             'tw' => (int) $view->template_width,
             'th' => (int) $view->template_height,
@@ -182,7 +193,7 @@ class ProductController extends Controller
                 // with the stars over the place and hour the customer names.
                 'fill' => $slot->fill ?: \App\Models\PhotoSlot::PHOTO,
                 'skyStyle' => $slot->sky_style ?: 'night',
-                'skyRing' => (bool) $slot->sky_ring,
+                'skyRing' => $slot->sky_ring_kind ?: 'degrees',
             ])->values()->all(),
             'texts' => $view->textSlots->map(fn ($slot) => [
                 'x' => (int) $slot->x,

@@ -40,6 +40,13 @@
     crimson: { page: '#8c1626', disc: '#8c1626', star: '#ffffff', line: 'rgba(240,184,192,.55)', ring: '#f0b8c0', text: '#fbe9ec' },
     cream:   { page: '#f4e6cd', disc: '#4a3520', star: '#f7ecd8', line: 'rgba(247,236,216,.45)', ring: '#4a3520', text: '#4a3520' },
     sky:     { page: '#dcecf5', disc: '#dcecf5', star: '#2b4c63', line: 'rgba(43,76,99,.45)',    ring: '#2b4c63', text: '#2b4c63' },
+    /* The two painted ones: the sky is not a disc on a card, it is the card,
+       with the Milky Way glowing in colour and the page fading in underneath
+       so the wording has somewhere quiet to sit. */
+    cosmos:  { page: '#ffffff', disc: '#0b0a1f', star: '#ffffff', line: 'rgba(255,255,255,.4)',  ring: '#ffffff', text: '#ffffff',
+               glow: ['rgba(96,72,200,.55)', 'rgba(38,26,92,0)'], fade: '#ffffff' },
+    moss:    { page: '#ffffff', disc: '#0d1410', star: '#ffffff', line: 'rgba(255,255,255,.38)', ring: '#ffffff', text: '#ffffff',
+               glow: ['rgba(92,132,96,.5)', 'rgba(20,40,26,0)'], fade: '#ffffff' },
   };
 
   var POINTS = ['North', 'NNE', 'NE', 'ENE', 'East', 'ESE', 'SE', 'SSE',
@@ -85,14 +92,22 @@
    *
    * @param  {number} lst  local sidereal time, degrees
    */
-  function place(raDeg, decDeg, lst, sinLat, cosLat) {
+  function place(raDeg, decDeg, lst, sinLat, cosLat, clamp) {
     var h = (lst - raDeg) * RAD;
     var dec = decDeg * RAD;
     var sinDec = Math.sin(dec), cosDec = Math.cos(dec);
     var sinAlt = sinDec * sinLat + cosDec * cosLat * Math.cos(h);
 
-    if (sinAlt <= 0) {
+    if (sinAlt <= 0 && ! clamp) {
       return null;                       // below the horizon: not in the sky that night
+    }
+    if (sinAlt <= 0) {
+      /* For a shape that has to stay closed — the Milky Way's outline — the
+         part under the horizon is laid on the rim rather than dropped, and
+         the disc's own edge then cuts it. */
+      var azOut = Math.atan2(-cosDec * Math.sin(h), sinDec * cosLat - cosDec * sinLat * Math.cos(h));
+
+      return { x: -Math.sin(azOut), y: -Math.cos(azOut), alt: 0 };
     }
 
     var alt = Math.asin(sinAlt);
@@ -107,8 +122,15 @@
   }
 
   /** The outline the sky is poured into. */
-  function clipShape(ctx, shape, cx, cy, r) {
+  function clipShape(ctx, shape, cx, cy, r, box) {
     ctx.beginPath();
+
+    if (shape === 'full' && box) {
+      /* Not a disc at all: the sky covers the whole card. */
+      ctx.rect(box.x, box.y, box.w, box.h);
+
+      return;
+    }
 
     if (shape === 'heart') {
       /* The usual heart curve. It is not symmetric about its own origin — the
@@ -132,8 +154,14 @@
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
   }
 
-  /** The graduated ring: degrees all the way round, and the named points. */
-  function drawRing(ctx, colours, cx, cy, r, size) {
+  /**
+   * The ring around the sky.
+   *
+   *  'simple'  one thin circle, nothing written — the quiet one;
+   *  'degrees' the graduated band with the compass points;
+   *  'double'  the same with a second circle outside it, the old printed look.
+   */
+  function drawRing(ctx, colours, cx, cy, r, size, kind) {
     var thin = Math.max(1, size / 900);
     var band = r * 0.085;
 
@@ -142,12 +170,26 @@
     ctx.fillStyle = colours.text;
     ctx.lineWidth = thin;
 
+    if (kind === 'simple') {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + band * 0.5, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      return;
+    }
+
     ctx.beginPath();
     ctx.arc(cx, cy, r + band * 0.15, 0, Math.PI * 2);
     ctx.stroke();
     ctx.beginPath();
     ctx.arc(cx, cy, r + band, 0, Math.PI * 2);
     ctx.stroke();
+    if (kind === 'double') {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + band * 2.1, 0, Math.PI * 2);
+      ctx.stroke();
+    }
 
     for (var deg = 0; deg < 360; deg += 2) {
       var a = (deg - 90) * RAD;                  // 0° at the top, growing clockwise on paper
@@ -180,10 +222,11 @@
     }
 
     ctx.font = (size / 62 | 0) + 'px "Helvetica Neue", Arial, sans-serif';
+    var out = kind === 'double' ? 2.65 : 1.55;
     for (var p = 0; p < POINTS.length; p++) {
       var pa = (p * 22.5 - 90) * RAD;
-      var px = cx + Math.cos(pa) * (r + band * 1.55);
-      var py = cy + Math.sin(pa) * (r + band * 1.55);
+      var px = cx + Math.cos(pa) * (r + band * out);
+      var py = cy + Math.sin(pa) * (r + band * out);
       ctx.save();
       ctx.translate(px, py);
       ctx.rotate(pa + Math.PI / 2);
@@ -209,11 +252,25 @@
     var ctx = canvas ? canvas.getContext('2d') : target;
     var size = opts.size || (canvas ? Math.min(canvas.width, canvas.height) : 1000);
     var colours = styleOf(opts.style);
-    var withRing = opts.ring !== false;
+    var full = opts.shape === 'full';
+    /* `ring` was once simply on or off; the three named strengths came later. */
+    var ringKind = opts.ring === true ? 'degrees' : (opts.ring === false ? 'none' : (opts.ring || 'degrees'));
+    if (full || opts.shape === 'heart') {
+      ringKind = 'none';
+    }
+    var withRing = ringKind !== 'none';
     var cx = opts.cx == null ? (canvas ? canvas.width / 2 : size / 2) : opts.cx;
     var cy = opts.cy == null ? (canvas ? canvas.height / 2 : size / 2) : opts.cy;
     /* Room for the graduated band, when there is one. */
-    var r = (opts.radius || size / 2) * (withRing ? 0.86 : 0.98);
+    var r = (opts.radius || size / 2) * (withRing ? (ringKind === 'double' ? 0.78 : 0.86) : 0.98);
+    /* A full-bleed sky is drawn across the whole window, and the circle it
+       would have had still sets how much of the sky is shown. */
+    var box = opts.box || { x: cx - size / 2, y: cy - size / 2, w: size, h: size };
+    if (full) {
+      r = Math.max(box.w, box.h) * 0.62;
+      cy = box.y + box.h * 0.34;
+      cx = box.x + box.w / 2;
+    }
 
     var jd = julianDay(momentOf(opts));
     var lst = siderealAtGreenwich(jd) + Number(opts.lon || 0);
@@ -225,11 +282,43 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
+
     ctx.save();
-    clipShape(ctx, opts.shape, cx, cy, r);
+    clipShape(ctx, opts.shape, cx, cy, r, box);
     ctx.fillStyle = colours.disc;
     ctx.fill();
     ctx.clip();
+
+    /* The painted styles glow where the galaxy runs, before anything is on it. */
+    if (colours.glow) {
+      var glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      glow.addColorStop(0, colours.glow[0]);
+      glow.addColorStop(1, colours.glow[1]);
+      ctx.fillStyle = glow;
+      ctx.fillRect(box.x, box.y, box.w, box.h);
+    }
+
+    /* The Milky Way first, under everything: a soft wash, not a shape with an
+       edge. The three outlines are nested, so stacking them thickens the band
+       towards its middle the way it looks. */
+    if (opts.milkyWay && window.NefisSkyExtra) {
+      ctx.save();
+      ctx.fillStyle = colours.star;
+      ctx.globalAlpha = 0.07;
+      var rings = window.NefisSkyExtra.milkyWay;
+      for (var m = 0; m < rings.length; m++) {
+        var ring = rings[m];
+        ctx.beginPath();
+        for (var q = 0; q < ring.length; q += 2) {
+          var mp = place(ring[q], ring[q + 1], lst, sinLat, cosLat, true);
+          var mx = cx + mp.x * r, my = cy + mp.y * r;
+          q ? ctx.lineTo(mx, my) : ctx.moveTo(mx, my);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+    }
 
     if (opts.lines !== false) {
       ctx.strokeStyle = colours.line;
@@ -270,19 +359,75 @@
       ctx.fill();
     }
 
+    /* The names, where the reader can see which figure is which. Latin is
+       what star charts have always used; the other languages are there for
+       a customer who would rather read his own. */
+    if (opts.labels && window.NefisSkyExtra) {
+      var col = { la: 2, ru: 3, en: 4, tr: 5 }[opts.labelLang] || 2;
+      ctx.save();
+      ctx.fillStyle = colours.text;
+      ctx.globalAlpha = 0.75;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = Math.max(7, size / 75 | 0) + 'px "Helvetica Neue", Arial, sans-serif';
+      try { ctx.letterSpacing = Math.max(0.5, size / 900) + 'px'; } catch (e) {}
+      var names = window.NefisSkyExtra.names;
+      for (var n = 0; n < names.length; n++) {
+        var np = place(names[n][0], names[n][1], lst, sinLat, cosLat);
+        if (! np || np.alt < 0.12) {
+          continue;                       // right on the horizon it would sit half outside
+        }
+        var label = names[n][col] || names[n][2];
+        ctx.fillText(String(label).toUpperCase(), cx + np.x * r, cy + np.y * r);
+      }
+      ctx.restore();
+    }
+
+    /* A heart over the middle of the sky, for the customers who ask for one. */
+    if (opts.heart) {
+      var hr = r * 0.07;
+      ctx.save();
+      ctx.fillStyle = opts.heartColour || '#e2455a';
+      ctx.beginPath();
+      for (var t2 = 0; t2 <= 120; t2++) {
+        var a2 = (t2 / 120) * Math.PI * 2;
+        var hx = 16 * Math.pow(Math.sin(a2), 3);
+        var hy = 13 * Math.cos(a2) - 5 * Math.cos(2 * a2) - 2 * Math.cos(3 * a2) - Math.cos(4 * a2);
+        var pxh = cx + hx * (hr / 16), pyh = cy - (hy + 6) * (hr / 11);
+        t2 ? ctx.lineTo(pxh, pyh) : ctx.moveTo(pxh, pyh);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
     ctx.restore();
+
+    /* Underneath, the page washes in, so the wording has somewhere quiet to
+       sit — the whole point of the painted styles. */
+    if (full) {
+      var fade = ctx.createLinearGradient(0, box.y + box.h * 0.36, 0, box.y + box.h * 0.78);
+      fade.addColorStop(0, 'rgba(255,255,255,0)');
+      fade.addColorStop(1, colours.fade || colours.page);
+      ctx.fillStyle = fade;
+      ctx.fillRect(box.x, box.y, box.w, box.h);
+      ctx.fillStyle = colours.fade || colours.page;
+      ctx.fillRect(box.x, box.y + box.h * 0.78, box.w, box.h * 0.22);
+    }
 
     /* The rim of the sky itself, so the disc keeps an edge on a page of the
        same colour. */
-    ctx.save();
-    ctx.strokeStyle = colours.ring;
-    ctx.lineWidth = Math.max(1, size / 700);
-    clipShape(ctx, opts.shape, cx, cy, r);
-    ctx.stroke();
-    ctx.restore();
+    if (! full) {
+      ctx.save();
+      ctx.strokeStyle = colours.ring;
+      ctx.lineWidth = Math.max(1, size / 700);
+      clipShape(ctx, opts.shape, cx, cy, r, box);
+      ctx.stroke();
+      ctx.restore();
+    }
 
-    if (withRing && opts.shape !== 'heart') {
-      drawRing(ctx, colours, cx, cy, r, size);
+    if (withRing) {
+      drawRing(ctx, colours, cx, cy, r, size, ringKind);
     }
 
     return { cx: cx, cy: cy, r: r, colours: colours };

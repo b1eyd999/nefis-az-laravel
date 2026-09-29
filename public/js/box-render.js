@@ -171,7 +171,97 @@
     c.restore();
   }
 
+  /* The outline of a shape, drawn about its own centre. */
+  function shapePath(c, s) {
+    var w = s.width, h = s.height, i;
+    c.beginPath();
+
+    if (s.kind === 'ellipse') {
+      c.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
+
+      return;
+    }
+    if (s.kind === 'line') {
+      c.moveTo(-w / 2, 0);
+      c.lineTo(w / 2, 0);
+
+      return;
+    }
+    if (s.kind === 'triangle') {
+      c.moveTo(0, -h / 2);
+      c.lineTo(w / 2, h / 2);
+      c.lineTo(-w / 2, h / 2);
+      c.closePath();
+
+      return;
+    }
+    if (s.kind === 'heart') {
+      /* The same curve the star map's heart uses, lifted onto its own centre
+         so the point is not cut off. */
+      var kx = w / 32, ky = h / 22;
+      for (i = 0; i <= 200; i++) {
+        var t = (i / 200) * Math.PI * 2;
+        var hx = 16 * Math.pow(Math.sin(t), 3);
+        var hy = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+        var px = hx * kx, py = -(hy + 6) * ky;
+        i ? c.lineTo(px, py) : c.moveTo(px, py);
+      }
+      c.closePath();
+
+      return;
+    }
+    if (s.kind === 'star') {
+      for (i = 0; i < 10; i++) {
+        var a = (Math.PI / 5) * i - Math.PI / 2;
+        var r = i % 2 ? 0.382 : 1;                 // the classic five-pointed ratio
+        var sx = Math.cos(a) * (w / 2) * r, sy = Math.sin(a) * (h / 2) * r;
+        i ? c.lineTo(sx, sy) : c.moveTo(sx, sy);
+      }
+      c.closePath();
+
+      return;
+    }
+
+    var rad = Math.max(0, Math.min(s.radius || 0, Math.min(w, h) / 2));
+    if (!rad) {
+      c.rect(-w / 2, -h / 2, w, h);
+
+      return;
+    }
+    c.moveTo(-w / 2 + rad, -h / 2);
+    c.arcTo(w / 2, -h / 2, w / 2, h / 2, rad);
+    c.arcTo(w / 2, h / 2, -w / 2, h / 2, rad);
+    c.arcTo(-w / 2, h / 2, -w / 2, -h / 2, rad);
+    c.arcTo(-w / 2, -h / 2, w / 2, -h / 2, rad);
+    c.closePath();
+  }
+
+  function drawShape(c, s) {
+    if (!s || !s.width || !s.height) return;
+    c.save();
+    c.globalAlpha = (s.opacity == null ? 100 : s.opacity) / 100;
+    c.translate(s.x + s.width / 2, s.y + s.height / 2);
+    if (s.rotation) c.rotate(s.rotation * Math.PI / 180);
+    shapePath(c, s);
+    /* A line has nothing to fill; everything else is filled first and outlined
+       after, so the outline sits on top of its own colour. */
+    if (s.fill && s.kind !== 'line') {
+      c.fillStyle = s.fill;
+      c.fill();
+    }
+    var width = +s.strokeWidth || 0;
+    if (width > 0 && s.strokeColor) {
+      c.lineWidth = width;
+      c.strokeStyle = s.strokeColor;
+      c.lineJoin = 'round';
+      c.lineCap = 'round';
+      c.stroke();
+    }
+    c.restore();
+  }
+
   global.NefisBox = {
+    drawShape: drawShape,
     fontStack: fontStack,
     wrapLines: wrapLines,
     fitText: fitText,

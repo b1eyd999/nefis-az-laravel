@@ -90,6 +90,14 @@
 
 @php
   $photoSlots = $product->photoSlots;
+
+  /* The star map's window, if this design has one: what it offers the
+     customer to change, and how it looks before he changes anything. Read
+     both by the markup below and by the scripts at the foot of the page. */
+  $skySlot = $photoSlots->first(fn ($s) => $s->isSky());
+  $skyOffers = $skySlot?->skyChoices() ?? [];
+  $skyLook = $skySlot?->skyDefaults() ?? \App\Support\Sky::LOOK;
+  $skyExtras = (bool) ($skyLook['labels'] || $skyLook['milky'] || array_intersect(['labels', 'milky'], $skyOffers));
   // Does this design cut faces out? The preview turns between the front and
   // the other angles, so a cut-out window on any of them counts.
   $cutsFaces = $photoSlots->contains(fn ($slot) => $slot->cutout)
@@ -531,6 +539,18 @@
                 <input type="text" id="star-own" class="text-input" inputmode="decimal" placeholder="38.79, 48.48">
               </div>
             </div>
+            @if($skyOffers)
+              <div class="sky-switches">
+                @foreach($skyOffers as $choice)
+                  @php $on = $choice === 'time' ? ($skyLook['withTime'] ?? false) : ($skyLook[$choice] ?? false); @endphp
+                  <label class="sky-switch">
+                    <input type="checkbox" name="{{ \App\Support\Sky::field($choice) }}" value="1"
+                           data-sky-switch="{{ $choice }}" @checked(old(\App\Support\Sky::field($choice), $on))>
+                    <span>{{ \App\Support\Sky::choiceLabels()[$choice] }}</span>
+                  </label>
+                @endforeach
+              </div>
+            @endif
             <input type="hidden" name="star_lat" id="star-lat" value="40.3777">
             <input type="hidden" name="star_lon" id="star-lon" value="49.8920">
             <input type="hidden" name="star_place" id="star-place" value="Bakı">
@@ -822,6 +842,9 @@
 <script src="{{ asset('js/photo-shrink.js') }}?v={{ \App\Support\Assets::version('js/photo-shrink.js') }}"></script>
 @if(\App\Support\Sky::wanted($product))
   <script src="{{ asset('js/star-data.js') }}?v={{ \App\Support\Assets::version('js/star-data.js') }}"></script>
+  @if($skyExtras)
+    <script src="{{ asset('js/star-extra.js') }}?v={{ \App\Support\Assets::version('js/star-extra.js') }}"></script>
+  @endif
   <script src="{{ asset('js/star-map.js') }}?v={{ \App\Support\Assets::version('js/star-map.js') }}"></script>
 @endif
 @if($cutsFaces)
@@ -852,6 +875,20 @@
         : null;
   @endphp
   var sky = @json($skyStart);
+  if (sky) {
+    /* How it looks before he touches a switch — what the owner set. */
+    Object.assign(sky, @json($skyLook ?? []));
+  }
+
+  /* The switches under the date, straight into the drawing. */
+  document.querySelectorAll('[data-sky-switch]').forEach(function(el){
+    el.addEventListener('change', function(){
+      var key = el.dataset.skySwitch === 'time' ? 'withTime' : el.dataset.skySwitch;
+      sky[key] = el.checked;
+      document.querySelectorAll('[data-auto]').forEach(function(f){ f.value = autoCaption(f.dataset.auto); });
+      draw();
+    });
+  });
 
   var FACE_MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
   var faceModelReady = null;
@@ -962,6 +999,10 @@
     }
     return layerImages[url];
   }
+  function drawShapes(mctx, list){
+    (list || []).forEach(function(s){ NefisBox.drawShape(mctx, s); });
+  }
+
   function drawLayers(mctx, list){
     (list || []).forEach(function(l){ NefisBox.drawLayer(mctx, layerImage(l.url), l); });
   }
@@ -999,8 +1040,9 @@
     if (!sky) return '';
     var d = String(sky.date || '').split('-');
     if (kind === 'coords') return window.NefisStarMap ? window.NefisStarMap.coordinates(sky.lat, sky.lon) : '';
-    if (kind === 'date') return (d[2] || '') + '.' + (d[1] || '') + '.' + (d[0] || '');
-    if (kind === 'date_long') return Number(d[2]) + ' ' + (MONTHS[Number(d[1]) - 1] || '') + ' ' + d[0];
+    var hour = sky.withTime && sky.time ? ', ' + sky.time : '';
+    if (kind === 'date') return (d[2] || '') + '.' + (d[1] || '') + '.' + (d[0] || '') + hour;
+    if (kind === 'date_long') return Number(d[2]) + ' ' + (MONTHS[Number(d[1]) - 1] || '') + ' ' + d[0] + hour;
     if (kind === 'place') return sky.place || '';
 
     return '';
@@ -1067,15 +1109,18 @@
      get it without knowing anything about stars. */
   function drawSkyInArea(mctx, area){
     if (!window.NefisStarMap || !sky) return;
-    var d = Math.min(area.w, area.h);
+    var d = area.shape === 'full' ? Math.max(area.w, area.h) : Math.min(area.w, area.h);
     mctx.save();
     mctx.translate(area.x + area.w / 2, area.y + area.h / 2);
     mctx.rotate(area.rotation * Math.PI / 180);
     window.NefisStarMap.draw(mctx, {
       date: sky.date, time: sky.time, tzOffset: sky.tz, lat: sky.lat, lon: sky.lon,
-      shape: area.shape === 'heart' ? 'heart' : 'circle',
-      style: area.skyStyle || 'night', ring: area.skyRing !== false && area.shape !== 'heart',
-      size: d, radius: d / 2, cx: 0, cy: 0, page: false
+      shape: area.shape === 'heart' ? 'heart' : (area.shape === 'full' ? 'full' : 'circle'),
+      style: area.skyStyle || 'night', ring: area.skyRing,
+      lines: sky.lines !== false, labels: !! sky.labels, milkyWay: !! sky.milky, heart: !! sky.heart,
+      labelLang: @json(\App\Support\Locale::current() === 'ru' ? 'ru' : (\App\Support\Locale::current() === 'en' ? 'en' : 'la')),
+      size: d, radius: d / 2, cx: 0, cy: 0, page: false,
+      box: { x: -area.w / 2, y: -area.h / 2, w: area.w, h: area.h }
     });
     mctx.restore();
   }
@@ -1124,6 +1169,7 @@
 
     if (a.url && templateReady) mctx.drawImage(template, 0, 0, a.tw, a.th);
     drawLayers(mctx, a.layers && a.layers.below);
+    drawShapes(mctx, a.shapes && a.shapes.below);
 
     a.areas.forEach(function(area, i){
       if (area.fill === 'sky') { drawSkyInArea(mctx, area); return; }
@@ -1131,6 +1177,7 @@
     });
 
     /* Foreground artwork (frames, fades, props) must cover the photo edges. */
+    drawShapes(mctx, a.shapes && a.shapes.above);
     drawLayers(mctx, a.layers && a.layers.above);
     if (a.overlay && overlayReady) mctx.drawImage(overlay, 0, 0, a.tw, a.th);
 
