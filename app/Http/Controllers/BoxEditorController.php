@@ -68,7 +68,7 @@ class BoxEditorController extends Controller
                 'shadow_color' => $s->shadow_color, 'shadow_blur' => (int) $s->shadow_blur,
                 'shadow_x' => (int) $s->shadow_x, 'shadow_y' => (int) $s->shadow_y,
                 'max_lines' => max(1, (int) $s->max_lines), 'max_length' => (int) $s->max_length,
-                'link_key' => $s->link_key,
+                'link_key' => $s->link_key, 'auto' => $s->auto ?: 'none',
             ])->values(),
         ];
 
@@ -143,6 +143,7 @@ class BoxEditorController extends Controller
             'texts.*.max_lines' => ['required', 'integer', 'between:1,10'],
             'texts.*.max_length' => ['required', 'integer', 'between:1,255'],
             'texts.*.link_key' => ['nullable', 'string', 'max:60'],
+            'texts.*.auto' => ['nullable', Rule::in(TextSlot::AUTO)],
 
             // The colour the box is dyed in the scenes (white renders).
             'box_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
@@ -242,6 +243,7 @@ class BoxEditorController extends Controller
                     'max_lines' => $t['max_lines'],
                     'max_length' => min(255, max((int) $t['max_length'], mb_strlen((string) ($t['default_value'] ?? '')))),
                     'link_key' => $t['link_key'] ?? null,
+                    'auto' => in_array($t['auto'] ?? null, TextSlot::AUTO, true) ? $t['auto'] : 'none',
                     'sort_order' => $order,
                 ]);
             }

@@ -107,8 +107,8 @@ class CartController extends Controller
         )]);
 
         foreach ($product->textSlots as $index => $slot) {
-            if ($slot->fixed) {
-                continue;   // part of the design; nothing the customer sends counts
+            if ($slot->isGiven()) {
+                continue;   // set in the design, or worked out here; nothing sent counts
             }
             $rules["custom_texts.$index"] = $slot->isTime()
                 ? ['required', 'regex:' . TextSlot::TIME_PATTERN]
@@ -160,11 +160,15 @@ class CartController extends Controller
             $frames[] = OrderItem::frameOrNull(json_decode((string) $request->input("photo_frames.$index"), true));
         }
 
+        $star = Sky::wanted($product) ? Sky::fromRequest($request) : null;
+
         $texts = [];
         foreach ($product->textSlots as $index => $slot) {
-            $texts[] = $slot->fixed
-                ? (string) $slot->default_value
-                : trim((string) $request->input("custom_texts.$index"));
+            $texts[] = match (true) {
+                $slot->isAuto() => Sky::caption($slot->auto, $star),
+                (bool) $slot->fixed => (string) $slot->default_value,
+                default => trim((string) $request->input("custom_texts.$index")),
+            };
         }
 
         // Asked for here, paid once at the end: the whole order is hurried,
@@ -184,8 +188,7 @@ class CartController extends Controller
         Cart::add($product->id, $paths, $texts, $quantity,
             OrderItem::photoLabelsFor($product), OrderItem::textLabelsFor($product), $chocolate, $wrapping,
             $withLetter ? Letter::fromRequest($request) : null,
-            $withAr ? LiveMaterials::fromRequest($request) : null, $song, $frames,
-            Sky::wanted($product) ? Sky::fromRequest($request) : null);
+            $withAr ? LiveMaterials::fromRequest($request) : null, $song, $frames, $star);
 
         // The line as it was just added — box, bar, paper, letter and video.
         $line = Cart::items()[array_key_last(Cart::items())] ?? [];

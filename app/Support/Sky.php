@@ -92,6 +92,33 @@ class Sky
         ];
     }
 
+    /** Month names as they are printed on a box, in the shop's own language. */
+    public const MONTHS = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'İyun',
+                           'İyul', 'Avqust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'];
+
+    /**
+     * What an automatic caption says for this night. The date and the place
+     * are the customer's own words and numbers, never retyped.
+     *
+     * @param  array{date: string, time: string, lat: float, lon: float, place: ?string}|null  $star
+     */
+    public static function caption(string $kind, ?array $star): string
+    {
+        if (! $star) {
+            return '';
+        }
+
+        $date = \Illuminate\Support\Carbon::parse($star['date']);
+
+        return match ($kind) {
+            'coords' => self::coordinates((float) $star['lat'], (float) $star['lon']),
+            'date' => $date->format('d.m.Y'),
+            'date_long' => $date->day . ' ' . (self::MONTHS[$date->month - 1] ?? '') . ' ' . $date->year,
+            'place' => (string) ($star['place'] ?? ''),
+            default => '',
+        };
+    }
+
     /** The coordinates as they are printed under the sky: 38°47'33"N 48°28'47"E. */
     public static function coordinates(float $lat, float $lon): string
     {

@@ -65,6 +65,52 @@ class StarMapTest extends TestCase
         $this->assertStringContainsString('Bakı', $html);
     }
 
+    /**
+     * The coordinates and the date are printed from what the customer already
+     * chose. Nobody retypes them, and nothing sent from the page can change
+     * them: the shop works them out again on its own side.
+     */
+    public function test_the_captions_the_sky_fills_in(): void
+    {
+        Storage::fake('public');
+        $box = $this->box();
+        $base = ['x' => 484, 'y' => 1300, 'max_width' => 800, 'font_size' => 40, 'color' => '#fff',
+            'align' => 'center', 'rotation' => 0, 'max_lines' => 1, 'max_length' => 60, 'fixed' => false];
+        $box->textSlots()->create($base + ['label' => 'Koordinatlar', 'auto' => 'coords', 'sort_order' => 0]);
+        $box->textSlots()->create($base + ['label' => 'Tarix', 'auto' => 'date_long', 'sort_order' => 1]);
+        $box->textSlots()->create($base + ['label' => 'Yerin adı', 'auto' => 'place', 'sort_order' => 2]);
+        $box->textSlots()->create($base + ['label' => 'Ad', 'sort_order' => 3]);
+
+        // Only the one the customer really writes is a field on the page.
+        $html = $this->get(route('products.customize', $box->slug))->assertOk()
+            ->assertSee('data-auto="coords"', false)
+            ->assertSee('data-auto="date_long"', false)
+            ->getContent();
+        $this->assertSame(1, substr_count($html, 'class="text-input" id="text-input-'), 'one typed caption');
+
+        $user = User::factory()->create();
+        $this->actingAs($user)->post(route('cart.add'), [
+            'product_id' => $box->id,
+            'star_date' => '2019-06-08', 'star_time' => '23:15',
+            'star_lat' => 38.7925, 'star_lon' => 48.4797, 'star_place' => 'Lənkəran',
+            // What the page would send for the automatic ones is ignored outright.
+            'custom_texts' => [0 => 'ƏLDƏN YAZILMIŞ', 1 => 'saxta', 2 => 'saxta', 3 => 'Aysel'],
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($user)->post(route('checkout.store'), [
+            'delivery_method_id' => DeliveryMethod::where('type', 'door')->value('id'),
+            'contact_phone' => '1', 'delivery_address' => 'Bakı, Nizami küç. 5',
+        ])->assertSessionHasNoErrors();
+
+        $item = Order::latest('id')->firstOrFail()->items()->firstOrFail();
+        $this->assertSame([
+            \App\Support\Sky::coordinates(38.7925, 48.4797),
+            '8 İyun 2019',
+            'Lənkəran',
+            'Aysel',
+        ], $item->custom_texts);
+    }
+
     public function test_a_design_without_one_is_left_alone(): void
     {
         $plain = Product::create(['name' => 'Adi', 'slug' => 'adi', 'is_active' => true, 'price' => 9,

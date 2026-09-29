@@ -122,7 +122,9 @@ class OrderItem extends Model
                 $seen[] = $slot->link_key;
             }
 
-            return ['label' => $slot->label ?: 'Mətn', 'fixed' => (bool) $slot->fixed, 'repeat' => $repeat];
+            // A caption the sky filled in was not asked for either, so it is
+            // shown the same way: the value matters, the empty field does not.
+            return ['label' => $slot->label ?: 'Mətn', 'fixed' => $slot->isGiven(), 'repeat' => $repeat];
         })->all();
     }
 

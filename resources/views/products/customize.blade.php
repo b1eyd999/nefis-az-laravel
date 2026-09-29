@@ -449,7 +449,14 @@
 
         @php $seenLinks = []; @endphp
         @foreach($textSlots as $index => $slot)
-          @if($slot->fixed)
+          @if($slot->isAuto())
+            {{-- The star map already knows this one — the coordinates of the
+                 place, or the date of the night. Asking the customer to copy
+                 it out of the page would only invite a typo. --}}
+            <input type="hidden" class="text-input" data-auto="{{ $slot->auto }}"
+                   name="custom_texts[{{ $index }}]"
+                   value="{{ \App\Support\Sky::caption($slot->auto, $skyStart ?? null) }}">
+          @elseif($slot->fixed)
             {{-- Part of the design: drawn as set, never asked for, never sent. --}}
             <input type="hidden" class="text-input" data-fixed value="{{ $slot->default_value }}">
           @elseif($slot->link_key && in_array($slot->link_key, $seenLinks, true))
@@ -982,6 +989,23 @@
 
   /* The controls live in their own closure further down the page; this is
      how the night they collect reaches the drawing. */
+  var MONTHS = @json(\App\Support\Sky::MONTHS);
+
+  /* The captions the sky fills in: the coordinates of the place and the date
+     of the night, written the way they are printed. The shop works the same
+     strings out again on its own side, so a changed field cannot change what
+     is made. */
+  function autoCaption(kind){
+    if (!sky) return '';
+    var d = String(sky.date || '').split('-');
+    if (kind === 'coords') return window.NefisStarMap ? window.NefisStarMap.coordinates(sky.lat, sky.lon) : '';
+    if (kind === 'date') return (d[2] || '') + '.' + (d[1] || '') + '.' + (d[0] || '');
+    if (kind === 'date_long') return Number(d[2]) + ' ' + (MONTHS[Number(d[1]) - 1] || '') + ' ' + d[0];
+    if (kind === 'place') return sky.place || '';
+
+    return '';
+  }
+
   window.nefisSky = function(next){
     if (!sky) return;
     sky.date = next.date || sky.date;
@@ -989,6 +1013,10 @@
     sky.lat = next.lat;
     sky.lon = next.lon;
     sky.tz = next.tz;
+    if (next.place !== undefined) sky.place = next.place;
+    document.querySelectorAll('[data-auto]').forEach(function(el){
+      el.value = autoCaption(el.dataset.auto);
+    });
     draw();
   };
 
@@ -1879,7 +1907,7 @@
     /* Inside the country the clock is +4 all year; elsewhere the longitude is
        the honest guess. The same rule runs on the server. */
     var tz = (Math.abs(lon - 49) < 8 && Math.abs(lat - 40) < 4) ? 4 : Math.round(lon / 15);
-    window.nefisSky({ date: dateEl.value, time: timeEl.value || '21:00', lat: lat, lon: lon, tz: tz });
+    window.nefisSky({ date: dateEl.value, time: timeEl.value || '21:00', lat: lat, lon: lon, tz: tz, place: place });
     if (out && window.NefisStarMap) out.textContent = window.NefisStarMap.coordinates(lat, lon);
   }
 

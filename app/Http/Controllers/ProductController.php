@@ -208,6 +208,8 @@ class ProductController extends Controller
                 'shadowBlur' => (int) $slot->shadow_blur,
                 'shadowX' => (int) $slot->shadow_x,
                 'shadowY' => (int) $slot->shadow_y,
+                // Filled from the star map, not from a field on the page.
+                'auto' => $slot->auto ?: 'none',
             ])->values()->all(),
         ];
     }

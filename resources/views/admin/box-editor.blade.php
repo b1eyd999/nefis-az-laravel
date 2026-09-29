@@ -1137,6 +1137,9 @@
       var shAlpha = sh.length === 9 ? Math.round(parseInt(sh.slice(7, 9), 16) / 2.55) : (sh ? 100 : 0);
       h += '<h4>Kölgə</h4><div class="row">' + field('Rəng', color('shadow_rgb', sh || '#000000')) + field('Görünmə ' + shAlpha + '%', '<input type="range" min="0" max="100" data-k="shadow_alpha" value="' + shAlpha + '">') + '</div>';
       h += '<div class="row three">' + field('Bulanıq', num('shadow_blur', it.shadow_blur)) + field('X', num('shadow_x', it.shadow_x)) + field('Y', num('shadow_y', it.shadow_y)) + '</div>';
+      h += '<h4>Özü dolan yazı</h4>';
+      h += '<div class="row one">' + field('Nə yazılsın', seg('auto', it.auto || 'none', [['none', 'Müştəri yazır'], ['coords', 'Koordinatlar'], ['date_long', 'Tarix sözlə'], ['date', 'Tarix rəqəmlə'], ['place', 'Yerin adı']])) + '</div>';
+      h += '<p class="hint">Ulduz xəritəsi olan dizaynlarda: müştəri tarixi və yeri seçir, bu yazı özü dolur — ondan soruşulmur.</p>';
       h += '<h4>Təkrarlanan ad</h4><div class="row one">' + field('Qrup', txt('link_key', it.link_key, 'məs. ad — eyni qrupdakılar bir sahədən dolur')) + '</div>';
       h += '<div class="actions"><button class="btn small" data-act="center-h">Üfüqi mərkəz</button><button class="btn small" data-act="dup">Təkrarla</button><button class="btn small danger" data-act="del">Sil</button></div>';
     }
@@ -1563,6 +1566,7 @@
         o.scale_x = Math.round(+o.scale_x || 100);
         o.scale_y = Math.round(+o.scale_y || 100);
         o.baseline_shift = Math.round(+o.baseline_shift || 0);
+        o.auto = o.auto || 'none';
 
         return o;
       }),

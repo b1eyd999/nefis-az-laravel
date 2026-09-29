@@ -19,6 +19,9 @@ class TextSlot extends Model
     /** How the letters are printed, whatever the customer typed. */
     public const CASES = ['none', 'upper', 'small'];
 
+    /** Captions the star map fills in, so nobody has to copy them by hand. */
+    public const AUTO = ['none', 'coords', 'date', 'date_long', 'place'];
+
     protected $fillable = [
         'label',
         'i18n',
@@ -53,6 +56,7 @@ class TextSlot extends Model
         'shadow_x',
         'shadow_y',
         'link_key',
+        'auto',
     ];
 
     protected function casts(): array
@@ -66,6 +70,18 @@ class TextSlot extends Model
     public function isTime(): bool
     {
         return $this->kind === self::KIND_TIME;
+    }
+
+    /** Filled from the star map rather than asked for. */
+    public function isAuto(): bool
+    {
+        return $this->auto && $this->auto !== 'none';
+    }
+
+    /** Never shown as a field: either the design's own wording, or worked out. */
+    public function isGiven(): bool
+    {
+        return (bool) $this->fixed || $this->isAuto();
     }
 
     /**
