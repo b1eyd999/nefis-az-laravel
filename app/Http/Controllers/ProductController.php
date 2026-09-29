@@ -37,9 +37,12 @@ class ProductController extends Controller
             return redirect(lroute('products.customize', $product->slug), 301);
         }
 
-        $product->load(['layers', 'photoSlots', 'textSlots', 'angles.photoSlots', 'angles.textSlots']);
+        $product->load(['layers', 'shapes', 'photoSlots', 'textSlots', 'angles.photoSlots', 'angles.textSlots']);
 
-        $viewData = $product->layers->isNotEmpty()
+        /* A design built in the editor is one whose artwork lives here rather
+           than in a single flat template image — layers, or shapes, which a
+           star map needs no image at all beside. */
+        $viewData = $product->layers->isNotEmpty() || $product->shapes->isNotEmpty()
             ? $this->boxViews($product)
             : collect([$product])->concat($product->angles)
                 ->map(fn ($view) => $this->viewPayload($view))

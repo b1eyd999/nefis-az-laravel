@@ -219,7 +219,10 @@ class Product extends Model
 
     /**
      * A product can be customised once it has artwork: layers built in the box
-     * editor, or a single template image from before the editor existed.
+     * editor, a single template image from before the editor existed, or —
+     * since shapes and star maps — anything at all placed on the canvas. A
+     * design whose whole face is a filled rectangle and the night sky carries
+     * no image file, and it is no less a design for that.
      */
     public function isCustomizable(): bool
     {
@@ -227,9 +230,11 @@ class Product extends Model
             return true;
         }
 
-        return isset($this->attributes['layers_count'])
-            ? $this->attributes['layers_count'] > 0
-            : $this->layers()->exists();
+        if (isset($this->attributes['layers_count']) && $this->attributes['layers_count'] > 0) {
+            return true;
+        }
+
+        return $this->layers()->exists() || $this->shapes()->exists() || $this->photoSlots()->exists();
     }
 
     public function isBox(): bool

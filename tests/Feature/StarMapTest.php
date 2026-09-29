@@ -111,6 +111,30 @@ class StarMapTest extends TestCase
         ], $item->custom_texts);
     }
 
+    /**
+     * A design whose whole face is a filled shape and the night sky carries no
+     * image file at all — and must still be a design the shop can sell.
+     */
+    public function test_a_design_made_only_of_a_shape_and_the_sky_is_sold_like_any_other(): void
+    {
+        $box = Product::create(['name' => 'Ulduz', 'slug' => 'ulduz-tam', 'is_active' => true, 'price' => 9,
+            'template_width' => 969, 'template_height' => 1895]);
+        $box->shapes()->create(['kind' => 'rect', 'x' => 0, 'y' => 0, 'width' => 969, 'height' => 1895,
+            'rotation' => 0, 'fill' => '#0b0b0d', 'stroke_width' => 0, 'radius' => 0, 'opacity' => 100,
+            'placement' => 'below', 'sort_order' => 0]);
+        $box->photoSlots()->create(['fill' => PhotoSlot::SKY, 'sky_style' => 'night', 'sky_ring' => true,
+            'sky_ring_kind' => 'degrees', 'x' => 85, 'y' => 170, 'width' => 800, 'height' => 800,
+            'rotation' => 0, 'shape' => 'ellipse', 'sort_order' => 0]);
+
+        $this->assertTrue($box->fresh()->isCustomizable(), 'no image, but plainly a design');
+
+        // It renders through the editor's own path, so the card is drawn.
+        $html = $this->get(route('products.customize', $box->slug))->assertOk()->getContent();
+        $this->assertStringContainsString('"fill":"#0b0b0d"', $html);
+        $this->assertStringContainsString('"kind":"rect"', $html);
+        $this->assertStringContainsString('"fill":"sky"', $html);
+    }
+
     public function test_a_design_without_one_is_left_alone(): void
     {
         $plain = Product::create(['name' => 'Adi', 'slug' => 'adi', 'is_active' => true, 'price' => 9,
