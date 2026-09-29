@@ -16,6 +16,9 @@ class TextSlot extends Model
 
     public const TIME_PATTERN = '/^\d{2}:[0-5]\d$/';
 
+    /** How the letters are printed, whatever the customer typed. */
+    public const CASES = ['none', 'upper', 'small'];
+
     protected $fillable = [
         'label',
         'i18n',
@@ -36,6 +39,13 @@ class TextSlot extends Model
         'sort_order',
         'rotation',
         'font_weight',
+        // The typography of the caption, in the units the design was drawn in.
+        'tracking',
+        'line_height',
+        'text_case',
+        'scale_x',
+        'scale_y',
+        'baseline_shift',
         'stroke_color',
         'stroke_width',
         'shadow_color',

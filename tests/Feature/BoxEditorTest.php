@@ -151,6 +151,55 @@ class BoxEditorTest extends TestCase
             ->assertSee(json_encode('Фото получателя'), false);
     }
 
+    /** The typography a caption was designed with — the Character panel's own fields. */
+    public function test_a_caption_keeps_the_way_it_was_set(): void
+    {
+        $image = $this->actingAs($this->admin)
+            ->post(route('box.asset', $this->box->slug), ['file' => $this->transparentPng(969, 1895)], ['Accept' => 'application/json'])
+            ->json('image');
+
+        $design = $this->design($image);
+        $design['texts'][0] += ['tracking' => 240, 'line_height' => 90, 'text_case' => 'upper',
+            'scale_x' => 110, 'scale_y' => 95, 'baseline_shift' => -6];
+
+        $this->actingAs($this->admin)->postJson(route('box.save', $this->box->slug), $design)->assertOk();
+
+        $slot = $this->box->fresh()->textSlots()->firstOrFail();
+        $this->assertSame([240, 90, 'upper', 110, 95, -6], [
+            $slot->tracking, $slot->line_height, $slot->text_case, $slot->scale_x, $slot->scale_y, $slot->baseline_shift,
+        ]);
+
+        // The design page is told, so the preview sets it the same way.
+        $html = $this->get(route('products.customize', $this->box->slug))->assertOk()->getContent();
+        $this->assertStringContainsString('"tracking":240', $html);
+        $this->assertStringContainsString('"textCase":"upper"', $html);
+        $this->assertStringContainsString('"lineHeight":90', $html);
+
+        // A caption saved before any of this existed is drawn exactly as before.
+        $plain = $this->design($image);
+        $this->actingAs($this->admin)->postJson(route('box.save', $this->box->slug), $plain)->assertOk();
+        $was = $this->box->fresh()->textSlots()->firstOrFail();
+        $this->assertSame([0, 120, 'none', 100, 100, 0], [
+            $was->tracking, $was->line_height, $was->text_case, $was->scale_x, $was->scale_y, $was->baseline_shift,
+        ]);
+    }
+
+    /** A setting the drawing does not know is refused rather than half-applied. */
+    public function test_an_impossible_setting_is_refused(): void
+    {
+        $image = $this->actingAs($this->admin)
+            ->post(route('box.asset', $this->box->slug), ['file' => $this->transparentPng(969, 1895)], ['Accept' => 'application/json'])
+            ->json('image');
+
+        $design = $this->design($image);
+        $design['texts'][0]['text_case'] = 'sideways';
+        $this->actingAs($this->admin)->postJson(route('box.save', $this->box->slug), $design)->assertStatus(422);
+
+        $design['texts'][0]['text_case'] = 'upper';
+        $design['texts'][0]['tracking'] = 5000;
+        $this->actingAs($this->admin)->postJson(route('box.save', $this->box->slug), $design)->assertStatus(422);
+    }
+
     public function test_a_layer_from_another_box_is_refused(): void
     {
         $this->actingAs($this->admin)

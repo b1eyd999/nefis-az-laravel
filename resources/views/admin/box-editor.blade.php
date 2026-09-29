@@ -308,6 +308,8 @@
       x: t.x, y: t.y, maxWidth: t.max_width, fontSize: t.font_size, color: t.color,
       align: t.align, rotation: t.rotation, maxLines: t.max_lines,
       fontFamily: t.font_family, fontWeight: t.font_weight || 400,
+      tracking: t.tracking || 0, lineHeight: t.line_height || 120, textCase: t.text_case || 'none',
+      scaleX: t.scale_x || 100, scaleY: t.scale_y || 100, baselineShift: t.baseline_shift || 0,
       strokeColor: t.stroke_color, strokeWidth: t.stroke_width == null ? 0 : t.stroke_width,
       shadowColor: t.shadow_color, shadowBlur: t.shadow_blur, shadowX: t.shadow_x, shadowY: t.shadow_y
     };
@@ -1123,6 +1125,13 @@
       h += '<div class="row one">' + field('Düzülüş', seg('align', it.align, [['left', 'Sol'], ['center', 'Mərkəz'], ['right', 'Sağ']])) + '</div>';
       h += '<div class="row four">' + field('X', num('x', it.x)) + field('Y', num('y', it.y)) + field('Maks en', num('max_width', it.max_width)) + field('Bucaq °', num('rotation', it.rotation)) + '</div>';
       if (!isTime) h += '<div class="row">' + field('Maks sətir', num('max_lines', it.max_lines)) + field('Maks simvol', num('max_length', it.max_length)) + '</div>';
+      h += '<h4>Yazının qurulması</h4>';
+      h += '<div class="row">' + field('Hərflər arası (VA)', num('tracking', it.tracking == null ? 0 : it.tracking))
+         + field('Sətir arası %', num('line_height', it.line_height || 120)) + '</div>';
+      h += '<p class="hint">Hərflər arası Photoshop-dakı VA ilə eynidir: 0 — adi, 200 — "S Ö Z" kimi seyrək.</p>';
+      h += '<div class="row one">' + field('Hərflər', seg('text_case', it.text_case || 'none', [['none', 'Yazıldığı kimi'], ['upper', 'BÖYÜK'], ['small', 'Kiçik böyük']])) + '</div>';
+      h += '<div class="row three">' + field('En %', num('scale_x', it.scale_x || 100)) + field('Hünd. %', num('scale_y', it.scale_y || 100))
+         + field('Sətirdən yuxarı', num('baseline_shift', it.baseline_shift == null ? 0 : it.baseline_shift)) + '</div>';
       h += '<h4>Kontur</h4><div class="row">' + field('Rəng', color('stroke_color', it.stroke_color)) + field('Qalınlıq', num('stroke_width', it.stroke_width, 0.5)) + '</div>';
       var sh = it.shadow_color || '';
       var shAlpha = sh.length === 9 ? Math.round(parseInt(sh.slice(7, 9), 16) / 2.55) : (sh ? 100 : 0);
@@ -1543,7 +1552,20 @@
         rotation: l.rotation || 0, opacity: l.opacity == null ? 100 : l.opacity, placement: l.placement, locked: !!l.locked }; }),
       photos: doc.photos.map(function(p){ return { label: p.label, i18n: p.i18n || null, x: p.x, y: p.y, width: p.width, height: p.height, rotation: p.rotation || 0, shape: p.shape, cutout: p.cutout ? 1 : 0,
         fill: p.fill || 'photo', sky_style: p.sky_style || 'night', sky_ring: p.sky_ring === false ? 0 : 1 }; }),
-      texts: doc.texts.map(function(t){ var o = clone(t); o.rotation = o.rotation || 0; o.max_lines = Math.max(1, +o.max_lines || 1); o.max_length = Math.max(1, +o.max_length || 255); return o; }),
+      texts: doc.texts.map(function(t){
+        var o = clone(t);
+        o.rotation = o.rotation || 0;
+        o.max_lines = Math.max(1, +o.max_lines || 1);
+        o.max_length = Math.max(1, +o.max_length || 255);
+        o.tracking = Math.round(+o.tracking || 0);
+        o.line_height = Math.round(+o.line_height || 120);
+        o.text_case = o.text_case || 'none';
+        o.scale_x = Math.round(+o.scale_x || 100);
+        o.scale_y = Math.round(+o.scale_y || 100);
+        o.baseline_shift = Math.round(+o.baseline_shift || 0);
+
+        return o;
+      }),
       box_color: doc.box_color || null
     };
     var btn = document.getElementById('save');

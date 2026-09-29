@@ -42,6 +42,24 @@
 
   /* Text longer than the designer's own wording must not grow into whatever
      sits below it, so it shrinks until it fits the slot's line budget. */
+  /* The letters set apart, in the thousandths of the size the design was
+     drawn in — Photoshop's own unit. Applied to measuring as well as to
+     drawing, or a tracked caption would be shrunk against the wrong width. */
+  function spacing(c, t, size) {
+    var px = size * (t.tracking || 0) / 1000;
+    try { c.letterSpacing = px ? px + 'px' : '0px'; } catch (e) {}
+    try { c.fontVariantCaps = t.textCase === 'small' ? 'small-caps' : 'normal'; } catch (e) {}
+
+    return px;
+  }
+
+  /** Printed as written, in capitals, or left to the font's small capitals. */
+  function cased(text, t) {
+    /* The Azerbaijani i has its own capital, İ, and the plain uppercase rule
+       would turn it into a Latin I — a name misspelt on someone's present. */
+    return t.textCase === 'upper' ? String(text).toLocaleUpperCase('az') : String(text);
+  }
+
   function fitText(c, text, t) {
     /* Lines the writer asked for are never shrunk away: they are the layout,
        not text overrunning the slot. */
@@ -55,6 +73,7 @@
 
     for (var attempt = 0; attempt < 40; attempt++) {
       c.font = weight + ' ' + size + 'px ' + fontStack(t);
+      spacing(c, t, size);
       lines = wrapLines(c, text, t.maxWidth);
       widest = 0;
       for (var i = 0; i < lines.length; i++) widest = Math.max(widest, c.measureText(lines[i]).width);
@@ -63,7 +82,7 @@
       size -= Math.max(1, size * 0.04);
     }
 
-    var lineHeight = size * 1.2;
+    var lineHeight = size * ((t.lineHeight || 120) / 100);
     return { lines: lines, size: size, weight: weight, lineHeight: lineHeight,
              width: widest, height: lines.length * lineHeight };
   }
@@ -76,19 +95,29 @@
     c.textAlign = t.align || 'center';
     c.textBaseline = 'middle';
 
-    var x = t.x, y = t.y;
+    /* Everything happens about the caption's own anchor: it turns there, and
+       it is stretched there, so a narrowed or tilted caption stays where the
+       designer put it instead of sliding across the box. */
+    c.translate(t.x, t.y);
     if (t.rotation) {
-      /* Tilted captions turn about their own anchor point. */
-      c.translate(t.x, t.y);
       c.rotate(t.rotation * Math.PI / 180);
-      x = 0;
-      y = 0;
     }
+    var sx = (t.scaleX || 100) / 100, sy = (t.scaleY || 100) / 100;
+    if (sx !== 1 || sy !== 1) {
+      c.scale(sx, sy);
+    }
+    var x = 0, y = 0;
 
+    text = cased(text, t);
     var layout = fitText(c, text, t);
     var size = layout.size;
     var shrink = size / t.fontSize;
-    var startY = y - ((layout.lines.length - 1) * layout.lineHeight) / 2;
+    /* Positive lifts the line, as the panel's baseline shift does. */
+    var startY = y - ((layout.lines.length - 1) * layout.lineHeight) / 2 - (t.baselineShift || 0) * shrink;
+    /* Letter spacing is added after the last letter too, so a centred caption
+       would sit half a gap to the right of where it belongs. */
+    var track = size * (t.tracking || 0) / 1000;
+    var nudge = t.align === 'center' ? -track / 2 : (t.align === 'right' ? -track : 0);
 
     /* Styling scales with any shrink-to-fit. Slots with no stroke recorded
        keep the soft dark outline they always had. */
@@ -105,6 +134,7 @@
 
     for (var i = 0; i < layout.lines.length; i++) {
       var line = layout.lines[i];
+      var lx = x + nudge;
       var ly = startY + i * layout.lineHeight;
       /* The shadow is cast once, by whichever layer is outermost. */
       shadow(true);
@@ -113,10 +143,10 @@
         c.lineWidth = legacy ? strokeWidth : strokeWidth * 2;
         c.strokeStyle = strokeColor;
         c.lineJoin = 'round';
-        c.strokeText(line, x, ly);
+        c.strokeText(line, lx, ly);
         shadow(false);
       }
-      c.fillText(line, x, ly);
+      c.fillText(line, lx, ly);
     }
 
     c.restore();
