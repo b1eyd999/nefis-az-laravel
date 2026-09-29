@@ -218,6 +218,8 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="{{ asset('js/star-data.js') }}?v={{ \App\Support\Assets::version('js/star-data.js') }}"></script>
+<script src="{{ asset('js/star-map.js') }}?v={{ \App\Support\Assets::version('js/star-map.js') }}"></script>
 <script src="{{ asset('js/box-render.js') }}?v={{ \App\Support\Assets::version('js/box-render.js') }}"></script>
 <script src="{{ asset('js/scene-render.js') }}?v={{ \App\Support\Assets::version('js/scene-render.js') }}"></script>
 <script src="{{ asset('js/cover.js') }}?v={{ \App\Support\Assets::version('js/cover.js') }}"></script>
@@ -509,7 +511,29 @@
      ================================================================ */
   var editingText = -1;
 
+  /* A window set to the sky shows the real sky here, not a grey box: the
+     owner is placing a picture whose density and edge he has to judge, and a
+     stand-in would lie about both. The date is a fixed evening over Baku —
+     the customer's own night replaces it on the shop page. */
+  function drawSkyArea(p){
+    if (!window.NefisStarMap) return false;
+    var d = Math.min(p.width, p.height);
+    ctx.save();
+    ctx.translate(p.x + p.width / 2, p.y + p.height / 2);
+    ctx.rotate(rad(p.rotation || 0));
+    window.NefisStarMap.draw(ctx, {
+      date: '2026-02-14', time: '21:30', tzOffset: 4, lat: 40.3777, lon: 49.8920,
+      shape: p.shape === 'heart' ? 'heart' : 'circle',
+      style: p.sky_style || 'night', ring: p.sky_ring !== false && p.shape !== 'heart',
+      size: d, radius: d / 2, cx: 0, cy: 0, page: false
+    });
+    ctx.restore();
+
+    return true;
+  }
+
   function drawPhotoArea(p){
+    if (p.fill === 'sky' && drawSkyArea(p)) return;
     ctx.save();
     ctx.translate(p.x + p.width / 2, p.y + p.height / 2);
     ctx.rotate(rad(p.rotation || 0));
@@ -1062,9 +1086,19 @@
     } else if (selection.kind === 'photo') {
       h += '<h3>Foto sahəsi</h3>';
       h += '<p class="hint">Müştərinin yüklədiyi şəkil bura düşür. "Fotonun üstündə" olan qatlar onu örtür.</p>';
+      h += '<div class="row one">' + field('Bura nə düşür', seg('fill', it.fill || 'photo', [['photo', 'Müştərinin şəkli'], ['sky', 'Ulduz xəritəsi']])) + '</div>';
+      if (it.fill === 'sky') {
+        h += '<p class="hint">Müştəri tarixi, saatı və yeri seçir — o gecə o yerin üstündəki səma bura düşür. Yazılar (ad, koordinatlar) ayrıca mətn sahələridir.</p>';
+        h += '<div class="row one">' + field('Forma', seg('shape', it.shape, [['ellipse', 'Dairə'], ['heart', 'Ürək'], ['rectangle', 'Düzbucaqlı']])) + '</div>';
+        h += '<div class="row one">' + field('Rəng', seg('sky_style', it.sky_style || 'night', [['night', 'Gecə'], ['ink', 'Ağ üzərində qara'], ['paper', 'Ağ'], ['navy', 'Tünd mavi'], ['crimson', 'Al'], ['cream', 'Krem'], ['sky', 'Açıq mavi']])) + '</div>';
+        h += '<div class="row one">' + field('Dərəcə halqası', seg('sky_ring', it.sky_ring === false ? 0 : 1, [[1, 'Olsun'], [0, 'Olmasın']])) + '</div>';
+        h += '<div class="actions"><button class="btn small" data-act="dup">Təkrarla</button><button class="btn small danger" data-act="del">Sil</button></div>';
+
+        return h;
+      }
       h += '<div class="row one">' + field('Müştəriyə görünən ad', txt('label', it.label, 'Şəkil')) + '</div>';
       h += i18nFields(it, 'label');
-      h += '<div class="row one">' + field('Forma', seg('shape', it.shape, [['rectangle', 'Düzbucaqlı'], ['ellipse', 'Oval']])) + '</div>';
+      h += '<div class="row one">' + field('Forma', seg('shape', it.shape, [['rectangle', 'Düzbucaqlı'], ['ellipse', 'Oval'], ['heart', 'Ürək']])) + '</div>';
       h += '<div class="row one">' + field('Üz kəsilsin', seg('cutout', it.cutout ? 1 : 0, [[0, 'Xeyr'], [1, 'Bəli, fonu at']])) + '</div>';
       h += '<p class="hint">"Bəli" olanda müştərinin şəklindən yalnız başı götürülür, fon şəffaf qalır — üzün gövdənin üstünə oturduğu dizaynlar üçün.</p>';
       h += '<div class="row four">' + field('X', num('x', it.x)) + field('Y', num('y', it.y)) + field('En', num('width', it.width)) + field('Hünd.', num('height', it.height)) + '</div>';
@@ -1210,7 +1244,12 @@
       var on = selection && selection.kind === r.kind && selection.index === r.index;
       var thumb, name, kind;
       if (r.kind === 'layer') { thumb = '<img src="' + esc(it.url) + '" alt="">'; name = it.name || 'Qat'; kind = it.placement === 'above' ? 'fotonun üstündə' : 'fotonun altında'; }
-      else if (r.kind === 'photo') { thumb = '👤'; name = it.label || 'Foto'; kind = it.shape === 'ellipse' ? 'oval' : 'düzbucaqlı'; }
+      else if (r.kind === 'photo') {
+        var sky = it.fill === 'sky';
+        thumb = sky ? '✨' : '👤';
+        name = sky ? 'Ulduz xəritəsi' : (it.label || 'Foto');
+        kind = it.shape === 'heart' ? 'ürək' : (it.shape === 'ellipse' ? (sky ? 'dairə' : 'oval') : 'düzbucaqlı');
+      }
       else {
         thumb = it.kind === 'time' ? '⏱' : '<span style="font-family:&quot;' + esc(it.font_family) + '&quot;,Inter;font-weight:700">T</span>';
         name = it.default_value || it.label || 'Mətn';
@@ -1502,7 +1541,8 @@
     var payload = {
       layers: doc.layers.map(function(l){ return { name: l.name, image: l.image, x: l.x, y: l.y, width: l.width, height: l.height,
         rotation: l.rotation || 0, opacity: l.opacity == null ? 100 : l.opacity, placement: l.placement, locked: !!l.locked }; }),
-      photos: doc.photos.map(function(p){ return { label: p.label, i18n: p.i18n || null, x: p.x, y: p.y, width: p.width, height: p.height, rotation: p.rotation || 0, shape: p.shape, cutout: p.cutout ? 1 : 0 }; }),
+      photos: doc.photos.map(function(p){ return { label: p.label, i18n: p.i18n || null, x: p.x, y: p.y, width: p.width, height: p.height, rotation: p.rotation || 0, shape: p.shape, cutout: p.cutout ? 1 : 0,
+        fill: p.fill || 'photo', sky_style: p.sky_style || 'night', sky_ring: p.sky_ring === false ? 0 : 1 }; }),
       texts: doc.texts.map(function(t){ var o = clone(t); o.rotation = o.rotation || 0; o.max_lines = Math.max(1, +o.max_lines || 1); o.max_length = Math.max(1, +o.max_length || 255); return o; }),
       box_color: doc.box_color || null
     };

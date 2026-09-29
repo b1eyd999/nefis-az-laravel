@@ -67,6 +67,24 @@
   @endforeach
 
   @php $item = $getRecord(); @endphp
+  @if(filled($line->star_map))
+    {{-- The night the customer chose. Nothing is stored as a picture: these
+         numbers redraw it at any size, today or in three years. --}}
+    @php $sky = $line->star_map; @endphp
+    <div style="border:1px dashed rgba(96,120,200,.7); border-radius:.75rem; padding:.6rem .75rem;">
+      <div style="font-size:.8rem; font-weight:700; margin-bottom:.45rem;">✨ Ulduz xəritəsi</div>
+      <div style="font-size:.85rem; white-space:normal;">
+        {{ \Illuminate\Support\Carbon::parse($sky['date'])->format('d.m.Y') }}, saat {{ $sky['time'] }}
+        @if(! empty($sky['place'])) · {{ $sky['place'] }} @endif
+      </div>
+      <div style="font-size:.78rem; opacity:.8; margin-top:.2rem;">
+        {{ \App\Support\Sky::coordinates((float) $sky['lat'], (float) $sky['lon']) }}
+      </div>
+      <a href="{{ route('star.print', $line) }}" target="_blank" rel="noopener"
+         style="display:inline-block; margin-top:.45rem; font-size:.85rem; font-weight:600; text-decoration:underline;">Çap üçün aç →</a>
+    </div>
+  @endif
+
   @if($item->spotify_uri)
     {{-- The song the customer chose. The code is here ready to put on the box —
          svg for the press, png to glance at — and the link is here so the shop

@@ -13,6 +13,7 @@ class Cart
      * Each item: ['id' => string, 'product_id' => int, 'photo_paths' => string[], 'custom_texts' => string[], 'quantity' => int,
      *             'photo_labels' => string[], 'text_labels' => array{label: string, fixed: bool, repeat: bool}[],
      *             'photo_frames' => array{scale, rotate, flip, panX, panY, ratio, shape}|null[] (how each photo sat in its window),
+     *             'star' => ?array{date, time, lat, lon, tz, place} (the night sky on the box),
      *             'chocolate' => ?array{id: int, name: string, price: float},
      *             'wrapping' => ?array{id: int, name: string, price: float},
      *             'letter' => ?array{text: ?string, photo: ?string, price: float},
@@ -46,7 +47,7 @@ class Cart
 
     public static function add(int $productId, array $photoPaths, array $customTexts, int $quantity = 1,
         array $photoLabels = [], array $textLabels = [], ?array $chocolate = null, ?array $wrapping = null, ?array $letter = null, ?array $ar = null, ?string $spotify = null,
-        array $photoFrames = []): void
+        array $photoFrames = [], ?array $star = null): void
     {
         $items = self::items();
         $items[] = [
@@ -58,6 +59,7 @@ class Cart
             'photo_labels' => array_values($photoLabels),
             'text_labels' => array_values($textLabels),
             'photo_frames' => array_values($photoFrames),
+            'star' => $star,
             'chocolate' => $chocolate,
             'wrapping' => $wrapping,
             'letter' => $letter,

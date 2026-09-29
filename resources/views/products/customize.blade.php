@@ -413,9 +413,12 @@
              takes and what jumping the queue costs. --}}
         @include('partials.lead-note')
 
+        @php $photoNo = 0; @endphp
         @foreach($photoSlots as $index => $slot)
+          @continue($slot->isSky())
+          @php $photoNo++; @endphp
           <div class="slot-block" data-slot="{{ $index }}">
-            <label>{{ $loop->iteration }}. {{ $slot->label ? __($slot->tr('label')) : __('Şəkil') }}</label>
+            <label>{{ $photoNo }}. {{ $slot->label ? __($slot->tr('label')) : __('Şəkil') }}</label>
             {{-- Drawn, not described: what the shot has to look like. --}}
             @include('partials.photo-guide', ['small' => true])
             <label class="upload-box" for="photo-input-{{ $index }}">
@@ -485,6 +488,48 @@
             </div>
           @endif
         @endforeach
+
+        @if(\App\Support\Sky::wanted($product))
+          {{-- The night itself: a date, an hour and a place. The wording that
+               goes under the stars is an ordinary caption field of the design,
+               so the owner keeps control of how it is set. --}}
+          <div class="sky-block" id="sky-block">
+            <label>{{ __('Ulduz xəritəsi') }}</label>
+            <p class="slot-hint" style="margin-bottom:.6rem;">{{ __('O gecə, o yerin üstündəki səma qutunun üzərinə düşəcək.') }}</p>
+            <div class="sky-row">
+              <div>
+                <label for="star-date" class="sky-lbl">{{ __('Tarix') }}</label>
+                <input type="date" id="star-date" name="star_date" class="text-input" required
+                       max="{{ now()->addYears(1)->toDateString() }}" min="1900-01-01"
+                       value="{{ old('star_date', now()->toDateString()) }}">
+              </div>
+              <div>
+                <label for="star-time" class="sky-lbl">{{ __('Saat') }}</label>
+                <input type="time" id="star-time" name="star_time" class="text-input" required
+                       value="{{ old('star_time', '21:00') }}">
+              </div>
+            </div>
+            <div class="sky-row" style="margin-top:.6rem;">
+              <div>
+                <label for="star-city" class="sky-lbl">{{ __('Yer') }}</label>
+                <select id="star-city" class="text-input">
+                  @foreach(\App\Support\Sky::places() as $place)
+                    <option value="{{ $place['lat'] }},{{ $place['lon'] }}" @selected(old('star_place', 'Bakı') === $place['name'])>{{ $place['name'] }}</option>
+                  @endforeach
+                  <option value="other">{{ __('Başqa yer — koordinatlarla') }}</option>
+                </select>
+              </div>
+              <div id="sky-own" hidden>
+                <label class="sky-lbl">{{ __('Enlik, uzunluq') }}</label>
+                <input type="text" id="star-own" class="text-input" inputmode="decimal" placeholder="38.79, 48.48">
+              </div>
+            </div>
+            <input type="hidden" name="star_lat" id="star-lat" value="40.3777">
+            <input type="hidden" name="star_lon" id="star-lon" value="49.8920">
+            <input type="hidden" name="star_place" id="star-place" value="Bakı">
+            <p class="slot-hint" id="sky-coords" style="margin-top:.5rem;"></p>
+          </div>
+        @endif
 
         @if($product->spotify_code)
           {{-- A song on the box. The customer pastes the link Spotify gave him
@@ -768,6 +813,10 @@
      to the size wanted, so a phone picture never becomes a bitmap the tab
      cannot carry. --}}
 <script src="{{ asset('js/photo-shrink.js') }}?v={{ \App\Support\Assets::version('js/photo-shrink.js') }}"></script>
+@if(\App\Support\Sky::wanted($product))
+  <script src="{{ asset('js/star-data.js') }}?v={{ \App\Support\Assets::version('js/star-data.js') }}"></script>
+  <script src="{{ asset('js/star-map.js') }}?v={{ \App\Support\Assets::version('js/star-map.js') }}"></script>
+@endif
 @if($cutsFaces)
 <script defer src="{{ asset('js/face-cutout.js') }}?v={{ \App\Support\Assets::version('js/face-cutout.js') }}"></script>
 <script defer src="{{ asset('js/cutout-brush.js') }}?v={{ \App\Support\Assets::version('js/cutout-brush.js') }}"></script>
@@ -786,6 +835,16 @@
 
   var ANGLES = @json($viewData);
   var SLOT_COUNT = {{ $photoSlots->count() }};
+  var SKY_SLOT = @json($photoSlots->values()->map(fn ($s) => $s->isSky())->all());
+
+  /* What the customer said about the night, and the little that follows from
+     it. Read by the drawing below; changed by the controls further down. */
+  @php
+    $skyStart = \App\Support\Sky::wanted($product)
+        ? ['date' => now()->toDateString(), 'time' => '21:00', 'lat' => 40.3777, 'lon' => 49.8920, 'tz' => 4]
+        : null;
+  @endphp
+  var sky = @json($skyStart);
 
   var FACE_MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
   var faceModelReady = null;
@@ -921,6 +980,18 @@
     photos.push({ img: null, scale: 1, rotate: 0, flip: false, panX: 0, panY: 0, faceBox: null, framed: false });
   }
 
+  /* The controls live in their own closure further down the page; this is
+     how the night they collect reaches the drawing. */
+  window.nefisSky = function(next){
+    if (!sky) return;
+    sky.date = next.date || sky.date;
+    sky.time = next.time || sky.time;
+    sky.lat = next.lat;
+    sky.lon = next.lon;
+    sky.tz = next.tz;
+    draw();
+  };
+
   function currentAngle(){ return ANGLES[activeAngle]; }
   function areaFor(slotIndex){ return currentAngle().areas[slotIndex] || null; }
 
@@ -961,6 +1032,24 @@
     var boundW = area.w * cosA + area.h * sinA;
     var boundH = area.w * sinA + area.h * cosA;
     return Math.max(boundW / imgW, boundH / imgH);
+  }
+
+  /* The window's night sky, worked out for the moment the customer named.
+     Drawn straight into the flat design, so every scene and the print file
+     get it without knowing anything about stars. */
+  function drawSkyInArea(mctx, area){
+    if (!window.NefisStarMap || !sky) return;
+    var d = Math.min(area.w, area.h);
+    mctx.save();
+    mctx.translate(area.x + area.w / 2, area.y + area.h / 2);
+    mctx.rotate(area.rotation * Math.PI / 180);
+    window.NefisStarMap.draw(mctx, {
+      date: sky.date, time: sky.time, tzOffset: sky.tz, lat: sky.lat, lon: sky.lon,
+      shape: area.shape === 'heart' ? 'heart' : 'circle',
+      style: area.skyStyle || 'night', ring: area.skyRing !== false && area.shape !== 'heart',
+      size: d, radius: d / 2, cx: 0, cy: 0, page: false
+    });
+    mctx.restore();
   }
 
   function drawPhotoInArea(mctx, area, state){
@@ -1009,6 +1098,7 @@
     drawLayers(mctx, a.layers && a.layers.below);
 
     a.areas.forEach(function(area, i){
+      if (area.fill === 'sky') { drawSkyInArea(mctx, area); return; }
       if (photos[i]) drawPhotoInArea(mctx, area, photos[i]);
     });
 
@@ -1189,7 +1279,8 @@
   }
 
   function allSlotsFilled(){
-    return photos.every(function(p){ return p.img !== null; });
+    /* A window holding the sky needs nothing uploaded: it is already full. */
+    return photos.every(function(p, i){ return SKY_SLOT[i] || p.img !== null; });
   }
 
   /* The photo inputs are required and hidden under the preview. The browser
@@ -1751,6 +1842,56 @@
       /* Whatever this browser could not do, the shop does by hand. */
       .then(go, go);
   });
+})();
+
+/* The night the customer names: date, hour and place, straight into the
+   preview. The hidden fields carry the same numbers to the shop. */
+(function(){
+  var block = document.getElementById('sky-block');
+  if (!block || !window.nefisSky) return;
+  var dateEl = document.getElementById('star-date');
+  var timeEl = document.getElementById('star-time');
+  var cityEl = document.getElementById('star-city');
+  var ownWrap = document.getElementById('sky-own');
+  var ownEl = document.getElementById('star-own');
+  var latEl = document.getElementById('star-lat');
+  var lonEl = document.getElementById('star-lon');
+  var placeEl = document.getElementById('star-place');
+  var out = document.getElementById('sky-coords');
+
+  function apply(){
+    var lat, lon, place;
+    if (cityEl.value === 'other') {
+      var parts = String(ownEl.value || '').split(/[,;\s]+/).filter(Boolean);
+      lat = parseFloat(parts[0]);
+      lon = parseFloat(parts[1]);
+      place = '';
+      if (!isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return;
+    } else {
+      var pair = cityEl.value.split(',');
+      lat = parseFloat(pair[0]);
+      lon = parseFloat(pair[1]);
+      place = cityEl.options[cityEl.selectedIndex].textContent.trim();
+    }
+    latEl.value = lat;
+    lonEl.value = lon;
+    placeEl.value = place;
+    /* Inside the country the clock is +4 all year; elsewhere the longitude is
+       the honest guess. The same rule runs on the server. */
+    var tz = (Math.abs(lon - 49) < 8 && Math.abs(lat - 40) < 4) ? 4 : Math.round(lon / 15);
+    window.nefisSky({ date: dateEl.value, time: timeEl.value || '21:00', lat: lat, lon: lon, tz: tz });
+    if (out && window.NefisStarMap) out.textContent = window.NefisStarMap.coordinates(lat, lon);
+  }
+
+  cityEl.addEventListener('change', function(){
+    ownWrap.hidden = cityEl.value !== 'other';
+    apply();
+  });
+  [dateEl, timeEl, ownEl].forEach(function(el){
+    el.addEventListener('input', apply);
+    el.addEventListener('change', apply);
+  });
+  apply();
 })();
 
 /* The running price: the box, the chosen bar, times how many. */

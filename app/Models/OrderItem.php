@@ -20,6 +20,8 @@ class OrderItem extends Model
         'text_labels',
         // How each photo was zoomed, turned and shifted in its window.
         'photo_frames',
+        // The night sky the customer chose: date, hour, place, coordinates.
+        'star_map',
         // The song on the box, as spotify:track:… — the canonical form, so the
         // code can be redrawn at any size years after the order.
         'spotify_uri',
@@ -50,6 +52,7 @@ class OrderItem extends Model
             'photo_labels' => 'array',
             'text_labels' => 'array',
             'photo_frames' => 'array',
+            'star_map' => 'array',
             'chocolate_price' => 'float',
             'wrapping_price' => 'float',
             'letter_price' => 'float',
@@ -94,7 +97,12 @@ class OrderItem extends Model
     /** The photo fields' names, as the customer page shows them ("1. Şəkil"). */
     public static function photoLabelsFor(Product $product): array
     {
+        // A window filled with the night sky asks for nothing and is not
+        // listed: the photographs the customer sent, and their names, stay
+        // one-to-one.
         return $product->photoSlots->values()
+            ->reject(fn ($slot) => $slot->isSky())
+            ->values()
             ->map(fn ($slot, $i) => ($i + 1) . '. ' . ($slot->label ?: 'Şəkil'))
             ->all();
     }

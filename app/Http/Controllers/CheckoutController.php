@@ -115,6 +115,7 @@ class CheckoutController extends Controller
                 'photo_labels' => $item['photo_labels'] ?? OrderItem::photoLabelsFor($product),
                 'text_labels' => $item['text_labels'] ?? OrderItem::textLabelsFor($product),
                 'photo_frames' => array_filter($item['photo_frames'] ?? []) ? $item['photo_frames'] : null,
+                'star_map' => $item['star'] ?? null,
                 // The song, kept as the canonical uri so the code can be
                 // redrawn at print size whenever the box is made.
                 'spotify_uri' => $item['spotify'] ?? null,

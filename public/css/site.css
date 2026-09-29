@@ -1071,3 +1071,10 @@
   .sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
   .skip-link{ position:fixed; top:-3rem; left:1rem; background:var(--cocoa); color:var(--cream); padding:.6rem 1.1rem; border-radius:.5rem; z-index:200; transition:top .25s; }
   .skip-link:focus{ top:1rem; }
+
+/* The star map's own controls on the design page. */
+.sky-block{ margin-top:1.25rem; }
+.sky-row{ display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
+.sky-row > div{ min-width:0; }
+.sky-lbl{ display:block; font-size:.8125rem; color:var(--cocoa-faint); margin-bottom:.25rem; }
+@media (max-width: 480px){ .sky-row{ grid-template-columns:1fr; } }

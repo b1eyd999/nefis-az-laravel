@@ -12,6 +12,7 @@ use App\Support\Analytics;
 use App\Support\Cart;
 use App\Support\DeliveryTime;
 use App\Support\Letter;
+use App\Support\Sky;
 use App\Support\SpotifyCode;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,6 +55,9 @@ class CartController extends Controller
         }
 
         foreach ($product->photoSlots as $index => $slot) {
+            if ($slot->isSky()) {
+                continue;               // the sky is asked for by date and place, not uploaded
+            }
             $rules["photos.$index"] = ['required', 'image', 'max:' . self::PHOTO_MAX_KB];
             // How the photo sits in its window, as the page's own JSON; a
             // browser without the script simply sends none.
@@ -62,6 +66,14 @@ class CartController extends Controller
 
         // Gift wrap is a choice, never a must.
         $rules['wrapping_id'] = ['nullable', Rule::exists('wrappings', 'id')->where('is_active', true)];
+
+        if (Sky::wanted($product)) {
+            $rules['star_date'] = ['required', 'date', 'after:1899-12-31', 'before:' . now()->addYears(2)->toDateString()];
+            $rules['star_time'] = ['required', 'date_format:H:i'];
+            $rules['star_lat'] = ['required', 'numeric', 'between:-90,90'];
+            $rules['star_lon'] = ['required', 'numeric', 'between:-180,180'];
+            $rules['star_place'] = ['nullable', 'string', 'max:60'];
+        }
 
         // The song, on the designs built around one. Never required: the box
         // is worth ordering without it. Checked here as well as in the page,
@@ -141,6 +153,9 @@ class CartController extends Controller
         $paths = [];
         $frames = [];
         foreach ($product->photoSlots as $index => $slot) {
+            if ($slot->isSky()) {
+                continue;
+            }
             $paths[] = $request->file("photos.$index")->store('cart-photos', 'public');
             $frames[] = OrderItem::frameOrNull(json_decode((string) $request->input("photo_frames.$index"), true));
         }
@@ -169,7 +184,8 @@ class CartController extends Controller
         Cart::add($product->id, $paths, $texts, $quantity,
             OrderItem::photoLabelsFor($product), OrderItem::textLabelsFor($product), $chocolate, $wrapping,
             $withLetter ? Letter::fromRequest($request) : null,
-            $withAr ? LiveMaterials::fromRequest($request) : null, $song, $frames);
+            $withAr ? LiveMaterials::fromRequest($request) : null, $song, $frames,
+            Sky::wanted($product) ? Sky::fromRequest($request) : null);
 
         // The line as it was just added — box, bar, paper, letter and video.
         $line = Cart::items()[array_key_last(Cart::items())] ?? [];

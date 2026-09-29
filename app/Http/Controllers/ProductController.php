@@ -178,6 +178,11 @@ class ProductController extends Controller
                 'shape' => $slot->shape,
                 // The browser cuts the face out of whatever is uploaded here.
                 'cutout' => (bool) $slot->cutout,
+                // 'sky' means no photograph is asked for: the window is filled
+                // with the stars over the place and hour the customer names.
+                'fill' => $slot->fill ?: \App\Models\PhotoSlot::PHOTO,
+                'skyStyle' => $slot->sky_style ?: 'night',
+                'skyRing' => (bool) $slot->sky_ring,
             ])->values()->all(),
             'texts' => $view->textSlots->map(fn ($slot) => [
                 'x' => (int) $slot->x,

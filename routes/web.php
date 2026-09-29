@@ -106,6 +106,10 @@ Route::get('/podarki/{slug}', fn (string $slug) => redirect('/ru/podarki/' . $sl
  * customers; 'locale' with no argument keeps it Azerbaijani whatever the app
  * default says.
  */
+// One order line's star map, drawn at printing size for the workshop.
+Route::get('/admin-ulduz/{item}', [\App\Http\Controllers\StarMapController::class, 'show'])
+    ->middleware(['auth', 'staff'])->name('star.print');
+
 Route::middleware(['auth', 'locale', 'staff'])->prefix('admin-phone')->name('phone.')->group(function () {
     Route::get('/', [PhoneOrders::class, 'index'])->name('orders.index');
     Route::get('/sifarish/{order}', [PhoneOrders::class, 'show'])->whereNumber('order')->name('orders.show');

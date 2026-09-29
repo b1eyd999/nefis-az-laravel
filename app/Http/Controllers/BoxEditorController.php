@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DesignLayer;
 use App\Models\Font;
+use App\Models\PhotoSlot;
 use App\Models\Product;
 use App\Models\TextSlot;
 use App\Support\ImageStore;
@@ -13,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -45,7 +47,9 @@ class BoxEditorController extends Controller
                 'placement' => $l->placement, 'locked' => $l->locked,
             ])->values(),
             'photos' => $product->photoSlots->map(fn ($s) => [
-                'label' => $s->label, 'i18n' => $s->i18n, 'x' => $s->x, 'y' => $s->y,
+                'label' => $s->label, 'i18n' => $s->i18n,
+                'fill' => $s->fill ?: PhotoSlot::PHOTO, 'sky_style' => $s->sky_style ?: 'night', 'sky_ring' => (bool) $s->sky_ring,
+                'x' => $s->x, 'y' => $s->y,
                 'width' => $s->width, 'height' => $s->height,
                 'rotation' => $s->rotation, 'shape' => $s->shape, 'cutout' => (bool) $s->cutout,
             ])->values(),
@@ -95,7 +99,10 @@ class BoxEditorController extends Controller
             'photos.*.width' => ['required', 'numeric', 'min:1'],
             'photos.*.height' => ['required', 'numeric', 'min:1'],
             'photos.*.rotation' => ['required', 'numeric', 'between:-360,360'],
-            'photos.*.shape' => ['required', 'in:rectangle,ellipse'],
+            'photos.*.shape' => ['required', 'in:rectangle,ellipse,heart'],
+            'photos.*.fill' => ['nullable', 'in:photo,sky'],
+            'photos.*.sky_style' => ['nullable', Rule::in(PhotoSlot::SKY_STYLES)],
+            'photos.*.sky_ring' => ['nullable', 'boolean'],
             'photos.*.cutout' => ['nullable', 'boolean'],
 
             'texts' => ['present', 'array'],
@@ -178,6 +185,9 @@ class BoxEditorController extends Controller
                 $product->photoSlots()->create([
                     'label' => $p['label'] ?? null,
                     'i18n' => self::slotTranslations($p['i18n'] ?? null, ['label']),
+                    'fill' => ($p['fill'] ?? null) === PhotoSlot::SKY ? PhotoSlot::SKY : PhotoSlot::PHOTO,
+                    'sky_style' => in_array($p['sky_style'] ?? null, PhotoSlot::SKY_STYLES, true) ? $p['sky_style'] : 'night',
+                    'sky_ring' => (bool) ($p['sky_ring'] ?? true),
                     'x' => (int) round($p['x']), 'y' => (int) round($p['y']),
                     'width' => (int) round($p['width']), 'height' => (int) round($p['height']),
                     'rotation' => (int) round($p['rotation']), 'shape' => $p['shape'],
