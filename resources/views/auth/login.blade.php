@@ -42,6 +42,7 @@
         <div class="checkbox-row">
           <input type="checkbox" id="remember" name="remember">
           <label for="remember">{{ __('Məni xatırla') }}</label>
+          <a href="{{ lroute('password.request') }}" style="margin-left:auto; font-size:.9rem;">{{ __('Şifrəni unutmusunuz?') }}</a>
         </div>
         <button type="submit" class="btn btn-primary btn-block">{{ __('Daxil Ol') }}</button>
       </form>

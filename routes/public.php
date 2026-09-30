@@ -8,6 +8,7 @@
  */
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CorporateController;
 use App\Http\Controllers\EpointController;
@@ -46,6 +47,12 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
+
+    // A forgotten password: ask by e-mail, then set a new one with the link.
+    Route::get('/sifre-unutdum', [PasswordController::class, 'showRequest'])->name('password.request');
+    Route::post('/sifre-unutdum', [PasswordController::class, 'sendLink'])->name('password.email');
+    Route::get('/sifre-yenile/{token}', [PasswordController::class, 'showReset'])->name('password.reset');
+    Route::post('/sifre-yenile', [PasswordController::class, 'reset'])->name('password.update');
 });
 
 Route::middleware('auth')->group(function () {
