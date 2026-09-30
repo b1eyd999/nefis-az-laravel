@@ -429,7 +429,7 @@ class SiteSettings extends Page implements HasActions, HasForms
                     ->collapsible(),
                 // Shares are given with the role now, one per staff member.
                 Forms\Components\Section::make('Mənfəətin bölgüsü')
-                    ->description('Pay hər menecerə "İstifadəçilər" bölməsində, rol verəndə təyin olunur. Menecer öz payını "Balansım" səhifəsində görür.')
+                    ->description('Payları "Balans" səhifəsindəki «Payları dəyiş» düyməsi ilə dəyişin (hər menecerin payı «İstifadəçilər» bölməsində də görünür). Menecer öz payını "Balansım" səhifəsində görür.')
                     ->schema([
                         Forms\Components\Placeholder::make('shares_now')
                             ->label('Hazırkı paylar')

@@ -90,7 +90,7 @@
           @endif
         </div>
       @empty
-        <p class="bl-note">Pay "İstifadəçilər" bölməsində, rol verəndə təyin olunur.</p>
+        <p class="bl-note">Hələ heç kimə pay verilməyib. Yuxarıdakı «Payları dəyiş» düyməsi ilə təyin edin.</p>
       @endforelse
     </div>
   </div>

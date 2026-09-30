@@ -2,8 +2,12 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\User;
 use App\Support\Accounting;
 use Carbon\Carbon;
+use Filament\Actions;
+use Filament\Forms;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
 /**
@@ -43,6 +47,72 @@ class Balance extends Page
     public function getTitle(): string
     {
         return static::getNavigationLabel();
+    }
+
+    /**
+     * The split itself, changed here rather than user by user: this is the
+     * page where the shares are looked at, so it is the page where the owner
+     * reaches for them.
+     */
+    protected function getHeaderActions(): array
+    {
+        if (! auth()->user()?->isAdmin()) {
+            return [];
+        }
+
+        return [
+            Actions\Action::make('shares')
+                ->label('Payları dəyiş')
+                ->icon('heroicon-o-adjustments-horizontal')
+                ->color('gray')
+                ->modalHeading('Mənfəətin bölgüsü')
+                ->modalDescription('Hər kəsin xalis mənfəətdən payı. Yığımı 100%-dən az olsa, qalan biznesə qalır.')
+                ->modalSubmitActionLabel('Saxla')
+                ->fillForm(fn () => self::staff()->mapWithKeys(fn (User $u) => ['u' . $u->id => (float) $u->profit_percent])->all())
+                ->form(fn () => self::staff()->map(fn (User $u) => Forms\Components\TextInput::make('u' . $u->id)
+                    ->label($u->name . ' · ' . $u->roleLabel())
+                    ->numeric()->minValue(0)->maxValue(100)->step('0.01')->suffix('%')
+                    ->default(0))->all())
+                ->action(function (array $data) {
+                    $staff = self::staff();
+                    $total = 0.0;
+                    foreach ($staff as $user) {
+                        $total += (float) ($data['u' . $user->id] ?? 0);
+                    }
+
+                    if ($total > 100.0001) {
+                        Notification::make()->danger()
+                            ->title('Payların cəmi 100%-i keçir')
+                            ->body('İndiki cəmi: ' . self::percent($total) . '. Əvvəlcə kiminsə payını azaldın.')
+                            ->send();
+
+                        return;
+                    }
+
+                    foreach ($staff as $user) {
+                        $user->forceFill(['profit_percent' => round((float) ($data['u' . $user->id] ?? 0), 2)])->save();
+                    }
+
+                    Notification::make()->success()
+                        ->title('Paylar yeniləndi')
+                        ->body('Biznesə qalan: ' . self::percent(round(100 - $total, 2)))
+                        ->send();
+                }),
+        ];
+    }
+
+    /** Everyone who can hold a share: the shop's own people. */
+    private static function staff()
+    {
+        return User::query()
+            ->where(fn ($q) => $q->whereIn('role', [User::ADMIN, User::MANAGER])->orWhere('is_admin', true))
+            ->orderByDesc('profit_percent')->orderBy('name')->get();
+    }
+
+    /** 22.5% rather than 22.50%, and 22% rather than 22.00%. */
+    public static function percent(float $value): string
+    {
+        return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.') . '%';
     }
 
     /** The signed-in manager's line of the profit split, if they have one. */
