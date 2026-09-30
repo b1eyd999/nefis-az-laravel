@@ -75,6 +75,20 @@ class DeliveryTest extends TestCase
         $this->assertSame(9.0, $order->total());
     }
 
+    public function test_the_far_corners_of_the_city_are_still_the_city(): void
+    {
+        // The box used to stop at the built-up middle, so a customer standing
+        // in Qaradağ or out towards Zərə was told he was not in Baku at all.
+        $this->assertTrue(DeliveryMethod::inBaku(40.09, 49.41), 'Qobustan qəsəbəsi, Qaradağ');
+        $this->assertTrue(DeliveryMethod::inBaku(40.35, 50.26), 'Zirə');
+        $this->assertTrue(DeliveryMethod::inBaku(40.70, 49.85), 'the northern settlements');
+        $this->assertTrue(DeliveryMethod::inBaku(40.3869, 49.8434), 'the middle of town');
+
+        $this->assertFalse(DeliveryMethod::inBaku(40.6828, 46.3606), 'Gəncə');
+        $this->assertFalse(DeliveryMethod::inBaku(41.36, 49.22), 'Quba');
+        $this->assertFalse(DeliveryMethod::inBaku(38.75, 48.85), 'Lənkəran');
+    }
+
     public function test_the_door_delivery_point_comes_from_the_map_and_stays_in_baku(): void
     {
         $this->fillCart();

@@ -201,7 +201,17 @@
     (ensure() || Promise.resolve()).then(function(){
       navigator.geolocation.getCurrentPosition(function(pos){
         var a = pos.coords.latitude, b = pos.coords.longitude;
-        if (!inBaku(a, b)) { say(@json(__('Siz Bakıdan kənardasınız, yeri xəritədə əl ilə seçin.')), 'err'); return; }
+        if (!inBaku(a, b)) {
+          /* A computer without GPS is placed by its network, and that can be
+             a different city; saying "you are outside Baku" to someone who is
+             standing in it reads as a fault of the site. */
+          var off = Math.round((pos.coords.accuracy || 0) / 1000);
+          say(off >= 5
+            ? @json(__('Yeriniz dəqiq tapılmadı (ən azı :km km xəta) — yeri xəritədə əl ilə seçin.')).replace(':km', off)
+            : @json(__('Siz Bakıdan kənardasınız, yeri xəritədə əl ilə seçin.')), 'err');
+
+          return;
+        }
         typedByHand = false;
         picker.place(a, b, true);
         picked(a, b);

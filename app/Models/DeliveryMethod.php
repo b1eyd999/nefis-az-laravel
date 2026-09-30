@@ -38,7 +38,13 @@ class DeliveryMethod extends Model
     ];
 
     /** Where door delivery goes: Baku, the Absheron settlements included. */
-    public const BAKU_BOUNDS = ['south' => 40.10, 'west' => 49.40, 'north' => 40.62, 'east' => 50.65];
+    /**
+     * The whole city as the city is actually drawn: Qaradağ down past
+     * Səngəçal in the south-west, Xəzər out to Türkan and Zərə in the east,
+     * and the Absheron settlements in the north. The old box stopped short of
+     * them, so a customer standing in his own city was told he was not.
+     */
+    public const BAKU_BOUNDS = ['south' => 40.00, 'west' => 49.25, 'north' => 40.75, 'east' => 50.75];
 
     public const BAKU_CENTER = ['lat' => 40.4093, 'lng' => 49.8671];
 
