@@ -52,7 +52,7 @@ class BoxEditorController extends Controller
                 'kind' => $s->kind, 'x' => $s->x, 'y' => $s->y, 'width' => $s->width, 'height' => $s->height,
                 'rotation' => $s->rotation, 'fill' => $s->fill, 'stroke_color' => $s->stroke_color,
                 'stroke_width' => (float) $s->stroke_width, 'radius' => (int) $s->radius,
-                'opacity' => (int) $s->opacity, 'placement' => $s->placement,
+                'opacity' => (int) $s->opacity, 'placement' => $s->placement, 'locked' => (bool) $s->locked,
             ])->values(),
             'photos' => $product->photoSlots->map(fn ($s) => [
                 'label' => $s->label, 'i18n' => $s->i18n,
@@ -63,6 +63,7 @@ class BoxEditorController extends Controller
                 'x' => $s->x, 'y' => $s->y,
                 'width' => $s->width, 'height' => $s->height,
                 'rotation' => $s->rotation, 'shape' => $s->shape, 'cutout' => (bool) $s->cutout,
+                'locked' => (bool) $s->locked,
             ])->values(),
             'texts' => $product->textSlots->map(fn ($s) => [
                 'label' => $s->label, 'i18n' => $s->i18n, 'kind' => $s->kind ?: TextSlot::KIND_TEXT, 'fixed' => (bool) $s->fixed,
@@ -79,7 +80,7 @@ class BoxEditorController extends Controller
                 'shadow_color' => $s->shadow_color, 'shadow_blur' => (int) $s->shadow_blur,
                 'shadow_x' => (int) $s->shadow_x, 'shadow_y' => (int) $s->shadow_y,
                 'max_lines' => max(1, (int) $s->max_lines), 'max_length' => (int) $s->max_length,
-                'link_key' => $s->link_key, 'auto' => $s->auto ?: 'none',
+                'link_key' => $s->link_key, 'auto' => $s->auto ?: 'none', 'locked' => (bool) $s->locked,
             ])->values(),
         ];
 
@@ -120,6 +121,7 @@ class BoxEditorController extends Controller
             'shapes.*.radius' => ['nullable', 'integer', 'between:0,2000'],
             'shapes.*.opacity' => ['nullable', 'integer', 'between:0,100'],
             'shapes.*.placement' => ['required', 'in:below,above'],
+            'shapes.*.locked' => ['nullable', 'boolean'],
 
             'photos' => ['present', 'array'],
             'photos.*.label' => ['nullable', 'string', 'max:60'],
@@ -140,6 +142,7 @@ class BoxEditorController extends Controller
             'photos.*.sky_milky' => ['nullable', 'boolean'],
             'photos.*.sky_heart' => ['nullable', 'boolean'],
             'photos.*.cutout' => ['nullable', 'boolean'],
+            'photos.*.locked' => ['nullable', 'boolean'],
 
             'texts' => ['present', 'array'],
             'texts.*.label' => ['nullable', 'string', 'max:60'],
@@ -176,6 +179,7 @@ class BoxEditorController extends Controller
             'texts.*.max_length' => ['required', 'integer', 'between:1,255'],
             'texts.*.link_key' => ['nullable', 'string', 'max:60'],
             'texts.*.auto' => ['nullable', Rule::in(TextSlot::AUTO)],
+            'texts.*.locked' => ['nullable', 'boolean'],
 
             // The colour the box is dyed in the scenes (white renders).
             'box_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
@@ -222,6 +226,14 @@ class BoxEditorController extends Controller
                taking that as "delete them" would wipe a design's artwork on
                an ordinary save. Only a save that speaks about shapes rewrites
                them. */
+            /* The lock is a working convenience, and an editor tab opened
+               before it existed says nothing about it; remembered by position,
+               the way the face cutting is. */
+            $wasLocked = fn (string $relation, int $count) => $count === $product->{$relation}()->count()
+                ? $product->{$relation}()->orderBy('sort_order')->pluck('locked')->all()
+                : [];
+
+            $shapeLocks = $wasLocked('shapes', count($data['shapes'] ?? []));
             if (array_key_exists('shapes', $data)) {
                 $product->shapes()->delete();
             }
@@ -238,10 +250,13 @@ class BoxEditorController extends Controller
                     'radius' => (int) ($s['radius'] ?? 0),
                     'opacity' => (int) ($s['opacity'] ?? 100),
                     'placement' => $s['placement'],
+                    'locked' => array_key_exists('locked', $s) ? (bool) $s['locked'] : ($shapeLocks[$order] ?? false),
                     'sort_order' => $order,
                 ]);
             }
 
+            $photoLocks = $wasLocked('photoSlots', count($data['photos']));
+            $textLocks = $wasLocked('textSlots', count($data['texts']));
             $kept = $product->photoSlots()->orderBy('sort_order')->pluck('cutout')->all();
             if (count($kept) !== count($data['photos'])) {
                 $kept = [];
@@ -271,6 +286,7 @@ class BoxEditorController extends Controller
                     // "cutout" at all; taking that as "off" would quietly turn
                     // the face cutting off on a box that has it.
                     'cutout' => array_key_exists('cutout', $p) ? (bool) $p['cutout'] : ($kept[$order] ?? false),
+                    'locked' => array_key_exists('locked', $p) ? (bool) $p['locked'] : ($photoLocks[$order] ?? false),
                     'sort_order' => $order,
                 ]);
             }
@@ -308,6 +324,7 @@ class BoxEditorController extends Controller
                     'max_lines' => $t['max_lines'],
                     'max_length' => min(255, max((int) $t['max_length'], mb_strlen((string) ($t['default_value'] ?? '')))),
                     'link_key' => $t['link_key'] ?? null,
+                    'locked' => array_key_exists('locked', $t) ? (bool) $t['locked'] : ($textLocks[$order] ?? false),
                     'auto' => in_array($t['auto'] ?? null, TextSlot::AUTO, true) ? $t['auto'] : 'none',
                     'sort_order' => $order,
                 ]);
@@ -394,6 +411,34 @@ class BoxEditorController extends Controller
             'name' => $asset->name, 'image' => $target, 'url' => Media::url($target),
             'width' => $width, 'height' => $height,
         ]);
+    }
+
+    /**
+     * Copies a picture from another design onto this one.
+     *
+     * The editor lets a layer be copied and pasted into a different box, and
+     * a design may only point at pictures in its own folder — so the file
+     * comes along with it.
+     */
+    public function copyAsset(Request $request, Product $product): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+        $data = $request->validate(['image' => ['required', 'string', 'max:255']]);
+
+        $disk = Storage::disk('public');
+        $source = $data['image'];
+        abort_unless(Str::startsWith($source, 'boxes/') && ! Str::contains($source, '..'), 422, 'Bu şəkil qutu qatlarından deyil.');
+        abort_unless($disk->exists($source), 422, 'Şəkil tapılmadı — borsə silinib.');
+
+        $target = Str::startsWith($source, $product->assetDirectory() . '/')
+            ? $source                       // already this box's own picture
+            : $product->assetDirectory() . '/copy-' . Str::lower(Str::random(10)) . '.' . Str::afterLast($source, '.');
+
+        if ($target !== $source) {
+            $disk->copy($source, $target);
+        }
+
+        return response()->json(['image' => $target, 'url' => Media::url($target)]);
     }
 
     public function uploadVisual(Request $request, Product $product): JsonResponse

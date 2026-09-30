@@ -48,12 +48,13 @@ class PhotoSlot extends Model
         'rotation',
         'shape',
         'cutout',
+        'locked',
         'sort_order',
     ];
 
     protected function casts(): array
     {
-        return ['cutout' => 'boolean', 'sky_ring' => 'boolean', 'sky_labels' => 'boolean',
+        return ['cutout' => 'boolean', 'locked' => 'boolean', 'sky_ring' => 'boolean', 'sky_labels' => 'boolean',
             'sky_milky' => 'boolean', 'sky_lines' => 'boolean', 'sky_heart' => 'boolean', 'i18n' => 'array'];
     }
 

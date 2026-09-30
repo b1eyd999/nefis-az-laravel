@@ -276,11 +276,13 @@
     asset: @json(route('box.asset', $product->slug)),
     /* The picture's own number takes the place of the nought at the end. */
     library: @json(route('box.library', [$product->slug, 0])),
+    copy: @json(route('box.copy', $product->slug)),
     visual: @json(route('box.visual', $product->slug)),
     font: @json(route('box.font', $product->slug))
   };
   var CSRF = document.querySelector('meta[name="csrf-token"]').content;
 
+  var PRODUCT = @json($product->slug);
   var FONTS = @json($fonts);
   var LIBRARY = @json($library);
   var LIBRARY_KINDS = @json(\App\Models\LibraryAsset::CATEGORIES);
@@ -554,11 +556,21 @@
     return out;
   }
 
+  /* Anything on the design can be pinned down, not only an uploaded picture:
+     a locked item is still drawn, but the canvas does not answer clicks on it
+     and the arrow keys leave it alone. */
+  function isLocked(sel){
+    var it = sel && itemOf(sel);
+
+    return !! (it && it.locked);
+  }
+
   function hitTest(x, y){
     var stack = stackTopDown();
     for (var i = 0; i < stack.length; i++) {
       var s = stack[i];
-      if (s.kind === 'layer' && (doc.layers[s.index].locked || hiddenLayers[s.index])) continue;
+      if (isLocked(s)) continue;
+      if (s.kind === 'layer' && hiddenLayers[s.index]) continue;
       if (hitItem(s.kind, s.index, x, y)) return s;
     }
     return null;
@@ -672,7 +684,7 @@
     if (!it) return;
     var b = boxOf(selection.kind, it);
     var el = document.createElement('div');
-    var locked = selection.kind === 'layer' && it.locked;
+    var locked = !! it.locked;
     el.className = 'sel' + (locked ? ' locked' : '');
     placeBox(el, b);
     if (!locked && editingText < 0) {
@@ -784,13 +796,13 @@
     /* A click on the current selection keeps it even where it is transparent. */
     if (selection && !hit) {
       var cur = itemOf(selection);
-      if (cur && !(selection.kind === 'layer' && cur.locked)) {
+      if (cur && ! cur.locked) {
         var b = boxOf(selection.kind, cur), lp = localPoint(b, p.x, p.y);
         if (lp.x >= b.left && lp.x <= b.left + b.w && lp.y >= b.top && lp.y <= b.top + b.h) hit = selection;
       }
     }
     select(hit);
-    if (hit && !(hit.kind === 'layer' && itemOf(hit).locked)) startDrag('move', e, p);
+    if (hit && ! isLocked(hit)) startDrag('move', e, p);
   });
 
   stage.addEventListener('dblclick', function(e){
@@ -1051,6 +1063,77 @@
     refresh();
   }
 
+  /* ================================================================
+     Copy and paste
+
+     Kept in the browser's own storage as well as in memory, so a caption or
+     a shape drawn on one box can be pasted onto another in a second tab. A
+     pasted picture is copied into the box it lands on — a design may only
+     point at its own folder.
+     ================================================================ */
+  var CLIPBOARD = 'nefis.box.clipboard';
+  var clipboard = null;
+
+  function copySelected(){
+    var it = itemOf(selection);
+    if (!it) {
+      return;
+    }
+    clipboard = { kind: selection.kind, product: PRODUCT, item: clone(it) };
+    try { localStorage.setItem(CLIPBOARD, JSON.stringify(clipboard)); } catch (e) {}
+    toast('Kopyalandı — Ctrl+V ilə yapışdırın');
+  }
+
+  function clipboardParcel(){
+    if (clipboard) {
+      return clipboard;
+    }
+    try { return JSON.parse(localStorage.getItem(CLIPBOARD) || 'null'); } catch (e) { return null; }
+  }
+
+  function pasteClipboard(){
+    var parcel = clipboardParcel();
+    if (!parcel || !parcel.item || !listOf(parcel.kind)) {
+      toast('Panoda heç nə yoxdur', true);
+
+      return;
+    }
+
+    var item = clone(parcel.item);
+    item.locked = false;
+    /* Onto the same box it lands beside the original; onto another box it
+       keeps its place, pulled back inside the canvas if that box is smaller. */
+    if (parcel.product === PRODUCT) {
+      item.x += 20; item.y += 20;
+    }
+    item.x = Math.max(0, Math.min(item.x, W - 10));
+    item.y = Math.max(0, Math.min(item.y, H - 10));
+
+    if (parcel.kind === 'layer') {
+      var fd = new FormData();
+      fd.append('image', item.image);
+      post(ROUTES.copy, fd).then(function(copy){
+        item.image = copy.image;
+        item.url = copy.url;
+        loadImage(item.url);
+        place(parcel.kind, item);
+      }).catch(function(err){ toast(err.message, true); });
+
+      return;
+    }
+
+    place(parcel.kind, item);
+  }
+
+  function place(kind, item){
+    var list = listOf(kind);
+    list.push(item);
+    select({ kind: kind, index: list.length - 1 });
+    commit();
+    refresh();
+    toast('Yapışdırıldı');
+  }
+
   function duplicateSelected(){
     if (!selection) return;
     var list = listOf(selection.kind);
@@ -1138,6 +1221,7 @@
       h += '<h4>Qısayollar</h4><p class="hint">'
          + '<kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 1px sürüşdür, <kbd>Shift</kbd> ilə 10px<br>'
          + '<kbd>Delete</kbd> sil · <kbd>Ctrl</kbd>+<kbd>D</kbd> təkrarla<br>'
+         + '<kbd>Ctrl</kbd>+<kbd>C</kbd> kopyala · <kbd>Ctrl</kbd>+<kbd>V</kbd> yapışdır (başqa qutuya da)<br>'
          + '<kbd>Ctrl</kbd>+<kbd>Z</kbd> geri · <kbd>Ctrl</kbd>+<kbd>S</kbd> saxla<br>'
          + '<kbd>T</kbd> mətn · <kbd>V</kbd> vizual bələdçi · <kbd>Ctrl</kbd>+təkər zoom<br>'
          + 'Sürüşdürəndə <kbd>Alt</kbd> — yapışmadan, <kbd>Shift</kbd> — düz xətt üzrə<br>'
@@ -1407,9 +1491,9 @@
          + '<span class="thumb">' + thumb + '</span>'
          + '<span class="name">' + esc(name) + '<br><span class="kind">' + esc(kind) + '</span></span>';
       if (r.kind === 'layer') {
-        h += '<button class="mini" data-eye="' + r.index + '" title="Redaktorda gizlət/göstər">' + (hiddenLayers[r.index] ? '🙈' : '👁') + '</button>'
-           + '<button class="mini" data-lock="' + r.index + '" title="Kilid">' + (it.locked ? '🔒' : '🔓') + '</button>';
+        h += '<button class="mini" data-eye="' + r.index + '" title="Redaktorda gizlət/göstər">' + (hiddenLayers[r.index] ? '🙈' : '👁') + '</button>';
       }
+      h += '<button class="mini" data-lock="' + r.kind + ':' + r.index + '" title="Kilid — səhvən tərpətməmək üçün">' + (it.locked ? '🔒' : '🔓') + '</button>';
       h += '</li>';
     });
     layerList.innerHTML = h || '<li class="sep">Hələ heç nə yoxdur</li>';
@@ -1418,7 +1502,13 @@
   layerList.addEventListener('click', function(e){
     var eye = e.target.dataset.eye, lock = e.target.dataset.lock;
     if (eye !== undefined) { hiddenLayers[eye] = !hiddenLayers[eye]; render(); renderList(); return; }
-    if (lock !== undefined) { doc.layers[lock].locked = !doc.layers[lock].locked; commit(); refresh(); return; }
+    if (lock !== undefined) {
+      var at = lock.split(':'), item = listOf(at[0])[+at[1]];
+      item.locked = ! item.locked;
+      commit(); refresh();
+
+      return;
+    }
     var li = e.target.closest('li[data-kind]');
     if (li) select({ kind: li.dataset.kind, index: +li.dataset.index });
   });
@@ -1755,13 +1845,13 @@
       shapes: doc.shapes.map(function(s){ return { kind: s.kind, x: s.x, y: s.y, width: s.width, height: s.height,
         rotation: s.rotation || 0, fill: s.fill || null, stroke_color: s.stroke_color || null,
         stroke_width: +s.stroke_width || 0, radius: +s.radius || 0,
-        opacity: s.opacity == null ? 100 : s.opacity, placement: s.placement || 'above' }; }),
+        opacity: s.opacity == null ? 100 : s.opacity, placement: s.placement || 'above', locked: !!s.locked }; }),
       photos: doc.photos.map(function(p){ return { label: p.label, i18n: p.i18n || null, x: p.x, y: p.y, width: p.width, height: p.height, rotation: p.rotation || 0, shape: p.shape, cutout: p.cutout ? 1 : 0,
         fill: p.fill || 'photo', sky_style: p.sky_style || 'night',
         sky_ring_kind: p.sky_ring_kind || 'degrees',
         sky_choices: p.sky_choices == null ? 'lines,labels,milky' : p.sky_choices,
         sky_lines: p.sky_lines === false ? 0 : 1, sky_labels: p.sky_labels ? 1 : 0,
-        sky_milky: p.sky_milky ? 1 : 0, sky_heart: p.sky_heart ? 1 : 0 }; }),
+        sky_milky: p.sky_milky ? 1 : 0, sky_heart: p.sky_heart ? 1 : 0, locked: !!p.locked }; }),
       texts: doc.texts.map(function(t){
         var o = clone(t);
         o.rotation = o.rotation || 0;
@@ -1827,6 +1917,8 @@
     if (mod && e.key.toLowerCase() === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
     if (mod && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) { e.preventDefault(); redo(); return; }
     if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); duplicateSelected(); return; }
+    if (mod && e.key.toLowerCase() === 'c') { e.preventDefault(); copySelected(); return; }
+    if (mod && e.key.toLowerCase() === 'v') { e.preventDefault(); pasteClipboard(); return; }
     if (mod && e.key === '0') { e.preventDefault(); fitZoom(); return; }
     if (!mod && e.key.toLowerCase() === 't') { e.preventDefault(); addText('text'); return; }
     if (!mod && e.key.toLowerCase() === 'v') { guideOn.checked = !guideOn.checked; render(); renderProps(); return; }
@@ -1838,7 +1930,7 @@
     if (e.key === 'Enter' && selection.kind === 'text') { e.preventDefault(); startInlineEdit(selection.index); return; }
     var step = e.shiftKey ? 10 : 1;
     var moves = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
-    if (moves && !(selection.kind === 'layer' && it.locked)) {
+    if (moves && ! it.locked) {
       e.preventDefault();
       it.x += moves[0]; it.y += moves[1];
       render(); renderProps(true); commitSoon();

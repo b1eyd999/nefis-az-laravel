@@ -29,8 +29,11 @@ class DesignShape extends Model
         'radius',
         'opacity',
         'placement',
+        'locked',
         'sort_order',
     ];
+
+    protected $casts = ['locked' => 'boolean'];
 
     public function product(): BelongsTo
     {

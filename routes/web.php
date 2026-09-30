@@ -141,6 +141,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [BoxEditorController::class, 'save'])->name('save');
         Route::post('/asset', [BoxEditorController::class, 'uploadAsset'])->name('asset');
         Route::post('/kitabxana/{asset}', [BoxEditorController::class, 'useLibrary'])->whereNumber('asset')->name('library');
+        Route::post('/kopyala', [BoxEditorController::class, 'copyAsset'])->name('copy');
         Route::post('/visual', [BoxEditorController::class, 'uploadVisual'])->name('visual');
         Route::post('/font', [BoxEditorController::class, 'uploadFont'])->name('font');
     });

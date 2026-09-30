@@ -57,12 +57,14 @@ class TextSlot extends Model
         'shadow_y',
         'link_key',
         'auto',
+        'locked',
     ];
 
     protected function casts(): array
     {
         return [
             'fixed' => 'boolean',
+            'locked' => 'boolean',
             'i18n' => 'array',
         ];
     }
