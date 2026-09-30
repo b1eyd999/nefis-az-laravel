@@ -75,7 +75,7 @@
         </div>
         <ol class="pay-steps">
           @if($card)
-            <li>{{ __('Kartla ödəyin — ödəniş dərhal təsdiqlənir.') }}</li>
+            <li>{{ __('Kartla, Google Pay və ya Apple Pay ilə ödəyin — ödəniş dərhal təsdiqlənir.') }}</li>
             <li>{{ __('Yaxud hesablardan birinə köçürüb çeki bu səhifədə yükləyin.') }}</li>
           @else
             <li>{{ __('Aşağıdakı hesablardan birini seçin və məbləği köçürün.') }}</li>
@@ -98,11 +98,11 @@
       @elseif($card)
         <div class="pay-card pay-now">
           <label>{{ __('Kartla onlayn ödəniş') }}</label>
-          <p class="pay-note" style="margin:.4rem 0 0;">{{ __('Visa və ya Mastercard ilə indi ödəyin — çek göndərmək lazım deyil.') }}</p>
+          <p class="pay-note" style="margin:.4rem 0 0;">{{ __('Visa, Mastercard, Google Pay və ya Apple Pay ilə indi ödəyin — çek göndərmək lazım deyil.') }}</p>
           <form method="POST" action="{{ lroute('orders.pay.card', $order) }}">
             @csrf
             <button type="submit" class="btn btn-primary btn-block pay-card-btn">
-              <span class="cards" aria-hidden="true">VISA · MC</span>
+              <span class="cards" aria-hidden="true">VISA · MC · G PAY</span>
               {{ __('Kartla ödə') }} — {{ \App\Support\Price::format($order->total()) }}
             </button>
           </form>
