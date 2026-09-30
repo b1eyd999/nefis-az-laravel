@@ -28,6 +28,20 @@ class Accounting
     /** The line the profit nobody has been given is shown under. */
     public const BUSINESS = 'Biznesin inkişafı';
 
+    /**
+     * The day the books start counting from, if the owner has drawn a line.
+     *
+     * Nothing is deleted by it: the orders, the expenses and the withdrawals
+     * all stay where they are, and the page simply begins after that moment
+     * — the way a new ledger begins on a new page.
+     */
+    public static function booksFrom(): ?\Carbon\CarbonInterface
+    {
+        $when = Setting::get(Setting::BOOKS_FROM);
+
+        return filled($when) ? \Illuminate\Support\Carbon::parse($when) : null;
+    }
+
     /** Takes an order's materials out of stock and records what they cost. */
     public static function consume(Order $order): void
     {
@@ -122,8 +136,14 @@ class Accounting
         // money is a promise, not income — and with the card the only way to
         // pay, a payment page closed half-way is an everyday thing. Counting
         // those inflated the takings, the profit and every share of it.
+        // Everything before the line the owner drew is another chapter.
+        $start = self::booksFrom();
+        if ($start && (! $from || $start->greaterThan($from))) {
+            $from = $start;
+        }
+
         $orders = Order::with('items')
-            ->whereNotIn('status', ['cancelled', 'awaiting_payment', 'payment_check'])
+            ->whereNotIn('status', array_merge(Order::OFF_THE_BOOKS, ['awaiting_payment', 'payment_check']))
             ->when($from, fn ($q) => $q->where('created_at', '>=', $from))
             ->when($to, fn ($q) => $q->where('created_at', '<=', $to))
             ->latest()

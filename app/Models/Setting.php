@@ -160,6 +160,13 @@ class Setting extends Model
     public const NOTIFY_EMAIL = 'notify_customer_email';
 
     /** What each setting is until the owner changes it. */
+    /**
+     * The moment the books start from. Set when the owner zeroes the
+     * accounts; everything earlier stays in the database but is not counted
+     * on the Balance page any more.
+     */
+    public const BOOKS_FROM = 'books_from';
+
     public const DEFAULTS = [
         self::AR_ENABLED => '1',
         self::AR_PRICE => '5',

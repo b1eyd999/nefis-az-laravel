@@ -21,7 +21,15 @@ class Order extends Model
         'ready' => 'Hazırdır',
         'completed' => 'Tamamlandı',
         'cancelled' => 'Ləğv edildi',
+        'refunded' => 'Vəsait qaytarıldı',
     ];
+
+    /**
+     * The two endings that are not a sale: the order was called off, or the
+     * money was given back. Neither counts as income, and the materials of
+     * both go back on the shelf.
+     */
+    public const OFF_THE_BOOKS = ['cancelled', 'refunded'];
 
     protected $fillable = [
         'user_id',
@@ -145,7 +153,7 @@ class Order extends Model
         // An order taken off the books altogether: what its boxes took out of
         // stock goes back — unless it was cancelled first and already did.
         static::deleting(function (Order $order) {
-            if ($order->status !== 'cancelled') {
+            if (! in_array($order->status, self::OFF_THE_BOOKS, true)) {
                 Accounting::restore($order);
             }
         });
@@ -156,10 +164,12 @@ class Order extends Model
             if (! $order->wasChanged('status')) {
                 return;
             }
-            $was = $order->getOriginal('status');
-            if ($order->status === 'cancelled' && $was !== 'cancelled') {
+            $was = (string) $order->getOriginal('status');
+            $offNow = in_array($order->status, self::OFF_THE_BOOKS, true);
+            $offBefore = in_array($was, self::OFF_THE_BOOKS, true);
+            if ($offNow && ! $offBefore) {
                 Accounting::restore($order);
-            } elseif ($was === 'cancelled' && $order->status !== 'cancelled') {
+            } elseif ($offBefore && ! $offNow) {
                 Accounting::consume($order);
             }
 

@@ -124,7 +124,7 @@
         <table class="bl-table">
           <thead>
             <tr>
-              <th>№</th><th>Tarix</th><th>Müştəri</th><th class="n">Qutu</th>
+              <th>№</th><th>Tarix</th><th>Status</th><th>Müştəri</th><th class="n">Qutu</th>
               <th class="n">Gəlir</th><th class="n">Şokolad</th><th class="n">Material</th><th class="n">Mənfəət</th>
             </tr>
           </thead>
@@ -133,6 +133,7 @@
               <tr>
                 <td><a href="{{ \App\Filament\Resources\OrderResource::getUrl('edit', ['record' => $row['order']]) }}" style="text-decoration:underline;">#{{ $row['order']->id }}</a></td>
                 <td>{{ $row['order']->created_at->format('d.m.Y') }}</td>
+                <td>{{ $row['order']->statusLabel() }}</td>
                 <td>{{ $row['order']->user?->name ?? '—' }}</td>
                 <td class="n">{{ $row['boxes'] }}</td>
                 <td class="n">{{ $fmt($row['revenue']) }}</td>
@@ -149,8 +150,15 @@
     @endif
   </div>
 
+  @if($books = \App\Support\Accounting::booksFrom())
+    <p class="bl-note" style="color:#d97706;">
+      Hesablar {{ $books->format('d.m.Y H:i') }}-dən sayılır — ondan əvvəlki sifariş, xərc və çıxarışlar bu səhifədə yoxdur.
+      Yuxarıdakı «Bütün tarixə qayıt» düyməsi onları geri gətirir.
+    </p>
+  @endif
+
   <p class="bl-note">
-    Ləğv edilmiş sifarişlər sayılmır və onların materialı anbara qayıdır. Şokoladın maya dəyəri — sifariş anında marketdəki qiyməti (endirim varsa endirimli),
+    Ləğv edilmiş və vəsaiti qaytarılmış sifarişlər sayılmır və onların materialı anbara qayıdır. Şokoladın maya dəyəri — sifariş anında marketdəki qiyməti (endirim varsa endirimli),
     materialın — o anda bir vahidin qiyməti. Anbara alış mənfəətdən çıxılmır: material qutulara sərf olunduqca xərcə çevrilir.
   </p>
   @endunless

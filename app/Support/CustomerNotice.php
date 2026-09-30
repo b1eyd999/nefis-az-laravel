@@ -29,6 +29,7 @@ class CustomerNotice
         'ready' => 'Sifarişiniz hazırdır, kuryer yola düşəndə sizinlə əlaqə saxlayacaq.',
         'completed' => 'Sifarişiniz hazırdır və təhvil verildi. Nuş olsun!',
         'cancelled' => 'Sifarişiniz ləğv edildi.',
+        'refunded' => 'Vəsaiti geri qaytardıq. Məbləğ bankınızdan asılı olaraq 1–7 iş gününə kartınıza düşəcək.',
     ];
 
     /** Whether the last letter went out, for the screen the owner is looking at. */

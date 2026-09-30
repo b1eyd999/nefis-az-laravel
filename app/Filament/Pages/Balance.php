@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\Setting;
 use App\Models\User;
 use App\Support\Accounting;
 use Carbon\Carbon;
@@ -61,6 +62,43 @@ class Balance extends Page
         }
 
         return [
+            /* Zeroing the books does not delete anything: the orders, the
+               expenses and the money taken out all stay where they are, and
+               the page simply starts counting from the moment he draws the
+               line — the way a new ledger starts on a new page. */
+            Actions\Action::make('zero')
+                ->label(Accounting::booksFrom() ? 'Hesabın başlanğıcını dəyiş' : 'Hesabları sıfırla')
+                ->icon('heroicon-o-flag')
+                ->color('gray')
+                ->modalHeading('Hesabları sıfırla')
+                ->modalDescription('Seçilmiş andan əvvəlki sifarişlər, xərclər və çıxarışlar bu səhifədə sayılmayacaq. Heç nə silinmir — istədiyiniz vaxt geri qaytara bilərsiniz.')
+                ->modalSubmitActionLabel('Sıfırla')
+                ->fillForm(fn () => ['at' => (Accounting::booksFrom() ?? now())->format('Y-m-d\TH:i')])
+                ->form([
+                    Forms\Components\DateTimePicker::make('at')
+                        ->label('Bu andan sonrası sayılsın')
+                        ->seconds(false)
+                        ->required(),
+                ])
+                ->action(function (array $data) {
+                    Setting::put(Setting::BOOKS_FROM, \Illuminate\Support\Carbon::parse($data['at'])->toDateTimeString());
+                    Notification::make()->success()
+                        ->title('Hesablar sıfırlandı')
+                        ->body('Bu səhifə artıq yalnız ' . \Illuminate\Support\Carbon::parse($data['at'])->format('d.m.Y H:i') . '-dən sonrakını sayır.')
+                        ->send();
+                }),
+            Actions\Action::make('unzero')
+                ->label('Bütün tarixə qayıt')
+                ->icon('heroicon-o-arrow-uturn-left')
+                ->color('gray')
+                ->visible(fn () => (bool) Accounting::booksFrom())
+                ->requiresConfirmation()
+                ->modalHeading('Bütün tarixə qayıt')
+                ->modalDescription('Səhifə yenidən ilk gündən bu günə qədər hər şeyi sayacaq.')
+                ->action(function () {
+                    Setting::put(Setting::BOOKS_FROM, '');
+                    Notification::make()->success()->title('Hesablar bütün tarixə qaytarıldı')->send();
+                }),
             Actions\Action::make('shares')
                 ->label('Payları dəyiş')
                 ->icon('heroicon-o-adjustments-horizontal')
