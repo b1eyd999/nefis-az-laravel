@@ -1315,7 +1315,12 @@
         });
         h += '<div class="actions"><button class="btn small" data-act="dup">Təkrarla</button><button class="btn small danger" data-act="del">Sil</button></div>';
 
-        return h;
+        /* A sky window is done here — it asks nothing about a photograph.
+           The panel is written out now, because this branch leaves the
+           function before the one line at the bottom that does it. */
+        props.innerHTML = h;
+
+        return;
       }
       h += '<div class="row one">' + field('Müştəriyə görünən ad', txt('label', it.label, 'Şəkil')) + '</div>';
       h += i18nFields(it, 'label');
