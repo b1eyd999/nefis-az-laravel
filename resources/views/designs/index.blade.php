@@ -126,25 +126,23 @@
       @else
         <div class="filter-bar">
           <button type="button" class="chip active" data-filter="all">{{ __('Hamısı') }} ({{ $total }})</button>
-          @foreach(\App\Models\Product::CATEGORIES as $key => $label)
-            @if($designs->has($key))
-              <button type="button" class="chip" data-filter="{{ $key }}">{{ __($label) }} ({{ $designs[$key]->count() }})</button>
-            @endif
+          @foreach($blocks as $block)
+            <button type="button" class="chip" data-filter="{{ $block['key'] }}">{{ $block['label'] }} ({{ $block['designs']->count() }})</button>
           @endforeach
         </div>
 
-        @foreach(\App\Models\Product::CATEGORIES as $key => $label)
-          @continue(! $designs->has($key))
+        @foreach($blocks as $block)
+          @php [$key, $label, $items] = [$block['key'], $block['label'], $block['designs']]; @endphp
           <div class="cat-block" data-category="{{ $key }}">
             <div class="cat-head">
-              <h2>{{ __($label) }}</h2>
-              <span class="cat-count">{{ __(':count dizayn', ['count' => $designs[$key]->count()]) }}</span>
+              <h2>{{ $label }}</h2>
+              <span class="cat-count">{{ __(':count dizayn', ['count' => $items->count()]) }}</span>
             </div>
             <div class="designs-grid">
-              @foreach($designs[$key] as $design)
+              @foreach($items as $design)
                 <a class="d-card" href="{{ $design->isCustomizable() ? lroute('products.customize', $design->slug) : lroute('designs.index') }}"
                         data-name="{{ $design->tr('name') }}"
-                        data-category="{{ __($label) }}"
+                        data-category="{{ $label }}"
                         data-image="{{ \App\Support\Media::url($design->catalogImage()) }}"
                         data-url="{{ $design->isCustomizable() ? lroute('products.customize', $design->slug) : '' }}">
                   <div class="d-card-media">
@@ -171,7 +169,7 @@
                   </div>
                   <div class="d-card-body">
                     <h3>{{ $design->tr('name') }}</h3>
-                    <span>{{ __($label) }}</span>
+                    <span>{{ $label }}</span>
                   </div>
                 </a>
               @endforeach

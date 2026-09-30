@@ -59,7 +59,9 @@ class ProductResource extends Resource
                             ->label('Etiket (məs. "Populyar")'),
                         Forms\Components\Select::make('category')
                             ->label('Kateqoriya')
-                            ->options(Product::CATEGORIES)
+                            // Switched-off shelves are offered too: a design
+                            // already filed under one must not lose it on save.
+                            ->options(Product::categories(false))
                             ->helperText('Dizaynlar səhifəsində qruplaşdırma üçün.'),
                         Forms\Components\TextInput::make('price')
                             ->label('Qiymət (₼)')
@@ -168,7 +170,7 @@ class ProductResource extends Resource
                 // On a phone: the picture, the name, the price and ⋮ — the rest from a tablet up.
                 Tables\Columns\TextColumn::make('category')
                     ->label('Kateqoriya')
-                    ->formatStateUsing(fn (?string $state) => Product::CATEGORIES[$state] ?? '—')
+                    ->formatStateUsing(fn (?string $state) => Product::categories(false)[$state] ?? $state ?? '—')
                     ->badge()
                     ->visibleFrom('md'),
                 Tables\Columns\IconColumn::make('template_image')
@@ -216,7 +218,7 @@ class ProductResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('category')
                     ->label('Kateqoriya')
-                    ->options(Product::CATEGORIES),
+                    ->options(Product::categories(false)),
             ])
             ->actions([
                 // Behind one ⋮ button, so the row fits a phone screen.

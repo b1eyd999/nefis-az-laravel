@@ -21,14 +21,6 @@ class Product extends Model
 
     use HasFactory;
 
-    public const CATEGORIES = [
-        'sokolad' => 'Şokolad Dizaynları',
-        'poster' => 'Posterlər',
-        'love-is' => 'Love is...',
-        'xerite' => 'Xəritə Posterləri',
-        'spotify' => 'Spotify Posterləri',
-    ];
-
     protected $fillable = [
         'i18n',
         'name',
@@ -242,9 +234,29 @@ class Product extends Model
         return $this->relationLoaded('layers') ? $this->layers->isNotEmpty() : $this->layers()->exists();
     }
 
+    /**
+     * The shelves, key => the name a reader sees. The owner arranges them in
+     * the admin; asked for many times while a catalogue page is drawn, so the
+     * answer is kept for the rest of the request.
+     *
+     * @return array<string, string>
+     */
+    public static function categories(bool $onlyShown = true): array
+    {
+        static $cache = [];
+        $key = $onlyShown ? 'shown' : 'all';
+
+        return $cache[$key] ??= ProductCategory::query()
+            ->when($onlyShown, fn ($q) => $q->where('is_active', true))
+            ->inOrder()
+            ->get()
+            ->mapWithKeys(fn (ProductCategory $c) => [$c->slug => $c->label()])
+            ->all();
+    }
+
     public function categoryLabel(): ?string
     {
-        return self::CATEGORIES[$this->category] ?? $this->category;
+        return self::categories(false)[$this->category] ?? $this->category;
     }
 
     public function orderItems(): HasMany

@@ -1197,7 +1197,7 @@
         h += '<div class="row one">' + field('Ürək nişanı', seg('sky_heart', it.sky_heart ? 1 : 0, [[1, 'Var'], [0, 'Yox']])) + '</div>';
         h += '<h4>Müştəri dəyişə bilsin</h4>';
         h += '<p class="hint">Seçdikləriniz sifariş səhifəsində açar kimi görünür; qalanları olduğu kimi çap olunur.</p>';
-        var picked = String(it.sky_choices == null ? 'lines,labels,milky,heart' : it.sky_choices).split(',');
+        var picked = String(it.sky_choices == null ? 'lines,labels,milky' : it.sky_choices).split(',');
         [['lines', 'Bürc xətləri'], ['labels', 'Bürc adları'], ['milky', 'Süd Yolu'], ['time', 'Tarixdə saat']].forEach(function(c){
           h += '<div class="row one">' + field(c[1], seg('choice_' + c[0], picked.indexOf(c[0]) >= 0 ? 1 : 0, [[1, 'Seçə bilər'], [0, 'Yox']])) + '</div>';
         });
@@ -1321,7 +1321,7 @@
          word, because that is what the design carries; here it is five
          separate buttons. */
       var key = b.dataset.seg.slice(7);
-      var have = String(it.sky_choices == null ? 'lines,labels,milky,heart' : it.sky_choices).split(',').filter(Boolean);
+      var have = String(it.sky_choices == null ? 'lines,labels,milky' : it.sky_choices).split(',').filter(Boolean);
       var at = have.indexOf(key);
       if (+b.dataset.v && at < 0) have.push(key);
       if (! +b.dataset.v && at >= 0) have.splice(at, 1);
@@ -1759,7 +1759,7 @@
       photos: doc.photos.map(function(p){ return { label: p.label, i18n: p.i18n || null, x: p.x, y: p.y, width: p.width, height: p.height, rotation: p.rotation || 0, shape: p.shape, cutout: p.cutout ? 1 : 0,
         fill: p.fill || 'photo', sky_style: p.sky_style || 'night',
         sky_ring_kind: p.sky_ring_kind || 'degrees',
-        sky_choices: p.sky_choices == null ? 'lines,labels,milky,heart' : p.sky_choices,
+        sky_choices: p.sky_choices == null ? 'lines,labels,milky' : p.sky_choices,
         sky_lines: p.sky_lines === false ? 0 : 1, sky_labels: p.sky_labels ? 1 : 0,
         sky_milky: p.sky_milky ? 1 : 0, sky_heart: p.sky_heart ? 1 : 0 }; }),
       texts: doc.texts.map(function(t){

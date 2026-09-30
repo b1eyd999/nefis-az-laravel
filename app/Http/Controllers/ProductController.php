@@ -7,6 +7,7 @@ use App\Models\DesignLayer;
 use App\Models\GiftPage;
 use App\Models\Product;
 use App\Models\ProductAngle;
+use App\Models\ProductCategory;
 use App\Models\Scene;
 use App\Models\Wrapping;
 use App\Support\Media;
@@ -24,7 +25,20 @@ class ProductController extends Controller
 
         $gifts = GiftPage::shown()->inLocale(\App\Support\Locale::current())->get();
 
-        return view('designs.index', compact('designs', 'gifts'));
+        /* One block per shelf the owner put up, in his order, and then one
+           for everything filed under a shelf that is not there any more — so
+           a design is never counted in the total and then left undrawn. */
+        $shelves = ProductCategory::shown()->get()->filter(fn (ProductCategory $c) => $designs->has($c->slug));
+        $blocks = $shelves
+            ->map(fn (ProductCategory $c) => ['key' => $c->slug, 'label' => $c->label(), 'designs' => $designs[$c->slug]])
+            ->values();
+
+        $spare = $designs->reject(fn ($group, $key) => $shelves->contains('slug', $key))->flatten();
+        if ($spare->isNotEmpty()) {
+            $blocks->push(['key' => 'basqa', 'label' => __('Digər'), 'designs' => $spare]);
+        }
+
+        return view('designs.index', compact('designs', 'gifts', 'blocks'));
     }
 
     public function customize(Product $product)
