@@ -1078,3 +1078,54 @@
 .sky-row > div{ min-width:0; }
 .sky-lbl{ display:block; font-size:.8125rem; color:var(--cocoa-faint); margin-bottom:.25rem; }
 @media (max-width: 480px){ .sky-row{ grid-template-columns:1fr; } }
+
+/* The shop's own calendar (public/js/date-picker.js). The browser's date
+   panel cannot be styled at all, so the field below is ours: a dark band with
+   the month and the arrows, a white sheet of weeks under it, the days either
+   side greyed, and the chosen day a filled square — in the shop's own brown
+   rather than a borrowed blue. */
+.np{ position:relative; }
+.np-field{
+  width:100%; text-align:left; font:inherit; color:var(--cocoa);
+  background:var(--paper); border:1px solid var(--line); border-radius:.7rem;
+  padding:.72rem .9rem; cursor:pointer; transition:border-color .15s, box-shadow .15s;
+}
+.np-field:hover{ border-color:var(--cocoa-faint); }
+.np.is-open .np-field, .np-field:focus-visible{
+  outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(192,138,62,.18);
+}
+.np-pop{
+  position:absolute; z-index:40; top:calc(100% + .45rem); left:0; width:20.5rem; max-width:min(92vw, 22rem);
+  background:var(--paper); border-radius:1rem; box-shadow:var(--shadow);
+  overflow:hidden; border:1px solid var(--line);
+}
+.np-head{
+  display:flex; align-items:center; justify-content:space-between; gap:.5rem;
+  background:var(--cocoa); color:var(--paper); padding:.7rem .8rem;
+}
+.np-title{ font-weight:700; font-size:.95rem; letter-spacing:.01em; }
+.np-nav{
+  width:1.9rem; height:1.9rem; line-height:1; font-size:1.15rem; border-radius:.5rem; cursor:pointer;
+  border:0; background:transparent; color:var(--paper); opacity:.85;
+}
+.np-nav:hover{ opacity:1; background:rgba(255,255,255,.12); }
+.np-body{ padding:.55rem .6rem .7rem; }
+.np-week, .np-grid{ display:grid; grid-template-columns:repeat(7, 1fr); gap:.1rem; }
+.np-week span{
+  text-align:center; font-size:.72rem; font-weight:700; padding:.35rem 0 .2rem;
+  color:var(--cocoa); text-transform:uppercase; letter-spacing:.02em;
+}
+.np-day{
+  height:2.35rem; display:flex; align-items:center; justify-content:center;
+  border:0; background:transparent; border-radius:.5rem; font:inherit; font-size:.92rem;
+  font-weight:600; color:var(--cocoa-2); cursor:pointer;
+}
+.np-day:hover{ background:var(--cream-2); }
+.np-day.is-today{ box-shadow:inset 0 0 0 1px var(--gold); }
+.np-day.is-on{ background:var(--cocoa); color:var(--paper); font-weight:700; }
+.np-day.is-on:hover{ background:var(--cocoa-2); }
+.np-day.is-other{ color:var(--cocoa-faint); cursor:default; font-weight:500; }
+.np-day.is-off{ color:var(--cocoa-faint); cursor:default; opacity:.5; }
+@media (max-width: 480px){
+  .np-pop{ left:0; right:0; width:auto; max-width:none; }
+}

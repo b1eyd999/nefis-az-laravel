@@ -416,5 +416,8 @@ document.addEventListener('submit', function(e){
 </script>
 @yield('page_script')
 @stack('chat_script')
+{{-- The shop's own calendar: the browser's date panel cannot be styled, so
+     every date field on the site opens this one instead. --}}
+<script defer src="{{ asset('js/date-picker.js') }}?v={{ \App\Support\Assets::version('js/date-picker.js') }}"></script>
 </body>
 </html>
