@@ -51,6 +51,13 @@ class StarMapController extends Controller
             ],
             'width' => $boxed ? (int) round($side * $w / $long) : $side,
             'height' => $boxed ? (int) round($side * $h / $long) : $side,
+            // The constellation names in the language the order was placed in.
+            'lang' => in_array($item->order?->locale, ['ru', 'en'], true) ? $item->order->locale : 'la',
+            /* The shape, the colour and the ring are read off the design as it
+               stands today — only the night itself is frozen on the order. If
+               the window has since been taken out of the design, the sheet says
+               so rather than quietly printing a default disc. */
+            'stale' => $slot === null,
             'coordinates' => Sky::coordinates((float) $sky['lat'], (float) $sky['lon']),
         ]);
     }

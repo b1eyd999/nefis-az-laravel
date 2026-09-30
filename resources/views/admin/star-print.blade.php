@@ -27,6 +27,10 @@
   </p>
   <canvas id="sky" width="{{ $width }}" height="{{ $height }}"></canvas>
   <button type="button" class="btn" id="save">Çap üçün yüklə (3000 px)</button>
+  @if($stale)
+    <p class="note" style="color:#f0a350;">Diqqət: bu dizaynda artıq səma pəncərəsi yoxdur — forma, rəng və halqa
+      standart götürülüb. Sifariş veriləndəki görünüşü dizaynın tarixçəsindən yoxlayın.</p>
+  @endif
   <p class="note">Şəkil burada, brauzerdə çəkilir — saxlanılan yalnız tarix, saat və yerdir, ona görə istənilən ölçüdə yenidən almaq olar.</p>
 </div>
 <script src="{{ asset('js/star-data.js') }}?v={{ \App\Support\Assets::version('js/star-data.js') }}"></script>
@@ -42,7 +46,7 @@
     shape: @json($shape), style: @json($style), ring: @json($ring),
     /* Exactly what was ordered: the switches travel on the order line. */
     lines: @json($look['lines']), labels: @json($look['labels']),
-    milkyWay: @json($look['milky']), heart: @json($look['heart']),
+    milkyWay: @json($look['milky']), heart: @json($look['heart']), labelLang: @json($lang),
     size: Math.min(canvas.width, canvas.height),
     box: { x: 0, y: 0, w: canvas.width, h: canvas.height }
   });

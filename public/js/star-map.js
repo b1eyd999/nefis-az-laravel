@@ -269,13 +269,26 @@
     var r = (opts.radius || size / 2) * (withRing ? (ringKind === 'double' ? 0.78 : 0.86) : 0.98);
     /* A full-bleed sky is drawn across the whole window, and the circle it
        would have had still sets how much of the sky is shown. */
-    var box = opts.box || { x: cx - size / 2, y: cy - size / 2, w: size, h: size };
+    var box = opts.box || (canvas
+      ? { x: 0, y: 0, w: canvas.width, h: canvas.height }
+      : { x: cx - size / 2, y: cy - size / 2, w: size, h: size });
     if (boxed) {
-      /* Enough sky to reach every corner, with the zenith a little above the
-         middle the way a chart on a wall is read. */
-      r = Math.max(box.w, box.h) * 0.62;
-      cy = box.y + box.h * (full ? 0.34 : 0.5);
+      /* Everything on the picture — the width of a constellation line, the
+         size of a star, the lettering — is measured off `size`, so a window
+         that is drawn to its long side has to be measured by it too, or a
+         tall sheet comes out drawn in threads. */
+      size = Math.max(box.w, box.h);
       cx = box.x + box.w / 2;
+
+      /* The sky itself only exists inside `r`: stars below the horizon are
+         dropped, so the corners beyond it stay empty. A full-bleed sky hangs
+         its zenith high and lets the page wash over the bottom, so 0.62 of
+         the long side is enough; a rectangle is centred and must reach its
+         own corners, which is the half-diagonal. */
+      cy = box.y + box.h * (full ? 0.34 : 0.5);
+      r = full
+        ? size * 0.62
+        : Math.max(size * 0.62, Math.sqrt(box.w * box.w + box.h * box.h) / 2) * 1.02;
     }
 
     var jd = julianDay(momentOf(opts));
@@ -426,8 +439,16 @@
     if (! full) {
       ctx.save();
       ctx.strokeStyle = colours.ring;
-      ctx.lineWidth = Math.max(1, size / 700);
-      clipShape(ctx, opts.shape, cx, cy, r, box);
+      var lw = Math.max(1, size / 700);
+      ctx.lineWidth = lw;
+      if (opts.shape === 'rectangle') {
+        /* Centred on the window's own edge, half of it would be painted on
+           the artwork outside the window. */
+        ctx.beginPath();
+        ctx.rect(box.x + lw / 2, box.y + lw / 2, box.w - lw, box.h - lw);
+      } else {
+        clipShape(ctx, opts.shape, cx, cy, r, box);
+      }
       ctx.stroke();
       ctx.restore();
     }
