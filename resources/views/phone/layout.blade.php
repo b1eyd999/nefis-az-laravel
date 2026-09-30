@@ -142,5 +142,6 @@
 </script>
 @yield('page-script')
 <script defer src="{{ asset('js/date-picker.js') }}?v={{ \App\Support\Assets::version('js/date-picker.js') }}"></script>
+<script defer src="{{ asset('js/select-picker.js') }}?v={{ \App\Support\Assets::version('js/select-picker.js') }}"></script>
 </body>
 </html>

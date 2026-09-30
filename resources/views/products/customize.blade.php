@@ -530,7 +530,7 @@
             <div class="sky-row" style="margin-top:.6rem;">
               <div>
                 <label for="star-city" class="sky-lbl">{{ __('Yer') }}</label>
-                <select id="star-city" class="text-input">
+                <select id="star-city" class="text-input" data-fancy>
                   @foreach(\App\Support\Sky::places() as $place)
                     <option value="{{ $place['lat'] }},{{ $place['lon'] }}" @selected(old('star_place', 'Bakı') === $place['name'])>{{ $place['name'] }}</option>
                   @endforeach
