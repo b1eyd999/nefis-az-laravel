@@ -144,6 +144,17 @@ class Setting extends Model
 
     public const CONTACT_HOURS = 'contact_hours';
 
+    /**
+     * Who the shop is on paper: the registered name, the taxpayer number and
+     * the legal address. Printed at the foot of every page when filled in —
+     * a bank, a payment gateway and an ordinary customer all look for it.
+     */
+    public const LEGAL_NAME = 'legal_name';
+
+    public const LEGAL_VOEN = 'legal_voen';
+
+    public const LEGAL_ADDRESS = 'legal_address';
+
     /** Google Analytics measurement id (G-XXXXXXX); empty means no counter on the site. */
     public const SEO_ANALYTICS = 'seo_google_analytics';
 

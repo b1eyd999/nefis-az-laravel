@@ -289,6 +289,20 @@
         @endif
       </div>
     </div>
+    @php
+      $legal = array_filter([
+          \App\Models\Setting::get(\App\Models\Setting::LEGAL_NAME),
+          \App\Models\Setting::get(\App\Models\Setting::LEGAL_VOEN)
+              ? __('VÖEN') . ' ' . \App\Models\Setting::get(\App\Models\Setting::LEGAL_VOEN)
+              : null,
+          \App\Models\Setting::get(\App\Models\Setting::LEGAL_ADDRESS),
+      ]);
+    @endphp
+    @if($legal)
+      {{-- Who sells, on paper. Written once in the admin; a bank, a payment
+           gateway and an ordinary customer all look for it here. --}}
+      <div class="footer-legal">{{ implode(' · ', $legal) }}</div>
+    @endif
     <div class="footer-bottom">
       <span>© {{ date('Y') }} Nefis Şokolad Evi. {{ __('Bütün hüquqlar qorunur.') }}</span>
       <span>{{ __('Sevgi ilə hazırlanıb') }} 🤎</span>

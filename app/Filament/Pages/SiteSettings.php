@@ -68,6 +68,9 @@ class SiteSettings extends Page implements HasActions, HasForms
             'seo_analytics' => Setting::get(Setting::SEO_ANALYTICS),
             'contact_phone' => Setting::get(Setting::CONTACT_PHONE),
             'contact_hours' => Setting::get(Setting::CONTACT_HOURS),
+            'legal_name' => Setting::get(Setting::LEGAL_NAME),
+            'legal_voen' => Setting::get(Setting::LEGAL_VOEN),
+            'legal_address' => Setting::get(Setting::LEGAL_ADDRESS),
             'delivery_lead_days' => (int) Setting::get(Setting::DELIVERY_LEAD_DAYS),
             'delivery_slots' => Setting::get(Setting::DELIVERY_SLOTS),
             'rush_fee' => DeliveryTime::rushFee(),
@@ -323,6 +326,26 @@ class SiteSettings extends Page implements HasActions, HasForms
                             ->maxLength(80),
                     ])
                     ->columns(2),
+                Forms\Components\Section::make('Hüquqi məlumat')
+                    ->description('Saytın ən aşağısında göstərilir. Boş qalan sahə yazılmır. VÖEN-i özünüz yazın.')
+                    ->schema([
+                        Forms\Components\TextInput::make('legal_name')
+                            ->label('Rəsmi ad')
+                            ->placeholder('«Nefis» MMC')
+                            ->maxLength(120),
+                        Forms\Components\TextInput::make('legal_voen')
+                            ->label('VÖEN')
+                            ->placeholder('1234567891')
+                            ->helperText('Vergi ödəyicisinin eyniləşdirmə nömrəsi — 10 rəqəm.')
+                            ->maxLength(20),
+                        Forms\Components\TextInput::make('legal_address')
+                            ->label('Hüquqi ünvan')
+                            ->placeholder('Bakı, ...')
+                            ->maxLength(200)
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->collapsible(),
                 Forms\Components\Section::make('Çatdırılma vaxtı')
                     ->description('Müştəri sifariş verəndə tarix və vaxt seçir. Qutular əl ilə hazırlandığına görə ən tez tarix bu gündən neçə gün sonra olacağını siz deyirsiniz.')
                     ->schema([
@@ -471,6 +494,11 @@ class SiteSettings extends Page implements HasActions, HasForms
         Setting::put(Setting::SEO_ANALYTICS, Seo::measurementId($data['seo_analytics'] ?? ''));
         Setting::put(Setting::CONTACT_PHONE, Contact::clean($data['contact_phone'] ?? ''));
         Setting::put(Setting::CONTACT_HOURS, trim((string) ($data['contact_hours'] ?? '')));
+        Setting::put(Setting::LEGAL_NAME, trim((string) ($data['legal_name'] ?? '')));
+        // Only the digits: a number typed with spaces or "VÖEN:" in front of
+        // it should still print the same way.
+        Setting::put(Setting::LEGAL_VOEN, preg_replace('/\D+/', '', (string) ($data['legal_voen'] ?? '')));
+        Setting::put(Setting::LEGAL_ADDRESS, trim((string) ($data['legal_address'] ?? '')));
         Setting::put(Setting::DELIVERY_LEAD_DAYS, max(0, (int) ($data['delivery_lead_days'] ?? 2)));
         Setting::put(Setting::DELIVERY_SLOTS, trim((string) ($data['delivery_slots'] ?? '')));
         Setting::put(Setting::RUSH_FEE, max(0, round((float) ($data['rush_fee'] ?? 0), 2)));
