@@ -65,6 +65,26 @@ class StarMapTest extends TestCase
         $this->assertStringContainsString('Bakı', $html);
     }
 
+    public function test_a_design_that_needs_no_photograph_opens_the_button(): void
+    {
+        // The button used to ship shut on every design with a window, and only
+        // an upload opened it — so a star map alone could not be ordered at all.
+        $box = $this->box();
+        $html = $this->get(route('products.customize', $box->slug))->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('id="add-to-cart-btn"' . "
+" . '                disabled', $html);
+        $this->assertDoesNotMatchRegularExpression('/id="add-to-cart-btn"[^>]*\sdisabled/', $html);
+        $this->assertStringNotContainsString('Əvvəlcə şəklinizi yükləyin', $html);
+
+        // A design that does ask for a picture still waits for it.
+        $box->photoSlots()->create(['label' => 'Sizin şəkil', 'x' => 40, 'y' => 1200, 'width' => 400, 'height' => 400,
+            'rotation' => 0, 'shape' => 'rectangle', 'sort_order' => 2]);
+        $withPhoto = $this->get(route('products.customize', $box->slug))->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/id="add-to-cart-btn"[^>]*\sdisabled/', $withPhoto);
+        $this->assertStringContainsString('Əvvəlcə şəklinizi yükləyin', $withPhoto);
+    }
+
     /**
      * The coordinates and the date are printed from what the customer already
      * chose. Nobody retypes them, and nothing sent from the page can change

@@ -94,6 +94,9 @@
   /* The star map's window, if this design has one: what it offers the
      customer to change, and how it looks before he changes anything. Read
      both by the markup below and by the scripts at the foot of the page. */
+  /* A window holding the sky fills itself. Only a window the customer has
+     to put a picture in keeps the button shut. */
+  $needsPhoto = $photoSlots->contains(fn ($s) => ! $s->isSky());
   $skySlot = $photoSlots->first(fn ($s) => $s->isSky());
   $skyOffers = $skySlot?->skyChoices() ?? [];
   $skyLook = $skySlot?->skyDefaults() ?? \App\Support\Sky::LOOK;
@@ -782,11 +785,11 @@
         @endif
 
         <button type="submit" class="btn btn-primary btn-block btn-flame" id="add-to-cart-btn"
-                @if($photoSlots->isNotEmpty()) disabled @endif>{{ __('Səbətə Əlavə Et') }}</button>
+                @if($needsPhoto) disabled @endif>{{ __('Səbətə Əlavə Et') }}</button>
         {{-- The button is shut until the picture is there; say so, or it looks
              broken. On a design that needs no photo the line is still here,
              empty, because anything else the form refuses is said in it too. --}}
-        <p class="add-hint" id="add-hint" @if($photoSlots->isEmpty()) hidden @endif>{{ $photoSlots->isNotEmpty() ? __('Əvvəlcə şəklinizi yükləyin — sonra düymə işə düşür.') : '' }}</p>
+        <p class="add-hint" id="add-hint" @unless($needsPhoto) hidden @endunless>{{ $needsPhoto ? __('Əvvəlcə şəklinizi yükləyin — sonra düymə işə düşür.') : '' }}</p>
       </form>
     </div>
   </div>
@@ -1356,6 +1359,14 @@
   function allSlotsFilled(){
     /* A window holding the sky needs nothing uploaded: it is already full. */
     return photos.every(function(p, i){ return SKY_SLOT[i] || p.img !== null; });
+  }
+
+  /* Said once on load as well: a design whose only window is the sky has
+     nothing to wait for, and the button would otherwise stay shut because
+     nothing is ever uploaded to open it. */
+  if (! cutting && allSlotsFilled()) {
+    addBtn.disabled = false;
+    markAdd(false);
   }
 
   /* The photo inputs are required and hidden under the preview. The browser
