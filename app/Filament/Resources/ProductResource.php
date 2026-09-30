@@ -12,6 +12,7 @@ use App\Support\YandexDisk;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Set;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -192,10 +193,24 @@ class ProductResource extends Resource
                     ->label('Qiymət')
                     ->formatStateUsing(fn ($state) => $state ? Price::format($state) : 'Sorğu ilə')
                     ->sortable(),
-                Tables\Columns\IconColumn::make('is_active')
+                // Switched here, in the list: opening the design's form to
+                // take it off the site for an hour is three clicks too many.
+                Tables\Columns\ToggleColumn::make('is_active')
                     ->label('Aktiv')
-                    ->boolean()
-                    ->visibleFrom('md'),
+                    ->afterStateUpdated(function (Product $record, bool $state) {
+                        if ($state && $record->isBlank()) {
+                            Notification::make()->warning()
+                                ->title($record->name . ' boşdur')
+                                ->body('Dizayn açıqdır, amma içində heç nə yoxdur — müştəri onu açanda «hazırlanır» yazısını görəcək. Redaktorda çəkin.')
+                                ->persistent()->send();
+                        }
+                    }),
+                Tables\Columns\TextColumn::make('blank')
+                    ->label('İçi')
+                    ->badge()
+                    ->getStateUsing(fn (Product $record) => $record->isBlank() ? 'Boş' : 'Hazır')
+                    ->color(fn (string $state) => $state === 'Boş' ? 'danger' : 'success')
+                    ->visibleFrom('lg'),
                 Tables\Columns\TextColumn::make('sort_order')
                     ->label('Sıra')
                     ->numeric()
@@ -210,6 +225,8 @@ class ProductResource extends Resource
             // Both icon columns ask a relation a question; counted here so the list stays one query.
             ->modifyQueryUsing(fn ($query) => $query
                 ->withCount('layers')
+                // Counted here so "is it empty?" costs no query per row.
+                ->withCount(['shapes', 'photoSlots'])
                 ->withCount(['photoSlots as face_cutout_slots_count' => fn ($q) => $q->where('cutout', true)])
                 // Designs from before the box editor keep windows on their angles too.
                 ->withCount(['angles as face_cutout_angles_count' => fn ($q) => $q
@@ -219,6 +236,18 @@ class ProductResource extends Resource
                 Tables\Filters\SelectFilter::make('category')
                     ->label('Kateqoriya')
                     ->options(Product::categories(false)),
+                Tables\Filters\TernaryFilter::make('blank')
+                    ->label('İçi boş olanlar')
+                    ->placeholder('Hamısı')
+                    ->trueLabel('Yalnız boşlar')
+                    ->falseLabel('Yalnız hazırlar')
+                    ->queries(
+                        true: fn ($q) => $q->whereNull('template_image')
+                            ->doesntHave('layers')->doesntHave('shapes')->doesntHave('photoSlots'),
+                        false: fn ($q) => $q->where(fn ($w) => $w->whereNotNull('template_image')
+                            ->orHas('layers')->orHas('shapes')->orHas('photoSlots')),
+                        blank: fn ($q) => $q,
+                    ),
             ])
             ->actions([
                 // Behind one ⋮ button, so the row fits a phone screen.

@@ -222,11 +222,27 @@ class Product extends Model
             return true;
         }
 
-        if (isset($this->attributes['layers_count']) && $this->attributes['layers_count'] > 0) {
-            return true;
+        /* A list that already counted them does not ask again: the admin's
+           table draws a hundred rows. */
+        foreach (['layers_count', 'shapes_count', 'photo_slots_count'] as $counted) {
+            if (isset($this->attributes[$counted]) && $this->attributes[$counted] > 0) {
+                return true;
+            }
         }
 
         return $this->layers()->exists() || $this->shapes()->exists() || $this->photoSlots()->exists();
+    }
+
+    /**
+     * Nothing has been drawn on it yet.
+     *
+     * A design like this cannot be customised and must not be for sale: the
+     * customer would open an empty box. The shop switches it off by itself
+     * when the editor leaves it empty, and says so in the admin.
+     */
+    public function isBlank(): bool
+    {
+        return ! $this->isCustomizable();
     }
 
     public function isBox(): bool

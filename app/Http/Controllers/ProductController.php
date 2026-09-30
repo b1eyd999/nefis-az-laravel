@@ -43,7 +43,15 @@ class ProductController extends Controller
 
     public function customize(Product $product)
     {
-        abort_unless($product->is_active && $product->isCustomizable(), 404);
+        abort_unless($product->is_active, 404);
+
+        /* Switched on but nothing drawn on it yet. Rather than a bare 404 —
+           the design does exist, and the owner is working on it — the page
+           says so and offers the rest of the catalogue. Still noindex: there
+           is nothing here for a search engine yet. */
+        if ($product->isBlank()) {
+            return response()->view('products.not-ready', ['product' => $product], 404);
+        }
 
         // Slugs match whatever their case, so every design has an endless
         // family of addresses. Send them all to the one we publish.

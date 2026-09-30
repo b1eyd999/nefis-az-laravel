@@ -140,11 +140,11 @@
             </div>
             <div class="designs-grid">
               @foreach($items as $design)
-                <a class="d-card" href="{{ $design->isCustomizable() ? lroute('products.customize', $design->slug) : lroute('designs.index') }}"
+                <a class="d-card" href="{{ lroute('products.customize', $design->slug) }}"
                         data-name="{{ $design->tr('name') }}"
                         data-category="{{ $label }}"
                         data-image="{{ \App\Support\Media::url($design->catalogImage()) }}"
-                        data-url="{{ $design->isCustomizable() ? lroute('products.customize', $design->slug) : '' }}">
+                        data-url="{{ lroute('products.customize', $design->slug) }}">
                   <div class="d-card-media">
                     @if($design->isCustomizable())<span class="pill">{{ __('Fərdiləşdir') }}</span>@endif
                     {{-- The same flame the home page shows, on whatever is selling now. --}}

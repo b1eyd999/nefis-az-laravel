@@ -1,6 +1,8 @@
 {{-- A design on a catalogue card: its picture, name, price and the way to fill it in. --}}
 @php
-  $link = $product->isCustomizable() ? lroute('products.customize', $product->slug) : lroute('designs.index');
+  /* Always the design's own page: if it is not drawn yet, that page says so
+     — a card that leads back to the list it sits in reads as broken. */
+  $link = lroute('products.customize', $product->slug);
   // The first cards are what a phone paints first. Hidden behind lazy loading
   // and a fade, that picture is fetched late and counted later still, which is
   // the page's largest paint. The ones above the fold are asked for at once

@@ -458,9 +458,17 @@ class BoxEditorController extends Controller
 
         $this->pruneUnusedAssets($product);
 
+        /* Saved with nothing on it: it cannot be sold, so it comes off the
+           shelf by itself rather than meeting a customer as an empty box. */
+        $blank = $product->fresh()->isBlank();
+        if ($blank && $product->is_active) {
+            $product->forceFill(['is_active' => false])->save();
+        }
+
         return response()->json([
             'ok' => true,
             'saved_at' => now()->format('H:i:s'),
+            'blank' => $blank,
             // The editor redraws the catalogue cover when the box colour may
             // have changed it.
             'cover' => $product->fresh()->coverJob(),
