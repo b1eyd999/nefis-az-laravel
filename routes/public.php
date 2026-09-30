@@ -38,6 +38,12 @@ Route::post('/sirketler-ucun', [CorporateController::class, 'store'])->name('cor
 Route::get('/canli-sekil', [LivePhotoController::class, 'create'])->name('live.create');
 Route::post('/canli-sekil', [LivePhotoController::class, 'store'])->name('live.store');
 
+// The shop's own rules: how an order works, what we know about a customer,
+// and when money comes back. Plain pages, one per subject.
+Route::view('/qaydalar', 'legal.terms')->name('legal.terms');
+Route::view('/mexfilik', 'legal.privacy')->name('legal.privacy');
+Route::view('/odenis-ve-qaytarma', 'legal.refund')->name('legal.refund');
+
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart', [CartController::class, 'add'])->name('cart.add');
 Route::delete('/cart/{id}', [CartController::class, 'remove'])->name('cart.remove');

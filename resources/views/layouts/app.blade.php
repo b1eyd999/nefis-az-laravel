@@ -289,6 +289,11 @@
         @endif
       </div>
     </div>
+    <div class="footer-rules">
+      <a href="{{ lroute('legal.terms') }}">{{ __('İstifadə şərtləri') }}</a>
+      <a href="{{ lroute('legal.privacy') }}">{{ __('Məxfilik siyasəti') }}</a>
+      <a href="{{ lroute('legal.refund') }}">{{ __('Ödəniş və qaytarma') }}</a>
+    </div>
     @php
       $legal = array_filter([
           \App\Models\Setting::get(\App\Models\Setting::LEGAL_NAME),
