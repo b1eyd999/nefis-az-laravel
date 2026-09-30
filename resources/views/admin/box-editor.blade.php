@@ -542,7 +542,7 @@
       date: '2026-02-14', time: '21:30', tzOffset: 4, lat: 40.3777, lon: 49.8920,
       shape: p.shape === 'heart' ? 'heart' : 'circle',
       style: p.sky_style || 'night', ring: p.sky_ring_kind || 'degrees',
-      lines: p.sky_lines !== false, labels: !! p.sky_labels, milkyWay: !! p.sky_milky,
+      lines: p.sky_lines !== false, labels: !! p.sky_labels, milkyWay: !! p.sky_milky, heart: !! p.sky_heart,
       size: d, radius: d / 2, cx: 0, cy: 0, page: false,
       box: { x: -p.width / 2, y: -p.height / 2, w: p.width, h: p.height }
     });
@@ -1153,10 +1153,11 @@
         h += '<div class="row one">' + field('Bürc xətləri', seg('sky_lines', it.sky_lines === false ? 0 : 1, [[1, 'Var'], [0, 'Yox']])) + '</div>';
         h += '<div class="row one">' + field('Bürc adları', seg('sky_labels', it.sky_labels ? 1 : 0, [[1, 'Var'], [0, 'Yox']])) + '</div>';
         h += '<div class="row one">' + field('Süd Yolu', seg('sky_milky', it.sky_milky ? 1 : 0, [[1, 'Var'], [0, 'Yox']])) + '</div>';
+        h += '<div class="row one">' + field('Ürək nişanı', seg('sky_heart', it.sky_heart ? 1 : 0, [[1, 'Var'], [0, 'Yox']])) + '</div>';
         h += '<h4>Müştəri dəyişə bilsin</h4>';
         h += '<p class="hint">Seçdikləriniz sifariş səhifəsində açar kimi görünür; qalanları olduğu kimi çap olunur.</p>';
         var picked = String(it.sky_choices == null ? 'lines,labels,milky,heart' : it.sky_choices).split(',');
-        [['lines', 'Bürc xətləri'], ['labels', 'Bürc adları'], ['milky', 'Süd Yolu'], ['heart', 'Ürək nişanı'], ['time', 'Tarixdə saat']].forEach(function(c){
+        [['lines', 'Bürc xətləri'], ['labels', 'Bürc adları'], ['milky', 'Süd Yolu'], ['time', 'Tarixdə saat']].forEach(function(c){
           h += '<div class="row one">' + field(c[1], seg('choice_' + c[0], picked.indexOf(c[0]) >= 0 ? 1 : 0, [[1, 'Seçə bilər'], [0, 'Yox']])) + '</div>';
         });
         h += '<div class="actions"><button class="btn small" data-act="dup">Təkrarla</button><button class="btn small danger" data-act="del">Sil</button></div>';
@@ -1289,7 +1290,7 @@
     if (b.dataset.seg && it) {
       /* data-v is always text. The yes/no switches would read the string "0"
          as yes, so those are kept as numbers. */
-      var yesNo = ['cutout', 'sky_lines', 'sky_labels', 'sky_milky'];
+      var yesNo = ['cutout', 'sky_lines', 'sky_labels', 'sky_milky', 'sky_heart'];
       it[b.dataset.seg] = yesNo.indexOf(b.dataset.seg) >= 0 ? +b.dataset.v : b.dataset.v;
       if (b.dataset.seg === 'align' && selection.kind === 'text') {
         /* Keep the text box where it is; only the anchor moves. */
@@ -1656,7 +1657,8 @@
         fill: p.fill || 'photo', sky_style: p.sky_style || 'night',
         sky_ring_kind: p.sky_ring_kind || 'degrees',
         sky_choices: p.sky_choices == null ? 'lines,labels,milky,heart' : p.sky_choices,
-        sky_lines: p.sky_lines === false ? 0 : 1, sky_labels: p.sky_labels ? 1 : 0, sky_milky: p.sky_milky ? 1 : 0 }; }),
+        sky_lines: p.sky_lines === false ? 0 : 1, sky_labels: p.sky_labels ? 1 : 0,
+        sky_milky: p.sky_milky ? 1 : 0, sky_heart: p.sky_heart ? 1 : 0 }; }),
       texts: doc.texts.map(function(t){
         var o = clone(t);
         o.rotation = o.rotation || 0;

@@ -23,8 +23,11 @@ class PhotoSlot extends Model
     /** The ring around it: none, a thin circle, the graduated band, or a double rule. */
     public const SKY_RINGS = ['none', 'simple', 'degrees', 'double'];
 
-    /** Which switches the design offers the customer. */
-    public const SKY_CHOICES = ['lines', 'labels', 'milky', 'heart', 'time'];
+    /**
+     * Which switches the design offers the customer. The heart is not among
+     * them: it is how the box looks, and the owner sets it in the design.
+     */
+    public const SKY_CHOICES = ['lines', 'labels', 'milky', 'time'];
 
     protected $fillable = [
         'label',
@@ -37,6 +40,7 @@ class PhotoSlot extends Model
         'sky_labels',
         'sky_milky',
         'sky_lines',
+        'sky_heart',
         'x',
         'y',
         'width',
@@ -50,7 +54,7 @@ class PhotoSlot extends Model
     protected function casts(): array
     {
         return ['cutout' => 'boolean', 'sky_ring' => 'boolean', 'sky_labels' => 'boolean',
-            'sky_milky' => 'boolean', 'sky_lines' => 'boolean', 'i18n' => 'array'];
+            'sky_milky' => 'boolean', 'sky_lines' => 'boolean', 'sky_heart' => 'boolean', 'i18n' => 'array'];
     }
 
     public function slotable(): MorphTo
@@ -79,7 +83,7 @@ class PhotoSlot extends Model
             'lines' => (bool) $this->sky_lines,
             'labels' => (bool) $this->sky_labels,
             'milky' => (bool) $this->sky_milky,
-            'heart' => false,
+            'heart' => (bool) $this->sky_heart,
             // Not `time`: that key is the hour itself on the order line.
             'withTime' => false,
         ];

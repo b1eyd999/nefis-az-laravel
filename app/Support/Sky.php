@@ -120,7 +120,6 @@ class Sky
             'lines' => __('Bürc xətləri'),
             'labels' => __('Bürc adları'),
             'milky' => __('Süd Yolu'),
-            'heart' => __('Xəritədə ürək'),
             'time' => __('Tarixdə saat da olsun'),
         ];
     }

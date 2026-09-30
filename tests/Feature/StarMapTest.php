@@ -279,16 +279,18 @@ class StarMapTest extends TestCase
             'layers' => [['name' => 'BG', 'image' => $image, 'x' => 0, 'y' => 0, 'width' => 969, 'height' => 1895,
                 'rotation' => 0, 'opacity' => 100, 'placement' => 'above', 'locked' => true]],
             'photos' => [['label' => null, 'fill' => 'sky', 'sky_style' => 'crimson', 'sky_ring_kind' => 'none',
-                'sky_choices' => 'labels,heart,nonsense', 'sky_labels' => 1, 'sky_milky' => 1, 'shape' => 'heart',
+                'sky_choices' => 'labels,heart,nonsense', 'sky_labels' => 1, 'sky_milky' => 1, 'sky_heart' => 1, 'shape' => 'heart',
                 'x' => 100, 'y' => 200, 'width' => 700, 'height' => 700, 'rotation' => 0]],
             'texts' => [],
         ])->assertOk();
 
         $slot = $box->fresh()->photoSlots()->firstOrFail();
         $this->assertSame(['sky', 'crimson', 'heart', 'none'], [$slot->fill, $slot->sky_style, $slot->shape, $slot->sky_ring_kind]);
-        // A switch the drawing does not know is dropped from the offer.
-        $this->assertSame(['labels', 'heart'], $slot->skyChoices());
-        $this->assertSame(['lines' => true, 'labels' => true, 'milky' => true, 'heart' => false, 'withTime' => false], $slot->skyDefaults());
+        // A switch the drawing does not know is dropped from the offer — and so
+        // is the heart, which is the design's own look, not the customer's.
+        $this->assertSame(['labels'], $slot->skyChoices());
+        // The heart is now one of the looks the owner fixes, beside the rest.
+        $this->assertSame(['lines' => true, 'labels' => true, 'milky' => true, 'heart' => true, 'withTime' => false], $slot->skyDefaults());
 
         // A colour the drawing does not know is not stored.
         $this->actingAs($admin)->postJson(route('box.save', $box->slug), [
