@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DesignLayer;
 use App\Models\DesignShape;
 use App\Models\Font;
+use App\Models\LibraryAsset;
 use App\Models\PhotoSlot;
 use App\Models\Product;
 use App\Models\TextSlot;
@@ -83,8 +84,10 @@ class BoxEditorController extends Controller
         ];
 
         $fonts = Font::orderBy('name')->get()->map->toEditor()->values();
+        // The shelf of frames, patterns and stickers, ready for the picker.
+        $library = LibraryAsset::offered()->get()->map->toEditor()->values();
 
-        return view('admin.box-editor', compact('product', 'design', 'fonts'));
+        return view('admin.box-editor', compact('product', 'design', 'fonts', 'library'));
     }
 
     public function save(Request $request, Product $product): JsonResponse
@@ -359,6 +362,36 @@ class BoxEditorController extends Controller
         return response()->json([
             'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
             'image' => $path, 'url' => Media::url($path),
+            'width' => $width, 'height' => $height,
+        ]);
+    }
+
+    /**
+     * Puts a library picture on this box.
+     *
+     * The file is copied into the box's own folder rather than linked: a design
+     * that is on sale must not depend on a picture the owner may later delete
+     * from the shelf, and the editor only accepts layer images that live in the
+     * box's folder anyway.
+     */
+    public function useLibrary(Request $request, Product $product, LibraryAsset $asset): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+        abort_unless($asset->is_active, 404);
+
+        $disk = Storage::disk('public');
+        abort_unless($disk->exists($asset->image), 422, 'Bu şəkil kitabxanada tapılmadı.');
+
+        $target = $product->assetDirectory() . '/lib-' . Str::lower(Str::random(10))
+            . '.' . Str::afterLast($asset->image, '.');
+        $disk->copy($asset->image, $target);
+
+        [$width, $height] = $asset->width && $asset->height
+            ? [(int) $asset->width, (int) $asset->height]
+            : $asset->measure();
+
+        return response()->json([
+            'name' => $asset->name, 'image' => $target, 'url' => Media::url($target),
             'width' => $width, 'height' => $height,
         ]);
     }

@@ -141,6 +141,28 @@
   .toast{ position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:.6rem 1rem; border-radius:.6rem; font-size:13px; opacity:0; transition:opacity .2s; pointer-events:none; z-index:60; max-width:80vw; }
   .toast.show{ opacity:1; }
   .toast.error{ background:var(--danger); }
+
+  /* ---------- the library's picker ---------- */
+  .sheet{ position:fixed; inset:0; z-index:70; display:grid; place-items:center; background:rgba(20,24,40,.45); padding:2rem 1rem; }
+  .sheet-card{ background:var(--panel); border-radius:.9rem; width:min(880px, 100%); max-height:100%;
+    display:flex; flex-direction:column; box-shadow:0 30px 60px -20px rgba(20,24,40,.5); }
+  .sheet-head{ display:flex; align-items:center; gap:.5rem; padding:.85rem 1rem; border-bottom:1px solid var(--line); }
+  .sheet-head h3{ margin:0; font-size:14px; }
+  .sheet-head .spacer{ flex:1; }
+  .chips{ display:flex; flex-wrap:wrap; gap:.35rem; padding:.7rem 1rem; border-bottom:1px solid var(--line); }
+  .chip{ border:1px solid var(--line); background:#fff; border-radius:999px; padding:.25rem .7rem; font-size:12.5px; color:var(--ink-2); }
+  .chip.on{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .sheet-body{ overflow:auto; padding:1rem; min-height:8rem; }
+  .pick-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(124px, 1fr)); gap:.75rem; }
+  /* A chequerboard behind each one, so a transparent frame reads as transparent
+     and not as a white rectangle. */
+  .pick{ border:1px solid var(--line); border-radius:.6rem; padding:0; overflow:hidden; display:flex; flex-direction:column;
+    background:conic-gradient(#eff1f5 0 25%, #fff 0 50%, #eff1f5 0 75%, #fff 0) 0 0/16px 16px; }
+  .pick:hover{ border-color:var(--accent); }
+  .pick img{ width:100%; height:112px; object-fit:contain; display:block; }
+  .pick span{ font-size:11.5px; padding:.35rem .4rem; background:#fff; border-top:1px solid var(--line);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--ink-2); }
+  .sheet-empty{ text-align:center; color:var(--muted); font-size:13px; line-height:1.7; padding:1.5rem 1rem; }
   .drop-zone{ position:absolute; inset:0; border:3px dashed var(--accent); background:rgba(124,58,237,.06); display:grid; place-items:center; font-weight:600; color:var(--accent); font-size:16px; z-index:5; pointer-events:none; }
 </style>
 </head>
@@ -174,6 +196,7 @@
 <div class="app">
   <nav class="toolbar">
     <button class="tool" id="tool-asset" title="Şəffaf PNG qatları yüklə"><span class="ico">🖼️</span>Qat yüklə</button>
+    <button class="tool" id="tool-library" title="Kitabxana: hazır çərçivə, naxış və naklyekalar"><span class="ico">📚</span>Kitabxana</button>
     <button class="tool" id="tool-photo" title="Müştərinin şəkli üçün sahə"><span class="ico">👤</span>Foto sahəsi</button>
     <button class="tool" id="tool-shape" title="Forma: düzbucaqlı, dairə, xətt, ürək, ulduz"><span class="ico">◼</span>Forma</button>
     <button class="tool" id="tool-text" title="Mətn əlavə et (T)"><span class="ico">T</span>Mətn</button>
@@ -217,6 +240,20 @@
   </aside>
 </div>
 
+{{-- The shelf: pictures uploaded once in the admin and put on any box. --}}
+<div class="sheet" id="library" hidden>
+  <div class="sheet-card">
+    <div class="sheet-head">
+      <h3>Kitabxana</h3>
+      <span class="spacer"></span>
+      <a class="btn small" href="{{ route('filament.admin.resources.library-assets.index') }}" target="_blank" rel="noopener">Şəkil yüklə</a>
+      <button class="btn small" id="library-close">Bağla</button>
+    </div>
+    <div class="chips" id="library-chips"></div>
+    <div class="sheet-body"><div class="pick-grid" id="library-grid"></div></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="{{ asset('js/star-data.js') }}?v={{ \App\Support\Assets::version('js/star-data.js') }}"></script>
@@ -237,12 +274,16 @@
   var ROUTES = {
     save: @json(route('box.save', $product->slug)),
     asset: @json(route('box.asset', $product->slug)),
+    /* The picture's own number takes the place of the nought at the end. */
+    library: @json(route('box.library', [$product->slug, 0])),
     visual: @json(route('box.visual', $product->slug)),
     font: @json(route('box.font', $product->slug))
   };
   var CSRF = document.querySelector('meta[name="csrf-token"]').content;
 
   var FONTS = @json($fonts);
+  var LIBRARY = @json($library);
+  var LIBRARY_KINDS = @json(\App\Models\LibraryAsset::CATEGORIES);
   var doc = {
     layers: @json($design['layers']),
     shapes: @json($design['shapes']),
@@ -1464,6 +1505,68 @@
       });
   }
 
+  /* ================================================================
+     The library
+     ================================================================ */
+  var librarySheet = document.getElementById('library');
+  var libraryGrid = document.getElementById('library-grid');
+  var libraryChips = document.getElementById('library-chips');
+  var libraryKind = 'all';
+
+  function libraryOpen(){ return !librarySheet.hidden; }
+
+  function renderLibrary(){
+    var kinds = {};
+    LIBRARY.forEach(function(a){ kinds[a.category] = (kinds[a.category] || 0) + 1; });
+
+    /* Only the kinds actually on the shelf get a chip — an empty filter is one
+       more thing to click past. */
+    var chips = '<button class="chip' + (libraryKind === 'all' ? ' on' : '') + '" data-kind="all">Hamısı ' + LIBRARY.length + '</button>';
+    Object.keys(LIBRARY_KINDS).forEach(function(k){
+      if (kinds[k]) {
+        chips += '<button class="chip' + (libraryKind === k ? ' on' : '') + '" data-kind="' + k + '">'
+          + esc(LIBRARY_KINDS[k]) + ' ' + kinds[k] + '</button>';
+      }
+    });
+    libraryChips.innerHTML = chips;
+
+    var shown = LIBRARY.filter(function(a){ return libraryKind === 'all' || a.category === libraryKind; });
+    libraryGrid.innerHTML = shown.length
+      ? shown.map(function(a){
+          return '<button class="pick" data-id="' + a.id + '" title="' + esc(a.name) + ' — ' + a.width + '×' + a.height + '">'
+            + '<img src="' + esc(a.url) + '" alt=""><span>' + esc(a.name) + '</span></button>';
+        }).join('')
+      : '<p class="sheet-empty">Kitabxana boşdur.<br>Admin paneldəki «Kitabxana» bölməsinə çərçivə, naxış və naklyeka yükləyin — '
+        + 'sonra hər qutuya buradan qoyula bilər.</p>';
+  }
+
+  function toggleLibrary(open){
+    librarySheet.hidden = !open;
+    if (open) renderLibrary();
+  }
+
+  /* The file is copied into this box's own folder on the server; what comes
+     back is an ordinary layer, so from here on nothing knows it came from the
+     shelf. */
+  function useLibraryAsset(id){
+    toast('Əlavə olunur…');
+    post(ROUTES.library.replace(/\/0$/, '/' + id), new FormData())
+      .then(function(entry){ toggleLibrary(false); addLayer(entry); toast('Qat əlavə olundu'); })
+      .catch(function(err){ toast(err.message, true); });
+  }
+
+  document.getElementById('tool-library').onclick = function(){ toggleLibrary(true); };
+  document.getElementById('library-close').onclick = function(){ toggleLibrary(false); };
+  librarySheet.onclick = function(e){ if (e.target === librarySheet) toggleLibrary(false); };
+  libraryChips.onclick = function(e){
+    var chip = e.target.closest('.chip');
+    if (chip) { libraryKind = chip.dataset.kind; renderLibrary(); }
+  };
+  libraryGrid.onclick = function(e){
+    var pick = e.target.closest('.pick');
+    if (pick) useLibraryAsset(pick.dataset.id);
+  };
+
   function uploadAssets(files){
     var list = Array.prototype.slice.call(files).filter(function(f){ return /^image\//.test(f.type); });
     if (!list.length) return;
@@ -1705,6 +1808,13 @@
      Keyboard
      ================================================================ */
   document.addEventListener('keydown', function(e){
+    /* While the shelf is open the editor's own shortcuts are not wanted: Escape
+       closes the picker instead of dropping the selection behind it. */
+    if (libraryOpen()) {
+      if (e.key === 'Escape') { e.preventDefault(); toggleLibrary(false); }
+
+      return;
+    }
     var el = document.activeElement;
     var tag = (el && el.tagName) || '';
     /* Only fields that take text keep the keys; a checkbox or slider does not. */
