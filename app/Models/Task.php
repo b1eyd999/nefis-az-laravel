@@ -25,14 +25,24 @@ class Task extends Model
         'done' => 'Bitdi',
     ];
 
-    protected $fillable = ['kind', 'title', 'body', 'status', 'due_at', 'user_id', 'created_by', 'done_at', 'sort_order'];
+    /** Where the pictures of a task are kept on the public disk. */
+    public const DIRECTORY = 'tasks';
 
-    protected $casts = ['due_at' => 'datetime', 'done_at' => 'datetime'];
+    protected $fillable = ['kind', 'title', 'body', 'photos', 'status', 'due_at', 'user_id', 'created_by', 'done_at', 'sort_order'];
+
+    protected $casts = ['photos' => 'array', 'due_at' => 'datetime', 'done_at' => 'datetime'];
 
     protected static function booted(): void
     {
         // The day it was finished is not typed in by anyone: it is the moment
         // the switch was moved.
+        // A task taken off the board takes its pictures with it.
+        static::deleted(function (Task $task) {
+            foreach ($task->photos ?? [] as $path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($path);
+            }
+        });
+
         static::saving(function (Task $task) {
             if ($task->isDirty('status')) {
                 $task->done_at = $task->status === 'done' ? ($task->done_at ?: now()) : null;
@@ -63,6 +73,14 @@ class Task extends Model
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** @return array<int, array{path: string, url: string}> */
+    public function pictures(): array
+    {
+        return collect($this->photos ?? [])
+            ->map(fn (string $path) => ['path' => $path, 'url' => \App\Support\Media::url($path)])
+            ->all();
     }
 
     public function isDone(): bool

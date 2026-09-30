@@ -4,7 +4,7 @@
   <div class="sheet-in">
     <div class="sheet-grip"></div>
     <h2>{{ $task->kind === \App\Models\Task::NOTE ? 'Qeyd' : 'İş' }}</h2>
-    <form method="POST" action="{{ route('phone.tasks.update', $task) }}" data-once>
+    <form method="POST" action="{{ route('phone.tasks.update', $task) }}" data-once enctype="multipart/form-data">
       @csrf @method('PATCH')
       <label class="ph-field">
         <span>Başlıq</span>
@@ -52,6 +52,25 @@
           </select>
         </label>
       @endif
+      @php $pictures = $task->pictures(); @endphp
+      @if($pictures)
+        <div class="ph-field">
+          <span>Şəkillər</span>
+          <div class="ph-shots edit">
+            @foreach($pictures as $shot)
+              {{-- Ticked and saved — gone from the card and from the disk. --}}
+              <label>
+                <img src="{{ $shot['url'] }}" alt="">
+                <span><input type="checkbox" name="remove[]" value="{{ $shot['path'] }}"> Sil</span>
+              </label>
+            @endforeach
+          </div>
+        </div>
+      @endif
+      <label class="ph-field">
+        <span>Şəkil əlavə et</span>
+        <input type="file" name="photos[]" accept="image/*" multiple>
+      </label>
       <div class="ph-btns">
         <button class="ph-btn ph-btn-primary">Yadda saxla</button>
         <button type="button" class="ph-btn" data-close>Bağla</button>

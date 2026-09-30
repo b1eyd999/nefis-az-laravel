@@ -346,3 +346,11 @@ dialog.sheet::backdrop{ background:rgba(0,0,0,.45); backdrop-filter:blur(2px); }
 }
 .ns-opt.is-on{ background:var(--cocoa); color:var(--paper); }
 .ns-empty{ margin:0; padding:.8rem; text-align:center; color:var(--cocoa-faint); font-size:.9rem; }
+
+/* Pictures on a task: a row that scrolls sideways rather than a wall. */
+.ph-shots{ display:flex; gap:.4rem; flex-wrap:wrap; margin-top:.5rem; }
+.ph-shots img{ width:4.5rem; height:4.5rem; object-fit:cover; border-radius:.6rem; border:1px solid var(--line); display:block; }
+.ph-shots.edit label{ display:block; }
+.ph-shots.edit span{ display:flex; align-items:center; gap:.25rem; font-size:.7rem; color:var(--cocoa-soft); padding-top:.2rem; }
+.ph-shots.edit input{ width:1rem; height:1rem; }
+.ph-field input[type=file]{ padding:.55rem .6rem; font-size:.9rem; background:var(--cream); }

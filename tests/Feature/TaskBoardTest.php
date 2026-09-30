@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -23,6 +25,17 @@ class TaskBoardTest extends TestCase
         parent::setUp();
         $this->owner = User::factory()->create(['name' => 'Admin JM', 'role' => User::ADMIN]);
         $this->manager = User::factory()->create(['name' => 'İsa Abbasov', 'role' => User::MANAGER]);
+    }
+
+    /** A photograph the size a phone sends. */
+    private function shot(): UploadedFile
+    {
+        $im = imagecreatetruecolor(1200, 900);
+        imagefill($im, 0, 0, imagecolorallocate($im, 200, 120, 60));
+        ob_start();
+        imagejpeg($im);
+
+        return UploadedFile::fake()->createWithContent('IMG_0431.jpg', (string) ob_get_clean());
     }
 
     public function test_the_board_is_for_everyone_who_works_here_and_nobody_else(): void
@@ -130,6 +143,44 @@ class TaskBoardTest extends TestCase
             ->assertOk()
             ->assertSee('Kuryerin nömrəsi')
             ->assertSee('+994 50 000 00 00');
+    }
+
+    public function test_a_picture_can_be_kept_with_the_work_and_taken_off_again(): void
+    {
+        Storage::fake('public');
+
+        $this->actingAs($this->owner)->post(route('phone.tasks.store'), [
+            'kind' => 'task', 'title' => 'Bu lenti al', 'photos' => [$this->shot(), $this->shot()],
+        ])->assertRedirect();
+
+        $task = Task::firstOrFail();
+        $this->assertCount(2, $task->photos);
+        foreach ($task->photos as $path) {
+            $this->assertStringStartsWith('tasks/', $path);
+            Storage::disk('public')->assertExists($path);
+        }
+
+        $this->actingAs($this->owner)->get(route('phone.tasks.index'))
+            ->assertOk()
+            ->assertSee(\App\Support\Media::url($task->photos[0]), false);
+
+        // One taken off, one more added.
+        $dropped = $task->photos[0];
+        $this->actingAs($this->owner)->patch(route('phone.tasks.update', $task), [
+            'title' => 'Bu lenti al', 'remove' => [$dropped], 'photos' => [$this->shot()],
+        ])->assertRedirect();
+
+        $after = $task->fresh();
+        $this->assertCount(2, $after->photos);
+        $this->assertNotContains($dropped, $after->photos);
+        Storage::disk('public')->assertMissing($dropped);
+
+        // Deleting the task takes its pictures with it.
+        $left = $after->photos;
+        $this->actingAs($this->owner)->delete(route('phone.tasks.destroy', $after));
+        foreach ($left as $path) {
+            Storage::disk('public')->assertMissing($path);
+        }
     }
 
     public function test_a_task_can_be_changed_and_deleted(): void

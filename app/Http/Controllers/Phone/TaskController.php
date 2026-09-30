@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Phone;
 use App\Http\Controllers\Controller;
 use App\Models\Task;
 use App\Models\User;
+use App\Support\ImageStore;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 /**
@@ -66,6 +68,8 @@ class TaskController extends Controller
             'due_date' => ['nullable', 'date'],
             'due_time' => ['nullable', 'string', 'max:5'],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'photos' => ['nullable', 'array', 'max:6'],
+            'photos.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:12288'],
         ], [], ['title' => 'Başlıq']);
 
         Task::create([
@@ -76,6 +80,7 @@ class TaskController extends Controller
             'due_at' => $data['kind'] === Task::TASK ? self::when($data) : null,
             'user_id' => $data['kind'] === Task::TASK ? ($data['user_id'] ?? null) : null,
             'created_by' => $request->user()->id,
+            'photos' => self::keep($request->file('photos', [])) ?: null,
         ]);
 
         return back()->with('phone.flash', [
@@ -99,7 +104,22 @@ class TaskController extends Controller
             'due_time' => ['nullable', 'string', 'max:5'],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'status' => ['nullable', 'in:todo,doing,done'],
+            'photos' => ['nullable', 'array', 'max:6'],
+            'photos.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:12288'],
+            'remove' => ['nullable', 'array'],
+            'remove.*' => ['string'],
         ], [], ['title' => 'Başlıq']);
+
+        /* What was ticked for removal leaves the list and the disk; what was
+           chosen is added to what is already there. */
+        $gone = $data['remove'] ?? [];
+        $kept = collect($task->photos ?? [])->reject(fn (string $path) => in_array($path, $gone, true));
+        foreach ($gone as $path) {
+            if (in_array($path, $task->photos ?? [], true)) {
+                Storage::disk('public')->delete($path);
+            }
+        }
+        $photos = $kept->merge(self::keep($request->file('photos', [])))->values()->all();
 
         $task->fill([
             'title' => $data['title'],
@@ -107,6 +127,7 @@ class TaskController extends Controller
             'status' => $task->kind === Task::NOTE ? $task->status : ($data['status'] ?? $task->status),
             'due_at' => $task->kind === Task::NOTE ? null : self::when($data),
             'user_id' => $task->kind === Task::NOTE ? null : ($data['user_id'] ?? null),
+            'photos' => $photos ?: null,
         ])->save();
 
         return back()->with('phone.flash', ['title' => 'Yadda saxlanıldı', 'body' => $task->title]);
@@ -118,6 +139,25 @@ class TaskController extends Controller
         $task->delete();
 
         return back()->with('phone.flash', ['title' => 'Silindi', 'body' => $was]);
+    }
+
+    /**
+     * Keeps the pictures small: a telephone's photograph is four thousand
+     * pixels wide, and this hosting carries every one of them.
+     *
+     * @param  array<int, \Illuminate\Http\UploadedFile>  $files
+     * @return array<int, string>
+     */
+    private static function keep(array $files): array
+    {
+        // A full-size photograph decoded by GD needs more than the default.
+        @ini_set('memory_limit', '512M');
+
+        return collect($files)->filter()->map(function ($file) {
+            [$path] = ImageStore::store($file, Task::DIRECTORY, 'task', 82, 1600);
+
+            return $path;
+        })->values()->all();
     }
 
     /** The day and, if it was given, the hour. */

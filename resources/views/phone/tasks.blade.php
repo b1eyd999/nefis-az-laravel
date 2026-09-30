@@ -35,6 +35,7 @@
         @if($note->body)
           <div class="small" style="white-space:pre-wrap; margin-top:.25rem;">{{ $note->body }}</div>
         @endif
+        @include('phone.partials.task-photos', ['task' => $note])
         <div class="small" style="margin-top:.4rem; opacity:.7;">
           {{ $note->updated_at->format('d.m.Y H:i') }}@if($person($note->author)) · {{ $person($note->author) }}@endif
         </div>
@@ -61,6 +62,7 @@
           @if($task->body)
             <div class="small" style="white-space:pre-wrap; margin-top:.25rem;">{{ $task->body }}</div>
           @endif
+          @include('phone.partials.task-photos', ['task' => $task])
           <div class="small" style="margin-top:.4rem;">
             @if($task->dueLabel())
               <span class="{{ $task->isOverdue() ? 'ph-warn' : '' }}">🕑 {{ $task->dueLabel() }}</span>
@@ -114,7 +116,7 @@
     <div class="sheet-in">
       <div class="sheet-grip"></div>
       <h2>Yeni iş</h2>
-      <form method="POST" action="{{ route('phone.tasks.store') }}" data-once>
+      <form method="POST" action="{{ route('phone.tasks.store') }}" data-once enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="kind" value="task">
         <label class="ph-field">
@@ -149,6 +151,10 @@
             @endforeach
           </select>
         </label>
+        <label class="ph-field">
+          <span>Şəkil</span>
+          <input type="file" name="photos[]" accept="image/*" multiple>
+        </label>
         <div class="ph-btns">
           <button class="ph-btn ph-btn-primary">Əlavə et</button>
           <button type="button" class="ph-btn" data-close>Bağla</button>
@@ -161,7 +167,7 @@
     <div class="sheet-in">
       <div class="sheet-grip"></div>
       <h2>Yeni qeyd</h2>
-      <form method="POST" action="{{ route('phone.tasks.store') }}" data-once>
+      <form method="POST" action="{{ route('phone.tasks.store') }}" data-once enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="kind" value="note">
         <label class="ph-field">
@@ -171,6 +177,10 @@
         <label class="ph-field">
           <span>Mətn</span>
           <textarea name="body" rows="5" maxlength="4000"></textarea>
+        </label>
+        <label class="ph-field">
+          <span>Şəkil</span>
+          <input type="file" name="photos[]" accept="image/*" multiple>
         </label>
         <div class="ph-btns">
           <button class="ph-btn ph-btn-primary">Yaz</button>
