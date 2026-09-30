@@ -17,12 +17,22 @@
       @if($task->kind !== \App\Models\Task::NOTE)
         <label class="ph-field">
           <span>Son tarix</span>
-          <input type="date" name="due_date" value="{{ $task->due_at?->toDateString() }}">
+          <input type="date" name="due_date" value="{{ $task->due_at?->toDateString() }}" data-placeholder="Tarix seçin">
         </label>
         <label class="ph-field">
           <span>Saat</span>
-          <input type="time" name="due_time" step="300"
-                 value="{{ $task->due_at && $task->due_at->format('H:i') !== '00:00' ? $task->due_at->format('H:i') : '' }}">
+          @php $at = $task->due_at && $task->due_at->format('H:i') !== '00:00' ? $task->due_at->format('H:i') : ''; @endphp
+          <select name="due_time" data-fancy>
+            <option value="">Saatsız</option>
+            {{-- An hour the list does not have (03:17, set from somewhere else)
+                 is kept rather than quietly rounded away. --}}
+            @if($at && ! $hours->contains($at))
+              <option value="{{ $at }}" selected>{{ $at }}</option>
+            @endif
+            @foreach($hours as $hour)
+              <option value="{{ $hour }}" @selected($at === $hour)>{{ $hour }}</option>
+            @endforeach
+          </select>
         </label>
         <label class="ph-field">
           <span>Kimə</span>

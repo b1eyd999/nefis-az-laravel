@@ -95,13 +95,31 @@
     pop.setAttribute('role', 'dialog');
     wrap.appendChild(pop);
 
-    var shown = new Date((chosen || min || new Date()).getTime());
+    /* Opens on the month the customer is living in, not on the earliest one
+       the field allows: a "from" of a year ago used to open the panel a year
+       in the past, with every day greyed out. */
+    function opening() {
+      var at = chosen || new Date();
+      if (min && at < min) {
+        at = min;
+      }
+      if (max && at > max) {
+        at = max;
+      }
+
+      return new Date(at.getTime());
+    }
+
+    var shown = opening();
     shown.setDate(1);
 
     function label() {
+      /* An empty field says what it is waiting for; a dash alone reads as
+         something broken. */
       button.textContent = chosen
         ? chosen.getDate() + ' ' + W.months[chosen.getMonth()] + ' ' + chosen.getFullYear()
-        : '—';
+        : (input.dataset.placeholder || '—');
+      button.classList.toggle('is-empty', ! chosen);
     }
 
     function blocked(d) {
@@ -161,7 +179,7 @@
     }
 
     function open() {
-      shown = new Date((chosen || min || new Date()).getTime());
+      shown = opening();
       shown.setDate(1);
       draw();
       pop.hidden = false;

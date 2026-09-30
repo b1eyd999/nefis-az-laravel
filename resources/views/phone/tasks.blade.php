@@ -19,6 +19,8 @@
   </div>
 @endsection
 
+@php $hours = collect(range(0, 47))->map(fn ($i) => sprintf('%02d:%02d', intdiv($i, 2), $i % 2 ? 30 : 0)); @endphp
+
 @php
   /* One card, whether it is a task or a note: the same shape, so the eye does
      not have to learn two. */
@@ -125,11 +127,18 @@
         </label>
         <label class="ph-field">
           <span>Son tarix</span>
-          <input type="date" name="due_date" min="{{ now()->subYear()->toDateString() }}">
+          <input type="date" name="due_date" min="{{ now()->subYear()->toDateString() }}" data-placeholder="Tarix seçin">
         </label>
         <label class="ph-field">
           <span>Saat</span>
-          <input type="time" name="due_time" step="300">
+          {{-- Not <input type="time">: the browser opens its own dark wheel,
+               which belongs to another program. --}}
+          <select name="due_time" data-fancy>
+            <option value="">Saatsız</option>
+            @foreach($hours as $hour)
+              <option value="{{ $hour }}">{{ $hour }}</option>
+            @endforeach
+          </select>
         </label>
         <label class="ph-field">
           <span>Kimə</span>

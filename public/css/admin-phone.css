@@ -275,3 +275,74 @@ dialog.sheet::backdrop{ background:rgba(0,0,0,.45); backdrop-filter:blur(2px); }
   display:inline-flex; align-items:center; justify-content:center; line-height:1;
 }
 .ph-tab{ position:relative; }
+
+
+/* ---------- the shop's own calendar and dropdown ----------
+ *
+ * public/js/date-picker.js and select-picker.js build these on every page;
+ * their looks live in site.css, which the phone admin does not load. Without
+ * this the date field was a bare browser button the size of a stamp and the
+ * hour was the system's dark wheel — both from another program.
+ */
+.np{ position:relative; }
+.np-field{
+  width:100%; text-align:left; font:inherit; font-size:1rem; color:inherit;
+  background:var(--cream); border:1px solid var(--line); border-radius:.75rem;
+  padding:.65rem .75rem; min-height:3rem; cursor:pointer;
+}
+.np.is-open .np-field{ border-color:var(--gold); }
+.np-pop{
+  position:absolute; z-index:60; top:calc(100% + .4rem); left:0; right:0;
+  background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow-sm); overflow:hidden;
+}
+.np-head{
+  display:flex; align-items:center; justify-content:space-between; gap:.5rem;
+  background:var(--cocoa); color:var(--paper); padding:.6rem .7rem;
+}
+.np-title{ font-weight:700; font-size:.95rem; }
+.np-nav{
+  width:2.2rem; height:2.2rem; border:0; background:transparent; color:var(--paper);
+  font-size:1.2rem; line-height:1; border-radius:.5rem; cursor:pointer;
+}
+.np-body{ padding:.5rem .55rem .65rem; }
+.np-week, .np-grid{ display:grid; grid-template-columns:repeat(7, 1fr); gap:.1rem; }
+.np-week span{ text-align:center; font-size:.68rem; font-weight:700; padding:.3rem 0 .2rem; color:var(--cocoa-soft); }
+.np-day{
+  height:2.5rem; display:flex; align-items:center; justify-content:center;
+  border:0; background:transparent; border-radius:.55rem; font:inherit; font-size:.95rem;
+  font-weight:600; color:var(--cocoa); cursor:pointer;
+}
+.np-day.is-on{ background:var(--cocoa); color:var(--paper); }
+.np-day.is-today{ box-shadow:inset 0 0 0 1px var(--gold); }
+.np-day.is-other, .np-day.is-off{ color:var(--cocoa-faint); cursor:default; }
+
+.ns{ position:relative; }
+.ns-real{ position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; }
+.ns-field{
+  width:100%; display:flex; align-items:center; justify-content:space-between; gap:.5rem;
+  text-align:left; font:inherit; font-size:1rem; color:inherit;
+  background:var(--cream); border:1px solid var(--line); border-radius:.75rem;
+  padding:.65rem .75rem; min-height:3rem; cursor:pointer;
+}
+.ns.is-open .ns-field{ border-color:var(--gold); }
+.ns-caret{ color:var(--cocoa-faint); font-size:.8rem; }
+.ns-pop{
+  position:absolute; z-index:60; top:calc(100% + .4rem); left:0; right:0;
+  background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow-sm); overflow:hidden;
+}
+.ns-head{ background:var(--cocoa); padding:.5rem .55rem; }
+.ns-search{
+  width:100%; font:inherit; font-size:.95rem; color:var(--paper);
+  background:rgba(255,255,255,.14); border:0; border-radius:.55rem; padding:.5rem .6rem;
+}
+.ns-search::placeholder{ color:rgba(255,255,255,.6); }
+.ns-list{ max-height:15rem; overflow-y:auto; padding:.3rem; }
+.ns-opt{
+  width:100%; display:block; text-align:left; border:0; background:transparent;
+  border-radius:.55rem; font:inherit; font-size:1rem; font-weight:600; color:var(--cocoa);
+  padding:.6rem .65rem; cursor:pointer;
+}
+.ns-opt.is-on{ background:var(--cocoa); color:var(--paper); }
+.ns-empty{ margin:0; padding:.8rem; text-align:center; color:var(--cocoa-faint); font-size:.9rem; }
