@@ -1112,13 +1112,14 @@
      get it without knowing anything about stars. */
   function drawSkyInArea(mctx, area){
     if (!window.NefisStarMap || !sky) return;
-    var d = area.shape === 'full' ? Math.max(area.w, area.h) : Math.min(area.w, area.h);
+    var boxed = area.shape === 'full' || area.shape === 'rectangle';
+    var d = boxed ? Math.max(area.w, area.h) : Math.min(area.w, area.h);
     mctx.save();
     mctx.translate(area.x + area.w / 2, area.y + area.h / 2);
     mctx.rotate(area.rotation * Math.PI / 180);
     window.NefisStarMap.draw(mctx, {
       date: sky.date, time: sky.time, tzOffset: sky.tz, lat: sky.lat, lon: sky.lon,
-      shape: area.shape === 'heart' ? 'heart' : (area.shape === 'full' ? 'full' : 'circle'),
+      shape: area.shape === 'heart' ? 'heart' : (boxed ? area.shape : 'circle'),
       style: area.skyStyle || 'night', ring: area.skyRing,
       lines: sky.lines !== false, labels: !! sky.labels, milkyWay: !! sky.milky, heart: !! sky.heart,
       labelLang: @json(\App\Support\Locale::current() === 'ru' ? 'ru' : (\App\Support\Locale::current() === 'en' ? 'en' : 'la')),

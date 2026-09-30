@@ -23,20 +23,28 @@
   <p class="facts">
     <b>{{ \Illuminate\Support\Carbon::parse($sky['date'])->format('d.m.Y') }}</b>, saat <b>{{ $sky['time'] }}</b>
     @if(! empty($sky['place'])) · <b>{{ $sky['place'] }}</b> @endif
-    · {{ $coordinates }} · {{ $shape === 'heart' ? 'ürək' : 'dairə' }}, {{ $style }}
+    · {{ $coordinates }} · {{ ['heart' => 'ürək', 'full' => 'tam sahə', 'rectangle' => 'düzbucaqlı'][$shape] ?? 'dairə' }}, {{ $style }}
   </p>
-  <canvas id="sky" width="3000" height="3000"></canvas>
+  <canvas id="sky" width="{{ $width }}" height="{{ $height }}"></canvas>
   <button type="button" class="btn" id="save">Çap üçün yüklə (3000 px)</button>
   <p class="note">Şəkil burada, brauzerdə çəkilir — saxlanılan yalnız tarix, saat və yerdir, ona görə istənilən ölçüdə yenidən almaq olar.</p>
 </div>
 <script src="{{ asset('js/star-data.js') }}?v={{ \App\Support\Assets::version('js/star-data.js') }}"></script>
+{{-- The constellation names and the Milky Way live here; without it both
+     switches would be quietly ignored on the printed sheet. --}}
+<script src="{{ asset('js/star-extra.js') }}?v={{ \App\Support\Assets::version('js/star-extra.js') }}"></script>
 <script src="{{ asset('js/star-map.js') }}?v={{ \App\Support\Assets::version('js/star-map.js') }}"></script>
 <script>
   var canvas = document.getElementById('sky');
   NefisStarMap.draw(canvas, {
     date: @json($sky['date']), time: @json($sky['time']), tzOffset: @json($sky['tz'] ?? 4),
     lat: @json((float) $sky['lat']), lon: @json((float) $sky['lon']),
-    shape: @json($shape), style: @json($style), ring: @json($ring), size: 3000
+    shape: @json($shape), style: @json($style), ring: @json($ring),
+    /* Exactly what was ordered: the switches travel on the order line. */
+    lines: @json($look['lines']), labels: @json($look['labels']),
+    milkyWay: @json($look['milky']), heart: @json($look['heart']),
+    size: Math.min(canvas.width, canvas.height),
+    box: { x: 0, y: 0, w: canvas.width, h: canvas.height }
   });
   document.getElementById('save').addEventListener('click', function(){
     canvas.toBlob(function(b){

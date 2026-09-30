@@ -125,8 +125,9 @@
   function clipShape(ctx, shape, cx, cy, r, box) {
     ctx.beginPath();
 
-    if (shape === 'full' && box) {
-      /* Not a disc at all: the sky covers the whole card. */
+    if ((shape === 'full' || shape === 'rectangle') && box) {
+      /* Not a disc at all: the sky fills its window to the corners. 'full'
+         then washes into the page underneath; 'rectangle' keeps its edge. */
       ctx.rect(box.x, box.y, box.w, box.h);
 
       return;
@@ -253,9 +254,12 @@
     var size = opts.size || (canvas ? Math.min(canvas.width, canvas.height) : 1000);
     var colours = styleOf(opts.style);
     var full = opts.shape === 'full';
+    /* Both of these fill their window to the corners; only 'full' fades into
+       the page. Neither has room for a graduated ring around a disc. */
+    var boxed = full || opts.shape === 'rectangle';
     /* `ring` was once simply on or off; the three named strengths came later. */
     var ringKind = opts.ring === true ? 'degrees' : (opts.ring === false ? 'none' : (opts.ring || 'degrees'));
-    if (full || opts.shape === 'heart') {
+    if (boxed || opts.shape === 'heart') {
       ringKind = 'none';
     }
     var withRing = ringKind !== 'none';
@@ -266,9 +270,11 @@
     /* A full-bleed sky is drawn across the whole window, and the circle it
        would have had still sets how much of the sky is shown. */
     var box = opts.box || { x: cx - size / 2, y: cy - size / 2, w: size, h: size };
-    if (full) {
+    if (boxed) {
+      /* Enough sky to reach every corner, with the zenith a little above the
+         middle the way a chart on a wall is read. */
       r = Math.max(box.w, box.h) * 0.62;
-      cy = box.y + box.h * 0.34;
+      cy = box.y + box.h * (full ? 0.34 : 0.5);
       cx = box.x + box.w / 2;
     }
 

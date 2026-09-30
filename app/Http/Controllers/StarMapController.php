@@ -21,14 +21,37 @@ class StarMapController extends Controller
         abort_unless(filled($item->star_map), 404);
 
         $slot = $item->product?->photoSlots->first(fn ($s) => $s->isSky());
+        $sky = $item->star_map;
+
+        /* The design's own shape, not a disc for everything: a full-bleed or
+           rectangular sky printed as a circle is not the box that was sold. */
+        $shape = in_array($slot?->shape, ['heart', 'full', 'rectangle'], true) ? $slot->shape : 'circle';
+        $boxed = $shape === 'full' || $shape === 'rectangle';
+
+        /* A window that fills its shape is printed at its own proportions;
+           a disc on a square. 3000 px on the long side either way. */
+        $side = 3000;
+        $w = max(1, (int) ($slot?->width ?: $side));
+        $h = max(1, (int) ($slot?->height ?: $side));
+        $long = max($w, $h);
 
         return view('admin.star-print', [
             'item' => $item,
-            'sky' => $item->star_map,
-            'shape' => $slot?->shape === 'heart' ? 'heart' : 'circle',
+            'sky' => $sky,
+            'shape' => $shape,
             'style' => $slot?->sky_style ?: 'night',
-            'ring' => $slot ? (bool) $slot->sky_ring : true,
-            'coordinates' => Sky::coordinates((float) $item->star_map['lat'], (float) $item->star_map['lon']),
+            // The saved column is always true; the strength is the real setting.
+            'ring' => $slot?->sky_ring_kind ?: 'degrees',
+            // What the customer actually switched on, not the library's defaults.
+            'look' => [
+                'lines' => (bool) ($sky['lines'] ?? true),
+                'labels' => (bool) ($sky['labels'] ?? false),
+                'milky' => (bool) ($sky['milky'] ?? false),
+                'heart' => (bool) ($sky['heart'] ?? false),
+            ],
+            'width' => $boxed ? (int) round($side * $w / $long) : $side,
+            'height' => $boxed ? (int) round($side * $h / $long) : $side,
+            'coordinates' => Sky::coordinates((float) $sky['lat'], (float) $sky['lon']),
         ]);
     }
 }

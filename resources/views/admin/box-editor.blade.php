@@ -615,13 +615,16 @@
      the customer's own night replaces it on the shop page. */
   function drawSkyArea(p){
     if (!window.NefisStarMap) return false;
-    var d = p.shape === 'full' ? Math.max(p.width, p.height) : Math.min(p.width, p.height);
+    var boxed = p.shape === 'full' || p.shape === 'rectangle';
+    var d = boxed ? Math.max(p.width, p.height) : Math.min(p.width, p.height);
     ctx.save();
     ctx.translate(p.x + p.width / 2, p.y + p.height / 2);
     ctx.rotate(rad(p.rotation || 0));
     window.NefisStarMap.draw(ctx, {
       date: '2026-02-14', time: '21:30', tzOffset: 4, lat: 40.3777, lon: 49.8920,
-      shape: p.shape === 'heart' ? 'heart' : 'circle',
+      /* The preview must show what the design is, not a disc for everything:
+         a full-bleed sky and a rectangular one look nothing like a circle. */
+      shape: p.shape === 'heart' ? 'heart' : (boxed ? p.shape : 'circle'),
       style: p.sky_style || 'night', ring: p.sky_ring_kind || 'degrees',
       lines: p.sky_lines !== false, labels: !! p.sky_labels, milkyWay: !! p.sky_milky, heart: !! p.sky_heart,
       size: d, radius: d / 2, cx: 0, cy: 0, page: false,
@@ -1299,7 +1302,7 @@
         h += '<p class="hint">Müştəri tarixi, saatı və yeri seçir — o gecə o yerin üstündəki səma bura düşür. Yazılar (ad, koordinatlar) ayrıca mətn sahələridir.</p>';
         h += '<div class="row one">' + field('Forma', seg('shape', it.shape, [['ellipse', 'Dairə'], ['heart', 'Ürək'], ['rectangle', 'Düzbucaqlı'], ['full', 'Tam sahə']])) + '</div>';
         h += '<div class="row one">' + field('Rəng', seg('sky_style', it.sky_style || 'night', [['night', 'Gecə'], ['ink', 'Ağ üzərində qara'], ['paper', 'Ağ'], ['navy', 'Tünd mavi'], ['crimson', 'Al'], ['cream', 'Krem'], ['sky', 'Açıq mavi'], ['cosmos', 'Kosmos'], ['moss', 'Yaşıl duman']])) + '</div>';
-        if (it.shape !== 'full' && it.shape !== 'heart') {
+        if (it.shape === 'ellipse') {
           h += '<div class="row one">' + field('Halqa', seg('sky_ring_kind', it.sky_ring_kind || 'degrees', [['none', 'Yoxdur'], ['simple', 'Nazik'], ['degrees', 'Dərəcəli'], ['double', 'İkiqat']])) + '</div>';
         }
         h += '<h4>Başlanğıc görünüş</h4>';
