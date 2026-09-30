@@ -142,6 +142,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/asset', [BoxEditorController::class, 'uploadAsset'])->name('asset');
         Route::post('/kitabxana/{asset}', [BoxEditorController::class, 'useLibrary'])->whereNumber('asset')->name('library');
         Route::post('/kopyala', [BoxEditorController::class, 'copyAsset'])->name('copy');
+        Route::get('/sablonlar', [BoxEditorController::class, 'templates'])->name('templates');
+        Route::post('/sablon', [BoxEditorController::class, 'keepTemplate'])->name('template.keep');
+        Route::post('/sablon/isle', [BoxEditorController::class, 'useTemplate'])->name('template.use');
+        Route::delete('/sablon/{template}', [BoxEditorController::class, 'forgetTemplate'])->whereNumber('template')->name('template.forget');
         Route::post('/visual', [BoxEditorController::class, 'uploadVisual'])->name('visual');
         Route::post('/font', [BoxEditorController::class, 'uploadFont'])->name('font');
     });

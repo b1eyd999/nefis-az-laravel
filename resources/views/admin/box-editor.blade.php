@@ -163,6 +163,14 @@
   .pick span{ font-size:11.5px; padding:.35rem .4rem; background:#fff; border-top:1px solid var(--line);
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--ink-2); }
   .sheet-empty{ text-align:center; color:var(--muted); font-size:13px; line-height:1.7; padding:1.5rem 1rem; }
+  .sheet-head input[type=text]{ border:1px solid var(--line); border-radius:.45rem; padding:.35rem .55rem; width:12rem; }
+  .tpl-h{ font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:600; margin:.25rem 0 .6rem; }
+  .tpl-h + .pick-grid{ margin-bottom:1.25rem; }
+  .pick .del{ position:absolute; top:.3rem; right:.3rem; width:22px; height:22px; border-radius:50%; border:none;
+    background:rgba(20,24,40,.6); color:#fff; font-size:12px; line-height:1; display:none; }
+  .pick{ position:relative; }
+  .pick:hover .del{ display:block; }
+  .pick small{ display:block; font-size:10.5px; color:var(--muted); padding:0 .4rem .35rem; background:#fff; }
   .drop-zone{ position:absolute; inset:0; border:3px dashed var(--accent); background:rgba(124,58,237,.06); display:grid; place-items:center; font-weight:600; color:var(--accent); font-size:16px; z-index:5; pointer-events:none; }
 </style>
 </head>
@@ -197,6 +205,7 @@
   <nav class="toolbar">
     <button class="tool" id="tool-asset" title="Şəffaf PNG qatları yüklə"><span class="ico">🖼️</span>Qat yüklə</button>
     <button class="tool" id="tool-library" title="Kitabxana: hazır çərçivə, naxış və naklyekalar"><span class="ico">📚</span>Kitabxana</button>
+    <button class="tool" id="tool-template" title="Şablon: hazır dizaynı bütövü ilə bu qutuya köçür"><span class="ico">⧉</span>Şablon</button>
     <button class="tool" id="tool-photo" title="Müştərinin şəkli üçün sahə"><span class="ico">👤</span>Foto sahəsi</button>
     <button class="tool" id="tool-shape" title="Forma: düzbucaqlı, dairə, xətt, ürək, ulduz"><span class="ico">◼</span>Forma</button>
     <button class="tool" id="tool-text" title="Mətn əlavə et (T)"><span class="ico">T</span>Mətn</button>
@@ -240,6 +249,20 @@
   </aside>
 </div>
 
+{{-- Whole designs, kept to start the next box from. --}}
+<div class="sheet" id="templates" hidden>
+  <div class="sheet-card">
+    <div class="sheet-head">
+      <h3>Şablonlar</h3>
+      <span class="spacer"></span>
+      <input type="text" id="tpl-name" placeholder="Bu dizaynın adı" maxlength="120">
+      <button class="btn small" id="tpl-keep">Şablon kimi saxla</button>
+      <button class="btn small" id="templates-close">Bağla</button>
+    </div>
+    <div class="sheet-body"><div id="tpl-list"></div></div>
+  </div>
+</div>
+
 {{-- The shelf: pictures uploaded once in the admin and put on any box. --}}
 <div class="sheet" id="library" hidden>
   <div class="sheet-card">
@@ -277,6 +300,11 @@
     /* The picture's own number takes the place of the nought at the end. */
     library: @json(route('box.library', [$product->slug, 0])),
     copy: @json(route('box.copy', $product->slug)),
+    templates: @json(route('box.templates', $product->slug)),
+    templateKeep: @json(route('box.template.keep', $product->slug)),
+    templateUse: @json(route('box.template.use', $product->slug)),
+    /* The template's own number takes the place of the nought at the end. */
+    templateForget: @json(route('box.template.forget', [$product->slug, 0])),
     visual: @json(route('box.visual', $product->slug)),
     font: @json(route('box.font', $product->slug))
   };
@@ -1596,6 +1624,131 @@
   }
 
   /* ================================================================
+     Templates — a whole design, laid on this box
+
+     The boxes look like one another, so the quickest way to the next design
+     is the last one. A template brings its pictures with it (copied into
+     this box's folder) and is NOT saved by itself: it is laid out, looked
+     at, changed, and saved by hand like any other work.
+     ================================================================ */
+  var tplSheet = document.getElementById('templates');
+  var tplList = document.getElementById('tpl-list');
+
+  function tplOpen(){ return ! tplSheet.hidden; }
+
+  function toggleTemplates(open){
+    tplSheet.hidden = ! open;
+    if (! open) {
+      return;
+    }
+    tplList.innerHTML = '<p class="sheet-empty">Yüklənir…</p>';
+    fetch(ROUTES.templates, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function(r){ return r.json(); })
+      .then(renderTemplates)
+      .catch(function(){ tplList.innerHTML = '<p class="sheet-empty">Siyahı açılmadı.</p>'; });
+  }
+
+  function tplCard(inner, attrs){
+    return '<button class="pick" ' + attrs + '>' + inner + '</button>';
+  }
+
+  function tplThumb(url){
+    return url ? '<img src="' + esc(url) + '" alt="">' : '<span style="height:112px;display:grid;place-items:center;font-size:26px;">⧉</span>';
+  }
+
+  function renderTemplates(data){
+    var h = '';
+
+    h += '<div class="tpl-h">Saxlanılmış şablonlar</div>';
+    h += (data.templates || []).length
+      ? '<div class="pick-grid">' + data.templates.map(function(t){
+          var parts = [];
+          if (t.counts.layers) parts.push(t.counts.layers + ' qat');
+          if (t.counts.shapes) parts.push(t.counts.shapes + ' forma');
+          if (t.counts.photos) parts.push(t.counts.photos + ' sahə');
+          if (t.counts.texts) parts.push(t.counts.texts + ' mətn');
+
+          return tplCard(tplThumb(t.url) + '<span>' + esc(t.name) + '</span><small>' + esc(parts.join(' · ')) + '</small>'
+            + '<span class="del" data-forget="' + t.id + '" title="Şablonu sil">✕</span>', 'data-template="' + t.id + '"');
+        }).join('') + '</div>'
+      : '<p class="sheet-empty">Hələ şablon yoxdur. Bir qutunu bitənə qədər çəkin, sonra yuxarıdan ad verib «Şablon kimi saxla» deyin.</p>';
+
+    h += '<div class="tpl-h">Başqa qutudan götür</div>';
+    h += (data.boxes || []).length
+      ? '<div class="pick-grid">' + data.boxes.map(function(b){
+          return tplCard(tplThumb(b.url) + '<span>' + esc(b.name) + '</span>', 'data-from="' + esc(b.slug) + '"');
+        }).join('') + '</div>'
+      : '<p class="sheet-empty">Başqa dizayn yoxdur.</p>';
+
+    tplList.innerHTML = h;
+  }
+
+  function layTemplate(body){
+    toast('Köçürülür…');
+    post(ROUTES.templateUse, body).then(function(design){
+      doc.layers = design.layers || [];
+      doc.shapes = design.shapes || [];
+      doc.photos = design.photos || [];
+      doc.texts = design.texts || [];
+      if (design.box_color) doc.box_color = design.box_color;
+      hiddenLayers = {};
+      doc.layers.forEach(function(l){ loadImage(l.url); });
+      selection = null;
+      toggleTemplates(false);
+      commit();
+      refresh();
+      toast('Şablon qoyuldu — dəyişib «Saxla» deyin');
+    }).catch(function(err){ toast(err.message, true); });
+  }
+
+  document.getElementById('tool-template').onclick = function(){ toggleTemplates(true); };
+  document.getElementById('templates-close').onclick = function(){ toggleTemplates(false); };
+  tplSheet.onclick = function(e){ if (e.target === tplSheet) toggleTemplates(false); };
+
+  document.getElementById('tpl-keep').onclick = function(){
+    var name = document.getElementById('tpl-name').value.trim();
+    if (! name) { toast('Şablona ad verin', true); return; }
+    if (snapshot() !== savedSnapshot) { toast('Əvvəlcə «Saxla» deyin — şablon saxlanılmış dizayndan götürülür', true); return; }
+
+    var fd = new FormData();
+    fd.append('name', name);
+    post(ROUTES.templateKeep, fd).then(function(){
+      document.getElementById('tpl-name').value = '';
+      toast('Şablon saxlanıldı');
+      toggleTemplates(true);
+    }).catch(function(err){ toast(err.message, true); });
+  };
+
+  tplList.onclick = function(e){
+    var forget = e.target.closest('[data-forget]');
+    if (forget) {
+      e.stopPropagation();
+      if (! confirm('Şablon silinsin? Qutulara toxunmur.')) return;
+      var fd = new FormData();
+      fd.append('_method', 'DELETE');
+      post(ROUTES.templateForget.replace(/\/0$/, '/' + forget.dataset.forget), fd)
+        .then(function(){ toast('Şablon silindi'); toggleTemplates(true); })
+        .catch(function(err){ toast(err.message, true); });
+
+      return;
+    }
+
+    var card = e.target.closest('.pick');
+    if (! card) {
+      return;
+    }
+    var full = doc.layers.length || doc.shapes.length || doc.photos.length || doc.texts.length;
+    if (full && ! confirm('Bu qutudakı hazırkı dizayn əvəz olunacaq. Davam edək?')) {
+      return;
+    }
+
+    var fd = new FormData();
+    if (card.dataset.template) fd.append('template', card.dataset.template);
+    if (card.dataset.from) fd.append('from', card.dataset.from);
+    layTemplate(fd);
+  };
+
+  /* ================================================================
      The library
      ================================================================ */
   var librarySheet = document.getElementById('library');
@@ -1900,8 +2053,8 @@
   document.addEventListener('keydown', function(e){
     /* While the shelf is open the editor's own shortcuts are not wanted: Escape
        closes the picker instead of dropping the selection behind it. */
-    if (libraryOpen()) {
-      if (e.key === 'Escape') { e.preventDefault(); toggleLibrary(false); }
+    if (libraryOpen() || tplOpen()) {
+      if (e.key === 'Escape') { e.preventDefault(); toggleLibrary(false); toggleTemplates(false); }
 
       return;
     }

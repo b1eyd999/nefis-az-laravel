@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DesignLayer;
 use App\Models\DesignShape;
+use App\Models\DesignTemplate;
 use App\Models\Font;
 use App\Models\LibraryAsset;
 use App\Models\PhotoSlot;
@@ -33,10 +34,27 @@ class BoxEditorController extends Controller
     {
         $this->authorizeAdmin($request);
 
+        $design = $this->designOf($product);
+
+        $fonts = Font::orderBy('name')->get()->map->toEditor()->values();
+        // The shelf of frames, patterns and stickers, ready for the picker.
+        $library = LibraryAsset::offered()->get()->map->toEditor()->values();
+
+        return view('admin.box-editor', compact('product', 'design', 'fonts', 'library'));
+    }
+
+    /**
+     * A design as the editor holds it: the artwork, the windows, the captions.
+     *
+     * The page is built from this, and so is a template — which is the same
+     * design, waiting to be laid on another box.
+     */
+    private function designOf(Product $product): array
+    {
         $product->load(['layers', 'shapes', 'photoSlots', 'textSlots']);
         $canvas = config('boxes.canvas');
 
-        $design = [
+        return [
             'canvas' => $canvas,
             'visual' => $product->preview_image ? Media::url($product->preview_image) : null,
             'box_color' => $product->box_color,
@@ -83,12 +101,119 @@ class BoxEditorController extends Controller
                 'link_key' => $s->link_key, 'auto' => $s->auto ?: 'none', 'locked' => (bool) $s->locked,
             ])->values(),
         ];
+    }
 
-        $fonts = Font::orderBy('name')->get()->map->toEditor()->values();
-        // The shelf of frames, patterns and stickers, ready for the picker.
-        $library = LibraryAsset::offered()->get()->map->toEditor()->values();
+    /**
+     * The shelf the editor's "Şablon" button opens: designs kept aside, and
+     * every other box whose design can simply be borrowed whole.
+     */
+    public function templates(Request $request, Product $product): JsonResponse
+    {
+        $this->authorizeAdmin($request);
 
-        return view('admin.box-editor', compact('product', 'design', 'fonts', 'library'));
+        $boxes = Product::query()
+            ->where('id', '!=', $product->id)
+            ->where(fn ($q) => $q->has('layers')->orHas('shapes')->orHas('photoSlots')->orHas('textSlots'))
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Product $p) => [
+                'slug' => $p->slug,
+                'name' => $p->name,
+                'url' => $p->catalogImage() ? Media::url($p->catalogImage()) : null,
+            ])->values();
+
+        return response()->json([
+            'templates' => DesignTemplate::with('product')->orderByDesc('id')->get()->map->toEditor()->values(),
+            'boxes' => $boxes,
+        ]);
+    }
+
+    /** Puts this box's design on the shelf, under a name of its own. */
+    public function keepTemplate(Request $request, Product $product): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+        $data = $request->validate(['name' => ['required', 'string', 'max:120']]);
+
+        $design = $this->designOf($product);
+        abort_if(
+            ! $design['layers']->count() && ! $design['shapes']->count()
+                && ! $design['photos']->count() && ! $design['texts']->count(),
+            422,
+            'Bu qutuda hələ dizayn yoxdur.'
+        );
+
+        $template = DesignTemplate::create([
+            'name' => $data['name'],
+            'product_id' => $product->id,
+            'preview' => $product->catalogImage(),
+            'payload' => self::templatePayload($design),
+        ]);
+
+        return response()->json($template->toEditor());
+    }
+
+    /**
+     * Lays a kept design, or another box's design, on this one.
+     *
+     * The pictures come along as copies in this box's own folder: a design
+     * may only point at its own, and two boxes sharing one file would mean
+     * deleting one empties the other.
+     */
+    public function useTemplate(Request $request, Product $product): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+        $data = $request->validate([
+            'template' => ['nullable', 'integer', 'exists:design_templates,id'],
+            'from' => ['nullable', 'string', 'exists:products,slug'],
+        ]);
+
+        if (! empty($data['template'])) {
+            $design = (array) DesignTemplate::findOrFail($data['template'])->payload;
+        } elseif (! empty($data['from'])) {
+            $design = self::templatePayload($this->designOf(Product::where('slug', $data['from'])->firstOrFail()));
+        } else {
+            abort(422, 'Şablon seçilməyib.');
+        }
+
+        $disk = Storage::disk('public');
+        $design['layers'] = collect($design['layers'] ?? [])->map(function (array $layer) use ($product, $disk) {
+            $source = (string) ($layer['image'] ?? '');
+            if (! Str::startsWith($source, 'boxes/') || Str::contains($source, '..') || ! $disk->exists($source)) {
+                return null;                // the box it came from has been cleared out
+            }
+
+            $target = Str::startsWith($source, $product->assetDirectory() . '/')
+                ? $source
+                : $product->assetDirectory() . '/copy-' . Str::lower(Str::random(10)) . '.' . Str::afterLast($source, '.');
+
+            if ($target !== $source) {
+                $disk->copy($source, $target);
+            }
+
+            return ['image' => $target, 'url' => Media::url($target)] + $layer;
+        })->filter()->values()->all();
+
+        return response()->json($design);
+    }
+
+    public function forgetTemplate(Request $request, Product $product, DesignTemplate $template): JsonResponse
+    {
+        $this->authorizeAdmin($request);
+        $template->delete();
+
+        return response()->json(['ok' => true]);
+    }
+
+    /** A design without the things that belong to one box only. */
+    private static function templatePayload(array $design): array
+    {
+        return [
+            'box_color' => $design['box_color'] ?? null,
+            'layers' => collect($design['layers'])->values()->all(),
+            'shapes' => collect($design['shapes'])->values()->all(),
+            'photos' => collect($design['photos'])->values()->all(),
+            'texts' => collect($design['texts'])->values()->all(),
+        ];
     }
 
     public function save(Request $request, Product $product): JsonResponse
