@@ -34,7 +34,9 @@
   .sale-in{ display:flex; flex-direction:column; gap:.1rem; min-width:0; }
   .sale-in b{ font-size:.8125rem; font-weight:600; line-height:1.35; }
   .sale-in i{ font-style:normal; font-size:.6875rem; color:var(--cocoa-faint); }
-  .sale-x{ position:absolute; top:.25rem; right:.4rem; border:0; background:none; color:var(--cocoa-faint);
+  /* Big enough to hit with a thumb: it used to be fifteen pixels wide. */
+  .sale-x{ position:absolute; top:0; right:0; width:2.4rem; height:2.4rem; border:0; background:none; color:var(--cocoa-faint);
+    display:flex; align-items:center; justify-content:center;
     font-size:1rem; line-height:1; cursor:pointer; padding:.15rem; }
   .sale-x:hover{ color:var(--cocoa); }
   /* On a phone it sits beside the chat and Instagram buttons, not on top of

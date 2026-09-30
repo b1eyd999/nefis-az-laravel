@@ -282,9 +282,15 @@
   }
   .auth-card .foot-link{ text-align:center; margin-top:1.5rem; font-size:.9375rem; color:var(--cocoa-soft); }
   .auth-card .foot-link a{ color:var(--gold-deep); font-weight:600; }
-  .checkbox-row{ display:flex; align-items:center; gap:.6rem; margin-bottom:1.25rem; }
+  .checkbox-row{ display:flex; align-items:center; gap:.6rem; margin-bottom:1.25rem; flex-wrap:wrap; }
   .checkbox-row input{ width:1.1rem; height:1.1rem; }
-  .checkbox-row label{ margin:0; font-weight:400; }
+  /* The tick and its words stay together; anything beside them (the "forgot
+     your password?" link) drops to its own line on a narrow phone rather
+     than squeezing the label into two. */
+  .checkbox-row label{ margin:0; font-weight:400; white-space:nowrap; }
+  @media (max-width: 420px){
+    .checkbox-row a{ flex-basis:100%; margin-left:0 !important; }
+  }
 
   /* ---------- hero ---------- */
   .hero{ position:relative; padding:3rem 0 5rem; overflow:hidden; }
@@ -1092,6 +1098,13 @@
 }
 .sky-switch span{ min-width:0; }
 @media (max-width: 560px){ .sky-switches{ grid-template-columns:1fr; } }
+
+/* A finger is not a mouse pointer: on a phone the rows that are tapped get
+   the height a thumb needs, without moving anything on a desktop. */
+@media (max-width: 560px){
+  .sky-switch{ padding:.6rem 0; font-size:.95rem; }
+  .sky-switch input{ width:1.25rem; height:1.25rem; }
+}
 
 /* The shop's own calendar (public/js/date-picker.js). The browser's date
    panel cannot be styled at all, so the field below is ours: a dark band with

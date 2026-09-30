@@ -265,6 +265,8 @@
   .choc-brand:hover{ border-color:var(--gold); color:var(--cocoa); }
   .choc-brand.active{ background:var(--cocoa); color:var(--cream); border-color:var(--cocoa); }
   .choc-brand:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+  /* Thumb-sized on a phone. */
+  @media (max-width: 560px){ .choc-brand{ padding:.55rem .85rem; } }
   /* The owner's top brands (Milka, Alpen Gold…): orange, with a slow glow. */
   .choc-brand.top{ background:linear-gradient(135deg, #FB923C, #EA580C); border-color:#F97316; color:#fff; box-shadow:0 0 10px rgba(249,115,22,.4); }
   .choc-brand.top span{ opacity:.85; }
@@ -390,7 +392,9 @@
         @php $firstScene = $viewData[0]['scene'] ?? null; @endphp
         <div class="stage" id="stage" @if($firstScene) style="aspect-ratio: {{ $firstScene['w'] }} / {{ $firstScene['h'] }};" @endif>
           <canvas id="preview-canvas"></canvas>
-          @if($photoSlots->isNotEmpty())
+          {{-- Only where a photograph is actually wanted: a design whose only
+               window is the sky was telling the customer to upload one. --}}
+          @if($needsPhoto)
             <div class="drop-hint" id="drop-hint">{{ __('Öncə') }} <span class="dh-wide">{{ __('sağdan') }}</span><span class="dh-narrow">{{ __('aşağıdan') }}</span>&nbsp;{{ __('şəklinizi yükləyin') }}</div>
           @endif
           @if(count($viewData) > 1)
