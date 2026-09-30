@@ -12,6 +12,7 @@ use App\Http\Controllers\Phone\LiveController as PhoneLive;
 use App\Http\Controllers\Phone\MoneyController as PhoneMoney;
 use App\Http\Controllers\Phone\OrderController as PhoneOrders;
 use App\Http\Controllers\Phone\StockController as PhoneStock;
+use App\Http\Controllers\Phone\TaskController as PhoneTasks;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\SceneEditorController;
 use App\Http\Controllers\SitemapController;
@@ -113,6 +114,12 @@ Route::get('/admin-ulduz/{item}', [\App\Http\Controllers\StarMapController::clas
 Route::middleware(['auth', 'locale', 'staff'])->prefix('admin-phone')->name('phone.')->group(function () {
     Route::get('/', [PhoneOrders::class, 'index'])->name('orders.index');
     Route::get('/sifarish/{order}', [PhoneOrders::class, 'show'])->whereNumber('order')->name('orders.show');
+
+    // The work board and the notes: everyone who works here keeps them.
+    Route::get('/isler', [PhoneTasks::class, 'index'])->name('tasks.index');
+    Route::post('/isler', [PhoneTasks::class, 'store'])->name('tasks.store');
+    Route::patch('/isler/{task}', [PhoneTasks::class, 'update'])->whereNumber('task')->name('tasks.update');
+    Route::delete('/isler/{task}', [PhoneTasks::class, 'destroy'])->whereNumber('task')->name('tasks.destroy');
     Route::post('/sifarish/{order}/status', [PhoneOrders::class, 'status'])->whereNumber('order')->name('orders.status');
     Route::post('/sifarish/{order}/odenis-tesdiq', [PhoneOrders::class, 'confirmPayment'])
         ->whereNumber('order')->name('orders.pay');

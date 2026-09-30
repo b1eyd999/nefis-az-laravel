@@ -84,6 +84,15 @@
     </svg>
     Sifarişlər
   </a>
+  {{-- The board belongs to everyone who works here, not only to the owner. --}}
+  <a class="ph-tab {{ $tab === 'tasks' ? 'on' : '' }}" href="{{ route('phone.tasks.index') }}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M8 3v3M16 3v3"/><path d="m8.5 13.5 2.2 2.2 4.3-4.6"/>
+    </svg>
+    İşlər
+    @php $late = \App\Models\Task::tasks()->open()->whereNotNull('due_at')->where('due_at', '<', now())->count(); @endphp
+    @if($late)<span class="ph-badge">{{ $late }}</span>@endif
+  </a>
   @if($owner)
     <a class="ph-tab {{ $tab === 'money' ? 'on' : '' }}" href="{{ route('phone.money.index') }}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
