@@ -319,11 +319,37 @@ class SiteSettings extends Page implements HasActions, HasForms
                     ->schema([
                         Forms\Components\TextInput::make('geoapify_key')
                             ->label('Geoapify API key')
-                            ->password()->revealable()->autocomplete(false)
+                            ->autocomplete(false)
                             ->maxLength(190)
-                            ->helperText('Şifrələnmiş saxlanılır və brauzerə çıxmır. '
-                                . 'Xəritə məlumatları: © OpenStreetMap — bu sətir çapda da olmalıdır.')
+                            ->helperText(fn () => \App\Support\MapImage::ready()
+                                ? 'Hal-hazırda yazılıb. Şifrələnmiş saxlanılır və brauzerə çıxmır.'
+                                : 'Hal-hazırda YAZILMAYIB — xəritə pəncərələri boş görünür.')
                             ->columnSpanFull(),
+                        Forms\Components\Actions::make([
+                            Forms\Components\Actions\Action::make('test_geoapify')
+                                ->label('Açarı yoxla')
+                                ->icon('heroicon-m-map-pin')
+                                ->color('gray')
+                                ->action(function () {
+                                    /* Asked of the service itself, with the key
+                                       as it is stored now — so the answer is
+                                       about the shop, not about this form. */
+                                    $ready = \App\Support\MapImage::ready();
+                                    $found = $ready ? \App\Support\MapImage::search('Sahil metro Bakı') : [];
+
+                                    \Filament\Notifications\Notification::make()
+                                        ->title($found
+                                            ? 'Açar işləyir'
+                                            : ($ready ? 'Açar yazılıb, amma cavab gəlmədi' : 'Açar yazılmayıb'))
+                                        ->body($found
+                                            ? 'Tapıldı: ' . $found[0]['name']
+                                            : ($ready
+                                                ? 'Geoapify cavab vermir. Açarı kabinetdən bir də yoxlayın.'
+                                                : 'Yuxarıdakı sahəyə açarı yazıb səhifəni yadda saxlayın.'))
+                                        ->status($found ? 'success' : 'warning')
+                                        ->send();
+                                }),
+                        ])->columnSpanFull(),
                     ])
                     ->collapsible(),
                 Forms\Components\Section::make('Əlaqə')

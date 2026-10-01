@@ -210,6 +210,40 @@ class PlaceMapTest extends TestCase
         $this->assertSame('secret-key-123', MapImage::key());
     }
 
+    public function test_the_owner_saves_the_key_on_the_settings_page(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_admin' => true]);
+        $this->actingAs($admin);
+
+        \Livewire\Livewire::test(\App\Filament\Pages\SiteSettings::class)
+            ->fillForm(['geoapify_key' => 'a-key-from-the-cabinet'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        // Read back the way the shop reads it, through the cache and the
+        // decryption, not straight off the row.
+        $this->assertSame('a-key-from-the-cabinet', MapImage::key());
+        $this->assertTrue(MapImage::ready());
+
+        // And the page shows it again when it is opened next.
+        \Livewire\Livewire::test(\App\Filament\Pages\SiteSettings::class)
+            ->assertFormSet(['geoapify_key' => 'a-key-from-the-cabinet']);
+    }
+
+    public function test_clearing_the_field_takes_the_key_away(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_admin' => true]);
+        MapImage::saveKey('something');
+        $this->actingAs($admin);
+
+        \Livewire\Livewire::test(\App\Filament\Pages\SiteSettings::class)
+            ->fillForm(['geoapify_key' => ''])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertNull(MapImage::key());
+    }
+
     public function test_the_window_stays_quiet_when_no_key_is_set(): void
     {
         MapImage::saveKey('');
