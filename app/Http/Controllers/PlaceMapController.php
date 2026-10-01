@@ -54,6 +54,21 @@ class PlaceMapController extends Controller
         ]);
     }
 
+    /** One square of the map, for the window the customer drags. */
+    public function tile(string $style, int $z, int $x, int $y): Response
+    {
+        $path = MapImage::tile($style, $z, $x, $y);
+
+        if ($path === null) {
+            return response('', 404);
+        }
+
+        return response(Storage::disk('local')->get($path), 200, [
+            'Content-Type' => 'image/png',
+            'Cache-Control' => 'public, max-age=31536000, immutable',
+        ]);
+    }
+
     /** Places anywhere in the world matching what the customer typed. */
     public function search(Request $request): JsonResponse
     {

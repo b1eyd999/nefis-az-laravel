@@ -618,14 +618,37 @@
               </label>
             @endif
 
-            @if(in_array('zoom', $mapOffers, true))
-              <div class="range-row" style="margin-top:.7rem;">
-                <span class="lbl">{{ __('Yaxınlıq') }}</span>
-                <input type="range" id="map-zoom" name="map_zoom" min="{{ \App\Support\StreetMap::ZOOM_MIN }}"
-                       max="{{ \App\Support\StreetMap::ZOOM_MAX }}"
-                       value="{{ old('map_zoom', $mapLook['zoom']) }}">
+            {{-- The frame itself: the streets, cut to the shape of the window on
+                 the box, with the mark standing still in the middle. --}}
+            <div class="map-frame-wrap" id="map-frame-wrap" hidden>
+              <div class="map-frame look-{{ $mapSlot->map_style ?: 'ink' }} @if(in_array($mapSlot->shape, ['ellipse', 'heart', 'home'], true)) is-shaped @endif"
+                   id="map-frame"
+                   style="aspect-ratio: {{ max(1, (int) $mapSlot->width) }} / {{ max(1, (int) $mapSlot->height) }};
+                          @if($mapSlot->shape === 'ellipse') clip-path: ellipse(50% 50%);
+                          @elseif($mapSlot->shape === 'heart') clip-path: url(#map-clip-heart);
+                          @elseif($mapSlot->shape === 'home') clip-path: url(#map-clip-home); @endif">
+                <div class="map-frame-map" id="map-frame-map"></div>
+                <div class="map-frame-mark" id="map-frame-mark">
+                  @include('partials.map-mark', ['mark' => $mapLook['marker'] ?? 'heart'])
+                </div>
               </div>
-            @endif
+              <p class="map-frame-hint">{{ in_array('zoom', $mapOffers, true)
+                  ? __('Xəritəni sürüşdürün, + və − ilə yaxınlaşdırın — çərçivədə qalan qutuya düşəcək.')
+                  : __('Xəritəni sürüşdürün — çərçivədə qalan qutuya düşəcək.') }}</p>
+              <input type="hidden" name="map_zoom" id="map-zoom" value="{{ old('map_zoom', $mapLook['zoom']) }}">
+            </div>
+
+            {{-- The two outlines a rectangle cannot describe. --}}
+            <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+              <defs>
+                <clipPath id="map-clip-heart" clipPathUnits="objectBoundingBox">
+                  <path d="M0.5,1 C0.1,0.72 0,0.5 0,0.32 C0,0.14 0.14,0 0.3,0 C0.4,0 0.47,0.06 0.5,0.12 C0.53,0.06 0.6,0 0.7,0 C0.86,0 1,0.14 1,0.32 C1,0.5 0.9,0.72 0.5,1 Z"/>
+                </clipPath>
+                <clipPath id="map-clip-home" clipPathUnits="objectBoundingBox">
+                  <path d="M0.5,0 L1,0.34 L1,1 L0,1 L0,0.34 Z"/>
+                </clipPath>
+              </defs>
+            </svg>
 
             @if(in_array('marker', $mapOffers, true))
               <p class="sky-lbl" style="margin-top:.7rem;">{{ \App\Support\StreetMap::choiceLabels()['marker'] }}</p>
@@ -948,6 +971,7 @@
 @endif
 @if($mapSlot)
   <script src="{{ asset('js/street-map.js') }}?v={{ \App\Support\Assets::version('js/street-map.js') }}"></script>
+  <script src="{{ asset('js/map-frame.js') }}?v={{ \App\Support\Assets::version('js/map-frame.js') }}"></script>
 @endif
 @if($cutsFaces)
 <script defer src="{{ asset('js/face-cutout.js') }}?v={{ \App\Support\Assets::version('js/face-cutout.js') }}"></script>
@@ -2174,6 +2198,37 @@
     hits.hidden = false;
   }
 
+  var frame = null;
+  var frameWrap = document.getElementById('map-frame-wrap');
+  var frameMap = document.getElementById('map-frame-map');
+
+  function showFrame(lat, lon){
+    if (!frameWrap || !window.NefisMapFrame) return;
+    frameWrap.hidden = false;
+    if (frame) {
+      frame.go(lat, lon, zoomEl ? +zoomEl.value : undefined);
+
+      return;
+    }
+    frame = window.NefisMapFrame.mount(frameMap, {
+      lat: lat, lon: lon, zoom: zoomEl ? +zoomEl.value : {{ $mapLook['zoom'] }},
+      canZoom: @json(in_array('zoom', $mapOffers, true)),
+      minZoom: {{ \App\Support\StreetMap::ZOOM_MIN }},
+      maxZoom: {{ \App\Support\StreetMap::ZOOM_MAX }},
+      /* Written out by hand: the route refuses the braces a tile layer needs. */
+      tiles: @json(url('/lokasiya/kafel/' . ($mapSlot->map_style ?: 'ink')) . '/{z}/{x}/{y}'),
+      /* What he leaves in the frame is what the box is made from. */
+      onMove: function(lat, lon, zoom){
+        latEl.value = lat;
+        lonEl.value = lon;
+        if (zoomEl) zoomEl.value = zoom;
+        var pen = window.NefisStarMap || window.NefisStreetMap;
+        if (chosen && pen) chosen.textContent = pen.coordinates(lat, lon);
+        push();
+      }
+    });
+  }
+
   function pick(hit){
     hits.hidden = true;
     search.value = hit.name;
@@ -2184,6 +2239,7 @@
     if (chosen && pen) {
       chosen.textContent = pen.coordinates(hit.lat, hit.lon);
     }
+    showFrame(hit.lat, hit.lon);
     push();
   }
 
@@ -2222,14 +2278,30 @@
     if (!block.contains(e.target)) hits.hidden = true;
   });
 
+  var frameMark = document.getElementById('map-frame-mark');
+  var MARK_SHAPES = @json(collect(\App\Support\StreetMap::MARKS)
+      ->mapWithKeys(fn ($m) => [$m => trim(view('partials.map-mark', ['mark' => $m])->render())])
+      ->all());
+
+  function paintMark(){
+    if (!frameMark) return;
+    var picked = (markEls.filter(function(e){ return e.checked; })[0] || {}).value;
+    var shown = pinEl && ! pinEl.checked ? '' : (MARK_SHAPES[picked] || frameMark.innerHTML);
+    if (picked || pinEl) frameMark.innerHTML = shown;
+  }
+
   [zoomEl, dateEl, timeEl, withTimeEl, pinEl].concat(markEls).forEach(function(el){
     if (!el) return;
     el.addEventListener('input', push);
     el.addEventListener('change', push);
+    el.addEventListener('change', paintMark);
   });
 
   /* A page that came back with its answers still filled in draws them. */
-  if (latEl.value !== '') push();
+  if (latEl.value !== '') {
+    showFrame(parseFloat(latEl.value), parseFloat(lonEl.value));
+    push();
+  }
 })();
 
 /* The running price: the box, the chosen bar, times how many. */

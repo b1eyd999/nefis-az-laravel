@@ -217,6 +217,21 @@ class PlaceMapTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_the_printed_picture_is_asked_for_one_zoom_lower(): void
+    {
+        /* The service counts a picture's zoom in squares twice the size of a
+           slippy map's, so the same ground sits one level down. Measured
+           against the live service, not assumed; without this the box prints
+           twice the ground the customer framed. */
+        Storage::fake('local');
+        MapImage::saveKey('test-key');
+        Http::fake(['maps.geoapify.com/*' => Http::response('PNGBYTES', 200, ['Content-Type' => 'image/png'])]);
+
+        MapImage::fetch(40.3777, 49.8920, 16, 'ink', 400, 500);
+
+        Http::assertSent(fn ($request) => (int) $request['zoom'] === 15);
+    }
+
     public function test_the_key_never_reaches_the_browser(): void
     {
         Storage::fake('local');

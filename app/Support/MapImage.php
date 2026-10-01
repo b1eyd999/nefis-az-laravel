@@ -92,14 +92,21 @@ class MapImage
         $width = max(80, min(self::MAX_SIDE, $width));
         $height = max(80, min(self::MAX_SIDE, $height));
         $scale = max(1, min(2, $scale));
+
+        /* The zoom the customer framed is the one a slippy map counts, in
+           squares of 256 px. The picture service counts in squares of 512,
+           so the same ground is one level lower there — measured, not
+           assumed: a tile at 16 is the picture at 15. Send the picture's
+           number, or the box prints twice the ground he framed. */
         $zoom = StreetMap::zoom($zoom);
+        $drawn = max(0, min(20, $zoom - 1));
         $lat = round($lat, 5);
         $lon = round($lon, 5);
 
         /* Named after the drawing, not after the shop's word for it, so the
            two looks that share one drawing share one file as well. */
         $name = self::DIRECTORY . '/' . implode('-', [
-            self::STYLES[$style], $zoom, str_replace('.', '_', (string) $lat), str_replace('.', '_', (string) $lon),
+            self::STYLES[$style], $drawn, str_replace('.', '_', (string) $lat), str_replace('.', '_', (string) $lon),
             $width, $height, $scale,
         ]) . '.png';
 
@@ -119,11 +126,62 @@ class MapImage
                 'width' => $width,
                 'height' => $height,
                 'center' => 'lonlat:' . $lon . ',' . $lat,
-                'zoom' => $zoom,
+                'zoom' => $drawn,
                 'scaleFactor' => $scale,
                 'format' => 'png',
                 'apiKey' => $key,
             ]);
+        } catch (Throwable) {
+            return null;
+        }
+
+        if (! $answer->successful() || ! str_starts_with((string) $answer->header('Content-Type'), 'image/')) {
+            return null;
+        }
+
+        $disk->put($name, $answer->body());
+
+        return $name;
+    }
+
+    /**
+     * One square of the map, as a file on disk.
+     *
+     * A map the customer can drag is made of these; the shop keeps every
+     * square it has already paid for, so dragging back over the same streets
+     * costs nothing the second time.
+     */
+    public static function tile(string $style, int $z, int $x, int $y): ?string
+    {
+        $style = isset(self::STYLES[$style]) ? $style : 'ink';
+        $drawing = self::STYLES[$style];
+
+        if ($z < StreetMap::ZOOM_MIN || $z > StreetMap::ZOOM_MAX) {
+            return null;
+        }
+
+        $side = 2 ** $z;
+        if ($x < 0 || $y < 0 || $x >= $side || $y >= $side) {
+            return null;
+        }
+
+        $name = self::DIRECTORY . '/tiles/' . $drawing . '/' . $z . '/' . $x . '/' . $y . '.png';
+
+        $disk = \Illuminate\Support\Facades\Storage::disk('local');
+        if ($disk->exists($name)) {
+            return $name;
+        }
+
+        $key = self::key();
+        if ($key === null) {
+            return null;
+        }
+
+        try {
+            $answer = Http::timeout(15)->get(
+                'https://maps.geoapify.com/v1/tile/' . $drawing . '/' . $z . '/' . $x . '/' . $y . '.png',
+                ['apiKey' => $key],
+            );
         } catch (Throwable) {
             return null;
         }

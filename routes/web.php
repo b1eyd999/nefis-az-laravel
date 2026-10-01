@@ -76,6 +76,9 @@ Route::middleware(['throttle:40,1', 'data'])->prefix('xerite')->name('map.')->gr
 Route::middleware(['throttle:60,1', 'data'])->prefix('lokasiya')->name('place.')->group(function () {
     Route::get('/sekil', [\App\Http\Controllers\PlaceMapController::class, 'image'])->name('image');
     Route::get('/axtar', [\App\Http\Controllers\PlaceMapController::class, 'search'])->name('search');
+    Route::get('/kafel/{style}/{z}/{x}/{y}', [\App\Http\Controllers\PlaceMapController::class, 'tile'])
+        ->where(['style' => '[a-z]+', 'z' => '[0-9]{1,2}', 'x' => '[0-9]+', 'y' => '[0-9]+'])
+        ->name('tile');
 });
 
 // ---------------------------------------------------------------------------
