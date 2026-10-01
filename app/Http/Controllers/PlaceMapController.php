@@ -60,11 +60,18 @@ class PlaceMapController extends Controller
         $q = trim((string) $request->validate(['q' => ['required', 'string', 'min:2', 'max:120']])['q']);
         $language = \App\Support\Locale::current();
 
-        $found = Cache::remember(
-            'place:search:' . $language . ':' . md5(mb_strtolower($q)),
-            now()->addDays(7),
-            fn () => MapImage::search($q, $language),
-        );
+        /* Only an answer is worth remembering. An empty one usually means the
+           key was not set yet or the service was down for a moment, and
+           keeping that for a week would outlive the problem by days. */
+        $where = 'place:search:' . $language . ':' . md5(mb_strtolower($q));
+        $found = Cache::get($where);
+
+        if (! is_array($found) || $found === []) {
+            $found = MapImage::search($q, $language);
+            if ($found !== []) {
+                Cache::put($where, $found, now()->addDays(7));
+            }
+        }
 
         return response()->json(['results' => $found]);
     }
