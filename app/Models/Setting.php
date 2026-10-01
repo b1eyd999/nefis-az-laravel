@@ -126,6 +126,14 @@ class Setting extends Model
 
     public const TELEGRAM_COURIER_CHAT = 'telegram_courier_chat';
 
+    /**
+     * A bot of its own for new accounts, so the owner hears a customer arrive
+     * without that message landing among the orders. The token is encrypted.
+     */
+    public const TELEGRAM_SIGNUP_TOKEN = 'telegram_signup_token';
+
+    public const TELEGRAM_SIGNUP_CHAT = 'telegram_signup_chat';
+
     /** The secret in the address Telegram calls when a courier taps a message. */
     public const TELEGRAM_HOOK_SECRET = 'telegram_hook_secret';
 

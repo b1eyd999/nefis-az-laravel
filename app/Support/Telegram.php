@@ -70,6 +70,76 @@ class Telegram
         Setting::put(Setting::TELEGRAM_COURIER_TOKEN, $token === '' ? '' : Crypt::encryptString($token));
     }
 
+    /**
+     * The bot that announces new accounts. Falls back to the shop's own bot,
+     * the way the couriers' one does, so a chat set without a second token
+     * still works.
+     */
+    public static function signupToken(): ?string
+    {
+        $stored = Setting::get(Setting::TELEGRAM_SIGNUP_TOKEN);
+        if (blank($stored)) {
+            return self::token();
+        }
+
+        try {
+            return Crypt::decryptString($stored);
+        } catch (Throwable) {
+            return self::token();
+        }
+    }
+
+    public static function saveSignupToken(?string $token): void
+    {
+        $token = trim((string) $token);
+        Setting::put(Setting::TELEGRAM_SIGNUP_TOKEN, $token === '' ? '' : Crypt::encryptString($token));
+    }
+
+    public static function signupChat(): string
+    {
+        return trim((string) Setting::get(Setting::TELEGRAM_SIGNUP_CHAT));
+    }
+
+    public static function signupOn(): bool
+    {
+        return filled(self::signupToken()) && self::signupChat() !== '';
+    }
+
+    /**
+     * Somebody has just opened an account.
+     *
+     * Said quietly and never in the customer's way: if the bot is not set up,
+     * or Telegram is down, the registration itself must not notice.
+     */
+    public static function signedUp(\App\Models\User $user): void
+    {
+        if (! self::signupOn()) {
+            return;
+        }
+
+        $all = \App\Models\User::count();
+
+        $lines = ['👤 <b>Yeni qeydiyyat</b>', ''];
+        foreach (array_filter([
+            '🗣' => $user->name,
+            '📞' => $user->phone,
+            '✉' => $user->email,
+        ]) as $icon => $value) {
+            $lines[] = $icon . ' ' . e($value);
+        }
+        $lines[] = '';
+        $lines[] = '🕐 ' . $user->created_at?->format('d.m.Y, H:i');
+        $lines[] = '👥 Mağazanın ' . $all . '-ci müştərisi';
+        $lines[] = '';
+        $lines[] = url('/admin/users/' . $user->id . '/edit');
+
+        try {
+            self::post('sendMessage', ['text' => implode("\n", $lines)], self::signupChat(), self::signupToken());
+        } catch (Throwable) {
+            // Nothing: a customer who has just signed up must not be shown this.
+        }
+    }
+
     /** The couriers' group, if the owner has set one up. */
     public static function courierChat(): string
     {

@@ -46,6 +46,9 @@ class AuthController extends Controller
             'password' => Hash::make($data['password']),
         ]);
 
+        // The owner hears it at once; a failure here never reaches the customer.
+        \App\Support\Telegram::signedUp($user);
+
         Auth::login($user);
         $request->session()->regenerate();
 

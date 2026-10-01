@@ -83,6 +83,8 @@ class SiteSettings extends Page implements HasActions, HasForms
             'telegram_chat' => Telegram::chat(),
             'telegram_courier_token' => Setting::get(Setting::TELEGRAM_COURIER_TOKEN) ? Telegram::courierToken() : null,
             'telegram_courier_chat' => Telegram::courierChat(),
+            'telegram_signup_token' => Setting::get(Setting::TELEGRAM_SIGNUP_TOKEN) ? Telegram::signupToken() : null,
+            'telegram_signup_chat' => Telegram::signupChat(),
             'chat_enabled' => Setting::get(Setting::CHAT_ENABLED) === '1',
             'chat_token' => ChatBot::token(),
             'chat_chat' => ChatBot::chat(),
@@ -140,6 +142,21 @@ class SiteSettings extends Page implements HasActions, HasForms
                         );
                         Notification::make()->success()->title('Tapıldı — indi "Saxla" düyməsini basın')
                             ->body('Botu kuryer qrupuna əlavə edib qrupda bir mesaj yazın, sonra bu düyməni basın.')->send();
+                    } catch (\RuntimeException $e) {
+                        Notification::make()->danger()->title($e->getMessage())->send();
+                    }
+                }),
+            Actions\Action::make('findSignupChat')
+                ->label('Telegram: qeydiyyat chat-ı')
+                ->icon('heroicon-o-user-plus')
+                ->color('gray')
+                ->action(function () {
+                    try {
+                        $this->data['telegram_signup_chat'] = Telegram::findChat(
+                            $this->data['telegram_signup_token'] ?: ($this->data['telegram_token'] ?? null),
+                        );
+                        Notification::make()->success()->title('Tapıldı — indi "Saxla" düyməsini basın')
+                            ->body('Bota "/start" yazın (və ya onu qrupa əlavə edib bir mesaj yazın), sonra bu düyməni basın.')->send();
                     } catch (\RuntimeException $e) {
                         Notification::make()->danger()->title($e->getMessage())->send();
                     }
@@ -459,6 +476,17 @@ class SiteSettings extends Page implements HasActions, HasForms
                         ->helperText('Sifarişin statusu "Hazırdır" olanda kuryerə ad, telefon, tarix, saat, ünvan və xəritə linki gedir. '
                             . 'Botu qrupa əlavə edin, qrupda bir mesaj yazın, sonra yuxarıdakı "Telegram: kuryer chat-ı" düyməsini basın. Boş buraxsanız, heç nə göndərilmir.')
                         ->rule('regex:/^-?\d*$/'),
+                    Forms\Components\TextInput::make('telegram_signup_token')
+                        ->label('Qeydiyyat botunun tokeni (istəyə görə)')
+                        ->password()->revealable()->autocomplete(false)
+                        ->helperText('Yeni hesablar üçün ayrıca bot: kim qeydiyyatdan keçibsə, '
+                            . 'adı, telefonu və e-poçtu bura gəlir — sifarişlərin arasında itmir. '
+                            . 'Boş qalsa, yuxarıdakı bot işlədilir.'),
+                    Forms\Components\TextInput::make('telegram_signup_chat')
+                        ->label('Qeydiyyat chat-ı')
+                        ->helperText('Boş buraxsanız, qeydiyyat haqqında heç nə göndərilmir. '
+                            . 'Yuxarıdakı "Telegram: qeydiyyat chat-ı" düyməsi özü tapır.')
+                        ->rule('regex:/^-?\d*$/'),
                     Forms\Components\TextInput::make('telegram_chat')
                             ->label('Chat ID')
                             ->placeholder('123456789')
@@ -564,6 +592,8 @@ class SiteSettings extends Page implements HasActions, HasForms
         Setting::put(Setting::TELEGRAM_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['telegram_chat'] ?? '')));
         Telegram::saveCourierToken($data['telegram_courier_token'] ?? '');
         Setting::put(Setting::TELEGRAM_COURIER_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['telegram_courier_chat'] ?? '')));
+        Telegram::saveSignupToken($data['telegram_signup_token'] ?? '');
+        Setting::put(Setting::TELEGRAM_SIGNUP_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['telegram_signup_chat'] ?? '')));
         ChatBot::saveToken($data['chat_token'] ?? '');
         Setting::put(Setting::CHAT_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['chat_chat'] ?? '')));
         Setting::put(Setting::CHAT_ENABLED, ! empty($data['chat_enabled']));
