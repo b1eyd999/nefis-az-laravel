@@ -230,6 +230,28 @@ class SiteSettings extends Page implements HasActions, HasForms
                             ->body('Gəlmədisə, spam qovluğunu da yoxlayın.')->persistent()->send()
                         : Notification::make()->danger()->title('Göndərilmədi')->body($error)->persistent()->send();
                 }),
+            Actions\Action::make('testSignup')
+                ->label('Qeydiyyat: test mesajı')
+                ->icon('heroicon-o-user-plus')
+                ->color('gray')
+                ->visible(fn () => Telegram::signupOn())
+                ->action(function () {
+                    /* Sent with the saved settings, not with what is typed on
+                       the page — so a "yes" here means the shop itself can do
+                       it, not just this form. */
+                    $sent = Telegram::post(
+                        'sendMessage',
+                        ['text' => '✅ Nefis: qeydiyyat bildirişləri işləyir. '
+                            . 'Kimsə hesab açan kimi bura yazacağam.'],
+                        Telegram::signupChat(),
+                        Telegram::signupToken(),
+                    );
+
+                    $sent
+                        ? Notification::make()->success()->title('Göndərildi — Telegram-a baxın')->send()
+                        : Notification::make()->danger()->title('Göndərilmədi')
+                            ->body('Əvvəlcə "Saxla", sonra tokeni və chat-ı yoxlayın.')->send();
+                }),
             Actions\Action::make('testMessage')
                 ->label('Telegram: test mesajı')
                 ->icon('heroicon-o-paper-airplane')
