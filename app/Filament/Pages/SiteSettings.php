@@ -334,19 +334,31 @@ class SiteSettings extends Page implements HasActions, HasForms
                                     /* Asked of the service itself, with the key
                                        as it is stored now — so the answer is
                                        about the shop, not about this form. */
-                                    $ready = \App\Support\MapImage::ready();
-                                    $found = $ready ? \App\Support\MapImage::search('Sahil metro Bakı') : [];
+                                    $r = \App\Support\MapImage::probe();
+
+                                    $title = match ($r['why']) {
+                                        'ok' => 'Açar işləyir',
+                                        'no-key' => 'Açar yazılmayıb',
+                                        'not-a-key' => 'Bu açar deyil — ehtimal ki, bütöv ünvan yapışdırılıb',
+                                        'unreachable' => 'Server Geoapify-ə çıxa bilmir',
+                                        'refused' => 'Geoapify açarı qəbul etmədi',
+                                        default => 'Cavab gəldi, amma boş',
+                                    };
+
+                                    $hint = match ($r['why']) {
+                                        'ok' => 'Tapıldı: ',
+                                        'no-key' => 'Yuxarıdakı sahəyə açarı yazıb səhifəni yadda saxlayın.',
+                                        'not-a-key' => 'Yalnız apiKey=-dən sonrakı hissəni yapışdırın: ',
+                                        'refused' => 'Kabinetdə açarı bir də yoxlayın. Servisin cavabı: ',
+                                        'unreachable' => 'Hostinq kənarə buünvana bağlana bilmir. Xəta: ',
+                                        default => 'Servisin cavabı: ',
+                                    };
 
                                     \Filament\Notifications\Notification::make()
-                                        ->title($found
-                                            ? 'Açar işləyir'
-                                            : ($ready ? 'Açar yazılıb, amma cavab gəlmədi' : 'Açar yazılmayıb'))
-                                        ->body($found
-                                            ? 'Tapıldı: ' . $found[0]['name']
-                                            : ($ready
-                                                ? 'Geoapify cavab vermir. Açarı kabinetdən bir də yoxlayın.'
-                                                : 'Yuxarıdakı sahəyə açarı yazıb səhifəni yadda saxlayın.'))
-                                        ->status($found ? 'success' : 'warning')
+                                        ->title($title)
+                                        ->body($hint . $r['detail'])
+                                        ->status($r['ok'] ? 'success' : 'warning')
+                                        ->persistent()
                                         ->send();
                                 }),
                         ])->columnSpanFull(),

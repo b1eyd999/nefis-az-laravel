@@ -111,6 +111,52 @@ class MapImage
     }
 
     /**
+     * Ask the service one question and report exactly what came back.
+     *
+     * The shop itself swallows failures — a customer must not meet a stack
+     * trace — so this is the one place that keeps the reason, for the owner's
+     * own page.
+     *
+     * @return array{ok: bool, why: string, detail: string}
+     */
+    public static function probe(): array
+    {
+        $key = self::key();
+        if ($key === null) {
+            return ['ok' => false, 'why' => 'no-key', 'detail' => ''];
+        }
+
+        /* How the key is shaped, said without printing it: a pasted address or
+           a half-copied key is the usual reason the service says no. */
+        $shape = mb_strlen($key) . ' simvol, son 4: ' . mb_substr($key, -4);
+        if (str_contains($key, '/') || str_contains($key, '?') || str_contains($key, '=')) {
+            return ['ok' => false, 'why' => 'not-a-key', 'detail' => $shape];
+        }
+
+        try {
+            $answer = Http::timeout(15)->get('https://api.geoapify.com/v1/geocode/autocomplete', [
+                'text' => 'Bakı', 'limit' => 1, 'format' => 'json', 'apiKey' => $key,
+            ]);
+        } catch (Throwable $e) {
+            return ['ok' => false, 'why' => 'unreachable', 'detail' => mb_substr($e->getMessage(), 0, 160)];
+        }
+
+        if (! $answer->successful()) {
+            return [
+                'ok' => false,
+                'why' => 'refused',
+                'detail' => 'HTTP ' . $answer->status() . ' — ' . mb_substr(trim((string) $answer->body()), 0, 160),
+            ];
+        }
+
+        $found = $answer->json('results.0.formatted');
+
+        return $found
+            ? ['ok' => true, 'why' => 'ok', 'detail' => (string) $found]
+            : ['ok' => false, 'why' => 'empty', 'detail' => $shape . ' — ' . mb_substr((string) $answer->body(), 0, 160)];
+    }
+
+    /**
      * Places that match what the customer typed, anywhere in the world.
      *
      * @return array<int, array{name: string, lat: float, lon: float}>

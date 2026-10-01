@@ -244,6 +244,33 @@ class PlaceMapTest extends TestCase
         $this->assertNull(MapImage::key());
     }
 
+    public function test_the_probe_names_the_reason_rather_than_shrugging(): void
+    {
+        // A whole address pasted instead of the key is caught before the call.
+        MapImage::saveKey('https://api.geoapify.com/v1/geocode/search?apiKey=abc');
+        $this->assertSame('not-a-key', MapImage::probe()['why']);
+
+        MapImage::saveKey('');
+        $this->assertSame('no-key', MapImage::probe()['why']);
+
+        MapImage::saveKey('a-wrong-key');
+        Http::fake(['api.geoapify.com/*' => Http::response('{"message":"Invalid apiKey"}', 401)]);
+        $refused = MapImage::probe();
+        $this->assertSame('refused', $refused['why']);
+        $this->assertStringContainsString('401', $refused['detail']);
+        $this->assertStringContainsString('Invalid apiKey', $refused['detail']);
+    }
+
+    public function test_the_probe_says_so_when_the_key_works(): void
+    {
+        MapImage::saveKey('a-good-key');
+        Http::fake(['api.geoapify.com/*' => Http::response(['results' => [['formatted' => 'Bakı, Azərbaycan']]])]);
+
+        $good = MapImage::probe();
+        $this->assertTrue($good['ok']);
+        $this->assertSame('Bakı, Azərbaycan', $good['detail']);
+    }
+
     public function test_the_window_stays_quiet_when_no_key_is_set(): void
     {
         MapImage::saveKey('');
