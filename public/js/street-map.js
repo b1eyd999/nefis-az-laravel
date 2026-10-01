@@ -46,6 +46,16 @@
      drag, and the streets must not be asked for again each time. */
   var pictures = {};
 
+  /**
+   * The last picture that was actually shown, and where it was centred.
+   *
+   * When the finger lets go, the shop asks for the streets around the new
+   * centre and for a moment there is nothing to draw. Rather than flash an
+   * empty window, the one before is kept and slid across by the distance
+   * between the two centres - which is what the eye expects anyway.
+   */
+  var shown = null;
+
   function picture(url, onReady) {
     var held = pictures[url];
     if (held) {
@@ -71,6 +81,19 @@
     img.src = url;
 
     return null;
+  }
+
+  /**
+   * How much wider than the window the picture is fetched.
+   *
+   * A finger dragging the map must not drag emptiness in behind it, so more
+   * ground is asked for than the window shows and the spare lies just outside
+   * the clip, ready. What the window shows is unchanged — the extra is only
+   * there to be slid in — so the printing sheet, which asks for no margin,
+   * still prints exactly what was framed.
+   */
+  function marginOf(opts) {
+    return Math.max(1, Math.min(2.5, opts.margin || 1));
   }
 
   /** The address the streets are asked for, with room for the caption cut. */
@@ -190,6 +213,7 @@
     var colours = styleOf(opts.style);
     var full = opts.shape === 'full';
     var boxed = full || opts.shape === 'rectangle' || opts.shape === 'home';
+    var drawn = 0;
     var cx = opts.cx == null ? (canvas ? canvas.width / 2 : size / 2) : opts.cx;
     var cy = opts.cy == null ? (canvas ? canvas.height / 2 : size / 2) : opts.cy;
     var r = (opts.radius || size / 2) * 0.98;
@@ -221,11 +245,22 @@
     /* Ask for the picture in the window's own proportions, so the streets are
        never stretched. The ceiling keeps a dragged window from asking for a
        new picture at every pixel. */
+    var margin = marginOf(opts);
     var wide = Math.max(box.w, box.h);
     var ask = Math.min(opts.quality || 700, 2000);
-    var pw = Math.max(80, Math.round((box.w / wide) * ask));
-    var ph = Math.max(80, Math.round((box.h / wide) * ask));
+    var pw = Math.max(80, Math.round((box.w / wide) * ask * margin));
+    var ph = Math.max(80, Math.round((box.h / wide) * ask * margin));
     var img = opts.lat == null ? null : picture(source(opts, pw, ph), opts.onReady);
+    var slid = { x: 0, y: 0 };
+
+    if (!img && shown && opts.lat != null
+        && shown.style === (opts.style || 'ink') && shown.zoom === (opts.zoom || 15)) {
+      var was = toWorld(shown.lat, shown.lon, shown.zoom);
+      var now = toWorld(opts.lat, opts.lon, opts.zoom || 15);
+      img = shown.img;
+      slid.x = (was.x - now.x) * shown.drawn;
+      slid.y = (was.y - now.y) * shown.drawn;
+    }
 
     if (img) {
       /* The service's caption is cut off the bottom, and as much again off the
@@ -234,14 +269,22 @@
       var sy = Math.round(cut);
       var sh = Math.max(1, img.height - 2 * sy);
 
-      /* Cover the window: the picture keeps its shape and the overflow is cut
-         off by the clip above. */
-      var k = Math.max(box.w / img.width, box.h / sh);
+      /* Cover the window, times the margin: the picture keeps its shape and
+         everything outside the window is cut off by the clip above. */
+      var k = Math.max((box.w * margin) / img.width, (box.h * margin) / sh);
       var dw = img.width * k, dh = sh * k;
+      /* Where the finger has pushed it since the last picture was asked for. */
+      var ox = (opts.offsetX || 0) + slid.x, oy = (opts.offsetY || 0) + slid.y;
       ctx.drawImage(
         img, 0, sy, img.width, sh,
-        box.x + (box.w - dw) / 2, box.y + (box.h - dh) / 2, dw, dh
+        box.x + (box.w - dw) / 2 + ox, box.y + (box.h - dh) / 2 + oy, dw, dh
       );
+      drawn = k;
+      /* Only a picture that really is this place is worth keeping for later. */
+      if (!slid.x && !slid.y) {
+        shown = { img: img, lat: opts.lat, lon: opts.lon,
+          zoom: opts.zoom || 15, style: opts.style || 'ink', drawn: k };
+      }
 
       if (colours.invert) {
         /* Inside the clip everything on the canvas is ours, so turning it
@@ -280,7 +323,52 @@
       ctx.restore();
     }
 
-    return { cx: cx, cy: cy, r: r, colours: colours };
+    /* `drawn` is how many window pixels one picture pixel became, which is
+       what turns a drag in pixels back into a place on earth. */
+    return { cx: cx, cy: cy, r: r, colours: colours, drawn: drawn };
+  }
+
+  /**
+   * Web Mercator, the projection the pictures are drawn in. The world is
+   * 256 * 2^z pixels wide at the zoom the customer sees — the service counts
+   * a picture's zoom one lower, and that cancels its 512-pixel squares.
+   */
+  function worldWidth(zoom) {
+    return 256 * Math.pow(2, Number(zoom) || 15);
+  }
+
+  function toWorld(lat, lon, zoom) {
+    var w = worldWidth(zoom);
+    var s = Math.sin(Number(lat) * Math.PI / 180);
+    s = Math.max(-0.9999, Math.min(0.9999, s));
+
+    return {
+      x: (Number(lon) + 180) / 360 * w,
+      y: (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * w,
+    };
+  }
+
+  function fromWorld(x, y, zoom) {
+    var w = worldWidth(zoom);
+    var n = Math.PI - 2 * Math.PI * y / w;
+
+    return {
+      lat: 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))),
+      lon: x / w * 360 - 180,
+    };
+  }
+
+  /**
+   * The place the map has been dragged to: the centre moved by so many window
+   * pixels, with `drawn` saying how big a picture pixel was on the window.
+   */
+  function dragged(lat, lon, zoom, dx, dy, drawn) {
+    if (!drawn) {
+      return { lat: lat, lon: lon };
+    }
+    var at = toWorld(lat, lon, zoom);
+
+    return fromWorld(at.x - dx / drawn, at.y - dy / drawn, zoom);
   }
 
   /** Degrees as a printed coordinate: 40°22'19"N. */
@@ -299,6 +387,7 @@
     draw: draw,
     styles: STYLES,
     coordinate: coordinate,
+    dragged: dragged,
     /** "40°22'19"N 49°53'31"E", the way it is printed under the streets. */
     coordinates: function (lat, lon) {
       return coordinate(lat, 'N', 'S') + ' ' + coordinate(lon, 'E', 'W');

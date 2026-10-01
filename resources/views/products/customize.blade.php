@@ -618,37 +618,17 @@
               </label>
             @endif
 
-            {{-- The frame itself: the streets, cut to the shape of the window on
-                 the box, with the mark standing still in the middle. --}}
-            <div class="map-frame-wrap" id="map-frame-wrap" hidden>
-              <div class="map-frame look-{{ $mapSlot->map_style ?: 'ink' }} @if(in_array($mapSlot->shape, ['ellipse', 'heart', 'home'], true)) is-shaped @endif"
-                   id="map-frame"
-                   style="aspect-ratio: {{ max(1, (int) $mapSlot->width) }} / {{ max(1, (int) $mapSlot->height) }};
-                          @if($mapSlot->shape === 'ellipse') clip-path: ellipse(50% 50%);
-                          @elseif($mapSlot->shape === 'heart') clip-path: url(#map-clip-heart);
-                          @elseif($mapSlot->shape === 'home') clip-path: url(#map-clip-home); @endif">
-                <div class="map-frame-map" id="map-frame-map"></div>
-                <div class="map-frame-mark" id="map-frame-mark">
-                  @include('partials.map-mark', ['mark' => $mapLook['marker'] ?? 'heart'])
-                </div>
+            @if(in_array('zoom', $mapOffers, true))
+              <div class="range-row" style="margin-top:.7rem;">
+                <span class="lbl">{{ __('Yaxınlıq') }}</span>
+                <input type="range" id="map-zoom" name="map_zoom" min="{{ \App\Support\StreetMap::ZOOM_MIN }}"
+                       max="{{ \App\Support\StreetMap::ZOOM_MAX }}"
+                       value="{{ old('map_zoom', $mapLook['zoom']) }}">
               </div>
-              <p class="map-frame-hint">{{ in_array('zoom', $mapOffers, true)
-                  ? __('Xəritəni sürüşdürün, + və − ilə yaxınlaşdırın — çərçivədə qalan qutuya düşəcək.')
-                  : __('Xəritəni sürüşdürün — çərçivədə qalan qutuya düşəcək.') }}</p>
+            @else
               <input type="hidden" name="map_zoom" id="map-zoom" value="{{ old('map_zoom', $mapLook['zoom']) }}">
-            </div>
-
-            {{-- The two outlines a rectangle cannot describe. --}}
-            <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
-              <defs>
-                <clipPath id="map-clip-heart" clipPathUnits="objectBoundingBox">
-                  <path d="M0.5,1 C0.1,0.72 0,0.5 0,0.32 C0,0.14 0.14,0 0.3,0 C0.4,0 0.47,0.06 0.5,0.12 C0.53,0.06 0.6,0 0.7,0 C0.86,0 1,0.14 1,0.32 C1,0.5 0.9,0.72 0.5,1 Z"/>
-                </clipPath>
-                <clipPath id="map-clip-home" clipPathUnits="objectBoundingBox">
-                  <path d="M0.5,0 L1,0.34 L1,1 L0,1 L0,0.34 Z"/>
-                </clipPath>
-              </defs>
-            </svg>
+            @endif
+            <p class="map-frame-hint">{{ __('Xəritəni qutunun üzərində sürüşdürün — pəncərədə qalan çap olunacaq.') }}</p>
 
             @if(in_array('marker', $mapOffers, true))
               <p class="sky-lbl" style="margin-top:.7rem;">{{ \App\Support\StreetMap::choiceLabels()['marker'] }}</p>
@@ -971,7 +951,6 @@
 @endif
 @if($mapSlot)
   <script src="{{ asset('js/street-map.js') }}?v={{ \App\Support\Assets::version('js/street-map.js') }}"></script>
-  <script src="{{ asset('js/map-frame.js') }}?v={{ \App\Support\Assets::version('js/map-frame.js') }}"></script>
 @endif
 @if($cutsFaces)
 <script defer src="{{ asset('js/face-cutout.js') }}?v={{ \App\Support\Assets::version('js/face-cutout.js') }}"></script>
@@ -1289,6 +1268,11 @@
 
   /* The streets around the place, drawn into the flat design just as the sky
      is, so every scene and the print file get it for free. */
+  /* How far the finger has pushed the map since the last picture, and how
+     big a picture pixel came out on the window — the two numbers that turn a
+     drag back into a place on earth. */
+  var mapPush = { x: 0, y: 0, drawn: 0 };
+
   function drawMapInArea(mctx, area){
     if (!window.NefisStreetMap || !spot) return;
     var boxed = area.shape === 'full' || area.shape === 'rectangle' || area.shape === 'home';
@@ -1296,15 +1280,20 @@
     mctx.save();
     mctx.translate(area.x + area.w / 2, area.y + area.h / 2);
     mctx.rotate(area.rotation * Math.PI / 180);
-    window.NefisStreetMap.draw(mctx, {
+    var drew = window.NefisStreetMap.draw(mctx, {
       lat: spot.lat, lon: spot.lon, zoom: spot.zoom || area.mapZoom || 15,
       shape: area.shape === 'heart' ? 'heart' : (boxed ? area.shape : 'circle'),
       style: area.mapStyle || 'ink',
       marker: spot.marker || area.mapMarker || 'heart', pin: spot.pin !== false,
       size: d, radius: d / 2, cx: 0, cy: 0, page: false,
       box: { x: -area.w / 2, y: -area.h / 2, w: area.w, h: area.h },
+      /* More ground than the window shows, so a drag has something to pull
+         in rather than emptiness. */
+      margin: 1.6,
+      offsetX: mapPush.x, offsetY: mapPush.y,
       onReady: function(){ draw(); }
     });
+    if (drew && drew.drawn) mapPush.drawn = drew.drawn;
     mctx.restore();
   }
 
@@ -1859,7 +1848,9 @@
     if (!p) return -1;
     var areas = currentAngle().areas;
     for (var i = areas.length - 1; i >= 0; i--) {
-      if (!photos[i] || !photos[i].img) continue;
+      /* A window holding a place has nothing uploaded into it and would be
+         skipped here, yet it is exactly what the finger drags. */
+      if (!MAP_SLOT[i] && (!photos[i] || !photos[i].img)) continue;
       var area = areas[i];
       var cx = area.x + area.w / 2;
       var cy = area.y + area.h / 2;
@@ -1879,13 +1870,66 @@
   function startDrag(clientX, clientY){
     var slot = slotAtPoint(toMockupCoords(clientX, clientY));
     if (slot < 0) return false;
-    dragSlot = slot;
+    /* A window holding a place is dragged too, only what moves is the ground
+       under it rather than a photograph inside it. */
+    if (typeof MAP_SLOT !== 'undefined' && MAP_SLOT[slot] && typeof spot !== 'undefined' && spot && spot.lat != null) {
+      dragMap = slot;
+      dragSlot = -1;
+    } else {
+      dragSlot = slot;
+      dragMap = -1;
+    }
     lastX = clientX;
     lastY = clientY;
     return true;
   }
 
+  /**
+   * The finger has let go: the picture has been slid about, and now the shop
+   * is told where it ended up and fetches the streets for that place.
+   *
+   * Nothing is asked for while the finger is still down — that is what made
+   * the map crawl behind the hand.
+   */
+  function endDrag(){
+    dragSlot = -1;
+    if (dragMap < 0) return;
+    dragMap = -1;
+
+    if ((mapPush.x || mapPush.y) && window.NefisStreetMap && spot) {
+      var moved = window.NefisStreetMap.dragged(
+        spot.lat, spot.lon, spot.zoom || 15, mapPush.x, mapPush.y, mapPush.drawn
+      );
+      mapPush.x = 0;
+      mapPush.y = 0;
+      if (window.nefisMapMoved) {
+        window.nefisMapMoved(moved.lat, moved.lon);
+      }
+    }
+    draw();
+  }
+
+  var dragMap = -1;
+
   function moveDrag(clientX, clientY){
+    if (dragMap >= 0) {
+      var p = toMockupCoords(lastX, lastY);
+      var q = toMockupCoords(clientX, clientY);
+      if (p && q) {
+        var area = areaFor(dragMap);
+        var turn = area ? -(area.rotation || 0) * Math.PI / 180 : 0;
+        var dx = q.x - p.x, dy = q.y - p.y;
+        /* The window may sit at an angle; the push is turned into its own
+           frame before it is added up. */
+        mapPush.x += dx * Math.cos(turn) - dy * Math.sin(turn);
+        mapPush.y += dx * Math.sin(turn) + dy * Math.cos(turn);
+      }
+      lastX = clientX;
+      lastY = clientY;
+      draw();
+
+      return;
+    }
     if (dragSlot < 0) return;
     var a = toMockupCoords(lastX, lastY);
     var b = toMockupCoords(clientX, clientY);
@@ -1906,7 +1950,7 @@
     if (startDrag(e.clientX, e.clientY)) e.preventDefault();
   });
   window.addEventListener('mousemove', function(e){ moveDrag(e.clientX, e.clientY); });
-  window.addEventListener('mouseup', function(){ dragSlot = -1; });
+  window.addEventListener('mouseup', endDrag);
 
   canvas.addEventListener('touchstart', function(e){
     var t = e.touches[0];
@@ -1916,11 +1960,11 @@
     var t = e.touches[0];
     if (t && dragSlot >= 0) { moveDrag(t.clientX, t.clientY); e.preventDefault(); }
   }, { passive: false });
-  canvas.addEventListener('touchend', function(){ dragSlot = -1; });
+  canvas.addEventListener('touchend', endDrag);
   /* iOS takes the touch away for a call or the notification shade; without
      this the next swipe pans the photo instead of the page, by the whole
      stale distance at once. */
-  canvas.addEventListener('touchcancel', function(){ dragSlot = -1; });
+  canvas.addEventListener('touchcancel', endDrag);
 })();
 
 /* Brand chips: one brand's bars at a time. */
@@ -2198,37 +2242,6 @@
     hits.hidden = false;
   }
 
-  var frame = null;
-  var frameWrap = document.getElementById('map-frame-wrap');
-  var frameMap = document.getElementById('map-frame-map');
-
-  function showFrame(lat, lon){
-    if (!frameWrap || !window.NefisMapFrame) return;
-    frameWrap.hidden = false;
-    if (frame) {
-      frame.go(lat, lon, zoomEl ? +zoomEl.value : undefined);
-
-      return;
-    }
-    frame = window.NefisMapFrame.mount(frameMap, {
-      lat: lat, lon: lon, zoom: zoomEl ? +zoomEl.value : {{ $mapLook['zoom'] }},
-      canZoom: @json(in_array('zoom', $mapOffers, true)),
-      minZoom: {{ \App\Support\StreetMap::ZOOM_MIN }},
-      maxZoom: {{ \App\Support\StreetMap::ZOOM_MAX }},
-      /* Written out by hand: the route refuses the braces a tile layer needs. */
-      tiles: @json(url('/lokasiya/kafel/' . ($mapSlot?->map_style ?: 'ink')) . '/{z}/{x}/{y}'),
-      /* What he leaves in the frame is what the box is made from. */
-      onMove: function(lat, lon, zoom){
-        latEl.value = lat;
-        lonEl.value = lon;
-        if (zoomEl) zoomEl.value = zoom;
-        var pen = window.NefisStarMap || window.NefisStreetMap;
-        if (chosen && pen) chosen.textContent = pen.coordinates(lat, lon);
-        push();
-      }
-    });
-  }
-
   function pick(hit){
     hits.hidden = true;
     search.value = hit.name;
@@ -2239,7 +2252,6 @@
     if (chosen && pen) {
       chosen.textContent = pen.coordinates(hit.lat, hit.lon);
     }
-    showFrame(hit.lat, hit.lon);
     push();
   }
 
@@ -2278,30 +2290,24 @@
     if (!block.contains(e.target)) hits.hidden = true;
   });
 
-  var frameMark = document.getElementById('map-frame-mark');
-  var MARK_SHAPES = @json(collect(\App\Support\StreetMap::MARKS)
-      ->mapWithKeys(fn ($m) => [$m => trim(view('partials.map-mark', ['mark' => $m])->render())])
-      ->all());
-
-  function paintMark(){
-    if (!frameMark) return;
-    var picked = (markEls.filter(function(e){ return e.checked; })[0] || {}).value;
-    var shown = pinEl && ! pinEl.checked ? '' : (MARK_SHAPES[picked] || frameMark.innerHTML);
-    if (picked || pinEl) frameMark.innerHTML = shown;
-  }
-
   [zoomEl, dateEl, timeEl, withTimeEl, pinEl].concat(markEls).forEach(function(el){
     if (!el) return;
     el.addEventListener('input', push);
     el.addEventListener('change', push);
-    el.addEventListener('change', paintMark);
   });
 
-  /* A page that came back with its answers still filled in draws them. */
-  if (latEl.value !== '') {
-    showFrame(parseFloat(latEl.value), parseFloat(lonEl.value));
+  /* The box itself is the frame: when the finger lets go of the map, the
+     drawing closure says where it ended up and the fields follow. */
+  window.nefisMapMoved = function(lat, lon){
+    latEl.value = lat;
+    lonEl.value = lon;
+    var pen = window.NefisStarMap || window.NefisStreetMap;
+    if (chosen && pen) chosen.textContent = pen.coordinates(lat, lon);
     push();
-  }
+  };
+
+  /* A page that came back with its answers still filled in draws them. */
+  if (latEl.value !== '') push();
 })();
 
 /* The running price: the box, the chosen bar, times how many. */
