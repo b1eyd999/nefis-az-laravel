@@ -44,7 +44,7 @@ class PhotoSlot extends Model
      * Which switches the design offers the customer. The style is not among
      * them: it is how the box looks, and the owner sets it in the design.
      */
-    public const MAP_CHOICES = ['zoom', 'pin'];
+    public const MAP_CHOICES = ['zoom', 'pin', 'marker'];
 
     protected $fillable = [
         'label',
@@ -126,6 +126,7 @@ class PhotoSlot extends Model
         return [
             'zoom' => (int) ($this->map_zoom ?: 15),
             'pin' => (bool) $this->map_pin,
+            'marker' => in_array($this->map_marker, self::MAP_MARKERS, true) ? $this->map_marker : 'heart',
         ];
     }
 

@@ -164,6 +164,29 @@ class PlaceMapTest extends TestCase
         $this->assertFalse($spot['pin']);
     }
 
+    public function test_the_customer_may_choose_the_mark_when_the_design_offers_it(): void
+    {
+        $box = $this->box(['map_choices' => 'marker', 'map_marker' => 'heart']);
+
+        $this->assertStringContainsString(
+            'name="map_marker"',
+            $this->get(route('products.customize', $box->slug))->getContent(),
+        );
+
+        $this->assertSame('star', $this->order($box, [
+            'map_lat' => '40.3777', 'map_lon' => '49.8920', 'map_marker' => 'star',
+        ])->street_map['marker']);
+    }
+
+    public function test_a_mark_the_design_does_not_offer_is_ignored(): void
+    {
+        $box = $this->box(['map_choices' => '', 'map_marker' => 'pin']);
+
+        $this->assertSame('pin', $this->order($box, [
+            'map_lat' => '40.3777', 'map_lon' => '49.8920', 'map_marker' => 'star',
+        ])->street_map['marker']);
+    }
+
     public function test_a_place_is_required_before_the_box_can_be_ordered(): void
     {
         $box = $this->box();

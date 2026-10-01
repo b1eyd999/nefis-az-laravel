@@ -15,13 +15,28 @@
 (function () {
   'use strict';
 
-  /** The four printed looks. `shade` is what a half-drawn window shows. */
+  /**
+   * The four printed looks. `shade` is what a half-drawn window shows, and
+   * `invert` turns the fetched drawing inside out — the black-background look
+   * is the white-background one reversed, which is how it keeps its contrast.
+   */
   var STYLES = {
-    ink: { page: '#0d0d0d', ink: '#ffffff', rim: '#ffffff', shade: '#1c1c1c' },
+    ink: { page: '#ffffff', ink: '#ffffff', rim: '#ffffff', shade: '#e9e9e9', invert: true },
     paper: { page: '#ffffff', ink: '#111111', rim: '#111111', shade: '#e9e9e9' },
     sea: { page: '#eaf1f4', ink: '#2d4f5e', rim: '#2d4f5e', shade: '#cfdee5' },
     colour: { page: '#f2efe9', ink: '#3a3226', rim: '#3a3226', shade: '#e3ddd1' },
   };
+
+  /** The mark on the spot is the shop's own orange, whatever the look. */
+  var MARK = '#E8792B';
+
+  /**
+   * The service prints its own caption along the bottom of every drawing. It
+   * belongs on the page, not on a chocolate box, so the picture is asked for
+   * this much taller and the strip is cut off — off the top as well, or the
+   * place the customer framed would sit below the middle.
+   */
+  var CREDIT = 24;
 
   function styleOf(name) {
     return STYLES[name] || STYLES.ink;
@@ -58,7 +73,7 @@
     return null;
   }
 
-  /** The address the streets are asked for. */
+  /** The address the streets are asked for, with room for the caption cut. */
   function source(opts, w, h) {
     var scale = opts.scale || 1;
     return (opts.endpoint || '/lokasiya/sekil')
@@ -66,7 +81,7 @@
       + '&lon=' + encodeURIComponent(Number(opts.lon || 0).toFixed(5))
       + '&zoom=' + encodeURIComponent(opts.zoom || 15)
       + '&style=' + encodeURIComponent(opts.style || 'ink')
-      + '&w=' + Math.round(w) + '&h=' + Math.round(h)
+      + '&w=' + Math.round(w) + '&h=' + Math.round(h + 2 * CREDIT)
       + (scale > 1 ? '&scale=' + scale : '');
   }
 
@@ -213,11 +228,30 @@
     var img = opts.lat == null ? null : picture(source(opts, pw, ph), opts.onReady);
 
     if (img) {
+      /* The service's caption is cut off the bottom, and as much again off the
+         top, so the middle of what is left is still the place he framed. */
+      var cut = CREDIT * (opts.scale || 1) * (img.width / Math.max(1, pw));
+      var sy = Math.round(cut);
+      var sh = Math.max(1, img.height - 2 * sy);
+
       /* Cover the window: the picture keeps its shape and the overflow is cut
          off by the clip above. */
-      var k = Math.max(box.w / img.width, box.h / img.height);
-      var dw = img.width * k, dh = img.height * k;
-      ctx.drawImage(img, box.x + (box.w - dw) / 2, box.y + (box.h - dh) / 2, dw, dh);
+      var k = Math.max(box.w / img.width, box.h / sh);
+      var dw = img.width * k, dh = sh * k;
+      ctx.drawImage(
+        img, 0, sy, img.width, sh,
+        box.x + (box.w - dw) / 2, box.y + (box.h - dh) / 2, dw, dh
+      );
+
+      if (colours.invert) {
+        /* Inside the clip everything on the canvas is ours, so turning it
+           inside out turns only the window: white streets on black. */
+        ctx.save();
+        ctx.globalCompositeOperation = 'difference';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(box.x, box.y, box.w, box.h);
+        ctx.restore();
+      }
     } else if (opts.lat != null) {
       /* Waiting, or no key set: a quiet band so the window reads as a map. */
       ctx.fillStyle = colours.shade;
@@ -227,7 +261,7 @@
     }
 
     if (opts.pin !== false && opts.marker && opts.marker !== 'none') {
-      drawMarker(ctx, opts.marker, cx, cy, Math.max(14, size * 0.085), opts.markerColour || colours.ink);
+      drawMarker(ctx, opts.marker, cx, cy, Math.max(14, size * 0.085), opts.markerColour || MARK);
     }
 
     ctx.restore();

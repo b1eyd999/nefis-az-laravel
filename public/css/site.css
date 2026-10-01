@@ -1187,6 +1187,17 @@
 }
 .np-grid.is-minutes{ margin-bottom:.1rem; }
 .np-field.is-empty{ color:var(--cocoa-faint); }
+/* The marks that may stand on the customer's place. */
+.map-marks{ display:flex; gap:.5rem; margin-top:.5rem; }
+.map-mark{
+  flex:1 1 0; display:flex; align-items:center; justify-content:center;
+  padding:.7rem 0; border:1px solid var(--line); border-radius:.7rem;
+  background:var(--paper); cursor:pointer; transition:border-color .15s, box-shadow .15s;
+}
+.map-mark input{ position:absolute; opacity:0; pointer-events:none; }
+.map-mark svg{ width:1.9rem; height:1.9rem; display:block; color:#E8792B; }
+.map-mark:hover{ border-color:var(--cocoa-faint); }
+.map-mark:has(input:checked){ border-color:#E8792B; box-shadow:0 0 0 3px rgba(232,121,43,.18); }
 @media (max-width: 480px){
   .np-pop{ left:0; right:0; width:auto; max-width:none; }
 }

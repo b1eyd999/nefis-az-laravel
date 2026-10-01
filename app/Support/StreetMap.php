@@ -19,6 +19,9 @@ class StreetMap
     /** How a map looks when nothing has been chosen about it. */
     public const LOOK = ['zoom' => 15, 'pin' => true];
 
+    /** The marks the customer may put on his place, as the drawing knows them. */
+    public const MARKS = ['heart', 'pin', 'star'];
+
     /** How close in the customer may go: a whole city down to one courtyard. */
     public const ZOOM_MIN = 11;
 
@@ -55,6 +58,11 @@ class StreetMap
         foreach ($slot ? $slot->mapChoices() : [] as $choice) {
             if ($choice === 'zoom') {
                 $look['zoom'] = self::zoom($request->input('map_zoom', $look['zoom']));
+            } elseif ($choice === 'marker') {
+                $wanted = (string) $request->input('map_marker');
+                if (in_array($wanted, PhotoSlot::MAP_MARKERS, true)) {
+                    $look['marker'] = $wanted;
+                }
             } else {
                 $look[$choice] = $request->boolean(self::field($choice));
             }
@@ -76,9 +84,9 @@ class StreetMap
             'style' => $slot && in_array($slot->map_style, PhotoSlot::MAP_STYLES, true)
                 ? $slot->map_style
                 : 'ink',
-            'marker' => $slot && in_array($slot->map_marker, PhotoSlot::MAP_MARKERS, true)
+            'marker' => $look['marker'] ?? ($slot && in_array($slot->map_marker, PhotoSlot::MAP_MARKERS, true)
                 ? $slot->map_marker
-                : 'heart',
+                : 'heart'),
         ];
     }
 
@@ -100,6 +108,7 @@ class StreetMap
         return [
             'zoom' => __('Yaxınlığı özüm seçim'),
             'pin' => __('Nöqtə işarələnsin'),
+            'marker' => __('Nişanı özüm seçim'),
         ];
     }
 

@@ -627,6 +627,19 @@
               </div>
             @endif
 
+            @if(in_array('marker', $mapOffers, true))
+              <p class="sky-lbl" style="margin-top:.7rem;">{{ \App\Support\StreetMap::choiceLabels()['marker'] }}</p>
+              <div class="map-marks">
+                @foreach(\App\Support\StreetMap::MARKS as $mark)
+                  <label class="map-mark">
+                    <input type="radio" name="map_marker" value="{{ $mark }}" data-map-mark
+                           @checked(old('map_marker', $mapLook['marker'] ?? 'heart') === $mark)>
+                    @include('partials.map-mark', ['mark' => $mark])
+                  </label>
+                @endforeach
+              </div>
+            @endif
+
             @if(in_array('pin', $mapOffers, true))
               <div class="sky-switches">
                 <label class="sky-switch">
@@ -1263,7 +1276,7 @@
       lat: spot.lat, lon: spot.lon, zoom: spot.zoom || area.mapZoom || 15,
       shape: area.shape === 'heart' ? 'heart' : (boxed ? area.shape : 'circle'),
       style: area.mapStyle || 'ink',
-      marker: area.mapMarker || 'heart', pin: spot.pin !== false,
+      marker: spot.marker || area.mapMarker || 'heart', pin: spot.pin !== false,
       size: d, radius: d / 2, cx: 0, cy: 0, page: false,
       box: { x: -area.w / 2, y: -area.h / 2, w: area.w, h: area.h },
       onReady: function(){ draw(); }
@@ -2144,6 +2157,7 @@
   var timeEl = document.getElementById('map-time');
   var withTimeEl = block.querySelector('[name="map_with_time"]');
   var pinEl = block.querySelector('[data-map-switch="pin"]');
+  var markEls = Array.prototype.slice.call(block.querySelectorAll('[data-map-mark]'));
 
   var waiting = null;
   var lastAsked = '';
@@ -2180,6 +2194,7 @@
       place: placeEl.value,
       zoom: zoomEl ? +zoomEl.value : undefined,
       pin: pinEl ? pinEl.checked : undefined,
+      marker: (markEls.filter(function(e){ return e.checked; })[0] || {}).value,
       date: dateEl && dateEl.value ? dateEl.value : null,
       time: timeEl ? timeEl.value : '',
       withTime: withTimeEl ? withTimeEl.checked : false
@@ -2207,7 +2222,7 @@
     if (!block.contains(e.target)) hits.hidden = true;
   });
 
-  [zoomEl, dateEl, timeEl, withTimeEl, pinEl].forEach(function(el){
+  [zoomEl, dateEl, timeEl, withTimeEl, pinEl].concat(markEls).forEach(function(el){
     if (!el) return;
     el.addEventListener('input', push);
     el.addEventListener('change', push);

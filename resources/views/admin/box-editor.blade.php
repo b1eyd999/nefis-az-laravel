@@ -1338,7 +1338,7 @@
         h += '<h4>Müştəri dəyişə bilsin</h4>';
         h += '<p class="hint">Seçdikləriniz sifariş səhifəsində açar kimi görünür; qalanları olduğu kimi çap olunur.</p>';
         var mpicked = String(it.map_choices == null ? 'zoom' : it.map_choices).split(',');
-        [['zoom', 'Yaxınlığı'], ['pin', 'Nişanı']].forEach(function(c){
+        [['zoom', 'Yaxınlığı'], ['pin', 'Nişanı görünsünmü'], ['marker', 'Nişanın formasını']].forEach(function(c){
           h += '<div class="row one">' + field(c[1], seg('mapchoice_' + c[0], mpicked.indexOf(c[0]) >= 0 ? 1 : 0, [[1, 'Seçə bilər'], [0, 'Yox']])) + '</div>';
         });
         h += '<div class="actions"><button class="btn small" data-act="dup">Təkrarla</button><button class="btn small danger" data-act="del">Sil</button></div>';

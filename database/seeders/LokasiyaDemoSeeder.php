@@ -40,7 +40,7 @@ class LokasiyaDemoSeeder extends Seeder
             'map_style' => 'ink',
             'map_marker' => 'heart',
             'map_zoom' => 15,
-            'map_choices' => 'zoom,pin',
+            'map_choices' => 'zoom,pin,marker',
             'map_pin' => true,
             'x' => 90, 'y' => 90, 'width' => 820, 'height' => 1000,
             'rotation' => 0, 'shape' => 'rectangle', 'sort_order' => 0,

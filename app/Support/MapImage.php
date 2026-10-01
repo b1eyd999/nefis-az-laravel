@@ -20,9 +20,16 @@ class MapImage
     /** Where the fetched pictures are kept, under storage/app. */
     public const DIRECTORY = 'maps';
 
-    /** The shop's four looks, and the Geoapify style each one is drawn in. */
+    /**
+     * The shop's four looks, and the Geoapify style each one is drawn in.
+     *
+     * `ink` is the same high-contrast drawing as `paper`, turned inside out in
+     * the browser: Geoapify's own dark styles put grey streets on near-black,
+     * which on a chocolate box reads as a black rectangle. White on black is
+     * what the design wants, and inverting `toner` gives exactly that.
+     */
     public const STYLES = [
-        'ink' => 'dark-matter',
+        'ink' => 'toner',
         'paper' => 'toner',
         'sea' => 'positron-blue',
         'colour' => 'osm-bright',
@@ -89,8 +96,10 @@ class MapImage
         $lat = round($lat, 5);
         $lon = round($lon, 5);
 
+        /* Named after the drawing, not after the shop's word for it, so the
+           two looks that share one drawing share one file as well. */
         $name = self::DIRECTORY . '/' . implode('-', [
-            $style, $zoom, str_replace('.', '_', (string) $lat), str_replace('.', '_', (string) $lon),
+            self::STYLES[$style], $zoom, str_replace('.', '_', (string) $lat), str_replace('.', '_', (string) $lon),
             $width, $height, $scale,
         ]) . '.png';
 
