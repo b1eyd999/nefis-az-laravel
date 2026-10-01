@@ -47,14 +47,21 @@
   var pictures = {};
 
   /**
-   * The last picture that was actually shown, and where it was centred.
+   * The picture currently in hand, and the place it was drawn around.
    *
-   * When the finger lets go, the shop asks for the streets around the new
-   * centre and for a moment there is nothing to draw. Rather than flash an
-   * empty window, the one before is kept and slid across by the distance
-   * between the two centres - which is what the eye expects anyway.
+   * The service takes three or four seconds to draw a picture whatever its
+   * size, so asking for a new one every time the finger moves is what made
+   * the map arrive late. More ground is fetched than the window shows, and
+   * while the view stays inside that spare the same picture is simply slid
+   * across — no asking, nothing to wait for. A new one is fetched only when
+   * the view nears the edge of what is in hand.
    */
-  var shown = null;
+  var held = null;
+
+  /** How far the view may wander from the picture's centre, as a share of the
+   *  window. The spare is (margin - 1) / 2 on each side; staying well inside
+   *  it means the window never shows the picture's own edge. */
+  var WANDER = 0.22;
 
   function picture(url, onReady) {
     var held = pictures[url];
@@ -250,16 +257,48 @@
     var ask = Math.min(opts.quality || 700, 2000);
     var pw = Math.max(80, Math.round((box.w / wide) * ask * margin));
     var ph = Math.max(80, Math.round((box.h / wide) * ask * margin));
-    var img = opts.lat == null ? null : picture(source(opts, pw, ph), opts.onReady);
+    var zoom = opts.zoom || 15;
+    var style = opts.style || 'ink';
     var slid = { x: 0, y: 0 };
+    var img = null;
 
-    if (!img && shown && opts.lat != null
-        && shown.style === (opts.style || 'ink') && shown.zoom === (opts.zoom || 15)) {
-      var was = toWorld(shown.lat, shown.lon, shown.zoom);
-      var now = toWorld(opts.lat, opts.lon, opts.zoom || 15);
-      img = shown.img;
-      slid.x = (was.x - now.x) * shown.drawn;
-      slid.y = (was.y - now.y) * shown.drawn;
+    if (opts.lat != null) {
+      /* Only a window with spare ground around it may wander; the printing
+         sheet and the editor ask for no margin and must be exact. */
+      var mayWander = margin > 1.05 && held
+        && held.style === style && held.zoom === zoom
+        && held.pw === pw && held.ph === ph;
+
+      if (mayWander) {
+        var was = toWorld(held.lat, held.lon, zoom);
+        var now = toWorld(opts.lat, opts.lon, zoom);
+        /* `held.drawn` turns world pixels into window pixels. */
+        var offX = (was.x - now.x) * held.drawn;
+        var offY = (was.y - now.y) * held.drawn;
+        if (Math.abs(offX) <= box.w * WANDER && Math.abs(offY) <= box.h * WANDER) {
+          img = held.img;
+          slid.x = offX;
+          slid.y = offY;
+        }
+      }
+
+      if (!img) {
+        /* Far enough to need new ground — or nothing in hand at all. */
+        var fresh = picture(source(opts, pw, ph), opts.onReady);
+        if (fresh) {
+          img = fresh;
+          held = { img: fresh, lat: opts.lat, lon: opts.lon, zoom: zoom,
+            style: style, pw: pw, ph: ph, drawn: 0 };
+        } else if (held && held.style === style && held.zoom === zoom && held.img) {
+          /* It is on its way: hold what we have, slid into place, so the
+             window never goes blank while waiting. */
+          var old = toWorld(held.lat, held.lon, zoom);
+          var here = toWorld(opts.lat, opts.lon, zoom);
+          img = held.img;
+          slid.x = (old.x - here.x) * held.drawn;
+          slid.y = (old.y - here.y) * held.drawn;
+        }
+      }
     }
 
     if (img) {
@@ -280,10 +319,8 @@
         box.x + (box.w - dw) / 2 + ox, box.y + (box.h - dh) / 2 + oy, dw, dh
       );
       drawn = k;
-      /* Only a picture that really is this place is worth keeping for later. */
-      if (!slid.x && !slid.y) {
-        shown = { img: img, lat: opts.lat, lon: opts.lon,
-          zoom: opts.zoom || 15, style: opts.style || 'ink', drawn: k };
+      if (held && held.img === img && !held.drawn) {
+        held.drawn = k;
       }
 
       if (colours.invert) {

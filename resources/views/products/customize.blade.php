@@ -1290,6 +1290,9 @@
       /* More ground than the window shows, so a drag has something to pull
          in rather than emptiness. */
       margin: 1.6,
+      /* The service takes the same three or four seconds whatever the size,
+         so the preview asks only for what the screen can show. */
+      quality: 420,
       offsetX: mapPush.x, offsetY: mapPush.y,
       onReady: function(){ draw(); }
     });
