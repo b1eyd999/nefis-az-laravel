@@ -880,8 +880,19 @@
   .footer-col a:hover{ color:#fff; }
   .footer-col .f-phone{ font-family:var(--serif); font-size:1.25rem; color:var(--on-band); }
   .footer-col .f-hours{ display:block; padding:.5rem 0; font-size:.8125rem; opacity:.75; }
-  .cat-rights{ margin:2.5rem 0 0; font-size:.85rem; color:var(--cocoa-faint); text-align:center; }
-  .cat-rights a{ color:var(--gold); }
+  .cat-rights{
+    display:flex; align-items:center; gap:.9rem; margin:3rem auto 0; max-width:46rem;
+    border:1px solid var(--line); border-radius:var(--radius); background:var(--paper);
+    padding:1rem 1.25rem; font-size:.92rem; line-height:1.6; color:var(--cocoa-2);
+  }
+  .cat-rights p{ margin:0; }
+  .cat-rights b{ color:var(--cocoa); }
+  .cat-rights a{ color:var(--gold); font-weight:600; white-space:nowrap; }
+  .cat-rights-mark{
+    flex:none; width:2.4rem; height:2.4rem; border-radius:50%; display:grid; place-items:center;
+    background:var(--cream-2); color:var(--cocoa); font-size:1.15rem; font-weight:700;
+  }
+  @media (max-width: 560px){ .cat-rights{ margin-top:2rem; padding:.85rem 1rem; font-size:.88rem; } }
   .footer-rules{ display:flex; flex-wrap:wrap; gap:.25rem 1.25rem; padding-top:1.25rem; font-size:.85rem; }
   .footer-rules a{ color:var(--cocoa-soft); }
   .footer-rules a:hover{ color:var(--cocoa); }
