@@ -48,8 +48,26 @@ class MapImage
 
     public static function saveKey(?string $key): void
     {
-        $key = trim((string) $key);
+        $key = self::clean($key);
         Setting::put(Setting::GEOAPIFY_KEY, $key === '' ? '' : Crypt::encryptString($key));
+    }
+
+    /**
+     * The key out of whatever was pasted.
+     *
+     * Geoapify's own page offers the key inside a whole sample address, and
+     * that address is what lands in the field — so the key is taken out of it
+     * rather than the owner being told to do it by hand.
+     */
+    public static function clean(?string $value): string
+    {
+        $value = trim((string) $value, " \t\n\r\0\x0B\"'");
+
+        if (preg_match('/apikey=([A-Za-z0-9_-]+)/i', $value, $found)) {
+            return $found[1];
+        }
+
+        return $value;
     }
 
     public static function ready(): bool

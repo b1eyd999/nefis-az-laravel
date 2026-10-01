@@ -244,10 +244,24 @@ class PlaceMapTest extends TestCase
         $this->assertNull(MapImage::key());
     }
 
+    public function test_a_whole_address_pasted_into_the_field_still_yields_the_key(): void
+    {
+        // Geoapify's own page hands the key over inside a sample address.
+        MapImage::saveKey(
+            'https://api.geoapify.com/v1/geocode/search?text=38%20Upper%20Montagu%20Street'
+            . '&apiKey=63af0ea1402b4a8c9733381c941ac801'
+        );
+        $this->assertSame('63af0ea1402b4a8c9733381c941ac801', MapImage::key());
+
+        // Quotes and stray spaces around a plain key go too.
+        MapImage::saveKey('  "63af0ea1402b4a8c9733381c941ac801"  ');
+        $this->assertSame('63af0ea1402b4a8c9733381c941ac801', MapImage::key());
+    }
+
     public function test_the_probe_names_the_reason_rather_than_shrugging(): void
     {
-        // A whole address pasted instead of the key is caught before the call.
-        MapImage::saveKey('https://api.geoapify.com/v1/geocode/search?apiKey=abc');
+        // Something that is neither a key nor an address with one in it.
+        MapImage::saveKey('http://example.test/no/key/here');
         $this->assertSame('not-a-key', MapImage::probe()['why']);
 
         MapImage::saveKey('');
