@@ -1406,7 +1406,7 @@
       h += '<h4>Yazının qurulması</h4>';
       h += '<div class="row">' + field('Hərflər arası (VA)', num('tracking', it.tracking == null ? 0 : it.tracking))
          + field('Sətir arası %', num('line_height', it.line_height || 120)) + '</div>';
-      h += '<p class="hint">Hərflər arası Photoshop-dakı VA ilə eynidir: 0 — adi, 200 — "S Ö Z" kimi seyrək.</p>';
+      h += '<p class="hint">Hərflər arası Photoshop-dakı VA ilə eynidir: 0 — adi, 200 — "S Ö Z" kimi seyrək, 1500 — "S T R E E T" kimi lap geniş.</p>';
       h += '<div class="row one">' + field('Hərflər', seg('text_case', it.text_case || 'none', [['none', 'Yazıldığı kimi'], ['upper', 'BÖYÜK'], ['small', 'Kiçik böyük']])) + '</div>';
       h += '<div class="row three">' + field('En %', num('scale_x', it.scale_x || 100)) + field('Hünd. %', num('scale_y', it.scale_y || 100))
          + field('Sətirdən yuxarı', num('baseline_shift', it.baseline_shift == null ? 0 : it.baseline_shift)) + '</div>';

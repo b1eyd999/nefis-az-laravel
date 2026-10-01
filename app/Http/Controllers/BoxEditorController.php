@@ -294,7 +294,9 @@ class BoxEditorController extends Controller
             'texts.*.align' => ['required', 'in:left,center,right'],
             'texts.*.rotation' => ['required', 'numeric', 'between:-360,360'],
             'texts.*.font_family' => ['nullable', 'string', 'max:80'],
-            'texts.*.tracking' => ['nullable', 'integer', 'between:-200,1000'],
+            // Photoshop's own VA scale, which is what the field says it is:
+            // -1000 is letters touching, 10000 is a word strung right out.
+            'texts.*.tracking' => ['nullable', 'integer', 'between:-1000,10000'],
             'texts.*.line_height' => ['nullable', 'integer', 'between:50,300'],
             'texts.*.text_case' => ['nullable', Rule::in(TextSlot::CASES)],
             'texts.*.scale_x' => ['nullable', 'integer', 'between:25,400'],

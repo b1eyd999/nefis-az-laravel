@@ -196,7 +196,8 @@ class BoxEditorTest extends TestCase
         $this->actingAs($this->admin)->postJson(route('box.save', $this->box->slug), $design)->assertStatus(422);
 
         $design['texts'][0]['text_case'] = 'upper';
-        $design['texts'][0]['tracking'] = 5000;
+        // Photoshop's VA stops at 10000, and so does this field.
+        $design['texts'][0]['tracking'] = 20000;
         $this->actingAs($this->admin)->postJson(route('box.save', $this->box->slug), $design)->assertStatus(422);
     }
 
