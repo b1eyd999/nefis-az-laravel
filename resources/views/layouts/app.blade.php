@@ -309,7 +309,8 @@
       <div class="footer-legal">{{ implode(' · ', $legal) }}</div>
     @endif
     <div class="footer-bottom">
-      <span>© {{ date('Y') }} Nefis Şokolad Evi. {{ __('Bütün hüquqlar qorunur.') }}</span>
+      <span>© {{ date('Y') }} Nefis Şokolad Evi. {{ __('Bütün hüquqlar qorunur.') }}
+        {{ __('Dizaynlar müəllif hüququ ilə qorunur.') }}</span>
       <span>{{ __('Sevgi ilə hazırlanıb') }} 🤎</span>
     </div>
   </div>

@@ -70,6 +70,13 @@
     <p>{{ __('Saytda sifarişi özünüz dəyişmək və ya ləğv etmək düyməsi yoxdur. Nəyisə dəyişmək lazımdırsa — şəkil, yazı, gün, ünvan — bizə mümkün qədər tez yazın. İş başlamayıbsa, birlikdə həll edirik: ya dəyişirik, ya sifarişi ləğv edib yenisini veririk.') }}</p>
     <p>{{ __('Hazır fərdi qutu geri qaytarılmır — o yalnız sizin şəkliniz və sözlərinizlə mövcuddur. Pulun qaytarıldığı hallar «Ödəniş və qaytarma» səhifəsində yazılıb.') }}</p>
 
+    <h2>{{ __('Müəllif hüququ') }}</h2>
+    <p>{{ __('Saytdakı bütün dizaynlar, onların şəkilləri, mətnlər və saytın özü Nefis Şokolad Evinə məxsusdur və müəllif hüququ ilə qorunur. Dizaynlar bizim öz işimizdir.') }}</p>
+    <p>{{ __('Qutunu alırsınız — dizaynın hüququnu yox. Dizaynlarımızı surət çıxarmaq, satmaq, başqa məhsulda, çapda və ya reklamda istifadə etmək, habelə onların əsasında oxşar məhsul buraxmaq icazəsiz olmaz.') }}</p>
+    <p>{{ __('Bu, xüsusilə başqa mağazalara və onlayn satıcılara aiddir: dizaynlarımızı götürüb öz məhsulu kimi satmaq, kataloqunda yerləşdirmək və ya üzərində kiçik dəyişiklik edib çıxarmaq olmaz. Belə halda hüquqlarımızı qanun yolu ilə müdafiə edirik.') }}</p>
+    <p>{{ __('Aldığınız qutunun şəklini sosial şəbəkədə paylaşmaq, hədiyyə etmək və göstərmək tamamilə sərbəstdir — buna sevinirik. Söhbət dizaynın özünün ticarətdə istifadəsindən gedir.') }}</p>
+    <p>{{ __('Yüklədiyiniz şəkil isə sizindir: onu yalnız sizin sifarişinizi hazırlamaq üçün işlədirik və icazəniz olmadan reklamda göstərmirik.') }}</p>
+
     <h2>{{ __('Sizin öhdəliyiniz') }}</h2>
     <p>{{ __('Yüklədiyiniz şəkli istifadə etmək hüququ sizdə olmalıdır: başqasının şəkli, loqosu və ya müəllif işi üçün icazəniz olduğunu təsdiq edirsiniz. Yazıları yoxlayın — nə yazılıbsa, o çap olunur.') }}</p>
 

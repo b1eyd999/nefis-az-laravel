@@ -178,6 +178,10 @@
         @endforeach
       @endif
 
+      {{-- Said where the designs are actually looked at, not only in the rules. --}}
+      <p class="cat-rights">{{ __('Bütün dizaynlar Nefis Şokolad Evinin müəllif işidir və müəllif hüququ ilə qorunur.') }}
+        <a href="{{ lroute('legal.terms') }}">{{ __('Ətraflı') }}</a></p>
+
     </div>
   </section>
 

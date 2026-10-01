@@ -55,6 +55,21 @@ class LegalPagesTest extends TestCase
             ->assertSee('1906837672');
     }
 
+    public function test_the_designs_are_claimed_as_the_shops_own_work(): void
+    {
+        // The owner asked for this in as many words: another shop must not be
+        // able to lift a design and sell it as its own.
+        $this->get(route('legal.terms'))
+            ->assertOk()
+            ->assertSee('Müəllif hüququ')
+            ->assertSee('onlayn satıcılara');
+
+        // And it is said where the designs are looked at, not only in the rules.
+        $this->get(route('designs.index'))
+            ->assertOk()
+            ->assertSee('müəllif işidir');
+    }
+
     public function test_they_are_not_offered_to_search_engines_as_designs(): void
     {
         // A rules page is a page, not a product: it must not pretend otherwise.

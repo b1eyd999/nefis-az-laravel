@@ -880,6 +880,8 @@
   .footer-col a:hover{ color:#fff; }
   .footer-col .f-phone{ font-family:var(--serif); font-size:1.25rem; color:var(--on-band); }
   .footer-col .f-hours{ display:block; padding:.5rem 0; font-size:.8125rem; opacity:.75; }
+  .cat-rights{ margin:2.5rem 0 0; font-size:.85rem; color:var(--cocoa-faint); text-align:center; }
+  .cat-rights a{ color:var(--gold); }
   .footer-rules{ display:flex; flex-wrap:wrap; gap:.25rem 1.25rem; padding-top:1.25rem; font-size:.85rem; }
   .footer-rules a{ color:var(--cocoa-soft); }
   .footer-rules a:hover{ color:var(--cocoa); }
