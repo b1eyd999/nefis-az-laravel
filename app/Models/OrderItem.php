@@ -22,6 +22,7 @@ class OrderItem extends Model
         'photo_frames',
         // The night sky the customer chose: date, hour, place, coordinates.
         'star_map',
+        'street_map',
         // The song on the box, as spotify:track:… — the canonical form, so the
         // code can be redrawn at any size years after the order.
         'spotify_uri',
@@ -53,6 +54,7 @@ class OrderItem extends Model
             'text_labels' => 'array',
             'photo_frames' => 'array',
             'star_map' => 'array',
+            'street_map' => 'array',
             'chocolate_price' => 'float',
             'wrapping_price' => 'float',
             'letter_price' => 'float',
@@ -101,7 +103,7 @@ class OrderItem extends Model
         // listed: the photographs the customer sent, and their names, stay
         // one-to-one.
         return $product->photoSlots->values()
-            ->reject(fn ($slot) => $slot->isSky())
+            ->reject(fn ($slot) => ! $slot->needsUpload())
             ->values()
             ->map(fn ($slot, $i) => ($i + 1) . '. ' . ($slot->label ?: 'Şəkil'))
             ->all();

@@ -96,11 +96,20 @@
      both by the markup below and by the scripts at the foot of the page. */
   /* A window holding the sky fills itself. Only a window the customer has
      to put a picture in keeps the button shut. */
-  $needsPhoto = $photoSlots->contains(fn ($s) => ! $s->isSky());
+  $needsPhoto = $photoSlots->contains(fn ($s) => $s->needsUpload());
   $skySlot = $photoSlots->first(fn ($s) => $s->isSky());
   $skyOffers = $skySlot?->skyChoices() ?? [];
   $skyLook = $skySlot?->skyDefaults() ?? \App\Support\Sky::LOOK;
   $skyExtras = (bool) ($skyLook['labels'] || $skyLook['milky'] || array_intersect(['labels', 'milky'], $skyOffers));
+  /* The map window, if this design has one: the same three questions as the
+     sky — what the customer may change, and how it looks before he does. */
+  $mapSlot = \App\Support\StreetMap::slot($product);
+  $mapOffers = $mapSlot?->mapChoices() ?? [];
+  $mapLook = $mapSlot?->mapDefaults() ?? \App\Support\StreetMap::LOOK;
+  // The date is only asked for when a caption on the box is waiting for one.
+  $mapWantsDate = $mapSlot && $product->textSlots->contains(
+      fn ($t) => in_array($t->auto, ['date', 'date_long'], true)
+  );
   // Does this design cut faces out? The preview turns between the front and
   // the other angles, so a cut-out window on any of them counts.
   $cutsFaces = $photoSlots->contains(fn ($slot) => $slot->cutout)
@@ -110,6 +119,13 @@
 
 @section('page_style')
   .slot-block [hidden]{ display:none !important; }
+  .map-hits{ list-style:none; margin:.4rem 0 0; padding:0; border:1px solid var(--line);
+    border-radius:12px; overflow:hidden; background:var(--card); }
+  .map-hits li{ padding:.6rem .8rem; cursor:pointer; font-size:.92rem; line-height:1.35;
+    border-bottom:1px solid var(--line); }
+  .map-hits li:last-child{ border-bottom:0; }
+  .map-hits li:hover, .map-hits li[aria-selected="true"]{ background:var(--sand); }
+  #map-chosen:not(:empty){ color:var(--gold); font-weight:600; }
   .slot-block{ border-top:1px solid var(--line); padding-top:1.25rem; }
   .slot-block:first-of-type{ border-top:none; padding-top:0; }
   .slot-block .zoom-row{ margin-top:.75rem; }
@@ -431,7 +447,7 @@
 
         @php $photoNo = 0; @endphp
         @foreach($photoSlots as $index => $slot)
-          @continue($slot->isSky())
+          @continue(! $slot->needsUpload())
           @php $photoNo++; @endphp
           <div class="slot-block" data-slot="{{ $index }}">
             <label>{{ $photoNo }}. {{ $slot->label ? __($slot->tr('label')) : __('Şəkil') }}</label>
@@ -563,6 +579,66 @@
             <input type="hidden" name="star_lon" id="star-lon" value="49.8920">
             <input type="hidden" name="star_place" id="star-place" value="Bakı">
             <p class="slot-hint" id="sky-coords" style="margin-top:.5rem;"></p>
+          </div>
+        @endif
+
+        @if($mapSlot)
+          {{-- The place itself. What is printed under the streets — the name,
+               the coordinates, the date — are ordinary caption fields of the
+               design, so the owner keeps control of how they are set. --}}
+          <div class="sky-block" id="map-block">
+            <label>{{ __('Lokasiya') }}</label>
+            <p class="slot-hint" style="margin-bottom:.6rem;">{{ __('Yeri yazın — o yerin küçələri qutunun üzərinə düşəcək.') }}</p>
+
+            <label for="map-search" class="sky-lbl">{{ __('Yer') }}</label>
+            <input type="text" id="map-search" class="text-input" autocomplete="off"
+                   placeholder="{{ __('Sahil metrosu, Bakı') }}"
+                   value="{{ old('map_place') }}">
+            <ul class="map-hits" id="map-hits" hidden></ul>
+            <p class="slot-hint" id="map-chosen" style="margin-top:.5rem;"></p>
+
+            @if($mapWantsDate)
+              <div class="sky-row" style="margin-top:.6rem;">
+                <div>
+                  <label for="map-date" class="sky-lbl">{{ __('Tarix') }}</label>
+                  <input type="date" id="map-date" name="map_date" class="text-input"
+                         max="{{ now()->addYears(1)->toDateString() }}" min="1900-01-01"
+                         value="{{ old('map_date') }}">
+                </div>
+                <div>
+                  <label for="map-time" class="sky-lbl">{{ __('Saat') }}</label>
+                  <input type="time" id="map-time" name="map_time" class="text-input" value="{{ old('map_time') }}">
+                </div>
+              </div>
+              <label class="sky-switch" style="margin-top:.4rem;">
+                <input type="checkbox" name="map_with_time" value="1" @checked(old('map_with_time'))>
+                <span>{{ __('Tarixdə saat da olsun') }}</span>
+              </label>
+            @endif
+
+            @if(in_array('zoom', $mapOffers, true))
+              <div class="range-row" style="margin-top:.7rem;">
+                <span class="lbl">{{ __('Yaxınlıq') }}</span>
+                <input type="range" id="map-zoom" name="map_zoom" min="{{ \App\Support\StreetMap::ZOOM_MIN }}"
+                       max="{{ \App\Support\StreetMap::ZOOM_MAX }}"
+                       value="{{ old('map_zoom', $mapLook['zoom']) }}">
+              </div>
+            @endif
+
+            @if(in_array('pin', $mapOffers, true))
+              <div class="sky-switches">
+                <label class="sky-switch">
+                  <input type="checkbox" name="map_pin" value="1" data-map-switch="pin"
+                         @checked(old('map_pin', $mapLook['pin']))>
+                  <span>{{ \App\Support\StreetMap::choiceLabels()['pin'] }}</span>
+                </label>
+              </div>
+            @endif
+
+            <input type="hidden" name="map_lat" id="map-lat" value="{{ old('map_lat') }}">
+            <input type="hidden" name="map_lon" id="map-lon" value="{{ old('map_lon') }}">
+            <input type="hidden" name="map_place" id="map-place" value="{{ old('map_place') }}">
+            <p class="slot-hint" style="margin-top:.6rem;">{{ \App\Support\StreetMap::creditLong() }}</p>
           </div>
         @endif
 
@@ -855,6 +931,9 @@
   @endif
   <script src="{{ asset('js/star-map.js') }}?v={{ \App\Support\Assets::version('js/star-map.js') }}"></script>
 @endif
+@if($mapSlot)
+  <script src="{{ asset('js/street-map.js') }}?v={{ \App\Support\Assets::version('js/street-map.js') }}"></script>
+@endif
 @if($cutsFaces)
 <script defer src="{{ asset('js/face-cutout.js') }}?v={{ \App\Support\Assets::version('js/face-cutout.js') }}"></script>
 <script defer src="{{ asset('js/cutout-brush.js') }}?v={{ \App\Support\Assets::version('js/cutout-brush.js') }}"></script>
@@ -874,6 +953,17 @@
   var ANGLES = @json($viewData);
   var SLOT_COUNT = {{ $photoSlots->count() }};
   var SKY_SLOT = @json($photoSlots->values()->map(fn ($s) => $s->isSky())->all());
+  var MAP_SLOT = @json($photoSlots->values()->map(fn ($s) => $s->isMap())->all());
+
+  /* What the customer said about the place. `lat` stays null until he picks
+     one, and the window draws its own quiet stand-in until then. */
+  @php
+    $spotStart = $mapSlot
+        ? ['lat' => null, 'lon' => null, 'place' => '', 'date' => null, 'time' => '', 'withTime' => false]
+          + $mapLook
+        : null;
+  @endphp
+  var spot = @json($spotStart);
 
   /* What the customer said about the night, and the little that follows from
      it. Read by the drawing below; changed by the controls further down. */
@@ -1045,16 +1135,34 @@
      strings out again on its own side, so a changed field cannot change what
      is made. */
   function autoCaption(kind){
-    if (!sky) return '';
-    var d = String(sky.date || '').split('-');
-    if (kind === 'coords') return window.NefisStarMap ? window.NefisStarMap.coordinates(sky.lat, sky.lon) : '';
-    var hour = sky.withTime && sky.time ? ', ' + sky.time : '';
+    /* A design holds the sky or a place, never both; whichever it is answers
+       the same four captions. */
+    var a = sky || spot;
+    if (!a) return '';
+    if (kind === 'place') return a.place || '';
+    if (kind === 'coords') {
+      if (a.lat == null || !window.NefisStarMap) return '';
+
+      return window.NefisStarMap.coordinates(a.lat, a.lon);
+    }
+    if (!a.date) return '';
+    var d = String(a.date).split('-');
+    var hour = a.withTime && a.time ? ', ' + a.time : '';
     if (kind === 'date') return (d[2] || '') + '.' + (d[1] || '') + '.' + (d[0] || '') + hour;
     if (kind === 'date_long') return Number(d[2]) + ' ' + (MONTHS[Number(d[1]) - 1] || '') + ' ' + d[0] + hour;
-    if (kind === 'place') return sky.place || '';
 
     return '';
   }
+
+  /* The place the customer named, straight into the drawing. */
+  window.nefisMap = function(next){
+    if (!spot) return;
+    Object.keys(next).forEach(function(k){ spot[k] = next[k]; });
+    document.querySelectorAll('[data-auto]').forEach(function(el){
+      el.value = autoCaption(el.dataset.auto);
+    });
+    draw();
+  };
 
   window.nefisSky = function(next){
     if (!sky) return;
@@ -1067,6 +1175,9 @@
     document.querySelectorAll('[data-auto]').forEach(function(el){
       el.value = autoCaption(el.dataset.auto);
     });
+    /* Choosing the place is what fills a map window, so the button that was
+       waiting for it opens here. */
+    if (! cutting && allSlotsFilled()) { addBtn.disabled = false; markAdd(false); }
     draw();
   };
 
@@ -1134,6 +1245,27 @@
     mctx.restore();
   }
 
+  /* The streets around the place, drawn into the flat design just as the sky
+     is, so every scene and the print file get it for free. */
+  function drawMapInArea(mctx, area){
+    if (!window.NefisStreetMap || !spot) return;
+    var boxed = area.shape === 'full' || area.shape === 'rectangle' || area.shape === 'home';
+    var d = boxed ? Math.max(area.w, area.h) : Math.min(area.w, area.h);
+    mctx.save();
+    mctx.translate(area.x + area.w / 2, area.y + area.h / 2);
+    mctx.rotate(area.rotation * Math.PI / 180);
+    window.NefisStreetMap.draw(mctx, {
+      lat: spot.lat, lon: spot.lon, zoom: spot.zoom || area.mapZoom || 15,
+      shape: area.shape === 'heart' ? 'heart' : (boxed ? area.shape : 'circle'),
+      style: area.mapStyle || 'ink',
+      marker: area.mapMarker || 'heart', pin: spot.pin !== false,
+      size: d, radius: d / 2, cx: 0, cy: 0, page: false,
+      box: { x: -area.w / 2, y: -area.h / 2, w: area.w, h: area.h },
+      onReady: function(){ draw(); }
+    });
+    mctx.restore();
+  }
+
   function drawPhotoInArea(mctx, area, state){
     var img = state.img;
     if (!img) return;
@@ -1182,6 +1314,7 @@
 
     a.areas.forEach(function(area, i){
       if (area.fill === 'sky') { drawSkyInArea(mctx, area); return; }
+      if (area.fill === 'map') { drawMapInArea(mctx, area); return; }
       if (photos[i]) drawPhotoInArea(mctx, area, photos[i]);
     });
 
@@ -1363,8 +1496,11 @@
   }
 
   function allSlotsFilled(){
-    /* A window holding the sky needs nothing uploaded: it is already full. */
-    return photos.every(function(p, i){ return SKY_SLOT[i] || p.img !== null; });
+    /* A window holding the sky or a place needs nothing uploaded: it fills
+       itself. A place does have to be chosen, though. */
+    if (spot && spot.lat == null) return false;
+
+    return photos.every(function(p, i){ return SKY_SLOT[i] || MAP_SLOT[i] || p.img !== null; });
   }
 
   /* Said once on load as well: a design whose only window is the sky has
@@ -1984,6 +2120,95 @@
     el.addEventListener('change', apply);
   });
   apply();
+})();
+
+/* The place the customer names. He types, the shop answers with what it
+   found, and the streets around whatever he picks go onto the box. */
+(function(){
+  var block = document.getElementById('map-block');
+  if (!block || !window.nefisMap) return;
+
+  var search = document.getElementById('map-search');
+  var hits = document.getElementById('map-hits');
+  var chosen = document.getElementById('map-chosen');
+  var latEl = document.getElementById('map-lat');
+  var lonEl = document.getElementById('map-lon');
+  var placeEl = document.getElementById('map-place');
+  var zoomEl = document.getElementById('map-zoom');
+  var dateEl = document.getElementById('map-date');
+  var timeEl = document.getElementById('map-time');
+  var withTimeEl = block.querySelector('[name="map_with_time"]');
+  var pinEl = block.querySelector('[data-map-switch="pin"]');
+
+  var waiting = null;
+  var lastAsked = '';
+
+  function show(list){
+    hits.innerHTML = '';
+    if (!list.length) { hits.hidden = true; return; }
+    list.forEach(function(hit){
+      var li = document.createElement('li');
+      li.textContent = hit.name;
+      li.addEventListener('click', function(){ pick(hit); });
+      hits.appendChild(li);
+    });
+    hits.hidden = false;
+  }
+
+  function pick(hit){
+    hits.hidden = true;
+    search.value = hit.name;
+    latEl.value = hit.lat;
+    lonEl.value = hit.lon;
+    placeEl.value = hit.name;
+    if (chosen && window.NefisStarMap) {
+      chosen.textContent = window.NefisStarMap.coordinates(hit.lat, hit.lon);
+    }
+    push();
+  }
+
+  function push(){
+    window.nefisMap({
+      lat: latEl.value === '' ? null : parseFloat(latEl.value),
+      lon: lonEl.value === '' ? null : parseFloat(lonEl.value),
+      place: placeEl.value,
+      zoom: zoomEl ? +zoomEl.value : undefined,
+      pin: pinEl ? pinEl.checked : undefined,
+      date: dateEl && dateEl.value ? dateEl.value : null,
+      time: timeEl ? timeEl.value : '',
+      withTime: withTimeEl ? withTimeEl.checked : false
+    });
+  }
+
+  function ask(){
+    var text = search.value.trim();
+    if (text.length < 2 || text === lastAsked) return;
+    lastAsked = text;
+    fetch('{{ route('place.search') }}?q=' + encodeURIComponent(text), { headers: { 'Accept': 'application/json' } })
+      .then(function(r){ return r.ok ? r.json() : { results: [] }; })
+      .then(function(d){ show(d.results || []); })
+      .catch(function(){ hits.hidden = true; });
+  }
+
+  search.addEventListener('input', function(){
+    clearTimeout(waiting);
+    waiting = setTimeout(ask, 350);
+  });
+  search.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') { e.preventDefault(); clearTimeout(waiting); ask(); }
+  });
+  document.addEventListener('click', function(e){
+    if (!block.contains(e.target)) hits.hidden = true;
+  });
+
+  [zoomEl, dateEl, timeEl, withTimeEl, pinEl].forEach(function(el){
+    if (!el) return;
+    el.addEventListener('input', push);
+    el.addEventListener('change', push);
+  });
+
+  /* A page that came back with its answers still filled in draws them. */
+  if (latEl.value !== '') push();
 })();
 
 /* The running price: the box, the chosen bar, times how many. */

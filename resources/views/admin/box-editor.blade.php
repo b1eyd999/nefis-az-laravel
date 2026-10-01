@@ -282,6 +282,7 @@
 <script src="{{ asset('js/star-data.js') }}?v={{ \App\Support\Assets::version('js/star-data.js') }}"></script>
 <script src="{{ asset('js/star-extra.js') }}?v={{ \App\Support\Assets::version('js/star-extra.js') }}"></script>
 <script src="{{ asset('js/star-map.js') }}?v={{ \App\Support\Assets::version('js/star-map.js') }}"></script>
+<script src="{{ asset('js/street-map.js') }}?v={{ \App\Support\Assets::version('js/street-map.js') }}"></script>
 <script src="{{ asset('js/box-render.js') }}?v={{ \App\Support\Assets::version('js/box-render.js') }}"></script>
 <script src="{{ asset('js/scene-render.js') }}?v={{ \App\Support\Assets::version('js/scene-render.js') }}"></script>
 <script src="{{ asset('js/cover.js') }}?v={{ \App\Support\Assets::version('js/cover.js') }}"></script>
@@ -635,8 +636,35 @@
     return true;
   }
 
+  /* A window set to a place shows the real streets here, for the same reason
+     the sky does: the owner is judging density and edge. The place is a fixed
+     corner of Baku — the customer's own place replaces it on the shop page. */
+  function drawMapArea(p){
+    if (!window.NefisStreetMap) return false;
+    var boxed = p.shape === 'full' || p.shape === 'rectangle' || p.shape === 'home';
+    var d = boxed ? Math.max(p.width, p.height) : Math.min(p.width, p.height);
+    ctx.save();
+    ctx.translate(p.x + p.width / 2, p.y + p.height / 2);
+    ctx.rotate(rad(p.rotation || 0));
+    window.NefisStreetMap.draw(ctx, {
+      lat: 40.3777, lon: 49.8920, zoom: +p.map_zoom || 15,
+      shape: p.shape === 'heart' ? 'heart' : (boxed ? p.shape : 'circle'),
+      style: p.map_style || 'ink',
+      marker: p.map_marker || 'heart', pin: p.map_pin !== false,
+      size: d, radius: d / 2, cx: 0, cy: 0, page: false,
+      box: { x: -p.width / 2, y: -p.height / 2, w: p.width, h: p.height },
+      /* The streets arrive after the frame is drawn; when they do, the whole
+         canvas is drawn again rather than patched. */
+      onReady: function(){ draw(); }
+    });
+    ctx.restore();
+
+    return true;
+  }
+
   function drawPhotoArea(p){
     if (p.fill === 'sky' && drawSkyArea(p)) return;
+    if (p.fill === 'map' && drawMapArea(p)) return;
     ctx.save();
     ctx.translate(p.x + p.width / 2, p.y + p.height / 2);
     ctx.rotate(rad(p.rotation || 0));
@@ -1297,7 +1325,30 @@
     } else if (selection.kind === 'photo') {
       h += '<h3>Foto sahəsi</h3>';
       h += '<p class="hint">Müştərinin yüklədiyi şəkil bura düşür. "Fotonun üstündə" olan qatlar onu örtür.</p>';
-      h += '<div class="row one">' + field('Bura nə düşür', seg('fill', it.fill || 'photo', [['photo', 'Müştərinin şəkli'], ['sky', 'Ulduz xəritəsi']])) + '</div>';
+      h += '<div class="row one">' + field('Bura nə düşür', seg('fill', it.fill || 'photo', [['photo', 'Müştərinin şəkli'], ['sky', 'Ulduz xəritəsi'], ['map', 'Lokasiya xəritəsi']])) + '</div>';
+      if (it.fill === 'map') {
+        h += '<p class="hint">Müştəri yeri seçir — o yerin küçələri bura düşür. Yazılar (yerin adı, koordinatlar, tarix) ayrıca mətn sahələridir.</p>';
+        h += '<div class="row one">' + field('Forma', seg('shape', it.shape, [['rectangle', 'Düzbucaqlı'], ['ellipse', 'Dairə'], ['heart', 'Ürək'], ['home', 'Ev'], ['full', 'Tam sahə']])) + '</div>';
+        h += '<div class="row one">' + field('Rəng', seg('map_style', it.map_style || 'ink', [['ink', 'Qara fon, ağ küçələr'], ['paper', 'Ağ fon, qara küçələr'], ['sea', 'Dəniz mavisi'], ['colour', 'Rəngli']])) + '</div>';
+        h += '<div class="row">' + field('Yaxınlıq (11–18)', num('map_zoom', it.map_zoom == null ? 15 : it.map_zoom)) + '</div>';
+        h += '<p class="hint">11 bütün şəhər, 15 bir neçə küçə, 18 bir həyət.</p>';
+        h += '<h4>Başlanğıc görünüş</h4>';
+        h += '<div class="row one">' + field('Nöqtə nişanı', seg('map_marker', it.map_marker || 'heart', [['none', 'Yoxdur'], ['pin', 'Damcı'], ['heart', 'Ürək'], ['star', 'Ulduz']])) + '</div>';
+        h += '<div class="row one">' + field('Nişan görünsün', seg('map_pin', it.map_pin === false ? 0 : 1, [[1, 'Var'], [0, 'Yox']])) + '</div>';
+        h += '<h4>Müştəri dəyişə bilsin</h4>';
+        h += '<p class="hint">Seçdikləriniz sifariş səhifəsində açar kimi görünür; qalanları olduğu kimi çap olunur.</p>';
+        var mpicked = String(it.map_choices == null ? 'zoom' : it.map_choices).split(',');
+        [['zoom', 'Yaxınlığı'], ['pin', 'Nişanı']].forEach(function(c){
+          h += '<div class="row one">' + field(c[1], seg('mapchoice_' + c[0], mpicked.indexOf(c[0]) >= 0 ? 1 : 0, [[1, 'Seçə bilər'], [0, 'Yox']])) + '</div>';
+        });
+        h += '<div class="actions"><button class="btn small" data-act="dup">Təkrarla</button><button class="btn small danger" data-act="del">Sil</button></div>';
+
+        /* Like the sky below, a map window asks nothing about a photograph,
+           so the panel is written out here and this branch leaves. */
+        props.innerHTML = h;
+
+        return;
+      }
       if (it.fill === 'sky') {
         h += '<p class="hint">Müştəri tarixi, saatı və yeri seçir — o gecə o yerin üstündəki səma bura düşür. Yazılar (ad, koordinatlar) ayrıca mətn sahələridir.</p>';
         h += '<div class="row one">' + field('Forma', seg('shape', it.shape, [['ellipse', 'Dairə'], ['heart', 'Ürək'], ['rectangle', 'Düzbucaqlı'], ['full', 'Tam sahə']])) + '</div>';
@@ -1436,6 +1487,15 @@
       it.fill = +b.dataset.v ? (it.fill || '#ffffff') : null;
       commit(); refresh(); return;
     }
+    if (b.dataset.seg && b.dataset.seg.indexOf('mapchoice_') === 0 && it) {
+      var mkey = b.dataset.seg.slice(10);
+      var mhave = String(it.map_choices == null ? 'zoom' : it.map_choices).split(',').filter(Boolean);
+      var mat = mhave.indexOf(mkey);
+      if (+b.dataset.v && mat < 0) mhave.push(mkey);
+      if (! +b.dataset.v && mat >= 0) mhave.splice(mat, 1);
+      it.map_choices = mhave.join(',');
+      commit(); refresh(); return;
+    }
     if (b.dataset.seg && b.dataset.seg.indexOf('choice_') === 0 && it) {
       /* Which switches the shop page offers is kept as one comma-separated
          word, because that is what the design carries; here it is five
@@ -1451,7 +1511,7 @@
     if (b.dataset.seg && it) {
       /* data-v is always text. The yes/no switches would read the string "0"
          as yes, so those are kept as numbers. */
-      var yesNo = ['cutout', 'sky_lines', 'sky_labels', 'sky_milky', 'sky_heart'];
+      var yesNo = ['cutout', 'sky_lines', 'sky_labels', 'sky_milky', 'sky_heart', 'map_pin'];
       it[b.dataset.seg] = yesNo.indexOf(b.dataset.seg) >= 0 ? +b.dataset.v : b.dataset.v;
       if (b.dataset.seg === 'align' && selection.kind === 'text') {
         /* Keep the text box where it is; only the anchor moves. */
@@ -1513,10 +1573,12 @@
         kind = it.fill ? 'dolu' : 'konturlu';
       }
       else if (r.kind === 'photo') {
-        var sky = it.fill === 'sky';
-        thumb = sky ? '✨' : '👤';
-        name = sky ? 'Ulduz xəritəsi' : (it.label || 'Foto');
-        kind = it.shape === 'heart' ? 'ürək' : (it.shape === 'ellipse' ? (sky ? 'dairə' : 'oval') : 'düzbucaqlı');
+        var sky = it.fill === 'sky', map = it.fill === 'map';
+        thumb = sky ? '✨' : (map ? '📍' : '👤');
+        name = sky ? 'Ulduz xəritəsi' : (map ? 'Lokasiya xəritəsi' : (it.label || 'Foto'));
+        kind = it.shape === 'heart' ? 'ürək'
+          : (it.shape === 'home' ? 'ev'
+          : (it.shape === 'ellipse' ? (sky || map ? 'dairə' : 'oval') : 'düzbucaqlı'));
       }
       else {
         thumb = it.kind === 'time' ? '⏱' : '<span style="font-family:&quot;' + esc(it.font_family) + '&quot;,Inter;font-weight:700">T</span>';
@@ -2012,7 +2074,11 @@
         sky_ring_kind: p.sky_ring_kind || 'degrees',
         sky_choices: p.sky_choices == null ? 'lines,labels,milky' : p.sky_choices,
         sky_lines: p.sky_lines === false ? 0 : 1, sky_labels: p.sky_labels ? 1 : 0,
-        sky_milky: p.sky_milky ? 1 : 0, sky_heart: p.sky_heart ? 1 : 0, locked: !!p.locked }; }),
+        sky_milky: p.sky_milky ? 1 : 0, sky_heart: p.sky_heart ? 1 : 0,
+        map_style: p.map_style || 'ink', map_marker: p.map_marker || 'heart',
+        map_zoom: Math.max(11, Math.min(18, +p.map_zoom || 15)),
+        map_choices: p.map_choices == null ? 'zoom' : p.map_choices,
+        map_pin: p.map_pin === false ? 0 : 1, locked: !!p.locked }; }),
       texts: doc.texts.map(function(t){
         var o = clone(t);
         o.rotation = o.rotation || 0;

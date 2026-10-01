@@ -47,7 +47,7 @@ class Cart
 
     public static function add(int $productId, array $photoPaths, array $customTexts, int $quantity = 1,
         array $photoLabels = [], array $textLabels = [], ?array $chocolate = null, ?array $wrapping = null, ?array $letter = null, ?array $ar = null, ?string $spotify = null,
-        array $photoFrames = [], ?array $star = null): void
+        array $photoFrames = [], ?array $star = null, ?array $spot = null): void
     {
         $items = self::items();
         $items[] = [
@@ -60,6 +60,7 @@ class Cart
             'text_labels' => array_values($textLabels),
             'photo_frames' => array_values($photoFrames),
             'star' => $star,
+            'spot' => $spot,
             'chocolate' => $chocolate,
             'wrapping' => $wrapping,
             'letter' => $letter,

@@ -62,6 +62,7 @@ class SiteSettings extends Page implements HasActions, HasForms
             'epoint_enabled' => Setting::get(Setting::EPOINT_ENABLED) === '1',
             'epoint_public_key' => Epoint::publicKey(),
             'epoint_private_key' => Epoint::privateKey(),
+            'geoapify_key' => \App\Support\MapImage::key(),
             'seo_google' => Setting::get(Setting::SEO_GOOGLE),
             'seo_yandex' => Setting::get(Setting::SEO_YANDEX),
             'seo_bing' => Setting::get(Setting::SEO_BING),
@@ -311,6 +312,20 @@ class SiteSettings extends Page implements HasActions, HasForms
                     ])
                     ->columns(2)
                     ->collapsible(),
+                Forms\Components\Section::make('Lokasiya xəritələri')
+                    ->description('«lokasiya» qutularında müştərinin seçdiyi yerin küçələri buradan gəlir. '
+                        . 'Pulsuz hesab geoapify.com-da açılır (Projects → API Keys). Açar yazılmayınca xəritə '
+                        . 'pəncərələri boş görünür.')
+                    ->schema([
+                        Forms\Components\TextInput::make('geoapify_key')
+                            ->label('Geoapify API key')
+                            ->password()->revealable()->autocomplete(false)
+                            ->maxLength(190)
+                            ->helperText('Şifrələnmiş saxlanılır və brauzerə çıxmır. '
+                                . 'Xəritə məlumatları: © OpenStreetMap — bu sətir çapda da olmalıdır.')
+                            ->columnSpanFull(),
+                    ])
+                    ->collapsible(),
                 Forms\Components\Section::make('Əlaqə')
                     ->description('Saytın aşağısında və mobil menyuda görünür. Nömrə həm zəng, həm də WhatsApp üçün işlədilir.')
                     ->schema([
@@ -485,6 +500,7 @@ class SiteSettings extends Page implements HasActions, HasForms
         Setting::put(Setting::PAYMENT_NOTE, $data['payment_note'] ?? '');
         Setting::put(Setting::EPOINT_PUBLIC_KEY, trim((string) ($data['epoint_public_key'] ?? '')));
         Epoint::savePrivateKey($data['epoint_private_key'] ?? '');
+        \App\Support\MapImage::saveKey($data['geoapify_key'] ?? '');
         Setting::put(Setting::EPOINT_ENABLED, ! empty($data['epoint_enabled']));
         Setting::put(Setting::MAINTENANCE, (bool) $data['maintenance']);
         Setting::put(Setting::MAINTENANCE_MESSAGE, $data['maintenance_message']);

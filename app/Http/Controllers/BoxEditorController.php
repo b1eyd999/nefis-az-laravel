@@ -78,6 +78,9 @@ class BoxEditorController extends Controller
                 'sky_ring_kind' => $s->sky_ring_kind ?: 'degrees', 'sky_choices' => $s->sky_choices,
                 'sky_lines' => (bool) $s->sky_lines, 'sky_labels' => (bool) $s->sky_labels,
                 'sky_milky' => (bool) $s->sky_milky, 'sky_heart' => (bool) $s->sky_heart,
+                'map_style' => $s->map_style ?: 'ink', 'map_marker' => $s->map_marker ?: 'heart',
+                'map_zoom' => (int) ($s->map_zoom ?: 15), 'map_choices' => $s->map_choices,
+                'map_pin' => (bool) $s->map_pin,
                 'x' => $s->x, 'y' => $s->y,
                 'width' => $s->width, 'height' => $s->height,
                 'rotation' => $s->rotation, 'shape' => $s->shape, 'cutout' => (bool) $s->cutout,
@@ -257,8 +260,8 @@ class BoxEditorController extends Controller
             'photos.*.width' => ['required', 'numeric', 'min:1'],
             'photos.*.height' => ['required', 'numeric', 'min:1'],
             'photos.*.rotation' => ['required', 'numeric', 'between:-360,360'],
-            'photos.*.shape' => ['required', 'in:rectangle,ellipse,heart,full'],
-            'photos.*.fill' => ['nullable', 'in:photo,sky'],
+            'photos.*.shape' => ['required', 'in:rectangle,ellipse,heart,home,full'],
+            'photos.*.fill' => ['nullable', 'in:photo,sky,map'],
             'photos.*.sky_style' => ['nullable', Rule::in(PhotoSlot::SKY_STYLES)],
             'photos.*.sky_ring_kind' => ['nullable', Rule::in(PhotoSlot::SKY_RINGS)],
             'photos.*.sky_choices' => ['nullable', 'string', 'max:60'],
@@ -266,6 +269,11 @@ class BoxEditorController extends Controller
             'photos.*.sky_labels' => ['nullable', 'boolean'],
             'photos.*.sky_milky' => ['nullable', 'boolean'],
             'photos.*.sky_heart' => ['nullable', 'boolean'],
+            'photos.*.map_style' => ['nullable', Rule::in(PhotoSlot::MAP_STYLES)],
+            'photos.*.map_marker' => ['nullable', Rule::in(PhotoSlot::MAP_MARKERS)],
+            'photos.*.map_zoom' => ['nullable', 'integer', 'between:11,18'],
+            'photos.*.map_choices' => ['nullable', 'string', 'max:60'],
+            'photos.*.map_pin' => ['nullable', 'boolean'],
             'photos.*.cutout' => ['nullable', 'boolean'],
             'photos.*.locked' => ['nullable', 'boolean'],
 
@@ -392,7 +400,9 @@ class BoxEditorController extends Controller
                 $product->photoSlots()->create([
                     'label' => $p['label'] ?? null,
                     'i18n' => self::slotTranslations($p['i18n'] ?? null, ['label']),
-                    'fill' => ($p['fill'] ?? null) === PhotoSlot::SKY ? PhotoSlot::SKY : PhotoSlot::PHOTO,
+                    'fill' => in_array($p['fill'] ?? null, [PhotoSlot::SKY, PhotoSlot::MAP], true)
+                        ? $p['fill']
+                        : PhotoSlot::PHOTO,
                     'sky_style' => in_array($p['sky_style'] ?? null, PhotoSlot::SKY_STYLES, true) ? $p['sky_style'] : 'night',
                     'sky_ring' => true,
                     'sky_ring_kind' => in_array($p['sky_ring_kind'] ?? null, PhotoSlot::SKY_RINGS, true) ? $p['sky_ring_kind'] : 'degrees',
@@ -404,6 +414,14 @@ class BoxEditorController extends Controller
                     'sky_labels' => (bool) ($p['sky_labels'] ?? false),
                     'sky_milky' => (bool) ($p['sky_milky'] ?? false),
                     'sky_heart' => (bool) ($p['sky_heart'] ?? false),
+                    'map_style' => in_array($p['map_style'] ?? null, PhotoSlot::MAP_STYLES, true) ? $p['map_style'] : 'ink',
+                    'map_marker' => in_array($p['map_marker'] ?? null, PhotoSlot::MAP_MARKERS, true) ? $p['map_marker'] : 'heart',
+                    'map_zoom' => \App\Support\StreetMap::zoom($p['map_zoom'] ?? 15),
+                    'map_choices' => implode(',', array_intersect(
+                        array_filter(array_map('trim', explode(',', (string) ($p['map_choices'] ?? '')))),
+                        PhotoSlot::MAP_CHOICES
+                    )),
+                    'map_pin' => (bool) ($p['map_pin'] ?? true),
                     'x' => (int) round($p['x']), 'y' => (int) round($p['y']),
                     'width' => (int) round($p['width']), 'height' => (int) round($p['height']),
                     'rotation' => (int) round($p['rotation']), 'shape' => $p['shape'],

@@ -20,6 +20,7 @@
     <p>{{ __('Hər qutu sifariş üzrə hazırlanır: sizin şəkliniz, sizin sözlərinizlə. Qutunun içinə seçdiyiniz şokolad qoyulur. İstəyinizə görə hədiyyə qablaşdırması, polaroid məktub və canlı şəkil (telefonla açılan video) da əlavə olunur.') }}</p>
     <p>{{ __('Bəzi dizaynlarda şəklin yerinə gecə səmasını seçmək olur: seçdiyiniz tarixdə, seçdiyiniz yerin üstündəki səma çap olunur. Polaroid məktub və canlı şəkil ayrıca da sifariş edilə bilər.') }}</p>
     <p>{{ __('Şirkətlər üçün loqolu qutular ayrı qaydada, sorğu ilə hazırlanır.') }}</p>
+    <p>{{ __('«Lokasiya» dizaynlarında seçdiyiniz yerin küçələri çap olunur. Xəritə məlumatları OpenStreetMap-dəndir və ODbL lisenziyası ilə paylaşılır; bu qeyd həm saytda, həm də qutunun üzərində göstərilir.') }}</p>
 
     <h2>{{ __('Sifariş necə verilir') }}</h2>
     <p>{{ __('Sifariş vermək üçün hesab lazımdır: ad, e-poçt, Azərbaycan nömrəsi və şifrə. Bir nömrə ilə bir hesab açılır.') }}</p>

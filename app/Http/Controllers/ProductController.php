@@ -221,6 +221,11 @@ class ProductController extends Controller
                 'fill' => $slot->fill ?: \App\Models\PhotoSlot::PHOTO,
                 'skyStyle' => $slot->sky_style ?: 'night',
                 'skyRing' => $slot->sky_ring_kind ?: 'degrees',
+                // 'map' means the same, for the streets around a place.
+                'mapStyle' => $slot->map_style ?: 'ink',
+                'mapMarker' => $slot->map_marker ?: 'heart',
+                'mapZoom' => (int) ($slot->map_zoom ?: 15),
+                'mapPin' => (bool) $slot->map_pin,
             ])->values()->all(),
             'texts' => $view->textSlots->map(fn ($slot) => [
                 'x' => (int) $slot->x,

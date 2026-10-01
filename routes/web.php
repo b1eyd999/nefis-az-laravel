@@ -70,6 +70,14 @@ Route::middleware(['throttle:40,1', 'data'])->prefix('xerite')->name('map.')->gr
     Route::get('/axtar', [MapController::class, 'search'])->name('search');
 });
 
+// The streets behind a map box, and the search that finds a place. Separate
+// from the `map.` routes above: those are the checkout's delivery map and are
+// bounded to Baku, while a box may hold any corner of the world.
+Route::middleware(['throttle:60,1', 'data'])->prefix('lokasiya')->name('place.')->group(function () {
+    Route::get('/sekil', [\App\Http\Controllers\PlaceMapController::class, 'image'])->name('image');
+    Route::get('/axtar', [\App\Http\Controllers\PlaceMapController::class, 'search'])->name('search');
+});
+
 // ---------------------------------------------------------------------------
 // The customer's site, once per language.
 // ---------------------------------------------------------------------------
@@ -110,6 +118,10 @@ Route::get('/podarki/{slug}', fn (string $slug) => redirect('/ru/podarki/' . $sl
 // One order line's star map, drawn at printing size for the workshop.
 Route::get('/admin-ulduz/{item}', [\App\Http\Controllers\StarMapController::class, 'show'])
     ->middleware(['auth', 'staff'])->name('star.print');
+
+// And one order line's location map, the same way.
+Route::get('/admin-lokasiya/{item}', [\App\Http\Controllers\PlacePrintController::class, 'show'])
+    ->middleware(['auth', 'staff'])->name('place.print');
 
 Route::middleware(['auth', 'locale', 'staff'])->prefix('admin-phone')->name('phone.')->group(function () {
     Route::get('/', [PhoneOrders::class, 'index'])->name('orders.index');

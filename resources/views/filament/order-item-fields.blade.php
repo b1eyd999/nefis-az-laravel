@@ -85,6 +85,27 @@
     </div>
   @endif
 
+  @if(filled($line->street_map))
+    {{-- The place the customer chose. Nothing is stored as a picture here
+         either: these numbers redraw the streets at any size. --}}
+    @php $spot = $line->street_map; @endphp
+    <div style="border:1px dashed rgba(200,140,60,.7); border-radius:.75rem; padding:.6rem .75rem;">
+      <div style="font-size:.8rem; font-weight:700; margin-bottom:.45rem;">📍 Lokasiya xəritəsi</div>
+      <div style="font-size:.85rem; white-space:normal;">
+        {{ $spot['place'] ?: '—' }}
+        @if(! empty($spot['date']))
+          · {{ \Illuminate\Support\Carbon::parse($spot['date'])->format('d.m.Y') }}@if(! empty($spot['withTime']) && ! empty($spot['time'])), {{ $spot['time'] }}@endif
+        @endif
+      </div>
+      <div style="font-size:.78rem; opacity:.8; margin-top:.2rem;">
+        {{ \App\Support\Sky::coordinates((float) $spot['lat'], (float) $spot['lon']) }}
+        · yaxınlıq {{ $spot['zoom'] ?? 15 }}
+      </div>
+      <a href="{{ route('place.print', $line) }}" target="_blank" rel="noopener"
+         style="display:inline-block; margin-top:.45rem; font-size:.85rem; font-weight:600; text-decoration:underline;">Çap üçün aç →</a>
+    </div>
+  @endif
+
   @if($item->spotify_uri)
     {{-- The song the customer chose. The code is here ready to put on the box —
          svg for the press, png to glance at — and the link is here so the shop

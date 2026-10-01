@@ -39,6 +39,12 @@ class Setting extends Model
 
     public const MAINTENANCE_MESSAGE = 'maintenance_message';
 
+    /**
+     * The key that fetches the streets for a map box. Kept encrypted, like the
+     * other keys here: it is the shop's own and never reaches the browser.
+     */
+    public const GEOAPIFY_KEY = 'geoapify_key';
+
     /** When the scheduler last ran. Written by the scheduler itself, once a minute. */
     public const SCHEDULE_SEEN = 'schedule_seen';
 
@@ -209,6 +215,7 @@ class Setting extends Model
         self::MAINTENANCE => '0',
         self::SALE_TOASTS => '1',
         self::EPOINT_ENABLED => '0',
+        self::GEOAPIFY_KEY => '',
         self::EPOINT_PUBLIC_KEY => '',
         self::EPOINT_PRIVATE_KEY => '',
         self::MAINTENANCE_MESSAGE => 'Saytda texniki işlər aparılır. Tezliklə qayıdacağıq!',

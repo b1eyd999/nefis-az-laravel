@@ -13,6 +13,7 @@ use App\Support\Cart;
 use App\Support\DeliveryTime;
 use App\Support\Letter;
 use App\Support\Sky;
+use App\Support\StreetMap;
 use App\Support\SpotifyCode;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,8 +56,8 @@ class CartController extends Controller
         }
 
         foreach ($product->photoSlots as $index => $slot) {
-            if ($slot->isSky()) {
-                continue;               // the sky is asked for by date and place, not uploaded
+            if (! $slot->needsUpload()) {
+                continue;               // the sky and the map fill themselves
             }
             $rules["photos.$index"] = ['required', 'image', 'max:' . self::PHOTO_MAX_KB];
             // How the photo sits in its window, as the page's own JSON; a
@@ -75,6 +76,19 @@ class CartController extends Controller
             $rules['star_place'] = ['nullable', 'string', 'max:60'];
             foreach (\App\Models\PhotoSlot::SKY_CHOICES as $choice) {
                 $rules[Sky::field($choice)] = ['nullable', 'boolean'];
+            }
+        }
+
+        if (StreetMap::wanted($product)) {
+            $rules['map_lat'] = ['required', 'numeric', 'between:-85,85'];
+            $rules['map_lon'] = ['required', 'numeric', 'between:-180,180'];
+            $rules['map_place'] = ['nullable', 'string', 'max:60'];
+            $rules['map_zoom'] = ['nullable', 'integer', 'between:' . StreetMap::ZOOM_MIN . ',' . StreetMap::ZOOM_MAX];
+            $rules['map_date'] = ['nullable', 'date', 'after:1899-12-31', 'before:' . now()->addYears(2)->toDateString()];
+            $rules['map_time'] = ['nullable', 'date_format:H:i'];
+            $rules['map_with_time'] = ['nullable', 'boolean'];
+            foreach (\App\Models\PhotoSlot::MAP_CHOICES as $choice) {
+                $rules[StreetMap::field($choice)] = ['nullable'];
             }
         }
 
@@ -156,7 +170,7 @@ class CartController extends Controller
         $paths = [];
         $frames = [];
         foreach ($product->photoSlots as $index => $slot) {
-            if ($slot->isSky()) {
+            if (! $slot->needsUpload()) {
                 continue;
             }
             $paths[] = $request->file("photos.$index")->store('cart-photos', 'public');
@@ -166,10 +180,15 @@ class CartController extends Controller
         $skySlot = $product->photoSlots->first(fn ($slot) => $slot->isSky());
         $star = $skySlot ? Sky::fromRequest($request, $skySlot) : null;
 
+        $mapSlot = StreetMap::slot($product);
+        $spot = $mapSlot ? StreetMap::fromRequest($request, $mapSlot) : null;
+
         $texts = [];
         foreach ($product->textSlots as $index => $slot) {
             $texts[] = match (true) {
-                $slot->isAuto() => Sky::caption($slot->auto, $star),
+                /* A design holds the sky or a place, never both, and the
+                   same four captions answer for either. */
+                $slot->isAuto() => $spot ? StreetMap::caption($slot->auto, $spot) : Sky::caption($slot->auto, $star),
                 (bool) $slot->fixed => (string) $slot->default_value,
                 default => trim((string) $request->input("custom_texts.$index")),
             };
@@ -192,7 +211,7 @@ class CartController extends Controller
         Cart::add($product->id, $paths, $texts, $quantity,
             OrderItem::photoLabelsFor($product), OrderItem::textLabelsFor($product), $chocolate, $wrapping,
             $withLetter ? Letter::fromRequest($request) : null,
-            $withAr ? LiveMaterials::fromRequest($request) : null, $song, $frames, $star);
+            $withAr ? LiveMaterials::fromRequest($request) : null, $song, $frames, $star, $spot);
 
         // The line as it was just added — box, bar, paper, letter and video.
         $line = Cart::items()[array_key_last(Cart::items())] ?? [];
