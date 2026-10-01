@@ -2216,7 +2216,7 @@
       minZoom: {{ \App\Support\StreetMap::ZOOM_MIN }},
       maxZoom: {{ \App\Support\StreetMap::ZOOM_MAX }},
       /* Written out by hand: the route refuses the braces a tile layer needs. */
-      tiles: @json(url('/lokasiya/kafel/' . ($mapSlot->map_style ?: 'ink')) . '/{z}/{x}/{y}'),
+      tiles: @json(url('/lokasiya/kafel/' . ($mapSlot?->map_style ?: 'ink')) . '/{z}/{x}/{y}'),
       /* What he leaves in the frame is what the box is made from. */
       onMove: function(lat, lon, zoom){
         latEl.value = lat;
