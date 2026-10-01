@@ -249,9 +249,26 @@
     return { cx: cx, cy: cy, r: r, colours: colours };
   }
 
+  /** Degrees as a printed coordinate: 40°22'19"N. */
+  function coordinate(value, positive, negative) {
+    var v = Math.abs(Number(value) || 0);
+    var d = Math.floor(v);
+    var m = Math.floor((v - d) * 60);
+    var s = Math.round((((v - d) * 60) - m) * 60);
+    if (s === 60) { s = 0; m += 1; }
+    if (m === 60) { m = 0; d += 1; }
+
+    return d + '\u00b0' + (m < 10 ? '0' : '') + m + "'" + (s < 10 ? '0' : '') + s + '"' + (Number(value) < 0 ? negative : positive);
+  }
+
   window.NefisStreetMap = {
     draw: draw,
     styles: STYLES,
+    coordinate: coordinate,
+    /** "40°22'19"N 49°53'31"E", the way it is printed under the streets. */
+    coordinates: function (lat, lon) {
+      return coordinate(lat, 'N', 'S') + ' ' + coordinate(lon, 'E', 'W');
+    },
     /** What must be printed beside the streets. */
     credit: '© OpenStreetMap',
   };

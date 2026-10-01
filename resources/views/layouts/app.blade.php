@@ -439,6 +439,7 @@ document.addEventListener('submit', function(e){
 {{-- The shop's own calendar: the browser's date panel cannot be styled, so
      every date field on the site opens this one instead. --}}
 <script defer src="{{ asset('js/date-picker.js') }}?v={{ \App\Support\Assets::version('js/date-picker.js') }}"></script>
+<script defer src="{{ asset('js/time-picker.js') }}?v={{ \App\Support\Assets::version('js/time-picker.js') }}"></script>
 <script defer src="{{ asset('js/select-picker.js') }}?v={{ \App\Support\Assets::version('js/select-picker.js') }}"></script>
 </body>
 </html>

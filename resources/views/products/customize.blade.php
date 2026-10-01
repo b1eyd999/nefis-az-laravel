@@ -545,6 +545,7 @@
               <div>
                 <label for="star-time" class="sky-lbl">{{ __('Saat') }}</label>
                 <input type="time" id="star-time" name="star_time" class="text-input" required
+                       data-placeholder="{{ __('Saat seçin') }}"
                        value="{{ old('star_time', '21:00') }}">
               </div>
             </div>
@@ -607,7 +608,8 @@
                 </div>
                 <div>
                   <label for="map-time" class="sky-lbl">{{ __('Saat') }}</label>
-                  <input type="time" id="map-time" name="map_time" class="text-input" value="{{ old('map_time') }}">
+                  <input type="time" id="map-time" name="map_time" class="text-input"
+                         data-placeholder="{{ __('Saat seçin') }}" value="{{ old('map_time') }}">
                 </div>
               </div>
               <label class="sky-switch" style="margin-top:.4rem;">
@@ -1141,9 +1143,12 @@
     if (!a) return '';
     if (kind === 'place') return a.place || '';
     if (kind === 'coords') {
-      if (a.lat == null || !window.NefisStarMap) return '';
+      /* Whichever renderer this design loaded knows how to write a
+         coordinate; a map design never loads the star catalogue. */
+      var pen = window.NefisStarMap || window.NefisStreetMap;
+      if (a.lat == null || !pen) return '';
 
-      return window.NefisStarMap.coordinates(a.lat, a.lon);
+      return pen.coordinates(a.lat, a.lon);
     }
     if (!a.date) return '';
     var d = String(a.date).split('-');
@@ -2161,8 +2166,9 @@
     latEl.value = hit.lat;
     lonEl.value = hit.lon;
     placeEl.value = hit.name;
-    if (chosen && window.NefisStarMap) {
-      chosen.textContent = window.NefisStarMap.coordinates(hit.lat, hit.lon);
+    var pen = window.NefisStarMap || window.NefisStreetMap;
+    if (chosen && pen) {
+      chosen.textContent = pen.coordinates(hit.lat, hit.lon);
     }
     push();
   }

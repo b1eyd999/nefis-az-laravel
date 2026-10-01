@@ -1178,6 +1178,15 @@
 .np-day.is-on:hover{ background:var(--cocoa-2); }
 .np-day.is-other{ color:var(--cocoa-faint); cursor:default; font-weight:500; }
 .np-day.is-off{ color:var(--cocoa-faint); cursor:default; opacity:.5; }
+/* The clock: the calendar's panel, with the days swapped for hours. Six to a
+   row rather than seven, because a day has twenty-four of them. */
+.np-grid.is-hours, .np-grid.is-minutes{ grid-template-columns:repeat(6, 1fr); }
+.np-label{
+  margin:.35rem .15rem .1rem; font-size:.72rem; font-weight:700; letter-spacing:.02em;
+  text-transform:uppercase; color:var(--cocoa-faint);
+}
+.np-grid.is-minutes{ margin-bottom:.1rem; }
+.np-field.is-empty{ color:var(--cocoa-faint); }
 @media (max-width: 480px){
   .np-pop{ left:0; right:0; width:auto; max-width:none; }
 }
