@@ -13,6 +13,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // The owner's maintenance switch; staff and the admin panel stay open.
         $middleware->web(append: [\App\Http\Middleware\MaintenanceMode::class]);
+        /* The shop is Azerbaijani unless the address says otherwise. Said here
+           rather than left to the server's own APP_LOCALE: a page outside the
+           /ru and /en groups — the sign-out, a wrong address, a live photo —
+           used to come back in whatever language the hosting was configured
+           with, which is how signing out turned the shop English. */
+        $middleware->prependToGroup('web', \App\Http\Middleware\SetLocale::class);
         // Which language a page is written in comes from its address.
         // Who may open which part of the phone admin: the shop's people see
         // the orders, the owner alone sees the books, the stock and the videos.

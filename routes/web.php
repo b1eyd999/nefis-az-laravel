@@ -140,8 +140,6 @@ Route::middleware(['auth', 'locale', 'staff'])->prefix('admin-phone')->name('pho
 });
 
 Route::middleware('auth')->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
     // The admin's box editor: artwork layers, photo areas and captions.
     Route::prefix('qutu-redaktoru/{product:slug}')->name('box.')->group(function () {
         Route::get('/', [BoxEditorController::class, 'edit'])->name('edit');

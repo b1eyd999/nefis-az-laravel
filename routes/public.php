@@ -62,6 +62,12 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
+    /* Registered once per language, like the login: a customer who signs out
+       of the Russian site must land back on the Russian site. Outside the
+       language groups the address says nothing, and the page then came back
+       in whatever language the server itself is set to. */
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');

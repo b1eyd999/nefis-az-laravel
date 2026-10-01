@@ -190,7 +190,7 @@
             @if(auth()->user()->isStaff())
               <a class="nav-item" href="{{ url('/admin') }}"><span class="ni-ico">⚙️</span><span><b>{{ __('Admin panel') }}</b></span></a>
             @endif
-            <form method="POST" action="{{ route('logout') }}">
+            <form method="POST" action="{{ lroute('logout') }}">
               @csrf
               <button type="submit" class="nav-item"><span class="ni-ico">↩</span><span><b>{{ __('Çıxış') }}</b></span></button>
             </form>
@@ -236,7 +236,7 @@
       @if(auth()->user()->isStaff())
         <a href="{{ url('/admin') }}">{{ __('Admin panel') }}</a>
       @endif
-      <form method="POST" action="{{ route('logout') }}"><button type="submit">{{ __('Çıxış') }}</button></form>
+      <form method="POST" action="{{ lroute('logout') }}"><button type="submit">{{ __('Çıxış') }}</button></form>
     @else
       <a href="{{ lroute('login') }}">{{ __('Giriş') }}</a>
       <a href="{{ lroute('register') }}">{{ __('Qeydiyyat') }}</a>
