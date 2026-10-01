@@ -109,7 +109,9 @@ class ProductController extends Controller
         }
 
         // The bar that goes inside: chosen here, priced with the owner's markup.
-        $chocolates = Chocolate::shown()->get()->map->toCustomer()->values();
+        /* Cheapest first, inside every brand: the price is worked out from the
+           market price and the markup, so it cannot be ordered in the query. */
+        $chocolates = Chocolate::shown()->get()->map->toCustomer()->sortBy('price')->values();
 
         // Gift wraps, cheapest first; the page groups them by price.
         $wrappings = Wrapping::shown()->get()->map->toCustomer()->values();

@@ -418,6 +418,7 @@
             @endforeach
           </div>
         @endif
+        @include('partials.design-rights')
       </div>
 
       <form class="customize-panel" method="POST" action="{{ lroute('cart.add') }}" enctype="multipart/form-data" id="customize-form">

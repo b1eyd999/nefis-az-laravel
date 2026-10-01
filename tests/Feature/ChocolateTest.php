@@ -217,6 +217,23 @@ class ChocolateTest extends TestCase
         $this->assertMatchesRegularExpression('/value="' . $alenka->id . '"[^>]*\s+checked/', $html);
     }
 
+    public function test_the_cheapest_bar_of_a_brand_is_offered_first(): void
+    {
+        $box = $this->box();
+        Chocolate::create(['name' => 'Milka Oreo 92 qr', 'base_price' => 6]);
+        Chocolate::create(['name' => 'Milka Bubbles 90 qr', 'base_price' => 3]);
+        Chocolate::create(['name' => 'Milka Fındıqlı 85 qr', 'base_price' => 4.5]);
+
+        $html = $this->get(route('products.customize', $box->slug))->assertOk()->getContent();
+        preg_match_all('/data-name="(Milka [^"]+)"/', $html, $m);
+
+        $this->assertSame(
+            ['Milka Bubbles 90 qr', 'Milka Fındıqlı 85 qr', 'Milka Oreo 92 qr'],
+            $m[1],
+            'the bar that costs least stands first'
+        );
+    }
+
     public function test_the_owner_picks_the_top_brands_in_the_panel(): void
     {
         $this->actingAs(User::factory()->create(['is_admin' => true]));
