@@ -27,8 +27,28 @@
     colour: { page: '#f2efe9', ink: '#3a3226', rim: '#3a3226', shade: '#e3ddd1' },
   };
 
-  /** The mark on the spot is the shop's own orange, whatever the look. */
-  var MARK = '#E8792B';
+  /**
+   * The mark on the spot is the shop's own orange, whatever the look.
+   *
+   * Taken from the site's own flame colour so it never drifts from the
+   * buttons; the printing sheet carries no site stylesheet, and falls back to
+   * the same value written out.
+   */
+  var MARK = '#FA7512';
+
+  function markColour(opts) {
+    if (opts.markerColour) {
+      return opts.markerColour;
+    }
+    try {
+      var own = getComputedStyle(document.documentElement).getPropertyValue('--flame').trim();
+      if (own) {
+        return own;
+      }
+    } catch (e) {}
+
+    return MARK;
+  }
 
   /**
    * The service prints its own caption along the bottom of every drawing. It
@@ -341,7 +361,7 @@
     }
 
     if (opts.pin !== false && opts.marker && opts.marker !== 'none') {
-      drawMarker(ctx, opts.marker, cx, cy, Math.max(14, size * 0.085), opts.markerColour || MARK);
+      drawMarker(ctx, opts.marker, cx, cy, Math.max(14, size * 0.085), markColour(opts));
     }
 
     ctx.restore();

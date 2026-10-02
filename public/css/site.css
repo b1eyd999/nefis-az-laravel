@@ -1204,7 +1204,7 @@
   width:13%; min-width:1.6rem; max-width:3.2rem; pointer-events:none; z-index:500;
   filter:drop-shadow(0 2px 6px rgba(0,0,0,.45));
 }
-.map-frame-mark svg{ width:100%; height:auto; display:block; color:#E8792B; }
+.map-frame-mark svg{ width:100%; height:auto; display:block; color:var(--flame); }
 .map-frame-hint{ font-size:.8125rem; color:var(--cocoa-faint); margin:.4rem 0 0; }
 
 /* The marks that may stand on the customer's place. */
@@ -1215,9 +1215,9 @@
   background:var(--paper); cursor:pointer; transition:border-color .15s, box-shadow .15s;
 }
 .map-mark input{ position:absolute; opacity:0; pointer-events:none; }
-.map-mark svg{ width:1.9rem; height:1.9rem; display:block; color:#E8792B; }
+.map-mark svg{ width:1.9rem; height:1.9rem; display:block; color:var(--flame); }
 .map-mark:hover{ border-color:var(--cocoa-faint); }
-.map-mark:has(input:checked){ border-color:#E8792B; box-shadow:0 0 0 3px rgba(232,121,43,.18); }
+.map-mark:has(input:checked){ border-color:var(--flame); box-shadow:0 0 0 3px rgba(250,117,18,.22); }
 @media (max-width: 480px){
   .np-pop{ left:0; right:0; width:auto; max-width:none; }
 }
