@@ -1,62 +1,501 @@
 # Every push to master goes live on nefis.az by itself.
 #
-# The hosting has no shell, and its cPanel login cannot be automated, so
-# this drives the same two buttons through cPanel's API with a token the
-# owner created: "Update from Remote", then "Deploy HEAD Commit". The deploy
-# itself (copy, migrate, cache clear) is .cpanel.yml, unchanged.
+# The hosting account has no shell, so this workflow presses the same two
+# buttons that cPanel > Files > Git Version Control > Manage > Pull or Deploy
+# offers, through cPanel's UAPI with an API token:
 #
-# Needs one repository secret, CPANEL_TOKEN: cPanel -> Security ->
-# Manage API Tokens -> Create.
+#   "Update from Remote"  -> VersionControl/update ... &branch=master
+#   "Deploy HEAD Commit"  -> VersionControlDeployment/create
+#
+# What happens on the server afterwards - rsync into the app directory, the
+# copy into the document root, migrate, cache clear, the warmers - is
+# .cpanel.yml in the root of this repository and is not touched here. This
+# file only presses the buttons and then refuses to go green until cPanel
+# says the deployment finished AND says the commit it deployed is this one.
+#
+# THIS REPOSITORY IS PUBLIC. Everything written below is readable by anyone
+# on the internet, so the only thing kept out of it is the token:
+#
+#   GitHub -> Settings -> Secrets and variables -> Actions
+#     -> New repository secret -> name: CPANEL_API_TOKEN
+#   value: cPanel -> Security -> Manage API Tokens -> Create
+#
+# A cPanel API token has no per-feature scopes (the only creation function is
+# literally called Tokens::create_full_access) - it is always full account
+# access, bounded only by the features the account has. Do NOT tick
+# read-only: both calls above modify state and a read-only token is rejected
+# server-side.
+#
+# Nothing else here is secret: the paths are already in the public
+# .cpanel.yml, and the cPanel user name is not a credential on its own.
+# Hiding them in secrets would only turn failures into a wall of *** at
+# exactly the moment the host and the path are what you need to read.
 name: Deploy to nefis.az
 
 on:
+  # A real push of master in this repository, nothing else.
+  #
+  # There is deliberately no pull_request and no pull_request_target. On a
+  # public repository anyone may open a pull request from a fork;
+  # pull_request would run their code (and cannot read the secret, so it
+  # would only produce red builds), while pull_request_target runs the base
+  # branch's workflow WITH the secret in scope for a pull request anyone can
+  # open - that is how deploy tokens get stolen. push only ever fires for a
+  # ref in this repository, which only people with write access can move,
+  # and the branches filter means tag pushes and side branches do not deploy.
   push:
-    branches: [master]
-  workflow_dispatch:
+    branches:
+      - master
 
+  # The "Run workflow" button on the Actions tab: redeploy the current master
+  # without changing any code (after editing something in the admin, or when
+  # a deploy was interrupted). The button only appears once this file is on
+  # the default branch on GitHub.
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: Why are you redeploying by hand?
+        required: false
+        default: redeploy of the current master
+
+# The job never checks the repository out. The only thing it needs from
+# GitHub is permission to read which commit master points at.
+permissions:
+  contents: read
+
+# One deploy at a time, and never cancel a running one.
+#
+# Cancelling the runner does not cancel anything on the server - cPanel keeps
+# copying files and running migrations, and all that gets thrown away is the
+# half of this job that checks the result. A broken deploy would then sit
+# there with nobody watching. So: queue.
+#
+# Queueing cannot deploy out of order either. When runs pile up GitHub keeps
+# only the newest one waiting, and the server always fast-forwards to the tip
+# of master, so the newest commit is what lands. The worst case is that the
+# tip gets deployed twice, which is harmless.
 concurrency:
-  group: deploy
+  group: nefis-production-deploy
   cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   deploy:
+    name: Pull and deploy on the hosting
+    # A fork that switches Actions on gets this file too. It has no token and
+    # no business calling our panel, so it stops right here.
+    if: github.repository == 'b1eyd999/nefis-az-laravel'
     runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment:
+      # Gives the run a Deployments entry and a link to the site, and lets the
+      # token be moved to an environment secret restricted to master. Do not
+      # add required reviewers unless you want every push to wait for a click.
+      name: production
+      url: https://nefis.az
     env:
-      # Until the token is added the job skips quietly instead of failing.
-      HAS_TOKEN: ${{ secrets.CPANEL_TOKEN != '' }}
+      # The cPanel server's own hostname, not nefis.az. Port 2083 answers on
+      # both, but the certificate is issued for the server hostname - calling
+      # nefis.az:2083 fails TLS verification, and the fix is the right name,
+      # never curl -k.
+      CPANEL_HOST: hh7.hostinq.net
+      CPANEL_PORT: "2083"
+      CPANEL_USER: darkftga
+      # The "Repository Path" from cPanel > Files > Git Version Control.
+      # NOT the app directory and NOT the document root.
+      REPO_ROOT: /home/darkftga/repos/nefis-laravel
+      DEPLOY_BRANCH: master
+      # Where .cpanel.yml appends the output of migrate and the warmers.
+      APP_DEPLOY_LOG: /home/darkftga/nefis-laravel/storage/logs/deploy.log
+
     steps:
-      - name: Waiting for the CPANEL_TOKEN secret
-        if: env.HAS_TOKEN != 'true'
-        run: echo "::notice::CPANEL_TOKEN is not set yet, so nothing was deployed."
-
-      - name: Pull the new commit on the hosting
-        if: env.HAS_TOKEN == 'true'
+      # ------------------------------------------------------------------
+      # Everything that touches the token happens in this one step, so the
+      # secret is in the environment of exactly one script and of no other
+      # step. There are no third-party actions in this workflow at all - not
+      # even actions/checkout - because any action in a job can read that
+      # job's environment, and nothing here needs a checkout. curl, jq and gh
+      # are preinstalled on ubuntu-latest.
+      # ------------------------------------------------------------------
+      - name: Update from remote, deploy, and wait for the result
         env:
-          TOKEN: ${{ secrets.CPANEL_TOKEN }}
+          # Never write ${{ secrets.* }} into the body of a run: script - the
+          # script is saved to a file on the runner, and any trace, error line
+          # or cat of that file prints the token. Through env: the value only
+          # ever exists as a variable.
+          CPANEL_TOKEN: ${{ secrets.CPANEL_API_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          curl -fsS --retry 3 -H "Authorization: cpanel darkftga:$TOKEN" \
-            "https://nefis.az:2083/execute/VersionControl/update?repository_root=/home/darkftga/repos/nefis-laravel&branch=master" \
-            | tee pull.json
-          grep -q '"status":1' pull.json
+          set -euo pipefail
+          # Deliberately no `set -x` anywhere in this step. A trace line is
+          # written at the same moment as the command it traces, so it can beat
+          # GitHub's masking; and masking only covers the secret exactly as
+          # stored, never a derived form (a base64 Basic-auth string, a
+          # URL-encoded copy, a trimmed copy). If you need tracing, add it to a
+          # step that has no secret in its environment.
 
-      - name: Deploy it
-        if: env.HAS_TOKEN == 'true'
-        env:
-          TOKEN: ${{ secrets.CPANEL_TOKEN }}
-        run: |
-          curl -fsS --retry 3 -H "Authorization: cpanel darkftga:$TOKEN" \
-            "https://nefis.az:2083/execute/VersionControlDeployment/create?repository_root=/home/darkftga/repos/nefis-laravel" \
-            | tee deploy.json
-          grep -q '"status":1' deploy.json
+          # ---------------------------------------------------- the secret
+          if [ -z "${CPANEL_TOKEN:-}" ]; then
+            echo "::error title=CPANEL_API_TOKEN is not set::Add the repository secret CPANEL_API_TOKEN (Settings > Secrets and variables > Actions). Its value is a cPanel API token from cPanel > Security > Manage API Tokens. Nothing was deployed."
+            exit 1
+          fi
 
-      - name: Check the site answers
-        if: env.HAS_TOKEN == 'true'
-        run: |
-          # .cpanel.yml runs in the background; give it time to migrate.
-          for i in $(seq 1 12); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' https://nefis.az/)
-            [ "$code" = "200" ] && { echo "nefis.az is up ($code)"; exit 0; }
+          # A token pasted with a trailing newline would be used trimmed, and
+          # the trimmed string is a different string that GitHub does not know
+          # about and would print in the clear. Register it as a secret of its
+          # own before anything can echo it.
+          TOKEN=$(printf '%s' "$CPANEL_TOKEN" | tr -d '[:space:]')
+          if [ "$TOKEN" != "$CPANEL_TOKEN" ]; then
+            echo "::add-mask::$TOKEN"
+            echo "::warning title=The token has whitespace in it::Using it trimmed. Re-paste the secret without a trailing newline or space."
+          fi
+          if [ "${#TOKEN}" -lt 20 ]; then
+            echo "::error title=The token looks wrong::It is ${#TOKEN} characters long; a cPanel API token is much longer. Paste only the token - no user name, no leading 'cpanel ', no quotes. Nothing was deployed."
+            exit 1
+          fi
+
+          # ::error:: or ::warning:: for a failed api() call. A single failed
+          # poll in the middle of a successful deploy is not an error.
+          API_LEVEL=error
+
+          # cPanel wants query values URI-encoded, slashes included.
+          ROOT_Q=$(jq -rn --arg v "$REPO_ROOT" '$v|@uri')
+
+          excerpt() {
+            # The first 600 characters of an answer, on one line. Safe to
+            # print: the token travels in a request header, so it is never part
+            # of a response. A rejected token gives an HTML login page here,
+            # which is itself the clue that the secret is bad. cut, not head:
+            # head closes the pipe early, which kills tr with SIGPIPE and -
+            # with pipefail on - would fail the step.
+            tr -d '\r\n' <"$1" | cut -c 1-600
+          }
+
+          api() {
+            # api <Module/function> <query or ""> <out file> [curl retries]
+            local fn=$1 query=$2 out=$3 retry=${4:-2} cfg url rc=0 http hint
+            url="https://$CPANEL_HOST:$CPANEL_PORT/execute/$fn"
+            if [ -n "$query" ]; then
+              url="$url?$query"
+            fi
+            cfg=$(mktemp "$RUNNER_TEMP/curl-XXXXXX")
+            chmod 600 "$cfg"
+            {
+              # The token goes into a config file: not on the command line
+              # (argv is readable by every process on the machine) and never in
+              # the URL (curl prints the URL in its own error text, a URL
+              # travels into redirects and into the server's access log, and
+              # GitHub does not mask a URL-encoded copy of a secret).
+              printf 'url = "%s"\n' "$url"
+              printf 'header = "Authorization: cpanel %s:%s"\n' "$CPANEL_USER" "$TOKEN"
+              # --fail-with-body: a 4xx/5xx exits non-zero (curl exit 22) but
+              # still writes the body, so the reason is readable instead of
+              # being thrown away the way plain --fail does.
+              printf 'fail-with-body\n'
+              printf 'silent\n'
+              printf 'show-error\n'
+              # Redirects stay off: curl would resend the Authorization header
+              # to whatever host a redirect names. And never downgrade to http.
+              printf 'proto = "=https"\n'
+              printf 'max-time = 60\n'
+              printf 'retry = %s\n' "$retry"
+              printf 'retry-delay = 5\n'
+              printf 'retry-connrefused\n'
+            } >"$cfg"
+            http=$(curl --config "$cfg" --output "$out" --write-out '%{http_code}') || rc=$?
+            rm -f "$cfg"
+
+            if [ "$rc" -ne 0 ] && [ "$rc" -ne 22 ]; then
+              case "$rc" in
+                60) hint="the TLS certificate on port $CPANEL_PORT is not trusted - check CPANEL_HOST is the server's own hostname" ;;
+                7|28|35) hint="port $CPANEL_PORT is not reachable from GitHub's runners - the host may be blocking it" ;;
+                6) hint="$CPANEL_HOST does not resolve" ;;
+                *) hint="no connection, TLS problem or timeout" ;;
+              esac
+              echo "::${API_LEVEL} title=cPanel did not answer::curl exited ${rc} calling ${fn}: ${hint}."
+              return 1
+            fi
+            if [ "${http:-000}" != "200" ]; then
+              echo "::${API_LEVEL} title=cPanel answered HTTP ${http:-000}::${fn} - $(excerpt "$out")"
+              return 1
+            fi
+            # HTTP 200 is not success. UAPI answers 200 with
+            # {"result":{"status":0,"errors":[...]}} for a wrong function name,
+            # a feature this account may not use, or a repository_root that is
+            # not there - and 200 with an HTML login page for a bad token.
+            # The flag lives at result.status, not at the top level; .status is
+            # only a fallback in case a future version flattens it. jq -e exits
+            # non-zero both on false and on input that is not JSON, so the HTML
+            # case is caught by the same condition.
+            if ! jq -e '((.result.status // .status) == 1) and ((((.result.errors // .errors) // []) | length) == 0)' "$out" >/dev/null 2>&1; then
+              echo "::${API_LEVEL} title=cPanel refused ${fn}::$(excerpt "$out")"
+              return 1
+            fi
+            return 0
+          }
+
+          repo_json() {
+            # The repository object for REPO_ROOT out of a VersionControl
+            # answer. update returns one object, retrieve returns an array of
+            # every repository on the account; handle both.
+            jq --arg root "$REPO_ROOT" '
+              (.result.data // .data // {})
+              | (if type == "array"
+                 then ((map(select(.repository_root == $root)) | first) // {})
+                 else . end)
+            ' "$1"
+          }
+
+          deploy_record() {
+            # deploy_record <deploy_id> <file>
+            # VersionControlDeployment/retrieve takes NO parameters and returns
+            # every deployment task on the account, so filter here. deploy_id
+            # comes back as a string from create and as an integer from
+            # retrieve, hence tostring on both sides.
+            jq --arg id "$1" --arg root "$REPO_ROOT" '
+              ((.result.data // .data) // [])
+              | map(select(((.deploy_id | tostring) == $id) and (.repository_root == $root)))
+              | (first // {})
+            ' "$2"
+          }
+
+          show_file() {
+            # Print the tail of a file on the server through File Manager's
+            # API. Used only when something already went wrong, so a failure
+            # to read it must not add a second, confusing error annotation.
+            local path=$1 keep=$API_LEVEL dir base
+            if [ -z "$path" ]; then
+              return 0
+            fi
+            dir=$(dirname "$path")
+            base=$(basename "$path")
+            echo "::group::$path"
+            API_LEVEL=warning
+            if api Fileman/get_file_content "dir=$(jq -rn --arg v "$dir" '$v|@uri')&file=$(jq -rn --arg v "$base" '$v|@uri')&to_charset=utf-8" "$RUNNER_TEMP/filecontent.json" 1; then
+              jq -r '((.result.data // .data).content // "")' "$RUNNER_TEMP/filecontent.json" | tail -n 120
+            else
+              echo "Could not read it over the API. In cPanel: File Manager > $dir > $base"
+            fi
+            API_LEVEL=$keep
+            echo "::endgroup::"
+          }
+
+          # ------------------------------- what is on the server right now
+          # This is also the cheapest test that the token works at all and
+          # that the repository path is right, so both fail here, before
+          # anything has been changed.
+          echo "::group::The repository on the server before this run"
+          api VersionControl/retrieve "fields=*" "$RUNNER_TEMP/before.json"
+          if [ "$(repo_json "$RUNNER_TEMP/before.json" | jq -r '.repository_root // "missing"')" = "missing" ]; then
+            echo "::error title=No such repository on the hosting::cPanel knows no repository whose Repository Path is $REPO_ROOT. Open cPanel > Files > Git Version Control and copy the exact Repository Path into REPO_ROOT. Nothing was deployed."
+            jq -r '[(.result.data // .data // [])[].repository_root] | "cPanel lists: " + (join(", "))' "$RUNNER_TEMP/before.json" || true
+            exit 1
+          fi
+          repo_json "$RUNNER_TEMP/before.json" | jq -c '{
+            name, branch, deployable, available_branches,
+            server_head: (.last_update.identifier // null),
+            deployed: (.last_deployment.repository_state.identifier // null),
+            unfinished_tasks: ((.tasks // []) | length)
+          }'
+          BEFORE_DEPLOYED=$(repo_json "$RUNNER_TEMP/before.json" | jq -r '.last_deployment.repository_state.identifier // "none"')
+          echo "deployed commit before this run: $BEFORE_DEPLOYED"
+          echo "commit this run wants:           $GITHUB_SHA"
+          echo "::endgroup::"
+
+          # ----------------------------------------- "Update from Remote"
+          # VersionControl/update only pulls if branch= is given - without it
+          # the call succeeds and fetches nothing. A pull is idempotent, so
+          # retrying is safe; it buys time for a clone that has not finished
+          # (last_update is null until it has) and for GitHub's own replication.
+          echo "::group::Update from Remote (git fetch and fast-forward on the server)"
+          SERVER_HEAD=none
+          for attempt in 1 2 3 4 5 6; do
+            api VersionControl/update "repository_root=$ROOT_Q&branch=$DEPLOY_BRANCH" "$RUNNER_TEMP/update.json"
+            SERVER_HEAD=$(repo_json "$RUNNER_TEMP/update.json" | jq -r '.last_update.identifier // "none"')
+            echo "attempt $attempt: the server's $DEPLOY_BRANCH is at $SERVER_HEAD"
+            if [ "$SERVER_HEAD" = "$GITHUB_SHA" ]; then
+              break
+            fi
             sleep 10
           done
-          echo "::error::nefis.az did not answer 200 after the deploy (last: $code)"
+          repo_json "$RUNNER_TEMP/update.json" | jq -c '{branch, deployable, unfinished_tasks: ((.tasks // []) | length)}'
+          echo "::endgroup::"
+
+          # cPanel refuses to deploy a repository with a dirty working tree, no
+          # branch, or no checked-in .cpanel.yml, and it refuses silently: the
+          # deployment simply never appears. Catch it here instead of at the
+          # end of a 20-minute wait.
+          DEPLOYABLE=$(repo_json "$RUNNER_TEMP/update.json" | jq -r '.deployable // 0')
+          if [ "$DEPLOYABLE" != "1" ]; then
+            echo "::error title=cPanel says this repository cannot be deployed::deployable=${DEPLOYABLE}. cPanel requires a clean working tree, at least one branch, and a checked-in .cpanel.yml in the top level. Something has written into $REPO_ROOT on the server (a stray .env, a log, a cache file) - clear it in cPanel > Git Version Control. Nothing was deployed."
+            exit 1
+          fi
+
+          # The commit the deployment must end up on.
+          WANT=$GITHUB_SHA
+          if [ "$SERVER_HEAD" != "$GITHUB_SHA" ]; then
+            HEAD_NOW=$(gh api "repos/$GITHUB_REPOSITORY/commits/$DEPLOY_BRANCH" --jq .sha 2>/dev/null || echo unknown)
+            if [ "$SERVER_HEAD" = "$HEAD_NOW" ]; then
+              echo "::warning title=A newer commit overtook this run::The server fetched $SERVER_HEAD, which is the current tip of $DEPLOY_BRANCH, while this run was deploying $GITHUB_SHA. Deploying the tip instead."
+              WANT=$SERVER_HEAD
+            else
+              echo "::error title=The server could not fast-forward to this commit::After six attempts the server's $DEPLOY_BRANCH is at ${SERVER_HEAD}, not ${GITHUB_SHA} (the tip of $DEPLOY_BRANCH on GitHub is ${HEAD_NOW}). cPanel pulls with --ff-only, so a force-push, a rebase or an amended commit on $DEPLOY_BRANCH makes it refuse rather than reconcile. Never force-push the deployed branch; to recover, open cPanel > Git Version Control > Manage and pull by hand. Nothing was deployed."
+              exit 1
+            fi
+          fi
+
+          # ----------------------------------------- "Deploy HEAD Commit"
+          # No curl retries on this one: it queues a deployment, and a retry
+          # after a timeout could queue a second one on top of the first.
+          echo "::group::Deploy HEAD Commit (queue the deployment)"
+          api VersionControlDeployment/create "repository_root=$ROOT_Q" "$RUNNER_TEMP/create.json" 0
+          jq -c '(.result.data // .data)' "$RUNNER_TEMP/create.json"
+          DEPLOY_ID=$(jq -r '((.result.data // .data).deploy_id // "") | tostring' "$RUNNER_TEMP/create.json")
+          LOG_PATH=$(jq -r '((.result.data // .data).log_path // "")' "$RUNNER_TEMP/create.json")
+          if [ -z "$DEPLOY_ID" ]; then
+            echo "::error title=cPanel queued nothing::The call succeeded but returned no deploy_id, so there is no deployment to follow. The raw answer is above."
+            exit 1
+          fi
+          echo "deploy_id=$DEPLOY_ID"
+          echo "log=$LOG_PATH"
+          echo "::endgroup::"
+
+          # ------------------------------------------------ the real check
+          # The call above returns status 1 the moment the deployment is
+          # QUEUED - its own summary in cPanel's API reference is "Create Git
+          # deployment task", and the only timestamp it returns is `queued`.
+          # It says nothing about whether .cpanel.yml ran. Only the record in
+          # VersionControlDeployment/retrieve does: `succeeded` is documented
+          # as returned ONLY if the deployment finished successfully.
+          echo "::group::Waiting for the deployment to finish"
+          API_LEVEL=warning
+          REC='{}'
+          STATE=unknown
+          outcome=timeout
+          missing=0
+          for poll in $(seq 1 120); do          # 120 x 10s = 20 minutes
+            sleep 10
+            if ! api VersionControlDeployment/retrieve "" "$RUNNER_TEMP/now.json"; then
+              continue
+            fi
+            REC=$(deploy_record "$DEPLOY_ID" "$RUNNER_TEMP/now.json" || echo '{}')
+            STATE=$(printf '%s' "$REC" | jq -r '
+              if   (.timestamps.succeeded // "") != "" then "succeeded"
+              elif (.timestamps.failed    // "") != "" then "failed"
+              elif (.timestamps.canceled  // "") != "" then "canceled"
+              elif (.timestamps.active    // "") != "" then "running"
+              elif (.timestamps.queued    // "") != "" then "queued"
+              else "unknown" end')
+            echo "poll $poll: deployment $DEPLOY_ID is $STATE"
+            if [ "$STATE" = "unknown" ]; then
+              missing=$((missing + 1))
+              if [ "$missing" = "6" ]; then
+                echo "::warning title=Cannot see this deployment in the task list::deploy_id $DEPLOY_ID has not appeared in VersionControlDeployment/retrieve after a minute. Still waiting; the raw list is printed if this run times out."
+              fi
+              continue
+            fi
+            case "$STATE" in
+              succeeded) outcome=succeeded; break ;;
+              failed|canceled) outcome=$STATE; break ;;
+            esac
+          done
+          API_LEVEL=error
+          echo "::endgroup::"
+
+          DEPLOYED=$(printf '%s' "$REC" | jq -r '.repository_state.identifier // "none"')
+          REC_LOG=$(printf '%s' "$REC" | jq -r '.log_path // ""')
+          if [ -n "$REC_LOG" ]; then
+            LOG_PATH=$REC_LOG
+          fi
+
+          case "$outcome" in
+            succeeded)
+              echo "cPanel reports the deployment finished successfully, on commit $DEPLOYED."
+              # Last guard against the oldest trap on this hosting: a green
+              # deploy of the previous commit.
+              if [ "$DEPLOYED" = "$WANT" ]; then
+                echo "The server is on $WANT."
+              else
+                HEAD_NOW=$(gh api "repos/$GITHUB_REPOSITORY/commits/$DEPLOY_BRANCH" --jq .sha 2>/dev/null || echo unknown)
+                if [ "$DEPLOYED" = "$HEAD_NOW" ]; then
+                  echo "::warning title=A newer commit was deployed::$DEPLOYED was pushed while this run was deploying $WANT, and the server deployed that instead. The site is on the tip of $DEPLOY_BRANCH, so this is still a success."
+                else
+                  echo "::error title=The server deployed the wrong commit::cPanel reports the deployment succeeded but on ${DEPLOYED}, which is neither this run's commit (${WANT}) nor the current tip of ${DEPLOY_BRANCH} (${HEAD_NOW}). Check cPanel > Files > Git Version Control for a branch that was switched by hand."
+                  show_file "$LOG_PATH"
+                  exit 1
+                fi
+              fi
+              ;;
+            failed|canceled)
+              echo "::error title=The deployment ${outcome}::cPanel accepted both calls and then the deployment ${outcome} on the server. Nothing in the site changed, or only part of it did. The deployment log follows; a task in .cpanel.yml that exits non-zero - a failing migration is the usual one - stops the deployment there."
+              show_file "$LOG_PATH"
+              show_file "$APP_DEPLOY_LOG"
+              exit 1
+              ;;
+            *)
+              echo "::error title=The deployment never finished::cPanel accepted both calls (HTTP 200, status 1) but 20 minutes later deployment $DEPLOY_ID has reported neither succeeded, nor failed, nor canceled - its last known state was '${STATE}'. Look at cPanel > Files > Git Version Control > Manage > Pull or Deploy, and at the logs below."
+              echo "::group::The whole deployment task list, as cPanel returned it"
+              jq -c '(.result.data // .data)' "$RUNNER_TEMP/now.json" 2>/dev/null | cut -c 1-4000 || echo "(no answer from the last poll)"
+              echo "::endgroup::"
+              show_file "$LOG_PATH"
+              show_file "$APP_DEPLOY_LOG"
+              exit 1
+              ;;
+          esac
+
+      # ------------------------------------------------------------------
+      # No secret in this step, and none is needed.
+      # ------------------------------------------------------------------
+      - name: Check the site is actually up
+        run: |
+          set -euo pipefail
+          # /up is Laravel's own health route (bootstrap/app.php): 200 means the
+          # framework booted, so config, routes and the database are fine. / is
+          # served from the document root, which .cpanel.yml fills with a
+          # separate copy of public/ - it answers 200 only if that copy
+          # happened too. Both have to be green.
+          up=000
+          home=000
+          for attempt in $(seq 1 10); do
+            up=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "https://nefis.az/up" || echo 000)
+            home=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "https://nefis.az/" || echo 000)
+            echo "attempt $attempt: /up -> $up, / -> $home"
+            if [ "$up" = "200" ] && [ "$home" = "200" ]; then
+              echo "The site is up."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "::error title=The site is not answering after the deploy::/up returned ${up} and / returned ${home}. The code is deployed but the application is broken - storage/logs/laravel.log and storage/logs/deploy.log on the server will say why."
           exit 1
+
+      - name: Write the summary
+        if: always()
+        env:
+          REASON: ${{ inputs.reason }}
+          RESULT: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          # The reason comes through env, never through an expression inside
+          # the script: text that someone types into a form must not be pasted
+          # into a shell command. (An expression written in a run: body is
+          # substituted before bash ever sees it - which is also why this
+          # sentence spells none out.)
+          {
+            echo "### Deploy to nefis.az: $RESULT"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| commit | \`$GITHUB_SHA\` |"
+            echo "| started by | $GITHUB_EVENT_NAME |"
+            if [ -n "${REASON:-}" ]; then
+              # sed, not ${REASON//|/\\|}: in a parameter substitution the
+              # backslash escapes the pipe away again and the cell still
+              # breaks the table.
+              echo "| reason | $(printf '%s' "$REASON" | sed 's/|/\\|/g') |"
+            fi
+            echo "| site | https://nefis.az |"
+          } >>"$GITHUB_STEP_SUMMARY"
