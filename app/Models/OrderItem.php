@@ -206,6 +206,23 @@ class OrderItem extends Model
         return $this->belongsTo(Order::class);
     }
 
+    /**
+     * The bar and the paper as they stand today, for their pictures.
+     *
+     * What was sold is the name and the price frozen on the line; these are
+     * only so the owner can see what to put in the box. Either may be gone —
+     * the line still reads correctly without them.
+     */
+    public function chocolate(): BelongsTo
+    {
+        return $this->belongsTo(Chocolate::class)->withTrashed();
+    }
+
+    public function wrapping(): BelongsTo
+    {
+        return $this->belongsTo(Wrapping::class);
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);

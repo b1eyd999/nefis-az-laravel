@@ -11,13 +11,68 @@
       {{ $line->quantity }} ədəd
       @if($line->unitPrice() > 0) · <b>{{ \App\Support\Price::format($line->unitPrice() * $line->quantity) }}</b> @endif
     </div>
-    @if($line->chocolate_name)
-      <div style="font-size:.85rem; margin-top:.2rem; white-space:normal;">🍫 {{ $line->chocolate_name }}@if($line->chocolate_price) · {{ \App\Support\Price::format($line->chocolate_price) }}@endif</div>
-    @endif
-    @if($line->wrapping_name)
-      <div style="font-size:.85rem; margin-top:.2rem; white-space:normal;">🎁 {{ $line->wrapping_name }}@if($line->wrapping_price) · {{ \App\Support\Price::format($line->wrapping_price) }}@endif</div>
-    @endif
   </div>
+
+  {{-- What is actually put in the box, shown rather than named: the bar and
+       the paper are picked off a shelf, and a name alone is slower to match
+       than a picture. The names stay frozen on the line; these pictures are
+       whatever the shop sells under them today, so a bar that has since been
+       taken off the list simply shows without one. --}}
+  @if($line->chocolate_name || $line->wrapping_name)
+    @php
+      $bar = $line->chocolate;
+      $wrap = $line->wrapping;
+      $paper = $wrap?->pattern ? \App\Support\Media::url($wrap->pattern) : null;
+    @endphp
+    <div style="display:flex; flex-wrap:wrap; gap:1rem;">
+      @if($line->chocolate_name)
+        <div style="min-width:0;">
+          <div style="font-size:.75rem; font-weight:600; opacity:.75; margin-bottom:.3rem;">Şokolad</div>
+          <div style="display:flex; align-items:center; gap:.55rem;">
+            @if($bar?->imageUrl())
+              <img src="{{ $bar->imageUrl() }}" alt="{{ $line->chocolate_name }}"
+                   style="width:3.4rem; height:3.4rem; object-fit:contain; border-radius:.5rem;
+                          border:1px solid rgba(128,128,128,.35); background:#fff; padding:.15rem; flex:none;">
+            @endif
+            <div style="font-size:.85rem; white-space:normal; min-width:0;">
+              {{ $line->chocolate_name }}
+              @if($line->chocolate_price)
+                <div style="opacity:.75;">{{ \App\Support\Price::format($line->chocolate_price) }}</div>
+              @endif
+            </div>
+          </div>
+        </div>
+      @endif
+
+      @if($line->wrapping_name)
+        <div style="min-width:0;">
+          <div style="font-size:.75rem; font-weight:600; opacity:.75; margin-bottom:.3rem;">Qablaşdırma</div>
+          <div style="display:flex; align-items:center; gap:.55rem;">
+            <div style="width:3.4rem; height:3.4rem; border-radius:.5rem; flex:none; position:relative; overflow:hidden;
+                        border:1px solid rgba(128,128,128,.35);
+                        @if($paper) background-image:url('{{ $paper }}'); background-size:cover; background-position:center;
+                        @else background:rgba(128,128,128,.15); @endif">
+              @if($wrap && $wrap->ribbon !== \App\Models\Wrapping::NONE && $wrap->ribbon_color)
+                {{-- The ribbon across the paper, the way the box is tied. --}}
+                <span style="position:absolute; left:0; right:0; top:50%; height:.5rem; transform:translateY(-50%);
+                             background:{{ $wrap->ribbon_color }};
+                             @if($wrap->ribbon === \App\Models\Wrapping::TWINE) opacity:.85; @endif"></span>
+              @endif
+            </div>
+            <div style="font-size:.85rem; white-space:normal; min-width:0;">
+              {{ $line->wrapping_name }}
+              @if($wrap)
+                <div style="opacity:.75;">{{ \App\Models\Wrapping::RIBBONS[$wrap->ribbon] ?? '' }}</div>
+              @endif
+              @if($line->wrapping_price)
+                <div style="opacity:.75;">{{ \App\Support\Price::format($line->wrapping_price) }}</div>
+              @endif
+            </div>
+          </div>
+        </div>
+      @endif
+    </div>
+  @endif
   @if($fields['photos'])
     <div style="display:flex; flex-wrap:wrap; gap:.85rem;">
       @foreach($fields['photos'] as $photo)

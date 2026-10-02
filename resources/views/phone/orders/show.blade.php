@@ -97,8 +97,6 @@
         <span>{{ $item->quantity }} ədəd</span>
         <b>{{ \App\Support\Price::format($item->unitPrice() * $item->quantity) }}</b>
       </div>
-      @if($item->chocolate_name)<div class="ph-note" style="margin:0;">🍫 {{ $item->chocolate_name }}</div>@endif
-      @if($item->wrapping_name)<div class="ph-note" style="margin:0;">🎁 {{ $item->wrapping_name }}</div>@endif
       @include('filament.order-item-fields', ['getRecord' => fn () => $item])
     </div>
   @endforeach
