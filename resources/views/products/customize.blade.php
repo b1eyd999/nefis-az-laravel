@@ -114,6 +114,17 @@
   // the other angles, so a cut-out window on any of them counts.
   $cutsFaces = $photoSlots->contains(fn ($slot) => $slot->cutout)
       || $product->angles->contains(fn ($angle) => $angle->photoSlots->contains(fn ($slot) => $slot->cutout));
+  /* Whether a face has to be found at all. Only a window the customer uploads
+     into can have one: the zodiac boxes and the round location boxes are oval
+     too, but they fill themselves from the sky or the map, and pulling a face
+     detector onto those pages cost every visitor 300 KB for nothing. */
+  $findsFaces = $cutsFaces || $photoSlots->contains(
+      fn ($slot) => $slot->needsUpload() && $slot->shape === 'ellipse'
+  ) || $product->angles->contains(
+      fn ($angle) => $angle->photoSlots->contains(
+          fn ($slot) => $slot->needsUpload() && $slot->shape === 'ellipse'
+      )
+  );
   $textSlots = $product->textSlots;
 @endphp
 
@@ -411,7 +422,10 @@
           {{-- Only where a photograph is actually wanted: a design whose only
                window is the sky was telling the customer to upload one. --}}
           @if($needsPhoto)
-            <div class="drop-hint" id="drop-hint">{{ __('Öncə') }} <span class="dh-wide">{{ __('sağdan') }}</span><span class="dh-narrow">{{ __('aşağıdan') }}</span>&nbsp;{{ __('şəklinizi yükləyin') }}</div>
+            {{-- One wrapper, because .drop-hint is a flex box: without it every
+                 word and span becomes a flex item of its own and the sentence
+                 breaks into a column on the phone. --}}
+            <div class="drop-hint" id="drop-hint"><span>{{ __('Öncə') }} <span class="dh-wide">{{ __('sağdan') }}</span><span class="dh-narrow">{{ __('aşağıdan') }}</span>&nbsp;{{ __('şəklinizi yükləyin') }}</span></div>
           @endif
           @if(count($viewData) > 1)
             <button type="button" class="angle-arrow prev" id="angle-prev" aria-label="{{ __('Əvvəlki görünüş') }}">‹</button>
@@ -935,7 +949,7 @@
 @endsection
 
 @section('page_script')
-@if($cutsFaces || $photoSlots->where('shape', 'ellipse')->isNotEmpty())
+@if($findsFaces)
 <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 @endif
 {{-- Before anything that opens a customer's photograph: it decodes straight
@@ -1016,11 +1030,36 @@
     }
     return faceModelReady;
   }
-  if (typeof faceapi !== 'undefined' || document.querySelector('script[src*="face-api"]')) {
-    setTimeout(function(){ ensureFaceModel().catch(function(){}); }, 300);
+  /**
+   * The face models are heavy — measured 3.4 MB on a first visit, most of it
+   * the cutter's WebAssembly — and they used to be fetched half a second after
+   * the page opened, whether or not anybody ever uploaded anything. On a phone
+   * that is a few megabytes of somebody's data spent on looking at a picture,
+   * and the page feels stuck while it happens.
+   *
+   * So nothing is fetched until the customer reaches for a photograph. The
+   * upload control's own click starts it: the system's file picker then stands
+   * open for several seconds, and the download happens inside that time, which
+   * was being wasted anyway. Touching the window's controls counts too, for a
+   * customer who starts by looking at the zoom slider.
+   */
+  var warmed = false;
+  function warmFaceTools(){
+    if (warmed) return;
+    warmed = true;
+    if (typeof faceapi !== 'undefined' || document.querySelector('script[src*="face-api"]')) {
+      ensureFaceModel().catch(function(){});
+    }
+    if (window.NefisCutout) window.NefisCutout.warm();
   }
-  /* Same for the cutter: its models are the slow part of the first photo. */
-  setTimeout(function(){ if (window.NefisCutout) window.NefisCutout.warm(); }, 400);
+  Array.prototype.forEach.call(
+    document.querySelectorAll('input[type="file"][name^="photos"]'),
+    function (input) { input.addEventListener('click', warmFaceTools); }
+  );
+  Array.prototype.forEach.call(
+    document.querySelectorAll('.slot-block'),
+    function (block) { block.addEventListener('pointerdown', warmFaceTools, { once: true }); }
+  );
 
   /* The song on the box. Whatever Spotify handed the customer — the share
      link, the app's own uri, a country prefix, a ?si= tail — comes down to
