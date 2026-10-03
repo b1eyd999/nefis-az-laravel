@@ -1473,7 +1473,7 @@
       /* What the customer framed by hand stays; only automatic face framing
          follows this view's own cutout. */
       var area = areaFor(i);
-      if (!state.framed && area && area.shape === 'ellipse' && state.faceBox) frameOnFace(i, state.faceBox);
+      if (!state.framed && area && (area.shape === 'ellipse' || area.cutout) && state.faceBox) frameOnFace(i, state.faceBox);
       var block = slotBlocks[i];
       var zoom = block && block.querySelector('.zoom-range');
       if (zoom) zoom.value = Math.round(state.scale * 100);
@@ -1507,6 +1507,24 @@
     if (zoom) zoom.value = Math.round(state.scale * 100);
   }
 
+  /* What the background cutter found, one per window, spent on the next
+     framing. See the handler that fills it. */
+  var faceFromCut = [];
+
+  /**
+   * Puts the face where the design wants it — in the oval, on the drawn body —
+   * without the customer dragging anything.
+   *
+   * Finding the face is tried three ways before giving up, because one way is
+   * not enough: the page's detector is trained on faces that fill the frame,
+   * and a photograph taken from across a room has a face a tenth of that. So
+   * it is asked again at a larger input size and a lower bar, and failing that
+   * we fall back on the box the background cutter already found with a
+   * different model — in a cut window it has looked at this very picture.
+   *
+   * When none of the three finds a face the customer is told so, because the
+   * alternative is a head sitting off the body with nothing said about it.
+   */
   function applyAutoFraming(slotIndex, img){
     var state = photos[slotIndex];
     state.faceBox = null;
@@ -1516,17 +1534,45 @@
     state.framed = false;
     state.flip = false;
 
-    var area = areaFor(slotIndex);
-    if (!area || (area.shape !== 'ellipse' && !area.cutout) || typeof faceapi === 'undefined') return;
+    var fromCut = faceFromCut[slotIndex] || null;
+    faceFromCut[slotIndex] = null;
 
-    ensureFaceModel().then(function(){
-      return faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions());
-    }).then(function(det){
-      if (!det || photos[slotIndex].img !== img) return;
-      photos[slotIndex].faceBox = det.box;
-      frameOnFace(slotIndex, det.box);
+    var area = areaFor(slotIndex);
+    if (!area || (area.shape !== 'ellipse' && !area.cutout)) return;
+
+    var search;
+    if (typeof faceapi === 'undefined') {
+      search = Promise.resolve(null);
+    } else {
+      search = ensureFaceModel().then(function(){
+        return faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions());
+      }).then(function(det){
+        if (det) return det.box;
+        /* Nothing at arm's length: look again further away. */
+        return faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({
+          inputSize: 608, scoreThreshold: 0.3,
+        })).then(function(far){ return far ? far.box : null; });
+      }).catch(function(){ return null; });
+    }
+
+    search.then(function(box){
+      if (photos[slotIndex].img !== img) return;      // a newer photo won
+      box = box || fromCut;
+
+      if (!box) {
+        var block = slotBlocks[slotIndex];
+        var hint = block && block.querySelector('.slot-hint');
+        if (hint) {
+          hint.hidden = false;
+          hint.textContent = @json(__('Üz tapılmadı — şəkli özünüz sürükləyib yerinə salın.'));
+        }
+        return;
+      }
+
+      photos[slotIndex].faceBox = box;
+      frameOnFace(slotIndex, box);
       draw();
-    }).catch(function(){});
+    });
   }
 
   function allSlotsFilled(){
@@ -1683,6 +1729,10 @@
             settle();
             return;
           }
+          /* The cutter already found the face to make this crop. Kept here so
+             the framing below can fall back on it when the page's own, closer-
+             ranged detector finds nothing in the same picture. */
+          faceFromCut[index] = cut.faceBox || null;
           var box = new DataTransfer();
           box.items.add(cut);
           input.dataset.processed = '1';

@@ -242,10 +242,29 @@ window.NefisCutout = (function () {
       ctx.drawImage(soft, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h);
       ctx.globalCompositeOperation = 'source-over';
 
+      /* Where the face ended up inside the picture we are handing back.
+       *
+       * The page frames the head in its window with a detector of its own, and
+       * that one is trained for faces filling the frame: a photograph taken
+       * from across a room goes through here fine and is then not recognised
+       * there, so the head lands wherever the picture happens to sit. We have
+       * already found the face to make this crop, so the answer travels with
+       * the file and the page uses it when its own search comes back empty.
+       * Measured in the cropped picture's own pixels, which is what the page
+       * will be looking at. */
+      var inCrop = face ? {
+        x: face.originX - box.x,
+        y: face.originY - box.y,
+        width: face.width,
+        height: face.height,
+      } : null;
+
       return new Promise(function (resolve) {
         out.toBlob(function (blob) {
           if (!blob) { resolve(null); return; }
-          resolve(new File([blob], 'uz.png', { type: 'image/png' }));
+          var cut = new File([blob], 'uz.png', { type: 'image/png' });
+          if (inCrop) cut.faceBox = inCrop;
+          resolve(cut);
         }, 'image/png');
       });
     }).catch(function () {
