@@ -16,10 +16,16 @@ class ProductController extends Controller
 {
     public function index()
     {
+        /* The owner's own order first, and within it the newest design first.
+           Alphabetical used to settle the ties, which meant a shelf never
+           changed: "Alpen gold" led it for as long as the shop existed and
+           whatever was drawn last sank to the bottom. Dragging the rows in the
+           admin writes a real `sort_order` and overrules this; a design added
+           afterwards keeps the default 0 and so opens the list again. */
         $designs = Product::where('is_active', true)
             ->withCount('layers')
             ->orderBy('sort_order')
-            ->orderBy('name')
+            ->orderByDesc('id')
             ->get()
             ->groupBy('category');
 
@@ -95,7 +101,7 @@ class ProductController extends Controller
         $related = $occasions->isNotEmpty()
             ? Product::where('is_active', true)->whereKeyNot($product->id)
                 ->withCount(['giftPages' => fn ($q) => $q->whereIn('gift_pages.id', $occasions)])
-                ->orderByDesc('gift_pages_count')->orderBy('sort_order')->orderBy('name')
+                ->orderByDesc('gift_pages_count')->orderBy('sort_order')->orderByDesc('id')
                 ->get()->filter(fn (Product $p) => $p->gift_pages_count > 0)
                 ->filter->isCustomizable()->take(4)->values()
             : collect();
@@ -104,7 +110,7 @@ class ProductController extends Controller
         if ($related->isEmpty()) {
             $related = Product::where('is_active', true)->whereKeyNot($product->id)
                 ->where('category', $product->category)
-                ->orderBy('sort_order')->orderBy('name')->get()
+                ->orderBy('sort_order')->orderByDesc('id')->get()
                 ->filter->isCustomizable()->take(4)->values();
         }
 

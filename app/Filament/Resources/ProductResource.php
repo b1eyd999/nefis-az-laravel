@@ -232,6 +232,12 @@ class ProductResource extends Resource
                 ->withCount(['angles as face_cutout_angles_count' => fn ($q) => $q
                     ->whereHas('photoSlots', fn ($slot) => $slot->where('cutout', true))]))
             ->defaultSort('sort_order')
+            /* The catalogue's own order, set by dragging rather than by typing
+               numbers into every design. Untouched, a shelf shows the newest
+               design first; one drag writes the whole order down and it stays
+               that way. A design added later keeps `sort_order` 0 and opens
+               the list, which is what a new box is for. */
+            ->reorderable('sort_order')
             ->filters([
                 Tables\Filters\SelectFilter::make('category')
                     ->label('Kateqoriya')
