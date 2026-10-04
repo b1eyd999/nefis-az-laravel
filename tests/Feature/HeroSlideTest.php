@@ -92,7 +92,8 @@ class HeroSlideTest extends TestCase
             ->assertDontSee('id="hero"', false)
             ->getContent();
         $this->assertSame(1, substr_count($html, '<h1'), 'one main heading on the page');
-        $this->assertStringContainsString('Hər Zövqə Uyğun Dizaynlar', $html);
+        // That one heading is the catalogue's, and it leads the page.
+        $this->assertStringContainsString('Bakıda şəkilli şokolad qutuları və fərdi hədiyyələr', $html);
 
         HeroSlide::create(['title' => 'Görünməz', 'is_active' => false]);
         $this->get(route('home'))->assertDontSee('Görünməz');
