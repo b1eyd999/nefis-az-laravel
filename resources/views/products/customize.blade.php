@@ -311,9 +311,6 @@
   .choc-error{ margin:.5rem 0 0; font-size:.875rem; font-weight:600; color:#dc2626; }
   .choc-error[hidden]{ display:none; }
   .sum-name{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  /* the form sits to the right on a wide screen, under the picture on a phone */
-  .dh-narrow{ display:none; }
-  @media (max-width:959px){ .dh-wide{ display:none; } .dh-narrow{ display:inline; } }
   .choc-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(8.5rem, 1fr)); gap:.625rem; margin-top:.5rem; }
   /* Folded: six bars on a phone, nine on a wide screen, the rest behind the button. */
   .choc-group:not(.open) .choc-grid > .choc-card:nth-child(n+7){ display:none; }
@@ -419,14 +416,6 @@
         @php $firstScene = $viewData[0]['scene'] ?? null; @endphp
         <div class="stage" id="stage" @if($firstScene) style="aspect-ratio: {{ $firstScene['w'] }} / {{ $firstScene['h'] }};" @endif>
           <canvas id="preview-canvas"></canvas>
-          {{-- Only where a photograph is actually wanted: a design whose only
-               window is the sky was telling the customer to upload one. --}}
-          @if($needsPhoto)
-            {{-- One wrapper, because .drop-hint is a flex box: without it every
-                 word and span becomes a flex item of its own and the sentence
-                 breaks into a column on the phone. --}}
-            <div class="drop-hint" id="drop-hint"><span>{{ __('Öncə') }} <span class="dh-wide">{{ __('sağdan') }}</span><span class="dh-narrow">{{ __('aşağıdan') }}</span>&nbsp;{{ __('şəklinizi yükləyin') }}</span></div>
-          @endif
           @if(count($viewData) > 1)
             <button type="button" class="angle-arrow prev" id="angle-prev" aria-label="{{ __('Əvvəlki görünüş') }}">‹</button>
             <button type="button" class="angle-arrow next" id="angle-next" aria-label="{{ __('Sonrakı görünüş') }}">›</button>
@@ -1117,7 +1106,6 @@
 
   var canvas = document.getElementById('preview-canvas');
   var ctx = canvas.getContext('2d');
-  var dropHint = document.getElementById('drop-hint');
   var addBtn = document.getElementById('add-to-cart-btn');
   var addHint = document.getElementById('add-hint');
   /* A shut button with nothing said about it reads as a broken one, so the
@@ -1809,7 +1797,6 @@
            both of which are over by the time the picture is in. The cut-out
            branch writes its own ending, so it is left alone. */
         if (hint){ hint.hidden = false; if (! cutting) hint.textContent = hintWas; }
-        if (dropHint) dropHint.style.display = 'none';
         if (allSlotsFilled() && !cutting) addBtn.disabled = false;
         markAdd();
         draw();
@@ -1897,6 +1884,45 @@
   angleThumbs.forEach(function(btn){
     btn.addEventListener('click', function(){ loadAngle(Number(btn.dataset.angle)); });
   });
+
+  /**
+   * The box turns by itself until somebody takes hold of it.
+   *
+   * Most of a design's work is on its other sides, and a customer who lands on
+   * the page has no reason to guess that the little arrows turn it. So it
+   * turns on its own — and stops for good at the first sign that he would
+   * rather drive: a touch of the picture, an arrow, a thumbnail, or a hand on
+   * the controls underneath. After that the view he chose is the view he keeps.
+   *
+   * A hidden tab does not turn: a page left open behind others should not
+   * redraw a box a thousand times for nobody.
+   */
+  var turning = null;
+  function stopTurning(){
+    if (!turning) return;
+    clearInterval(turning);
+    turning = null;
+  }
+
+  if (ANGLES.length > 1) {
+    turning = setInterval(function(){
+      if (document.hidden) return;
+      loadAngle((activeAngle + 1) % ANGLES.length);
+    }, 4000);
+
+    var stageEl = document.getElementById('stage');
+    if (stageEl) {
+      ['pointerdown', 'wheel', 'touchstart'].forEach(function(evt){
+        stageEl.addEventListener(evt, stopTurning, { passive: true });
+      });
+    }
+    if (anglePrev) anglePrev.addEventListener('click', stopTurning);
+    if (angleNext) angleNext.addEventListener('click', stopTurning);
+    angleThumbs.forEach(function(btn){ btn.addEventListener('click', stopTurning); });
+    Array.prototype.forEach.call(document.querySelectorAll('.slot-block'), function (block) {
+      block.addEventListener('pointerdown', stopTurning, { passive: true });
+    });
+  }
 
   /* ---------- drag to reposition ---------- */
   var dragSlot = -1, lastX = 0, lastY = 0;
