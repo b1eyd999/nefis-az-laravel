@@ -123,9 +123,6 @@
         <span class="eyebrow">{{ __('Kolleksiya') }}</span>
         {{-- The page's one heading, whatever the banner above is doing. --}}
         <h1 class="hero-title" style="font-size:clamp(2rem, 4.2vw, 3rem);">{{ __('Bakıda şəkilli şokolad qutuları və fərdi hədiyyələr') }}</h1>
-        <p class="lede">{{ \App\Models\HeroSlide::numbers(__('Öz şəklinizi və sözlərinizi seçdiyiniz dizaynın üzərinə əlavə edin, önizləməni elə burada görün — qutunu biz yığıb Bakıya çatdırırıq. Ad günü, sevgiliyə, toya, yeni doğulana və korporativ hədiyyələr üçün {dizayn} hazır dizayn.')) }}</p>
-        <h2 style="margin-top:1.25rem;">{{ __('Hər Zövqə Uyğun Dizaynlar') }}</h2>
-        <p class="lede">{{ __('Bir dizayn seçin, öz şəklinizi yükləyin və canlı önizləməni görün.') }}</p>
       </div>
       <div class="cards-grid">
         @forelse($products as $product)
@@ -181,6 +178,13 @@
           </a>
         </div>
       @endif
+
+      {{-- The sentence search engines read, kept word for word but moved below
+           the boxes. It used to stand between the heading and the first design
+           and, with a second heading saying the same thing again, pushed the
+           whole shop more than two screens down on a phone. A customer comes
+           here to see the boxes; this is for whoever arrives from a search. --}}
+      <p class="lede collections-note">{{ \App\Models\HeroSlide::numbers(__('Öz şəklinizi və sözlərinizi seçdiyiniz dizaynın üzərinə əlavə edin, önizləməni elə burada görün — qutunu biz yığıb Bakıya çatdırırıq. Ad günü, sevgiliyə, toya, yeni doğulana və korporativ hədiyyələr üçün {dizayn} hazır dizayn.')) }}</p>
     </div>
   </section>
 

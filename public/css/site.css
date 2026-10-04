@@ -648,6 +648,10 @@
   .angle-arrow:hover{ background:var(--cream); }
   .angle-arrow.prev{ left:.75rem; }
   .angle-arrow.next{ right:.75rem; }
+  /* The search-engine sentence under the catalogue: present, readable, and
+     not competing with the boxes for the top of the page. */
+  .collections-note{ max-width:52rem; margin:1.75rem auto 0; text-align:center; opacity:.82; }
+
   .angle-thumbs{ display:flex; gap:.625rem; justify-content:center; margin-top:1rem; flex-wrap:wrap; }
   .angle-thumb{
     width:3.5rem; height:3.5rem; border-radius:.6rem; border:2px solid transparent; overflow:hidden; cursor:pointer;
