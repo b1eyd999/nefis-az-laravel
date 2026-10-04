@@ -457,14 +457,29 @@ jobs:
           # served from the document root, which .cpanel.yml fills with a
           # separate copy of public/ - it answers 200 only if that copy
           # happened too. Both have to be green.
+          #
+          # A shut shop is not a broken one. The owner has his own switch in the
+          # admin (Tenzimlemeler -> Texniki isler) and while it is on every page
+          # answers 503 - which from out here looks exactly like an application
+          # that will not boot. The maintenance page carries
+          # <meta name="nefis-state" content="maintenance"> for precisely this:
+          # seeing it, the deploy says so and stops, instead of crying wolf. A
+          # 503 without it is still a failure, which is the case worth waking
+          # somebody for.
           up=000
           home=000
+          body="$RUNNER_TEMP/home.html"
           for attempt in $(seq 1 10); do
             up=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "https://nefis.az/up" || echo 000)
-            home=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "https://nefis.az/" || echo 000)
+            home=$(curl -sS -o "$body" -w '%{http_code}' --max-time 20 "https://nefis.az/" || echo 000)
             echo "attempt $attempt: /up -> $up, / -> $home"
             if [ "$up" = "200" ] && [ "$home" = "200" ]; then
               echo "The site is up."
+              exit 0
+            fi
+            if [ "$up" = "200" ] && [ "$home" = "503" ]                && grep -q 'name="nefis-state" content="maintenance"' "$body" 2>/dev/null; then
+              echo "::warning title=The shop is closed by its own switch::The code is deployed and the application boots, but the owner's \"Texniki isler\" switch in the admin is on, so customers see the maintenance page. Turn it off when the work is done."
+              echo "Deployed. The shop is closed on purpose, so the home page was not checked."
               exit 0
             fi
             sleep 15

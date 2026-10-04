@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
+{{-- A mark for the deploy's own health check: the shop answers 503 both when
+     the owner closes it on purpose and when the application is broken, and
+     from outside those look the same. The check reads this and keeps the
+     alarm for the second case. Not the heading — that is translated. --}}
+<meta name="nefis-state" content="maintenance">
 <title>{{ __('Texniki işlər') }}, Nefis Şokolad Evi</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
