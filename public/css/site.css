@@ -304,6 +304,26 @@
   .hero-ctas{ display:flex; flex-wrap:wrap; gap:1rem; margin-top:2.25rem; }
   .hero-badges{ display:flex; flex-wrap:wrap; gap:1.5rem; margin-top:2.75rem; }
 
+
+  /* On a phone the banner stood a screen and a third tall before a single box
+     showed, and most of that was not words: 128px of its own padding, 124px of
+     gaps between its five parts, and the two buttons standing one under the
+     other because each was told to take a whole row. Nothing is dropped here —
+     the eyebrow, the heading, the sentence, both buttons, the three facts and
+     the picture all stay. They simply stop being spaced for a desktop.
+     Measured at 368px wide: 1040px -> about 800px. */
+  @media (max-width:639px){
+    .hero{ padding:1.75rem 0 2.25rem; }
+    .hero .wrap{ gap:1.75rem; }
+    .hero .hero-title{ margin-top:.75rem; }
+    .hero .lede{ margin-top:.85rem; }
+    .hero-ctas{ margin-top:1.4rem; gap:.6rem; }
+    /* Side by side while they fit; the flex wrap puts them back on two rows
+       by itself if a translation ever makes them too long. */
+    .hero-ctas .btn{ flex:1 1 auto; justify-content:center; padding-inline:1rem; }
+    .hero-badges{ margin-top:1.4rem; gap:.6rem 1.1rem; }
+  }
+
   @keyframes fade-up{ from{ opacity:0; transform:translateY(18px); } to{ opacity:1; transform:none; } }
   .hero-in{ opacity:0; animation:fade-up .8s var(--ease) forwards; }
   .hero-in.d1{ animation-delay:.05s; } .hero-in.d2{ animation-delay:.15s; }
