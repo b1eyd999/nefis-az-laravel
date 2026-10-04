@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Order;
+use App\Models\OrderAdjustment;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
@@ -111,6 +112,72 @@ class Epoint
         $id = (int) explode('-', (string) $reference)[0];
 
         return $id > 0 ? $id : null;
+    }
+
+    /**
+     * A reference for money owed over a change made to an order that was
+     * already paid for. It names the order first, so everything that reads a
+     * reference keeps working, and then the adjustment — `12-d3-251004…` is
+     * the third change to order 12.
+     */
+    public static function adjustmentReference(OrderAdjustment $adjustment): string
+    {
+        return $adjustment->order_id . '-d' . $adjustment->id . '-' . now()->format('ymdHis');
+    }
+
+    /**
+     * Asks the gateway for a page worth just the difference.
+     *
+     * The order's own payment is never touched by this: the amount, the
+     * reference and the confirmation all live on the adjustment, so the
+     * handler that refuses a second payment on a paid order never sees it.
+     */
+    public static function startAdjustment(OrderAdjustment $adjustment, string $successUrl, string $errorUrl): ?string
+    {
+        if (! self::enabled() || ! $adjustment->isCharge() || $adjustment->amount <= 0) {
+            return null;
+        }
+
+        $reference = self::adjustmentReference($adjustment);
+
+        $payload = [
+            'public_key' => self::publicKey(),
+            'amount' => number_format((float) $adjustment->amount, 2, '.', ''),
+            'currency' => self::CURRENCY,
+            'language' => match (Locale::current()) {
+                'ru' => 'ru',
+                'en' => 'en',
+                default => 'az',
+            },
+            'order_id' => $reference,
+            'description' => 'Nefis.az sifariş #' . $adjustment->order_id . ' — əlavə',
+            'success_redirect_url' => $successUrl,
+            'error_redirect_url' => $errorUrl,
+        ];
+
+        $answer = self::post($payload);
+
+        if (($answer['status'] ?? null) !== self::SUCCESS || empty($answer['redirect_url'])) {
+            Log::warning('epoint: surcharge not started', [
+                'order' => $adjustment->order_id,
+                'adjustment' => $adjustment->id,
+                'status' => $answer['status'] ?? null,
+                'message' => $answer['message'] ?? null,
+                'trace_id' => $answer['trace_id'] ?? null,
+            ]);
+
+            return null;
+        }
+
+        $adjustment->forceFill([
+            'payment_method' => 'card',
+            'epoint_ref' => $reference,
+            'epoint_transaction' => $answer['transaction'] ?? null,
+            'payment_started_at' => now(),
+            'payment_asked_for' => $payload['amount'],
+        ])->save();
+
+        return $answer['redirect_url'];
     }
 
     /**

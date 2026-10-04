@@ -471,4 +471,13 @@ class Telegram
         self::send('💳 <b>Sifariş #' . $order->id . '</b> kartla ödənildi, ' . Price::format($order->total())
             . "\n" . url('/admin/orders/' . $order->id . '/edit'));
     }
+
+    /** The customer has paid the difference after the order was changed. */
+    public static function adjustmentPaid(\App\Models\OrderAdjustment $adjustment): void
+    {
+        self::send('💳 <b>Sifariş #' . $adjustment->order_id . '</b> — əlavə ödəniş alındı, '
+            . Price::format((float) $adjustment->amount)
+            . ($adjustment->reason ? "\n" . $adjustment->reason : '')
+            . "\n" . url('/admin/orders/' . $adjustment->order_id . '/edit'));
+    }
 }

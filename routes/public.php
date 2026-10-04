@@ -79,5 +79,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/odenis/cek', [PaymentController::class, 'receipt'])->name('pay.receipt');
         // Paying by card: the customer is sent to the bank's own page.
         Route::post('/odenis/kart', [EpointController::class, 'start'])->name('pay.card');
+
+        // The order changed after it was paid for, and the difference is owed.
+        // Its own page, gated on the change rather than on the order's status.
+        Route::prefix('elave/{adjustment}')->whereNumber('adjustment')->name('extra.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\AdjustmentController::class, 'show'])->name('show');
+            Route::post('/kart', [\App\Http\Controllers\AdjustmentController::class, 'card'])->name('card');
+            Route::post('/cek', [\App\Http\Controllers\AdjustmentController::class, 'receipt'])->name('receipt');
+        });
     });
 });

@@ -66,6 +66,16 @@ class EpointController extends Controller
         }
 
         $body = Epoint::decode($data);
+
+        // Money owed over a change made after the order was paid for settles
+        // on its own row, not on the order. It is looked up by the exact
+        // reference, so it can never be confused with a payment for the order
+        // itself — and the "already paid" guard below never sees it.
+        $adjustment = \App\Models\OrderAdjustment::where('epoint_ref', (string) ($body['order_id'] ?? ''))->first();
+        if ($adjustment) {
+            return $this->adjustmentResult($adjustment, $body);
+        }
+
         $order = Order::find(Epoint::orderIdFrom($body['order_id'] ?? null));
 
         if (! $order) {
@@ -135,6 +145,70 @@ class EpointController extends Controller
         ])->save();
 
         defer(fn () => Telegram::paid($order));
+
+        return response('ok', 200);
+    }
+
+    /**
+     * The same reading of the bank's word, for money owed over a change.
+     *
+     * It is deliberately a copy of the order's own path rather than a shared
+     * one: the order's is the path that takes the shop's money every day, and
+     * it is not worth bending it to also mean something else.
+     */
+    private function adjustmentResult(\App\Models\OrderAdjustment $adjustment, array $body): Response
+    {
+        $paid = ($body['status'] ?? null) === Epoint::SUCCESS;
+        $amount = (float) ($body['amount'] ?? 0);
+        $transaction = $body['transaction'] ?? null;
+        $seen = $adjustment->epoint_transaction;
+        $expected = (float) ($adjustment->payment_asked_for ?? $adjustment->amount);
+
+        if ($paid && abs($amount - $expected) > 0.01) {
+            Log::error('epoint: paid amount does not match the surcharge', [
+                'order' => $adjustment->order_id, 'adjustment' => $adjustment->id,
+                'paid' => $amount, 'expected' => $expected,
+            ]);
+            defer(fn () => Telegram::paymentProblem($adjustment->order,
+                'Əlavə ödənişin məbləği uyğun gəlmir: ' . $amount . ' AZN, gözlənilən ' . $expected
+                . ' AZN. Bank pulu götürüb.'));
+
+            return response('amount mismatch', 200);
+        }
+
+        if (! $paid) {
+            $adjustment->forceFill([
+                'payment_method' => 'card',
+                'epoint_transaction' => $transaction ?: $seen,
+                'payment_started_at' => null,
+            ])->save();
+
+            return response('ok', 200);
+        }
+
+        if ($adjustment->payment_confirmed_at) {
+            if ($transaction && $seen && $transaction !== $seen) {
+                Log::error('epoint: a second payment for a surcharge already paid', [
+                    'order' => $adjustment->order_id, 'adjustment' => $adjustment->id,
+                    'first' => $seen, 'second' => $transaction,
+                ]);
+                defer(fn () => Telegram::paymentProblem($adjustment->order,
+                    'Əlavə ödəniş ikinci dəfə edilib. Əvvəlki əməliyyat: ' . $seen . ', yenisi: ' . $transaction
+                    . '. Müştəriyə pulu qaytarmaq lazımdır.'));
+            }
+
+            return response('ok', 200);
+        }
+
+        $adjustment->forceFill([
+            'payment_method' => 'card',
+            'epoint_transaction' => $transaction ?: $seen,
+            'status' => \App\Models\OrderAdjustment::PAID,
+            'payment_confirmed_at' => now(),
+            'payment_started_at' => null,
+        ])->save();
+
+        defer(fn () => Telegram::adjustmentPaid($adjustment));
 
         return response('ok', 200);
     }

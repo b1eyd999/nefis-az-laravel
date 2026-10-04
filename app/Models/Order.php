@@ -212,6 +212,64 @@ class Order extends Model
         return $this->itemsTotal() + (float) ($this->delivery_price ?? 0) + (float) ($this->rush_fee ?? 0);
     }
 
+    /** Everything the order was changed to after the customer had paid. */
+    public function adjustments(): HasMany
+    {
+        return $this->hasMany(OrderAdjustment::class)->orderBy('id');
+    }
+
+    /** @return \Illuminate\Support\Collection<int, OrderAdjustment> */
+    private function openAdjustments(): \Illuminate\Support\Collection
+    {
+        return $this->relationLoaded('adjustments')
+            ? $this->adjustments->filter(fn (OrderAdjustment $a) => $a->isOpen())
+            : $this->adjustments()->whereIn('status', [OrderAdjustment::WAITING, OrderAdjustment::CHECK])->get();
+    }
+
+    /** What the customer still owes for changes made after he paid. */
+    public function outstanding(): float
+    {
+        return round((float) $this->openAdjustments()
+            ->where('kind', OrderAdjustment::CHARGE)->sum('amount'), 2);
+    }
+
+    /** What the shop owes him back, because the order got smaller. */
+    public function owedBack(): float
+    {
+        return round((float) $this->openAdjustments()
+            ->where('kind', OrderAdjustment::REFUND)->sum('amount'), 2);
+    }
+
+    /**
+     * How much of this order has actually been paid for.
+     *
+     * There is no column for it and none is needed: the order is worth
+     * `total()` today, the customer is behind by whatever is still owed and
+     * ahead by whatever is owed back to him. It stays true only while every
+     * change to a paid order is written down as an adjustment — which is why
+     * the admin creates the line and the adjustment in one transaction.
+     */
+    public function paidSoFar(): float
+    {
+        return round($this->total() - $this->outstanding() + $this->owedBack(), 2);
+    }
+
+    /** Money is still to move over a change — in either direction. */
+    public function hasOpenAdjustments(): bool
+    {
+        return $this->openAdjustments()->isNotEmpty();
+    }
+
+    /**
+     * Whether a change to this order has to be settled with the customer at
+     * all. Before he has paid anything, the order's own payment page still
+     * asks for the whole of `total()`, so an edit needs no adjustment.
+     */
+    public function isPaidFor(): bool
+    {
+        return $this->payment_confirmed_at !== null;
+    }
+
     /** Whether the customer asked for his box to be made before the others. */
     public function isRush(): bool
     {

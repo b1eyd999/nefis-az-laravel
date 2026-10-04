@@ -143,6 +143,27 @@ class OrderResource extends Resource
                                     . ' = ' . Price::format($record->total())
                                 : '—')
                             ->columnSpanFull(),
+                        // Once the order has been changed after payment, the
+                        // total above is no longer what the customer handed
+                        // over. This says who owes whom.
+                        Forms\Components\Placeholder::make('settlement')
+                            ->label('Ödəniş vəziyyəti')
+                            ->content(function (?Order $record) {
+                                if (! $record) {
+                                    return '—';
+                                }
+                                $lines = ['Artıq ödənilib: ' . Price::format($record->paidSoFar())];
+                                if ($record->outstanding() > 0) {
+                                    $lines[] = 'Müştəri əlavə ödəməlidir: ' . Price::format($record->outstanding());
+                                }
+                                if ($record->owedBack() > 0) {
+                                    $lines[] = 'Müştəriyə qaytarılmalıdır: ' . Price::format($record->owedBack());
+                                }
+
+                                return new \Illuminate\Support\HtmlString(implode('<br>', array_map('e', $lines)));
+                            })
+                            ->visible(fn (?Order $record) => (bool) $record?->hasOpenAdjustments())
+                            ->columnSpanFull(),
                     ])->columns(2),
             ]);
     }
@@ -304,6 +325,7 @@ class OrderResource extends Resource
     {
         return [
             RelationManagers\ItemsRelationManager::class,
+            RelationManagers\AdjustmentsRelationManager::class,
         ];
     }
 

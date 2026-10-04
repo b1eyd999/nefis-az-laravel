@@ -66,6 +66,79 @@ class Accounting
         });
     }
 
+    /**
+     * Brings an order's materials in line with what it now holds.
+     *
+     * `consume()` is for a brand new order: it counts every box and writes a
+     * fresh set of movements. Call it a second time and it takes the same
+     * boxes out of stock again. This one compares what the order should have
+     * taken with what it has already taken and moves only the difference —
+     * out when a box is added, back when one is removed — so it may be called
+     * as often as the order is edited, and after an edit that changed nothing
+     * it does nothing at all.
+     *
+     * An order that is off the books has already given everything back, and
+     * is left alone: bringing it back from cancelled is `consume()`'s job.
+     */
+    public static function resync(Order $order): void
+    {
+        if (in_array($order->status, Order::OFF_THE_BOOKS, true)) {
+            return;
+        }
+
+        DB::transaction(function () use ($order) {
+            $boxes = (int) $order->items()->whereNotNull('product_id')->sum('quantity');
+            $moves = StockMovement::where('order_id', $order->id)
+                ->whereIn('type', [StockMovement::USAGE, StockMovement::RETURN])
+                ->get()
+                ->groupBy('material_id');
+
+            foreach (Material::used()->lockForUpdate()->get() as $m) {
+                $mine = $moves->get($m->id) ?? collect();
+                $out = round(-(float) $mine->sum('quantity'), 3);     // what this order holds now
+                $want = round($m->per_box * $boxes, 3);
+                $delta = round($want - $out, 3);
+                if (abs($delta) < 0.0005) {
+                    continue;
+                }
+
+                // Taking more is valued at today's cost; giving back is valued
+                // at the price it went out at, so the two cancel exactly.
+                $unit = $delta > 0
+                    ? $m->unitCost()
+                    : ($mine->firstWhere('type', StockMovement::USAGE)?->unit_cost ?? $m->unitCost());
+
+                // Usage is written negative and a return positive, as the rest
+                // of the ledger does — and -$delta is already both.
+                StockMovement::create([
+                    'material_id' => $m->id,
+                    'order_id' => $order->id,
+                    'type' => $delta > 0 ? StockMovement::USAGE : StockMovement::RETURN,
+                    'quantity' => -$delta,
+                    'unit_cost' => round($unit, 4),
+                    'amount' => round(abs($delta) * $unit, 2),
+                    'note' => "Sifariş #{$order->id} dəyişdi: {$boxes} qutu",
+                ]);
+                $m->decrement('stock', $delta);
+            }
+
+            // What the order cost in materials, read back from its own
+            // movements: for each material, what is still out, at the price it
+            // went out at. Rounded once at the end, as `consume()` rounds, so
+            // an order edited and edited back comes to the same figure it had
+            // when it was placed rather than drifting by a kopek a time.
+            $total = 0.0;
+            foreach (StockMovement::where('order_id', $order->id)
+                ->whereIn('type', [StockMovement::USAGE, StockMovement::RETURN])
+                ->get()->groupBy('material_id') as $mine) {
+                $out = -(float) $mine->sum('quantity');
+                $total += $out * (float) ($mine->firstWhere('type', StockMovement::USAGE)?->unit_cost ?? 0);
+            }
+
+            $order->forceFill(['materials_cost' => round(max(0, $total), 2)])->saveQuietly();
+        });
+    }
+
     /** Puts a cancelled order's materials back into stock. */
     public static function restore(Order $order): void
     {
@@ -142,7 +215,7 @@ class Accounting
             $from = $start;
         }
 
-        $orders = Order::with('items')
+        $orders = Order::with('items', 'adjustments')
             ->whereNotIn('status', array_merge(Order::OFF_THE_BOOKS, ['awaiting_payment', 'payment_check']))
             ->when($from, fn ($q) => $q->where('created_at', '>=', $from))
             ->when($to, fn ($q) => $q->where('created_at', '<=', $to))
@@ -150,7 +223,10 @@ class Accounting
             ->get();
 
         $rows = $orders->map(function (Order $o) {
-            $goods = $o->itemsTotal();
+            // An order changed after it was paid for is worth its new figure,
+            // but money still owed either way has not moved yet — and a
+            // promise is not income here any more than it is anywhere else.
+            $goods = $o->itemsTotal() - $o->outstanding() + $o->owedBack();
             $delivery = (float) ($o->delivery_price ?? 0);
             $chocolate = (float) $o->items->sum(fn ($i) => (float) ($i->chocolate_cost ?? 0) * $i->quantity);
             $materials = (float) ($o->materials_cost ?? 0);
