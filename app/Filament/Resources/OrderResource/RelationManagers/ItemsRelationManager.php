@@ -43,8 +43,13 @@ class ItemsRelationManager extends RelationManager
                     $set('product_name', $product?->name);
                     $set('price', $product?->price);
                 }),
+            // Every line must say what it is. Left empty, both the panel and
+            // the phone admin fall back to "Silinmiş məhsul" — which reads as
+            // a deleted design rather than as the gift wrap it actually is.
             Forms\Components\TextInput::make('product_name')
                 ->label('Adı (sifarişdə saxlanan)')
+                ->helperText('Sətir siyahılarda bu adla görünür.')
+                ->required()
                 ->maxLength(255),
             Forms\Components\TextInput::make('quantity')
                 ->label('Say')->numeric()->minValue(1)->default(1)->required(),
@@ -56,11 +61,14 @@ class ItemsRelationManager extends RelationManager
                 ->options(fn () => Chocolate::orderBy('name')->pluck('name', 'id'))
                 ->searchable()
                 ->live()
-                ->afterStateUpdated(function ($state, Forms\Set $set) {
+                ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
                     $bar = $state ? Chocolate::find($state) : null;
                     $set('chocolate_name', $bar?->name);
                     $set('chocolate_price', $bar?->price());
                     $set('chocolate_cost', $bar?->costPrice());
+                    if ($bar && blank($get('product_name'))) {
+                        $set('product_name', $bar->name);
+                    }
                 }),
             Forms\Components\TextInput::make('chocolate_name')->label('Şokoladın adı')->maxLength(255),
             Forms\Components\TextInput::make('chocolate_price')->label('Şokoladın qiyməti, ₼')->numeric()->step(0.01)->minValue(0),
@@ -73,10 +81,15 @@ class ItemsRelationManager extends RelationManager
                 ->options(fn () => Wrapping::orderBy('name')->pluck('name', 'id'))
                 ->searchable()
                 ->live()
-                ->afterStateUpdated(function ($state, Forms\Set $set) {
+                ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
                     $wrap = $state ? Wrapping::find($state) : null;
                     $set('wrapping_name', $wrap?->name);
                     $set('wrapping_price', $wrap?->price);
+                    // A wrap bought on its own is a line of its own, and it
+                    // needs a name as much as a box does.
+                    if ($wrap && blank($get('product_name'))) {
+                        $set('product_name', 'Qablaşdırma: ' . $wrap->name);
+                    }
                 }),
             Forms\Components\TextInput::make('wrapping_name')->label('Qablaşdırmanın adı')->maxLength(255),
             Forms\Components\TextInput::make('wrapping_price')->label('Qablaşdırmanın qiyməti, ₼')->numeric()->step(0.01)->minValue(0),
@@ -110,7 +123,7 @@ class ItemsRelationManager extends RelationManager
                     ->label('Məhsul')
                     ->visibleFrom('md')
                     // The name was kept on the order line for when the design is gone.
-                    ->getStateUsing(fn ($record) => $record->product?->name ?? $record->product_name ?? 'Silinmiş məhsul'),
+                    ->getStateUsing(fn ($record) => $record->title()),
                 Tables\Columns\ImageColumn::make('product.template_image')
                     ->label('Qutu dizaynı')
                     // A letter bought on its own has no box: its photo stands in.

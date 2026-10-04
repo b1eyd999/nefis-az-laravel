@@ -296,4 +296,52 @@ class OrderChangeTest extends TestCase
         OrderEditor::settle($money, 'cabinet');
         $this->assertSame(0.0, $order->fresh()->owedBack());
     }
+
+    public function test_the_customer_is_written_to_and_sees_it_in_his_account(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+        Setting::put(Setting::NOTIFY_EMAIL, '1');
+        // The letter is deferred so the page is answered first; here there is
+        // no response to wait for, so it is sent straight away.
+        $this->withoutDefer();
+
+        $user = User::factory()->create(['email' => 'musteri@nefis.az']);
+        $order = $this->paidOrder($user);
+        $order->forceFill(['locale' => 'ru'])->save();
+
+        $money = OrderEditor::change($order->fresh(), 'Əlavə şokolad', fn () => $order->items()->create([
+            'product_id' => null, 'product_name' => 'Şokolad', 'quantity' => 1,
+            'customer_photos' => [], 'custom_texts' => [], 'price' => 6.5,
+        ]));
+
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\OrderChanged::class, fn ($mail) => $mail->hasTo('musteri@nefis.az'));
+
+        // The link in it is in the language he ordered in, not the shop's own.
+        $this->assertStringContainsString('/ru/sifaris/', \App\Support\CustomerNotice::adjustmentLink($money));
+
+        // And his own page says what is owed, with the button for it. The
+        // button follows the page he is reading, not the order's own language
+        // — only the letter has to carry the language he ordered in.
+        $this->actingAs($user)->get(route('orders.index'))->assertOk()
+            ->assertSee('Əlavə şokolad')
+            ->assertSee('6.50')
+            ->assertSee(route('orders.extra.show', ['order' => $order->id, 'adjustment' => $money->id]), false);
+        $this->actingAs($user)->get(route('ru.orders.index'))->assertOk()
+            ->assertSee(route('ru.orders.extra.show', ['order' => $order->id, 'adjustment' => $money->id]), false);
+    }
+
+    public function test_money_owed_back_is_shown_without_a_pay_button(): void
+    {
+        $user = User::factory()->create();
+        $order = $this->paidOrder($user);
+        $line = $order->items()->first();
+        $line->forceFill(['ar_price' => 5])->save();
+        $order->forceFill(['payment_asked_for' => $order->fresh()->load('items')->total()])->save();
+
+        $money = OrderEditor::change($order->fresh(), 'Canlandırmadan imtina', fn () => $line->update(['ar_price' => 0]));
+
+        $this->actingAs($user)->get(route('orders.index'))->assertOk()
+            ->assertSee('Canlandırmadan imtina')
+            ->assertDontSee(route('orders.extra.show', ['order' => $order->id, 'adjustment' => $money->id]), false);
+    }
 }

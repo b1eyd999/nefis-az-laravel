@@ -91,6 +91,27 @@ class OrderItem extends Model
         return $this->product_id === null && $this->hasLetter();
     }
 
+    /**
+     * What to call this line wherever it is listed.
+     *
+     * The design's own name first, then the name frozen on the line when the
+     * design is gone. A line that is only a wrap, a bar or a letter — added to
+     * an order after it was placed — has neither, and used to be shown as
+     * "Silinmiş məhsul", which reads as a deleted design rather than as the
+     * thing it actually is. So it is named after whatever it carries, and the
+     * deleted-design wording is kept for the one case that really means it.
+     */
+    public function title(): string
+    {
+        return $this->product?->name
+            ?: ($this->product_name
+            ?: (filled($this->wrapping_name) ? __('Qablaşdırma') . ': ' . $this->wrapping_name
+            : (filled($this->chocolate_name) ? $this->chocolate_name
+            : ($this->hasLetter() ? __('Polaroid məktub')
+            : ((float) ($this->ar_price ?? 0) > 0 ? __('Canlı şəkil')
+            : __('Silinmiş məhsul'))))));
+    }
+
     public function letterPhotoUrl(): ?string
     {
         return $this->letter_photo ? \App\Support\Media::url($this->letter_photo) : null;

@@ -92,7 +92,7 @@
        desktop panel shows, so the two never say different things. --}}
   @foreach($order->items as $item)
     <div class="ph-block">
-      <h2>{{ $item->product?->name ?? $item->product_name ?? 'Silinmiş məhsul' }}</h2>
+      <h2>{{ $item->title() }}</h2>
       <div class="ph-line">
         <span>{{ $item->quantity }} ədəd</span>
         <b>{{ \App\Support\Price::format($item->unitPrice() * $item->quantity) }}</b>

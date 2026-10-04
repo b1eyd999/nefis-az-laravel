@@ -51,13 +51,21 @@ class OrderEditor
                 return null;
             }
 
-            return $order->adjustments()->create([
+            $adjustment = $order->adjustments()->create([
                 'kind' => $difference > 0 ? OrderAdjustment::CHARGE : OrderAdjustment::REFUND,
                 'amount' => abs($difference),
                 'reason' => $reason,
                 'status' => OrderAdjustment::WAITING,
                 'created_by' => $by ?? auth()->id(),
             ]);
+
+            // The customer hears it from the shop rather than only from the
+            // owner's own message — with the link to pay, in his language.
+            // After the page has been answered, and never in a way that could
+            // undo the change: a mail problem is logged, not thrown.
+            defer(fn () => CustomerNotice::changed($adjustment));
+
+            return $adjustment;
         });
     }
 

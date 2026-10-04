@@ -3,6 +3,19 @@
 @section('title', __('Sifarişlərim') . ', Nefis Şokolad Evi')
 @section('robots', 'noindex, nofollow')
 
+@section('page_style')
+  /* Money still to move over a change made after the order was paid for. It
+     sits inside the order's own card and must read as part of it, not as an
+     error: amber when the customer owes, green when the shop does. */
+  .order-extra{ margin-top:.85rem; border:1px solid var(--line); border-left:3px solid var(--gold);
+    border-radius:.75rem; padding:.8rem .9rem; background:var(--cream-2); }
+  .order-extra.back{ border-left-color:#16a34a; }
+  .order-extra-sum{ display:flex; align-items:baseline; justify-content:space-between; gap:1rem; font-size:.9375rem; }
+  .order-extra-sum b{ font-size:1.15rem; color:var(--gold-deep); font-variant-numeric:tabular-nums; }
+  .order-extra.back .order-extra-sum b{ color:#15803d; }
+  .order-extra-why{ margin:.35rem 0 0; font-size:.8125rem; line-height:1.6; color:var(--cocoa-soft); }
+@endsection
+
 @section('content')
 <section class="page-hero" style="padding-bottom:0;">
   <div class="wrap">
@@ -50,7 +63,7 @@
                   @endif
                 </div>
                 <div class="info">
-                  <h3>{{ $item->product->name ?? $item->product_name ?? __('Silinmiş məhsul') }}</h3>
+                  <h3>{{ $item->title() }}</h3>
                   <p>
                     @if($texts) "{{ implode('" · "', $texts) }}" &middot; @endif
                     {{ __(':count ədəd', ['count' => $item->quantity]) }}
@@ -95,6 +108,26 @@
                 {{ $order->payment_receipt ? __('Ödəniş səhifəsi') : __('Ödənişi tamamla') }}
               </a>
             @endif
+
+            {{-- The order was changed after it was paid for. The customer sees
+                 what is owed, which way it goes, and — when it is his to pay —
+                 the button for it. --}}
+            @foreach($order->adjustments->where('status', \App\Models\OrderAdjustment::WAITING)->merge($order->adjustments->where('status', \App\Models\OrderAdjustment::CHECK)) as $extra)
+              <div class="order-extra{{ $extra->isCharge() ? '' : ' back' }}">
+                <div class="order-extra-sum">
+                  <span>{{ $extra->isCharge() ? __('Əlavə ödəniləcək') : __('Sizə qaytarılacaq') }}</span>
+                  <b>{{ \App\Support\Price::format((float) $extra->amount) }}</b>
+                </div>
+                @if($extra->reason)<p class="order-extra-why">{{ $extra->reason }}</p>@endif
+                @if($extra->isCharge())
+                  <a href="{{ lroute('orders.extra.show', [$order, $extra]) }}" class="btn btn-primary" style="margin-top:.6rem;">
+                    {{ $extra->status === \App\Models\OrderAdjustment::CHECK ? __('Ödəniş səhifəsi') : __('Fərqi ödə') }}
+                  </a>
+                @else
+                  <p class="order-extra-why">{{ __('Məbləğ bankınızdan asılı olaraq 1–7 iş gününə kartınıza düşəcək.') }}</p>
+                @endif
+              </div>
+            @endforeach
             <p style="font-size:.8125rem; color:var(--cocoa-soft); margin-top:.75rem;">{{ $order->created_at->format('d.m.Y H:i') }}</p>
           </div>
         @endforeach

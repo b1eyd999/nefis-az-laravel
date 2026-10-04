@@ -11,7 +11,9 @@ class OrderController extends Controller
     {
         $orders = $request->user()
             ->orders()
-            ->with(['items.product', 'items.livePhotos'])
+            // The changes come along so the page can say what is still owed
+            // either way without asking the database once per order.
+            ->with(['items.product', 'items.livePhotos', 'adjustments'])
             ->latest()
             ->get();
 

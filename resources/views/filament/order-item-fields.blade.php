@@ -6,7 +6,7 @@
   {{-- On a phone the other columns are hidden: the line's name, count, price, bar and paper here instead. --}}
   <style>.oi-phone{ display:none; } @media (max-width: 767px){ .oi-phone{ display:block; } .oi-root{ min-width:0 !important; max-width:calc(100vw - 4.5rem) !important; white-space:normal; } }</style>
   <div class="oi-phone" style="border-bottom:1px solid rgba(128,128,128,.3); padding-bottom:.6rem;">
-    <div style="font-weight:700; font-size:.95rem; white-space:normal;">{{ $line->product?->name ?? $line->product_name ?? 'Silinmiş məhsul' }}</div>
+    <div style="font-weight:700; font-size:.95rem; white-space:normal;">{{ $line->title() }}</div>
     <div style="font-size:.85rem; opacity:.85; margin-top:.2rem;">
       {{ $line->quantity }} ədəd
       @if($line->unitPrice() > 0) · <b>{{ \App\Support\Price::format($line->unitPrice() * $line->quantity) }}</b> @endif

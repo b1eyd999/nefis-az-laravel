@@ -68,10 +68,32 @@ class CustomerNotice
         }
     }
 
-    /** Where the customer carries on: the payment page, or his orders. */
+    /**
+     * Where the customer carries on: the payment page, or his orders.
+     *
+     * Built with the order's own language in the address. A letter written in
+     * Russian used to end at an Azerbaijani page, because `route()` names the
+     * unprefixed route and that one carries `locale:az`.
+     */
     public static function link(Order $order): string
     {
-        return $order->awaitsPayment() ? route('orders.pay', $order) : route('orders.index');
+        return self::routed($order, $order->awaitsPayment() ? 'orders.pay' : 'orders.index',
+            $order->awaitsPayment() ? ['order' => $order->id] : []);
+    }
+
+    /** The page where money owed over a change is paid. */
+    public static function adjustmentLink(\App\Models\OrderAdjustment $adjustment): string
+    {
+        return self::routed($adjustment->order, 'orders.extra.show',
+            ['order' => $adjustment->order_id, 'adjustment' => $adjustment->id]);
+    }
+
+    /** A route of the shop in the language the order was placed in. */
+    private static function routed(Order $order, string $name, array $parameters = []): string
+    {
+        $locale = self::locale($order);
+
+        return route($locale === Locale::DEFAULT ? $name : $locale . '.' . $name, $parameters);
     }
 
     /** The whole message, the way both the letter and WhatsApp carry it. */
@@ -94,6 +116,46 @@ class CustomerNotice
         $lines[] = self::link($order);
 
         return implode("\n", $lines);
+    }
+
+    /** The letter about a change made to an order already paid for. */
+    public static function changed(\App\Models\OrderAdjustment $adjustment): bool
+    {
+        $order = $adjustment->order;
+        $to = trim((string) $order->user?->email);
+
+        if (! self::emailOn() || ! filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            return self::$sent = false;
+        }
+
+        try {
+            Mail::mailer(self::mailer())->to($to)->locale(self::locale($order))
+                ->send(new \App\Mail\OrderChanged($adjustment));
+
+            return self::$sent = true;
+        } catch (Throwable $e) {
+            Log::error('Dəyişiklik e-poçtu göndərilmədi: ' . $e->getMessage(), ['order' => $order->id]);
+
+            return self::$sent = false;
+        }
+    }
+
+    /** The same words, for the WhatsApp button beside the change. */
+    public static function changeText(\App\Models\OrderAdjustment $adjustment): string
+    {
+        return self::inTheirLanguage($adjustment->order, function () use ($adjustment) {
+            $lines = [__('Nefis.az, sifariş #') . $adjustment->order_id];
+            $lines[] = $adjustment->reason ?: __('Sifarişiniz dəyişdi.');
+            $lines[] = $adjustment->isCharge()
+                ? __('Əlavə ödəniş: :sum', ['sum' => Price::format((float) $adjustment->amount)])
+                : __('Sizə qaytarılacaq: :sum', ['sum' => Price::format((float) $adjustment->amount)]);
+            if ($adjustment->isCharge()) {
+                $lines[] = self::adjustmentLink($adjustment);
+            }
+
+            return implode("
+", $lines);
+        });
     }
 
     /**
