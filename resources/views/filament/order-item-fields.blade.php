@@ -4,7 +4,73 @@
 @php $fields = $getRecord()->fields(); $line = $getRecord(); @endphp
 <div class="oi-root" style="display:flex; flex-direction:column; gap:.85rem; padding:.5rem 0; min-width:16rem; max-width:26rem;">
   {{-- On a phone the other columns are hidden: the line's name, count, price, bar and paper here instead. --}}
-  <style>.oi-phone{ display:none; } @media (max-width: 767px){ .oi-phone{ display:block; } .oi-root{ min-width:0 !important; max-width:calc(100vw - 4.5rem) !important; white-space:normal; } }</style>
+  <style>.oi-phone{ display:none; } @media (max-width: 767px){ .oi-phone{ display:block; } .oi-root{ min-width:0 !important; max-width:calc(100vw - 4.5rem) !important; white-space:normal; } }
+    .oi-btn{ display:inline-flex; align-items:center; gap:.3rem; font-size:.75rem; font-weight:600; line-height:1;
+      padding:.3rem .55rem; border-radius:.4rem; border:1px solid rgba(128,128,128,.45); background:transparent;
+      color:inherit; cursor:pointer; white-space:nowrap; }
+    .oi-btn:hover{ border-color:#d97706; color:#d97706; }
+    .oi-btn.ok{ border-color:#16a34a; color:#16a34a; }</style>
+  {{-- Copying a caption and getting the photo out are the two things the
+       workshop does with this panel, and both were a fight: the text had to be
+       dragged over with a mouse, and the browser shows a .jpg rather than
+       saving it however politely the link asks. So: one button that copies,
+       and one that fetches the file and hands it to the browser as a blob,
+       which is saved whatever the server's content type says. Bound once, on
+       the document, because Livewire redraws this table under us. --}}
+  <script>
+  if (!window.__oiTools) {
+    window.__oiTools = true;
+    document.addEventListener('click', function (e) {
+      var el = e.target instanceof Element ? e.target : null;
+      if (!el) return;
+
+      var copy = el.closest('[data-oi-text]');
+      if (copy) {
+        e.preventDefault();
+        var text = copy.getAttribute('data-oi-text') || '';
+        var was = copy.textContent;
+        var done = function () {
+          copy.textContent = 'Kopyalandı ✓'; copy.classList.add('ok');
+          setTimeout(function () { copy.textContent = was; copy.classList.remove('ok'); }, 1500);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done).catch(function () {});
+        } else {
+          var t = document.createElement('textarea');
+          t.value = text; document.body.appendChild(t); t.select();
+          try { document.execCommand('copy'); done(); } catch (err) {}
+          t.remove();
+        }
+        return;
+      }
+
+      var get = el.closest('[data-oi-file]');
+      if (get) {
+        e.preventDefault();
+        var url = get.getAttribute('data-oi-file');
+        var name = get.getAttribute('data-oi-name') || 'nefis';
+        var label = get.textContent;
+        get.textContent = '…';
+        fetch(url, { credentials: 'same-origin' })
+          .then(function (r) { if (!r.ok) throw new Error(r.status); return r.blob(); })
+          .then(function (blob) {
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = name;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+            get.textContent = 'Endirildi ✓'; get.classList.add('ok');
+            setTimeout(function () { get.textContent = label; get.classList.remove('ok'); }, 1500);
+          })
+          .catch(function () {
+            // Whatever went wrong, the file itself is still one click away.
+            get.textContent = label;
+            window.open(url, '_blank', 'noopener');
+          });
+      }
+    });
+  }
+  </script>
   <div class="oi-phone" style="border-bottom:1px solid rgba(128,128,128,.3); padding-bottom:.6rem;">
     <div style="font-weight:700; font-size:.95rem; white-space:normal;">{{ $line->title() }}</div>
     <div style="font-size:.85rem; opacity:.85; margin-top:.2rem;">
@@ -83,7 +149,10 @@
             <img src="{{ $url }}" alt="{{ $photo['label'] }}"
                  style="width:7.5rem; height:7.5rem; object-fit:cover; border-radius:.6rem; border:1px solid rgba(128,128,128,.35); display:block;">
           </a>
-          <a href="{{ $url }}" download style="font-size:.75rem; opacity:.8; text-decoration:underline; color:inherit;">Yüklə</a>
+          @php $ext = pathinfo((string) $photo['path'], PATHINFO_EXTENSION) ?: 'jpg'; @endphp
+          <button type="button" class="oi-btn" style="margin-top:.35rem;"
+                  data-oi-file="{{ $url }}"
+                  data-oi-name="sifaris-{{ $line->order_id }}-{{ $line->id }}-{{ $loop->iteration }}.{{ $ext }}">⬇ Yüklə</button>
         </div>
         @if($f = $photo['frame'])
           {{-- The same photo as it sat in its window when the customer approved
@@ -111,11 +180,25 @@
     </div>
   @endif
 
+  @php
+    // What the workshop actually types out: the captions the customer wrote,
+    // without the ones the design holds fixed.
+    $written = collect($fields['texts'])->reject(fn ($t) => $t['fixed'] || $t['value'] === '');
+  @endphp
+  @if($written->count() > 1)
+    <button type="button" class="oi-btn" style="align-self:flex-start;"
+            data-oi-text="{{ $written->map(fn ($t) => $t['label'] . ': ' . $t['value'])->implode(chr(10) . chr(10)) }}">⧉ Bütün mətnləri kopyala</button>
+  @endif
   @foreach($fields['texts'] as $text)
     <div>
-      <div style="font-size:.75rem; font-weight:600; opacity:.75; margin-bottom:.3rem;">
-        {{ $text['label'] }}
-        @if($text['fixed'])<span style="font-weight:400; opacity:.8;">· dizaynda sabit</span>@endif
+      <div style="display:flex; align-items:center; gap:.5rem; margin-bottom:.3rem; flex-wrap:wrap;">
+        <div style="font-size:.75rem; font-weight:600; opacity:.75;">
+          {{ $text['label'] }}
+          @if($text['fixed'])<span style="font-weight:400; opacity:.8;">· dizaynda sabit</span>@endif
+        </div>
+        @if($text['value'] !== '')
+          <button type="button" class="oi-btn" data-oi-text="{{ $text['value'] }}">⧉ Kopyala</button>
+        @endif
       </div>
       <div style="border:1px solid rgba(128,128,128,.35); border-radius:.6rem; padding:.5rem .75rem; font-size:.9rem; white-space:pre-wrap; word-break:break-word;{{ $text['fixed'] ? ' opacity:.65;' : '' }}">{{ $text['value'] !== '' ? $text['value'] : '—' }}</div>
     </div>
@@ -192,10 +275,18 @@
             <a href="{{ $url }}" target="_blank" title="Tam ölçüdə aç">
               <img src="{{ $url }}" alt="Məktubun şəkli" style="width:6rem; height:6rem; object-fit:cover; border:5px solid #fbfaf6; border-bottom-width:16px; box-shadow:0 2px 8px rgba(0,0,0,.35); display:block;">
             </a>
-            <a href="{{ $url }}" download style="font-size:.75rem; opacity:.8; text-decoration:underline; color:inherit;">Yüklə</a>
+            @php $lext = pathinfo((string) $item->letter_photo, PATHINFO_EXTENSION) ?: 'jpg'; @endphp
+            <button type="button" class="oi-btn" style="margin-top:.35rem;"
+                    data-oi-file="{{ $url }}"
+                    data-oi-name="sifaris-{{ $item->order_id }}-{{ $item->id }}-mektub.{{ $lext }}">⬇ Yüklə</button>
           </div>
         @endif
-        <div style="flex:1; min-width:0; font-size:.9rem; white-space:pre-wrap; word-break:break-word;">{{ $item->letter_text ?: ($url ? 'Mətnsiz' : '—') }}</div>
+        <div style="flex:1; min-width:0;">
+          @if($item->letter_text)
+            <button type="button" class="oi-btn" style="margin-bottom:.4rem;" data-oi-text="{{ $item->letter_text }}">⧉ Məktubu kopyala</button>
+          @endif
+          <div style="font-size:.9rem; white-space:pre-wrap; word-break:break-word;">{{ $item->letter_text ?: ($url ? 'Mətnsiz' : '—') }}</div>
+        </div>
       </div>
     </div>
   @endif
