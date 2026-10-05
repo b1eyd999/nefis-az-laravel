@@ -94,7 +94,13 @@
             <img src="{{ $url }}" alt="{{ $photo['label'] }}"
                  style="width:7.5rem; height:7.5rem; object-fit:cover; border-radius:.6rem; border:1px solid rgba(128,128,128,.35); display:block;">
           </a>
+          {{-- The click must not reach the table row: Filament opens the
+               line's edit window on a row click and cancels the download with
+               it. And the file opens in a tab of its own — an attachment never
+               draws a page, so the tab closes itself and the file is saved. --}}
           <a class="oi-btn" style="margin-top:.35rem; text-decoration:none;"
+             x-data @click.stop onclick="event.stopPropagation()"
+             target="_blank" rel="noopener"
              href="{{ route('order.file', ['item' => $line, 'which' => $loop->iteration]) }}">⬇ Yüklə</a>
         </div>
         @if($f = $photo['frame'])
@@ -131,7 +137,7 @@
   @if($written->count() > 1)
     <button type="button" class="oi-btn" style="align-self:flex-start;"
             x-data="{ done: false }" :class="done && 'ok'"
-            @click="navigator.clipboard.writeText($el.dataset.text).then(() => { done = true; setTimeout(() => done = false, 1500) })"
+            @click.stop="navigator.clipboard.writeText($el.dataset.text).then(() => { done = true; setTimeout(() => done = false, 1500) })"
             data-text="{{ $written->map(fn ($t) => $t['label'] . ': ' . $t['value'])->implode(chr(10) . chr(10)) }}"
             x-text="done ? 'Kopyalandı ✓' : '⧉ Bütün mətnləri kopyala'">⧉ Bütün mətnləri kopyala</button>
   @endif
@@ -144,7 +150,7 @@
         </div>
         @if($text['value'] !== '')
           <button type="button" class="oi-btn" x-data="{ done: false }" :class="done && 'ok'"
-                  @click="navigator.clipboard.writeText($el.dataset.text).then(() => { done = true; setTimeout(() => done = false, 1500) })"
+                  @click.stop="navigator.clipboard.writeText($el.dataset.text).then(() => { done = true; setTimeout(() => done = false, 1500) })"
                   data-text="{{ $text['value'] }}"
                   x-text="done ? 'Kopyalandı ✓' : '⧉ Kopyala'">⧉ Kopyala</button>
         @endif
@@ -225,13 +231,15 @@
               <img src="{{ $url }}" alt="Məktubun şəkli" style="width:6rem; height:6rem; object-fit:cover; border:5px solid #fbfaf6; border-bottom-width:16px; box-shadow:0 2px 8px rgba(0,0,0,.35); display:block;">
             </a>
             <a class="oi-btn" style="margin-top:.35rem; text-decoration:none;"
+               x-data @click.stop onclick="event.stopPropagation()"
+               target="_blank" rel="noopener"
                href="{{ route('order.file', ['item' => $item, 'which' => 'mektub']) }}">⬇ Yüklə</a>
           </div>
         @endif
         <div style="flex:1; min-width:0;">
           @if($item->letter_text)
             <button type="button" class="oi-btn" style="margin-bottom:.4rem;" x-data="{ done: false }" :class="done && 'ok'"
-                    @click="navigator.clipboard.writeText($el.dataset.text).then(() => { done = true; setTimeout(() => done = false, 1500) })"
+                    @click.stop="navigator.clipboard.writeText($el.dataset.text).then(() => { done = true; setTimeout(() => done = false, 1500) })"
                     data-text="{{ $item->letter_text }}"
                     x-text="done ? 'Kopyalandı ✓' : '⧉ Məktubu kopyala'">⧉ Məktubu kopyala</button>
           @endif

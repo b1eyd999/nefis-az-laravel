@@ -66,6 +66,11 @@ class OrderItemPanelTest extends TestCase
         $this->assertStringContainsString(route('order.file', ['item' => $line, 'which' => 1]), $html);
         $this->assertStringContainsString(route('order.file', ['item' => $line, 'which' => 'mektub']), $html);
         $this->assertStringNotContainsString('<script', $html, 'nothing here depends on a script tag');
+        // The click must not reach the table row, or Filament opens the line's
+        // edit window and cancels the download on its way — which is exactly
+        // what the owner saw: a press on Yüklə threw him into editing.
+        $this->assertStringContainsString('@click.stop', $html);
+        $this->assertStringContainsString('target="_blank"', $html);
     }
 
     public function test_a_caption_the_design_holds_fixed_is_not_offered_for_copying(): void
