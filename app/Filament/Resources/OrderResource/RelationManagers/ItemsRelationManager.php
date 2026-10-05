@@ -101,6 +101,29 @@ class ItemsRelationManager extends RelationManager
                 ->label('Canlı şəkil, ₼')->numeric()->step(0.01)->minValue(0)
                 ->helperText('Müştəri canlandırmadan imtina etdisə — 0 yazın.'),
 
+            /* A gift, a replacement for something that went wrong, a sample
+               put in the box: the line is on the order and in the workshop's
+               list, but nothing on it is charged. Everything the customer
+               could be charged for is zeroed at once, because a box at
+               nothing with a bar still at 3.85 ₼ is not free and the owner
+               would find out from the total. */
+            Forms\Components\Toggle::make('is_free')
+                ->label('Pulsuz (hədiyyə)')
+                ->helperText('Sətir sifarişdə qalır, amma heç nə hesablanmır.')
+                ->dehydrated(false)
+                ->live()
+                ->afterStateUpdated(function (bool $state, Forms\Set $set, Forms\Get $get) {
+                    if (! $state) {
+                        return;
+                    }
+                    foreach (['price', 'chocolate_price', 'wrapping_price', 'letter_price', 'ar_price'] as $field) {
+                        if ((float) $get($field) > 0) {
+                            $set($field, 0);
+                        }
+                    }
+                })
+                ->columnSpanFull(),
+
             // Not a column: the words the customer reads on the payment page.
             Forms\Components\TextInput::make('reason')
                 ->label('Dəyişikliyin səbəbi')
@@ -223,7 +246,7 @@ class ItemsRelationManager extends RelationManager
     private static function pullReason(array &$data, string $fallback): string
     {
         $typed = $data['reason'] ?? null;
-        unset($data['reason']);
+        unset($data['reason'], $data['is_free']);
 
         return filled($typed) ? (string) $typed : $fallback;
     }
