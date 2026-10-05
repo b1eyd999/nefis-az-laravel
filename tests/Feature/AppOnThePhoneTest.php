@@ -27,7 +27,7 @@ class AppOnThePhoneTest extends TestCase
         $this->assertSame('#FBF4EA', $az['background_color']);
 
         $ru = $this->get('/manifest-ru.webmanifest')->assertOk()->json();
-        $this->assertSame('/ru/', $ru['start_url'], 'the app opens in his own language');
+        $this->assertSame('/ru', $ru['start_url'], 'the app opens in his own language');
         $this->assertSame('ru', $ru['lang']);
         $this->assertNotSame($az['name'], $ru['name'], 'and it is called what it is called there');
 

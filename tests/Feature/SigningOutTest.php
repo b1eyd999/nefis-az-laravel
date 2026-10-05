@@ -103,6 +103,43 @@ class SigningOutTest extends TestCase
             ->assertHeader(SignedInPagesAreNotKept::HEADER, '1');
     }
 
+    /**
+     * The one that was actually biting people: the sign-out in the phone menu
+     * went out without a token, so on a phone — where that menu is the only
+     * way to it — pressing Çıxış never signed anybody out. It answered
+     * "419 Page Expired" every single time, session fresh or not.
+     */
+    public function test_the_sign_out_in_the_phone_menu_carries_its_token(): void
+    {
+        $html = $this->actingAs(User::factory()->create())->get('/')->assertOk()->content();
+
+        preg_match_all('#<form[^>]*method="POST"[^>]*>(.*?)</form>#is', $html, $forms, PREG_SET_ORDER);
+        $this->assertNotEmpty($forms);
+
+        $signOuts = array_filter($forms, fn ($f) => str_contains($f[0], '/logout'));
+        $this->assertCount(2, $signOuts, 'the account menu and the phone menu');
+
+        foreach ($forms as $form) {
+            $this->assertStringContainsString('name="_token"', $form[1],
+                'a POST form without a token answers 419 instead of doing its job: '
+                    .substr(preg_replace('/\s+/', ' ', $form[0]), 0, 120));
+        }
+    }
+
+    public function test_and_pressing_it_really_signs_him_out(): void
+    {
+        $this->withTheTokenCheckOn();
+        $user = User::factory()->create();
+
+        // The token the phone menu would actually send.
+        $html = $this->actingAs($user)->get('/')->content();
+        preg_match('#<form[^>]*action="[^"]*logout[^"]*"[^>]*>\s*<input[^>]*name="_token" value="([^"]+)"#i', $html, $m);
+        $this->assertNotEmpty($m, 'the form must carry a token to send');
+
+        $this->actingAs($user)->post('/logout', ['_token' => $m[1]])->assertRedirect(route('home'));
+        $this->assertGuest();
+    }
+
     public function test_a_closed_shop_still_lets_people_in_and_out_in_every_language(): void
     {
         Setting::put(Setting::MAINTENANCE, '1');

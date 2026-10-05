@@ -239,7 +239,10 @@
       @if(auth()->user()->isStaff())
         <a href="{{ url('/admin') }}">{{ __('Admin panel') }}</a>
       @endif
-      <form method="POST" action="{{ lroute('logout') }}"><button type="submit">{{ __('Çıxış') }}</button></form>
+      {{-- The token is not decoration: without it every sign-out from the
+           phone menu — which is the one most people use — came back as
+           "419 Page Expired" instead of signing anybody out. --}}
+      <form method="POST" action="{{ lroute('logout') }}">@csrf<button type="submit">{{ __('Çıxış') }}</button></form>
     @else
       <a href="{{ lroute('login') }}">{{ __('Giriş') }}</a>
       <a href="{{ lroute('register') }}">{{ __('Qeydiyyat') }}</a>

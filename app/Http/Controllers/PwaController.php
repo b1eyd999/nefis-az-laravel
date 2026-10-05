@@ -31,7 +31,11 @@ class PwaController extends Controller
         // inside it follow — the file is asked for outside the language groups.
         app()->setLocale($lang);
 
-        $home = $lang === Locale::DEFAULT ? '/' : '/'.$lang.'/';
+        /* No slash on the end for the other two: every address of this shop
+           is written without one (.htaccess strips it), and the worker keeps
+           pages under the address it fetched them with — `/ru/` would miss
+           `/ru` on the shelf and open the installed app on "no signal". */
+        $home = $lang === Locale::DEFAULT ? '/' : '/'.$lang;
 
         return response()->json([
             'id' => 'nefis.az',

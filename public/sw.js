@@ -75,14 +75,6 @@ self.addEventListener('activate', function (event) {
   );
 });
 
-/* The worker can be told to step aside — the page does that when somebody
-   signs out, so nothing of theirs is left on the shelf. */
-self.addEventListener('message', function (event) {
-  if (event.data === 'forget-pages') {
-    caches.delete(PAGES);
-  }
-});
-
 function startsWithAny(path, list) {
   for (var i = 0; i < list.length; i++) {
     if (path === list[i] || path.indexOf(list[i] + '/') === 0 || path.indexOf(list[i]) === 0) {
@@ -135,6 +127,11 @@ self.addEventListener('fetch', function (event) {
   if (request.mode === 'navigate' || (request.headers.get('accept') || '').indexOf('text/html') !== -1) {
     var keepIt = !startsWithAny(bare(path), PRIVATE) && !url.search;
     event.respondWith(
+      /* The request object itself, never fetch(request.url): a navigation
+         carries redirect mode "manual", and rebuilding it would make the
+         worker follow the 3xx instead — respondWith then refuses the answer
+         ("a redirected response was used for a request whose redirect mode is
+         not follow") and the customer gets the browser's own error page. */
       fetch(request).then(function (response) {
         if (keepIt && response && response.ok && response.type === 'basic'
             && !response.headers.get(PRIVATE_HEADER)) {
