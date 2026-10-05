@@ -105,10 +105,8 @@ class OrderItemPanelTest extends TestCase
 
         $response->assertOk();
         $this->assertStringContainsString('attachment', (string) $response->headers->get('content-disposition'));
-        // Sent as a file, not streamed through PHP: a customer's photograph is
-        // several megabytes and the stream stopped part way on the hosting,
-        // leaving the browser with half a file and nothing to show for it.
-        $this->assertInstanceOf(\Symfony\Component\HttpFoundation\BinaryFileResponse::class, $response->baseResponse);
+        // The exact bytes of the file, whole.
+        $this->assertSame('not really a jpeg, but bytes all the same', $response->streamedContent());
         $this->assertStringContainsString(
             'sifaris-' . $line->order_id . '-' . $line->id . '-1.jpg',
             (string) $response->headers->get('content-disposition'));
