@@ -2,10 +2,12 @@
 
 namespace App\Support;
 
+use App\Mail\OrderChanged;
+use App\Mail\OrderMessage;
 use App\Mail\OrderStatus;
 use App\Models\Order;
+use App\Models\OrderAdjustment;
 use App\Models\Setting;
-use App\Support\Locale;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
@@ -82,7 +84,7 @@ class CustomerNotice
     }
 
     /** The page where money owed over a change is paid. */
-    public static function adjustmentLink(\App\Models\OrderAdjustment $adjustment): string
+    public static function adjustmentLink(OrderAdjustment $adjustment): string
     {
         return self::routed($adjustment->order, 'orders.extra.show',
             ['order' => $adjustment->order_id, 'adjustment' => $adjustment->id]);
@@ -93,7 +95,7 @@ class CustomerNotice
     {
         $locale = self::locale($order);
 
-        return route($locale === Locale::DEFAULT ? $name : $locale . '.' . $name, $parameters);
+        return route($locale === Locale::DEFAULT ? $name : $locale.'.'.$name, $parameters);
     }
 
     /** The whole message, the way both the letter and WhatsApp carry it. */
@@ -104,14 +106,14 @@ class CustomerNotice
 
     private static function message(Order $order): string
     {
-        $lines = ['Nefis.az, sifariş #' . $order->id, self::line($order)];
+        $lines = ['Nefis.az, sifariş #'.$order->id, self::line($order)];
 
         if ($order->delivery_date) {
-            $lines[] = 'Çatdırılma: ' . DeliveryTime::day($order->delivery_date)
-                . ($order->delivery_slot ? ', ' . $order->delivery_slot : '');
+            $lines[] = 'Çatdırılma: '.DeliveryTime::day($order->delivery_date)
+                .($order->delivery_slot ? ', '.$order->delivery_slot : '');
         }
         if ($order->total() > 0) {
-            $lines[] = 'Məbləğ: ' . Price::format($order->total());
+            $lines[] = 'Məbləğ: '.Price::format($order->total());
         }
         $lines[] = self::link($order);
 
@@ -119,7 +121,7 @@ class CustomerNotice
     }
 
     /** The letter about a change made to an order already paid for. */
-    public static function changed(\App\Models\OrderAdjustment $adjustment): bool
+    public static function changed(OrderAdjustment $adjustment): bool
     {
         $order = $adjustment->order;
         $to = trim((string) $order->user?->email);
@@ -130,21 +132,21 @@ class CustomerNotice
 
         try {
             Mail::mailer(self::mailer())->to($to)->locale(self::locale($order))
-                ->send(new \App\Mail\OrderChanged($adjustment));
+                ->send(new OrderChanged($adjustment));
 
             return self::$sent = true;
         } catch (Throwable $e) {
-            Log::error('Dəyişiklik e-poçtu göndərilmədi: ' . $e->getMessage(), ['order' => $order->id]);
+            Log::error('Dəyişiklik e-poçtu göndərilmədi: '.$e->getMessage(), ['order' => $order->id]);
 
             return self::$sent = false;
         }
     }
 
     /** The same words, for the WhatsApp button beside the change. */
-    public static function changeText(\App\Models\OrderAdjustment $adjustment): string
+    public static function changeText(OrderAdjustment $adjustment): string
     {
         return self::inTheirLanguage($adjustment->order, function () use ($adjustment) {
-            $lines = [__('Nefis.az, sifariş #') . $adjustment->order_id];
+            $lines = [__('Nefis.az, sifariş #').$adjustment->order_id];
             $lines[] = $adjustment->reason ?: __('Sifarişiniz dəyişdi.');
             $lines[] = $adjustment->isCharge()
                 ? __('Əlavə ödəniş: :sum', ['sum' => Price::format((float) $adjustment->amount)])
@@ -153,8 +155,8 @@ class CustomerNotice
                 $lines[] = self::adjustmentLink($adjustment);
             }
 
-            return implode("
-", $lines);
+            return implode('
+', $lines);
         });
     }
 
@@ -171,9 +173,9 @@ class CustomerNotice
             return null;
         }
         if (str_starts_with($digits, '0')) {
-            $digits = '994' . ltrim($digits, '0');
+            $digits = '994'.ltrim($digits, '0');
         } elseif (strlen($digits) === 9) {
-            $digits = '994' . $digits;
+            $digits = '994'.$digits;
         }
 
         return strlen($digits) >= 11 && strlen($digits) <= 15 ? $digits : null;
@@ -184,7 +186,7 @@ class CustomerNotice
     {
         $phone = self::phone($order->contact_phone ?: $order->user?->phone);
 
-        return $phone ? 'https://wa.me/' . $phone . '?text=' . rawurlencode(self::text($order)) : null;
+        return $phone ? 'https://wa.me/'.$phone.'?text='.rawurlencode(self::text($order)) : null;
     }
 
     /** Sends the letter; a mail problem is logged, never thrown at the owner. */
@@ -201,10 +203,57 @@ class CustomerNotice
 
             return self::$sent = true;
         } catch (Throwable $e) {
-            Log::error('Sifariş e-poçtu göndərilmədi: ' . $e->getMessage(), ['order' => $order->id]);
+            Log::error('Sifariş e-poçtu göndərilmədi: '.$e->getMessage(), ['order' => $order->id]);
 
             return self::$sent = false;
         }
+    }
+
+    /**
+     * The courier has left with the box.
+     *
+     * The owner's own tap rather than anything automatic: he is the one who
+     * knows the man has actually driven off. The words are the same ones the
+     * WhatsApp button beside it carries, in the language the order was placed
+     * in, and the courier's name and number go with them so the customer knows
+     * who is about to ring his bell.
+     */
+    public static function onTheWay(Order $order): ?string
+    {
+        $subject = self::inTheirLanguage($order, fn () => __('Nefis.az, kuryer yoldadır'));
+
+        return self::write($order, $subject.' — #'.$order->id, self::onTheWayText($order));
+    }
+
+    /** The same message, for the WhatsApp button and for the letter alike. */
+    public static function onTheWayText(Order $order): string
+    {
+        return self::inTheirLanguage($order, function () use ($order) {
+            $lines = [__('Nefis.az, sifariş #').$order->id, __('Kuryeriniz yola düşdü.')];
+
+            $courier = $order->courierLabel();
+            $phone = $order->courier?->phone;
+            if ($courier) {
+                $lines[] = __('Kuryer: :name', ['name' => $courier.($phone ? ', '.$phone : '')]);
+            }
+
+            $collect = $order->isPaidFor()
+                ? $order->outstanding()
+                : round($order->total() + $order->outstanding(), 2);
+            if ($collect > 0.009) {
+                $lines[] = __('Qapıda ödəniləcək: :sum', ['sum' => Price::format($collect)]);
+            }
+
+            return implode(chr(10), $lines);
+        });
+    }
+
+    /** The courier's message to this customer, already typed out. */
+    public static function onTheWayWhatsapp(Order $order): ?string
+    {
+        $phone = self::phone($order->contact_phone ?: $order->user?->phone);
+
+        return $phone ? 'https://wa.me/'.$phone.'?text='.rawurlencode(self::onTheWayText($order)) : null;
     }
 
     /**
@@ -222,11 +271,11 @@ class CustomerNotice
 
         try {
             Mail::mailer(self::mailer())->to($to)->locale(self::locale($order))
-                ->send(new \App\Mail\OrderMessage($order, $subject, $body));
+                ->send(new OrderMessage($order, $subject, $body));
 
             return null;
         } catch (Throwable $e) {
-            Log::error('Sifariş məktubu göndərilmədi: ' . $e->getMessage(), ['order' => $order->id]);
+            Log::error('Sifariş məktubu göndərilmədi: '.$e->getMessage(), ['order' => $order->id]);
 
             return $e->getMessage();
         }
@@ -243,7 +292,7 @@ class CustomerNotice
 
             return null;
         } catch (Throwable $e) {
-            Log::error('Yoxlama e-poçtu göndərilmədi: ' . $e->getMessage());
+            Log::error('Yoxlama e-poçtu göndərilmədi: '.$e->getMessage());
 
             return $e->getMessage();
         }
@@ -255,7 +304,8 @@ class CustomerNotice
      * cPanel host does — that is what delivers them; on a laptop that has
      * none, the letter goes on being written to the log.
      */
-    private static function mailer(): string
+    /** Which mailer actually works on this hosting; others send through it too. */
+    public static function mailer(): string
     {
         $default = (string) config('mail.default');
 

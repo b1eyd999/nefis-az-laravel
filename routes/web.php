@@ -1,21 +1,27 @@
 <?php
 
-use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BoxEditorController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\CourierController;
 use App\Http\Controllers\CoverController;
 use App\Http\Controllers\EpointController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\GiftPageController;
 use App\Http\Controllers\LivePhotoController;
 use App\Http\Controllers\MapController;
+use App\Http\Controllers\MediaController;
+use App\Http\Controllers\OrderFileController;
 use App\Http\Controllers\Phone\LiveController as PhoneLive;
 use App\Http\Controllers\Phone\MoneyController as PhoneMoney;
 use App\Http\Controllers\Phone\OrderController as PhoneOrders;
 use App\Http\Controllers\Phone\StockController as PhoneStock;
 use App\Http\Controllers\Phone\TaskController as PhoneTasks;
-use App\Http\Controllers\MediaController;
+use App\Http\Controllers\PlaceMapController;
+use App\Http\Controllers\PlacePrintController;
 use App\Http\Controllers\SceneEditorController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\StarMapController;
+use App\Http\Controllers\TelegramController;
 use App\Support\Locale;
 use Illuminate\Support\Facades\Route;
 
@@ -50,17 +56,17 @@ Route::get('/epoint/xeta/{order}', [EpointController::class, 'failed'])
     ->whereNumber('order')->middleware('auth')->name('epoint.failed');
 
 // A courier taps "I'll take it" in the group and Telegram calls this address.
-Route::post('/telegram/kuryer/{secret}', [\App\Http\Controllers\TelegramController::class, 'courier'])
+Route::post('/telegram/kuryer/{secret}', [TelegramController::class, 'courier'])
     ->where('secret', '[a-f0-9]{32}')
     ->name('telegram.courier');
 
 // The chat window on the site: the visitor writes here, the shop answers from
 // Telegram and Telegram calls the last of these three.
 Route::middleware(['throttle:30,1', 'data'])->prefix('sohbet')->name('chat.')->group(function () {
-    Route::post('/yaz', [\App\Http\Controllers\ChatController::class, 'send'])->name('send');
-    Route::get('/oxu', [\App\Http\Controllers\ChatController::class, 'poll'])->name('poll');
+    Route::post('/yaz', [ChatController::class, 'send'])->name('send');
+    Route::get('/oxu', [ChatController::class, 'poll'])->name('poll');
 });
-Route::post('/telegram/sohbet/{secret}', [\App\Http\Controllers\ChatController::class, 'hook'])
+Route::post('/telegram/sohbet/{secret}', [ChatController::class, 'hook'])
     ->where('secret', '[A-Za-z0-9]{32}')
     ->name('telegram.chat');
 
@@ -74,9 +80,9 @@ Route::middleware(['throttle:40,1', 'data'])->prefix('xerite')->name('map.')->gr
 // from the `map.` routes above: those are the checkout's delivery map and are
 // bounded to Baku, while a box may hold any corner of the world.
 Route::middleware(['throttle:60,1', 'data'])->prefix('lokasiya')->name('place.')->group(function () {
-    Route::get('/sekil', [\App\Http\Controllers\PlaceMapController::class, 'image'])->name('image');
-    Route::get('/axtar', [\App\Http\Controllers\PlaceMapController::class, 'search'])->name('search');
-    Route::get('/kafel/{style}/{z}/{x}/{y}', [\App\Http\Controllers\PlaceMapController::class, 'tile'])
+    Route::get('/sekil', [PlaceMapController::class, 'image'])->name('image');
+    Route::get('/axtar', [PlaceMapController::class, 'search'])->name('search');
+    Route::get('/kafel/{style}/{z}/{x}/{y}', [PlaceMapController::class, 'tile'])
         ->where(['style' => '[a-z]+', 'z' => '[0-9]{1,2}', 'x' => '[0-9]+', 'y' => '[0-9]+'])
         ->name('tile');
 });
@@ -90,20 +96,20 @@ $giftPaths = ['az' => 'hediyye', 'ru' => 'podarki', 'en' => 'gifts'];
 
 foreach (Locale::all() as $locale) {
     Route::prefix($locale === Locale::DEFAULT ? '' : $locale)
-        ->name($locale === Locale::DEFAULT ? '' : $locale . '.')
-        ->middleware('locale:' . $locale)
+        ->name($locale === Locale::DEFAULT ? '' : $locale.'.')
+        ->middleware('locale:'.$locale)
         ->group(function () use ($locale, $giftPaths) {
             require base_path('routes/public.php');
 
-            Route::get('/' . $giftPaths[$locale], [GiftPageController::class, 'index'])->name('gifts.index');
-            Route::get('/' . $giftPaths[$locale] . '/{giftPage:slug}', [GiftPageController::class, 'show'])->name('gifts.show');
+            Route::get('/'.$giftPaths[$locale], [GiftPageController::class, 'index'])->name('gifts.index');
+            Route::get('/'.$giftPaths[$locale].'/{giftPage:slug}', [GiftPageController::class, 'show'])->name('gifts.show');
         });
 }
 
 // The Russian gift pages were found at /podarki before the language moved into
 // the address; search engines are sent on to where they live now.
 Route::permanentRedirect('/podarki', '/ru/podarki');
-Route::get('/podarki/{slug}', fn (string $slug) => redirect('/ru/podarki/' . $slug, 301))
+Route::get('/podarki/{slug}', fn (string $slug) => redirect('/ru/podarki/'.$slug, 301))
     ->where('slug', '[A-Za-z0-9-]+');
 
 // ---------------------------------------------------------------------------
@@ -119,16 +125,16 @@ Route::get('/podarki/{slug}', fn (string $slug) => redirect('/ru/podarki/' . $sl
  * default says.
  */
 // One order line's star map, drawn at printing size for the workshop.
-Route::get('/admin-ulduz/{item}', [\App\Http\Controllers\StarMapController::class, 'show'])
+Route::get('/admin-ulduz/{item}', [StarMapController::class, 'show'])
     ->middleware(['auth', 'staff'])->name('star.print');
 
 // And one order line's location map, the same way.
-Route::get('/admin-lokasiya/{item}', [\App\Http\Controllers\PlacePrintController::class, 'show'])
+Route::get('/admin-lokasiya/{item}', [PlacePrintController::class, 'show'])
     ->middleware(['auth', 'staff'])->name('place.print');
 
 // A customer's own picture off an order line, handed over as a download
 // rather than shown — the workshop prints these, it does not look at them.
-Route::get('/admin-fayl/{item}/{which}', [\App\Http\Controllers\OrderFileController::class, 'show'])
+Route::get('/admin-fayl/{item}/{which}', [OrderFileController::class, 'show'])
     ->where('which', 'mektub|[0-9]{1,2}')
     ->middleware(['auth', 'staff'])->name('order.file');
 
@@ -144,6 +150,11 @@ Route::middleware(['auth', 'locale', 'staff'])->prefix('admin-phone')->name('pho
     Route::post('/sifarish/{order}/status', [PhoneOrders::class, 'status'])->whereNumber('order')->name('orders.status');
     Route::post('/sifarish/{order}/odenis-tesdiq', [PhoneOrders::class, 'confirmPayment'])
         ->whereNumber('order')->name('orders.pay');
+    // Whose delivery it is, and the line the customer waits for.
+    Route::post('/sifarish/{order}/kuryer', [PhoneOrders::class, 'courier'])
+        ->whereNumber('order')->name('orders.courier');
+    Route::post('/sifarish/{order}/yolda', [PhoneOrders::class, 'way'])
+        ->whereNumber('order')->name('orders.way');
 
     // The books, the shelves and the customers' videos are the owner's alone.
     Route::middleware('owner')->group(function () {
@@ -159,6 +170,28 @@ Route::middleware(['auth', 'locale', 'staff'])->prefix('admin-phone')->name('pho
         Route::post('/canli/kocur', [PhoneLive::class, 'push'])->name('live.push');
     });
 });
+
+/*
+ * The courier's own screen. Not the panel and not the phone admin: he is not
+ * staff, and that is the line both of those draw. Azerbaijani, outside the
+ * language prefixes, and every page checks the order it shows is his.
+ */
+Route::middleware(['auth', 'locale', 'courier'])->prefix('kuryer')->name('courier.')->group(function () {
+    Route::get('/', [CourierController::class, 'index'])->name('index');
+    Route::get('/sifarish/{order}', [CourierController::class, 'show'])->whereNumber('order')->name('show');
+    Route::post('/sifarish/{order}/yolda', [CourierController::class, 'onTheWay'])->whereNumber('order')->name('way');
+    Route::post('/sifarish/{order}/tehvil', [CourierController::class, 'delivered'])->whereNumber('order')->name('delivered');
+    Route::post('/paylas', [CourierController::class, 'share'])->name('share');
+    /* His phone's own readings. Throttled by the account rather than the
+       address — several couriers behind one mobile network share an address —
+       and marked as data, so a page never comes back to it. */
+    Route::post('/yer', [CourierController::class, 'position'])
+        ->middleware(['throttle:60,1', 'data'])->name('position');
+});
+
+// Where the couriers are, for the owner's map in the panel.
+Route::get('/admin-kuryerler/yerler', [CourierController::class, 'live'])
+    ->middleware(['auth', 'staff', 'data'])->name('couriers.live');
 
 Route::middleware('auth')->group(function () {
     // The admin's box editor: artwork layers, photo areas and captions.

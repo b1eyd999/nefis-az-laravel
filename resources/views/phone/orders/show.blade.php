@@ -74,10 +74,35 @@
     @if($map = $order->mapUrl())
       <div style="margin-top:.4rem;"><a class="ph-link" href="{{ $map }}" target="_blank" rel="noopener">Xəritədə aç ↗</a></div>
     @endif
-    @if($order->courier_chat_id)
-      <div class="ph-note" style="margin:.4rem 0 0;">
-        {{ $order->courier_name ? $order->courier_name . ' · ' . $order->courier_taken_at?->format('d.m H:i') : 'Hələ kimsə götürməyib' }}
-      </div>
+    {{-- Whose delivery this is. The owner picks the man here rather than
+         waiting for someone to tap the Telegram group, and the courier sees
+         the order on his own phone the moment it is his. --}}
+    <div class="ph-line" style="margin-top:.5rem;">
+      <span>Kuryer</span>
+      <b>{{ $order->courierLabel() ?: '—' }}{{ $order->isOnTheWay() ? ' · yolda ' . $order->on_the_way_at->format('H:i') : '' }}</b>
+    </div>
+    @if($couriers->isNotEmpty())
+      <form method="POST" action="{{ route('phone.orders.courier', $order) }}" data-once style="margin-top:.5rem;">
+        @csrf
+        <select class="ph-field" name="courier_id" data-fancy>
+          <option value="">Kuryer seçilməyib</option>
+          @foreach($couriers as $courier)
+            <option value="{{ $courier->id }}" @selected($order->courier_id === $courier->id)>{{ $courier->name }}</option>
+          @endforeach
+        </select>
+        <button class="ph-btn ph-btn-sm" style="margin-top:.5rem;" data-busy="…">Kuryeri yadda saxla</button>
+      </form>
+    @else
+      <p class="ph-note" style="margin:.4rem 0 0;">
+        Kuryer hesabı yoxdur: adam saytda qeydiyyatdan keçsin, sonra panelin «İstifadəçilər» bölməsində rolunu «Kuryer» edin.
+      </p>
+    @endif
+    @if($order->courierLabel() && ! in_array($order->status, ['completed', 'cancelled', 'refunded'], true))
+      <form method="POST" action="{{ route('phone.orders.way', $order) }}" data-once style="margin-top:.5rem;"
+            onsubmit="return confirm('Müştəriyə «kuryer yoldadır» bildirilsin?')">
+        @csrf
+        <button class="ph-btn ph-btn-sm" data-busy="…">Müştəriyə bildir: kuryer yoldadır</button>
+      </form>
     @endif
   </div>
 

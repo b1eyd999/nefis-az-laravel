@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Phone;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\User;
+use App\Support\Courier;
 use App\Support\CustomerNotice;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -58,7 +60,42 @@ class OrderController extends Controller
     {
         $order->load(['user', 'paymentAccount', 'items.product', 'items.livePhotos']);
 
-        return view('phone.orders.show', ['order' => $order]);
+        return view('phone.orders.show', [
+            'order' => $order,
+            // Who the order can be handed to, for the picker on the page.
+            'couriers' => User::couriers(),
+        ]);
+    }
+
+    /** The owner hands the delivery to one of his couriers, or takes it back. */
+    public function courier(Request $request, Order $order): RedirectResponse
+    {
+        $wanted = $request->input('courier_id');
+        $courier = filled($wanted)
+            ? User::where('role', User::COURIER)->find((int) $wanted)
+            : null;
+
+        Courier::assign($order, $courier);
+
+        return back()->with('phone.flash', [
+            'title' => $courier ? 'Kuryerə verildi' : 'Kuryer silindi',
+            'body' => ($courier ? $courier->name.' — ' : '').'sifariş #'.$order->id,
+        ]);
+    }
+
+    /**
+     * "Your courier is on the way", in the customer's own language. The
+     * owner's tap, because he is the one who knows the man has driven off.
+     */
+    public function way(Order $order): RedirectResponse
+    {
+        $failed = Courier::tellCustomer($order);
+
+        return back()->with('phone.flash', [
+            'title' => $failed ? 'Məktub getmədi' : 'Müştəriyə bildirildi',
+            'body' => $failed ?: 'Sifariş #'.$order->id,
+            'whatsapp' => CustomerNotice::onTheWayWhatsapp($order),
+        ]);
     }
 
     public function status(Request $request, Order $order): RedirectResponse
@@ -76,8 +113,8 @@ class OrderController extends Controller
 
         return back()->with('phone.flash', [
             'title' => 'Status dəyişdi',
-            'body' => 'Sifariş #' . $order->id . ' — ' . Order::STATUSES[$wanted]
-                . (CustomerNotice::$sent ? '. Müştəriyə e-poçt göndərildi.' : ''),
+            'body' => 'Sifariş #'.$order->id.' — '.Order::STATUSES[$wanted]
+                .(CustomerNotice::$sent ? '. Müştəriyə e-poçt göndərildi.' : ''),
             'whatsapp' => CustomerNotice::whatsapp($order),
         ]);
     }
@@ -93,8 +130,8 @@ class OrderController extends Controller
 
         return back()->with('phone.flash', [
             'title' => 'Ödəniş təsdiqləndi',
-            'body' => 'Sifariş #' . $order->id . ' — ' . Order::STATUSES['confirmed']
-                . (CustomerNotice::$sent ? '. Müştəriyə e-poçt göndərildi.' : ''),
+            'body' => 'Sifariş #'.$order->id.' — '.Order::STATUSES['confirmed']
+                .(CustomerNotice::$sent ? '. Müştəriyə e-poçt göndərildi.' : ''),
             'whatsapp' => CustomerNotice::whatsapp($order),
         ]);
     }

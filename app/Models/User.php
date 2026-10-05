@@ -23,9 +23,15 @@ class User extends Authenticatable implements FilamentUser
 
     public const ADMIN = 'admin';
 
+    /* Not staff: a courier sees the orders handed to him and nothing else of
+       the shop, so he never reaches the panel at all. His own screen is
+       /kuryer. */
+    public const COURIER = 'courier';
+
     /** The roles, as the admin panel names them. */
     public const ROLES = [
         self::CUSTOMER => 'Müştəri',
+        self::COURIER => 'Kuryer',
         self::MANAGER => 'Menecer',
         self::ADMIN => 'Admin',
     ];
@@ -66,7 +72,7 @@ class User extends Authenticatable implements FilamentUser
 
         $matches = static::whereNotNull('phone')
             ->whereRaw("REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') LIKE ?",
-                ['%' . substr($digits, -9)])
+                ['%'.substr($digits, -9)])
             ->limit(2)
             ->get();
 
@@ -86,6 +92,48 @@ class User extends Authenticatable implements FilamentUser
     public function isStaff(): bool
     {
         return $this->isAdmin() || $this->role === self::MANAGER;
+    }
+
+    /**
+     * A courier is not staff and never becomes one by accident: the panel, the
+     * phone admin and every resource in them ask `isStaff()`, so adding the
+     * role opens nothing. What it opens is the one screen written for him.
+     */
+    public function isCourier(): bool
+    {
+        return $this->role === self::COURIER && ! $this->isAdmin();
+    }
+
+    /** Everyone the owner can hand a delivery to. */
+    public static function couriers(): Collection
+    {
+        return static::query()->where('role', self::COURIER)->orderBy('name')->get();
+    }
+
+    /** The orders handed to this courier. */
+    public function deliveries(): HasMany
+    {
+        return $this->hasMany(Order::class, 'courier_id');
+    }
+
+    public function positions(): HasMany
+    {
+        return $this->hasMany(CourierPosition::class);
+    }
+
+    /**
+     * Whether his phone is reporting where he is. He turns it on himself when
+     * he sets off and it runs out on its own, so nobody is followed quietly:
+     * this is the same answer his own screen shows him.
+     */
+    public function isSharing(): bool
+    {
+        return $this->sharing_until !== null && $this->sharing_until->isFuture();
+    }
+
+    public function lastPosition(): ?CourierPosition
+    {
+        return $this->positions()->latest('created_at')->latest('id')->first();
     }
 
     /** Staff with a share of the profit, as the admin handed it out. */
@@ -139,6 +187,8 @@ class User extends Authenticatable implements FilamentUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            // While this stands in the future, his phone may report its place.
+            'sharing_until' => 'datetime',
             // Set by the admin with the role, never from a form the user fills in.
             'profit_percent' => 'float',
         ];

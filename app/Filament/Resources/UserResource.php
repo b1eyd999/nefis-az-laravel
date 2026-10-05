@@ -6,6 +6,7 @@ use App\Filament\Concerns\AdminOnly;
 use App\Filament\Resources\UserResource\Pages;
 use App\Filament\Resources\UserResource\RelationManagers;
 use App\Models\User;
+use App\Support\Contact;
 use Closure;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -38,6 +39,7 @@ class UserResource extends Resource
 
     public const ROLE_HELP = [
         User::CUSTOMER => 'Saytda sifariş verir; admin panelinə girə bilməz.',
+        User::COURIER => 'Öz telefonunda yalnız ona verilmiş sifarişləri görür (/kuryer); admin panelinə girməz.',
         User::MANAGER => 'Admin panelinə girir, sifarişləri və öz balansını görür, statusu dəyişir.',
         User::ADMIN => 'Hər şeyə: dizaynlar, səhnələr, şokoladlar, sifarişlər, istifadəçilər.',
     ];
@@ -55,21 +57,29 @@ class UserResource extends Resource
             ->helperText(function (?User $record) {
                 $given = (float) User::where('id', '!=', $record?->id ?? 0)->sum('profit_percent');
 
-                return 'Başqalarına verilib: ' . rtrim(rtrim(number_format($given, 2, '.', ''), '0'), '.') . '%. Menecer öz balansını "Balans"da görür.';
+                return 'Başqalarına verilib: '.rtrim(rtrim(number_format($given, 2, '.', ''), '0'), '.').'%. Menecer öz balansını "Balans"da görür.';
             })
             ->rule(fn (?User $record) => function (string $attribute, $value, Closure $fail) use ($record) {
                 $given = (float) User::where('id', '!=', $record?->id ?? 0)->sum('profit_percent');
                 if ($given + (float) $value > 100.001) {
-                    $fail('Payların cəmi 100%-dən çox ola bilməz — başqalarına artıq ' . rtrim(rtrim(number_format($given, 2, '.', ''), '0'), '.') . '% verilib.');
+                    $fail('Payların cəmi 100%-dən çox ola bilməz — başqalarına artıq '.rtrim(rtrim(number_format($given, 2, '.', ''), '0'), '.').'% verilib.');
                 }
             });
     }
 
-    /** Saves the role and the share together; a customer has no share. */
+    /**
+     * Saves the role and the share together. Neither a customer nor a courier
+     * has a share of the profit, so moving someone to either takes it away
+     * rather than leaving a figure nobody can see on a screen.
+     */
     public static function applyRole(User $user, string $role, $percent): void
     {
         $user->role = $role;
-        $user->forceFill(['profit_percent' => $role === User::CUSTOMER ? 0 : round((float) $percent, 2)])->save();
+        $user->forceFill([
+            'profit_percent' => in_array($role, [User::CUSTOMER, User::COURIER], true)
+                ? 0
+                : round((float) $percent, 2),
+        ])->save();
     }
 
     public static function form(Form $form): Form
@@ -81,9 +91,9 @@ class UserResource extends Resource
                         Forms\Components\TextInput::make('name')->label('Ad')->required()->maxLength(255),
                         Forms\Components\TextInput::make('email')->label('E-poçt')->email()->required()->unique(ignoreRecord: true),
                         Forms\Components\TextInput::make('phone')->label('Telefon')->tel()
-                            ->rule(fn (?\App\Models\User $record) => function (string $attribute, $value, \Closure $fail) use ($record) {
-                                $phone = \App\Support\Contact::az((string) $value);
-                                if ($phone && \App\Models\User::where('phone', $phone)->whereKeyNot($record?->id)->exists()) {
+                            ->rule(fn (?User $record) => function (string $attribute, $value, Closure $fail) use ($record) {
+                                $phone = Contact::az((string) $value);
+                                if ($phone && User::where('phone', $phone)->whereKeyNot($record?->id)->exists()) {
                                     $fail('Bu nömrə başqa hesabdadır.');
                                 }
                             }),
@@ -124,7 +134,7 @@ class UserResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('profit_percent')
                     ->label('Pay')
-                    ->formatStateUsing(fn ($state) => (float) $state > 0 ? rtrim(rtrim(number_format((float) $state, 2, '.', ''), '0'), '.') . '%' : '—')
+                    ->formatStateUsing(fn ($state) => (float) $state > 0 ? rtrim(rtrim(number_format((float) $state, 2, '.', ''), '0'), '.').'%' : '—')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('orders_count')
                     ->label('Sifariş')
@@ -156,8 +166,8 @@ class UserResource extends Resource
                     ->action(function (User $u, array $data, Tables\Actions\Action $action) {
                         self::guardRoleChange($u, $data['role'], fn () => $action->halt());
                         self::applyRole($u, $data['role'], $data['profit_percent'] ?? 0);
-                        $share = $u->profit_percent > 0 ? ' · pay ' . rtrim(rtrim(number_format($u->profit_percent, 2, '.', ''), '0'), '.') . '%' : '';
-                        Notification::make()->success()->title($u->name . ': ' . User::ROLES[$data['role']] . $share)->send();
+                        $share = $u->profit_percent > 0 ? ' · pay '.rtrim(rtrim(number_format($u->profit_percent, 2, '.', ''), '0'), '.').'%' : '';
+                        Notification::make()->success()->title($u->name.': '.User::ROLES[$data['role']].$share)->send();
                     }),
                 Tables\Actions\EditAction::make()->label('Bax'),
             ])
@@ -174,7 +184,7 @@ class UserResource extends Resource
                         }
                         // Everyone keeps their share, except whoever becomes a customer.
                         $records->each(fn (User $u) => self::applyRole($u, $data['role'], $u->profit_percent));
-                        Notification::make()->success()->title($records->count() . ' istifadəçi: ' . User::ROLES[$data['role']])->send();
+                        Notification::make()->success()->title($records->count().' istifadəçi: '.User::ROLES[$data['role']])->send();
                     })
                     ->deselectRecordsAfterCompletion(),
             ]);

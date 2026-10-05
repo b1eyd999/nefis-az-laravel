@@ -6,7 +6,11 @@ use App\Filament\Resources\OrderResource\Pages;
 use App\Filament\Resources\OrderResource\RelationManagers;
 use App\Models\DeliveryMethod;
 use App\Models\Order;
+use App\Models\User;
+use App\Support\Courier;
 use App\Support\CustomerNotice;
+use App\Support\DeliveryTime;
+use App\Support\OrderEditor;
 use App\Support\Price;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,6 +19,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\HtmlString;
 
 class OrderResource extends Resource
@@ -55,14 +60,14 @@ class OrderResource extends Resource
                         Forms\Components\Placeholder::make('paid_by_card')
                             ->label('Kartla ödənilib')
                             ->content(fn (?Order $record) => 'ePoint'
-                                . ($record?->epoint_transaction ? ' · ' . $record->epoint_transaction : '')
-                                . ($record?->payment_confirmed_at ? ' · ' . $record->payment_confirmed_at->format('d.m.Y H:i') : ' · təsdiq gözlənilir'))
+                                .($record?->epoint_transaction ? ' · '.$record->epoint_transaction : '')
+                                .($record?->payment_confirmed_at ? ' · '.$record->payment_confirmed_at->format('d.m.Y H:i') : ' · təsdiq gözlənilir'))
                             ->visible(fn (?Order $record) => $record?->payment_method === 'card')
                             ->columnSpanFull(),
                         Forms\Components\Placeholder::make('payment_account')
                             ->label('Hesab')
                             ->content(fn (?Order $record) => $record?->paymentAccount
-                                ? $record->paymentAccount->typeLabel() . ' · ' . $record->paymentAccount->label . ' · ' . $record->paymentAccount->formatted()
+                                ? $record->paymentAccount->typeLabel().' · '.$record->paymentAccount->label.' · '.$record->paymentAccount->formatted()
                                 : 'Təyin olunmayıb')
                             ->visible(fn (?Order $record) => $record?->payment_method !== 'card'),
                         Forms\Components\Placeholder::make('receipt_at')
@@ -80,8 +85,8 @@ class OrderResource extends Resource
                                 $isPdf = str_ends_with(strtolower((string) $record->payment_receipt), '.pdf');
 
                                 return new HtmlString($isPdf
-                                    ? '<a href="' . e($url) . '" target="_blank" rel="noopener" style="text-decoration:underline;">PDF çeki aç</a>'
-                                    : '<a href="' . e($url) . '" target="_blank" rel="noopener"><img src="' . e($url) . '" alt="" style="max-height:320px;border-radius:.6rem"></a>');
+                                    ? '<a href="'.e($url).'" target="_blank" rel="noopener" style="text-decoration:underline;">PDF çeki aç</a>'
+                                    : '<a href="'.e($url).'" target="_blank" rel="noopener"><img src="'.e($url).'" alt="" style="max-height:320px;border-radius:.6rem"></a>');
                             })
                             ->columnSpanFull()
                             ->visible(fn (?Order $record) => $record?->payment_method !== 'card'),
@@ -97,21 +102,39 @@ class OrderResource extends Resource
                         Forms\Components\Placeholder::make('delivery_when')
                             ->label('Nə vaxta')
                             ->content(fn (?Order $record) => $record?->delivery_date
-                                ? \App\Support\DeliveryTime::day($record->delivery_date)
-                                    . ($record->delivery_slot ? ', ' . $record->delivery_slot : '')
+                                ? DeliveryTime::day($record->delivery_date)
+                                    .($record->delivery_slot ? ', '.$record->delivery_slot : '')
                                 : 'Seçilməyib')
                             ->columnSpanFull(),
+                        /* Who is carrying it: the courier the owner handed it
+                           to, or the Telegram name of whoever tapped it in the
+                           group first. Shown for both, and it says whether he
+                           has set off. */
                         Forms\Components\Placeholder::make('courier')
                             ->label('Kuryer')
-                            ->content(fn (?Order $record) => $record?->courier_name
-                                ? $record->courier_name . ' · ' . $record->courier_taken_at?->format('d.m.Y H:i')
-                                : 'Hələ kimsə götürməyib')
-                            ->visible(fn (?Order $record) => (bool) $record?->courier_chat_id),
+                            ->content(function (?Order $record) {
+                                if (! $record?->courierLabel()) {
+                                    return 'Hələ kimsə götürməyib';
+                                }
+                                $line = $record->courierLabel();
+                                if ($record->courier?->phone) {
+                                    $line .= ' · '.$record->courier->phone;
+                                }
+                                if ($record->courier_taken_at) {
+                                    $line .= ' · '.$record->courier_taken_at->format('d.m.Y H:i');
+                                }
+                                if ($record->isOnTheWay()) {
+                                    $line .= ' · yolda '.$record->on_the_way_at->format('H:i');
+                                }
+
+                                return $line;
+                            })
+                            ->visible(fn (?Order $record) => (bool) ($record?->courierLabel() || $record?->courier_chat_id)),
                         Forms\Components\Placeholder::make('delivery_method')
                             ->label('Üsul')
                             ->content(fn (?Order $record) => $record?->delivery_name
-                                ? $record->delivery_name . ' — ' . ($record->free_delivery
-                                    ? 'pulsuz (siz bağışladınız' . ($record->delivery_price > 0 ? ', ' . Price::format($record->delivery_price) : '') . ')'
+                                ? $record->delivery_name.' — '.($record->free_delivery
+                                    ? 'pulsuz (siz bağışladınız'.($record->delivery_price > 0 ? ', '.Price::format($record->delivery_price) : '').')'
                                     : ($record->delivery_price > 0 ? Price::format($record->delivery_price) : 'pulsuz'))
                                 : 'Seçilməyib (köhnə sifariş)'),
                         /* The owner waives the delivery. It is his decision
@@ -134,29 +157,29 @@ class OrderResource extends Resource
                                     ? 'Çatdırılma yenidən ödənişli olsun?'
                                     : 'Çatdırılma pulsuz olsun?')
                                 ->modalDescription(fn (?Order $record) => $record?->free_delivery
-                                    ? 'Çatdırılmanın qiyməti sifarişə qayıdır: ' . Price::format($record->delivery_price)
-                                    : 'Sifarişin məbləğindən ' . Price::format($record?->delivery_price ?? 0)
-                                        . ' düşəcək.' . ($record?->isPaidFor()
+                                    ? 'Çatdırılmanın qiyməti sifarişə qayıdır: '.Price::format($record->delivery_price)
+                                    : 'Sifarişin məbləğindən '.Price::format($record?->delivery_price ?? 0)
+                                        .' düşəcək.'.($record?->isPaidFor()
                                             ? ' Sifariş artıq ödənilib, ona görə bu məbləğ müştəriyə qaytarılmalı kimi yazılacaq.'
                                             : ''))
                                 ->action(function (Order $record, $livewire) {
                                     $free = ! $record->free_delivery;
 
-                                    $money = \App\Support\OrderEditor::change(
+                                    $money = OrderEditor::change(
                                         $record,
                                         $free ? 'Çatdırılma pulsuz edildi' : 'Çatdırılma yenidən ödənişli edildi',
                                         fn () => $record->forceFill(['free_delivery' => $free])->save(),
                                     );
 
-                                    $note = \Filament\Notifications\Notification::make()
+                                    $note = Notification::make()
                                         ->success()
                                         ->title($free ? 'Çatdırılma pulsuzdur' : 'Çatdırılma yenidən ödənişlidir');
 
                                     if ($money) {
                                         $note->warning()
                                             ->title($money->isCharge()
-                                                ? 'Müştəri ' . Price::format((float) $money->amount) . ' əlavə ödəməlidir'
-                                                : 'Müştəriyə ' . Price::format((float) $money->amount) . ' qaytarılmalıdır')
+                                                ? 'Müştəri '.Price::format((float) $money->amount).' əlavə ödəməlidir'
+                                                : 'Müştəriyə '.Price::format((float) $money->amount).' qaytarılmalıdır')
                                             ->body('Aşağıdakı «Sonradan edilən dəyişikliklər» cədvəlinə baxın.')
                                             ->persistent();
                                     }
@@ -179,25 +202,25 @@ class OrderResource extends Resource
                             ->visible(fn (?Order $record) => ! in_array($record?->delivery_type, [DeliveryMethod::POST, DeliveryMethod::METRO], true)),
                         Forms\Components\Placeholder::make('delivery_point')
                             ->label('Xəritədə')
-                            ->content(fn (?Order $record) => new \Illuminate\Support\HtmlString(
-                                '<a href="' . e($record->mapUrl()) . '" target="_blank" rel="noopener" style="color:#d97706;font-weight:600;text-decoration:underline">Xəritədə aç ↗</a>'
-                                . '<span style="opacity:.6;margin-left:.6rem">' . e(number_format($record->delivery_lat, 5) . ', ' . number_format($record->delivery_lng, 5)) . '</span>'))
+                            ->content(fn (?Order $record) => new HtmlString(
+                                '<a href="'.e($record->mapUrl()).'" target="_blank" rel="noopener" style="color:#d97706;font-weight:600;text-decoration:underline">Xəritədə aç ↗</a>'
+                                .'<span style="opacity:.6;margin-left:.6rem">'.e(number_format($record->delivery_lat, 5).', '.number_format($record->delivery_lng, 5)).'</span>'))
                             ->visible(fn (?Order $record) => (bool) $record?->mapUrl()),
                         Forms\Components\Placeholder::make('rush')
                             ->label('Təcili')
-                            ->content(fn (?Order $record) => 'Bəli, növbədənkənar, ' . Price::format($record?->rush_fee ?? 0))
+                            ->content(fn (?Order $record) => 'Bəli, növbədənkənar, '.Price::format($record?->rush_fee ?? 0))
                             ->visible(fn (?Order $record) => (bool) $record?->isRush()),
                         Forms\Components\Placeholder::make('totals')
                             ->label('Məbləğ')
                             ->content(fn (?Order $record) => $record
-                                ? 'Məhsullar ' . Price::format($record->itemsTotal())
-                                    . ($record->hasDiscount()
-                                        ? ' − endirim ' . Price::format($record->discount)
-                                            . ' (' . $record->promo_code . ', ' . rtrim(rtrim(number_format((float) $record->promo_percent, 2, '.', ''), '0'), '.') . '%)'
+                                ? 'Məhsullar '.Price::format($record->itemsTotal())
+                                    .($record->hasDiscount()
+                                        ? ' − endirim '.Price::format($record->discount)
+                                            .' ('.$record->promo_code.', '.rtrim(rtrim(number_format((float) $record->promo_percent, 2, '.', ''), '0'), '.').'%)'
                                         : '')
-                                    . ' + çatdırılma ' . Price::format($record->delivery_price ?? 0)
-                                    . ($record->isRush() ? ' + təcili ' . Price::format($record->rush_fee) : '')
-                                    . ' = ' . Price::format($record->total())
+                                    .' + çatdırılma '.Price::format($record->delivery_price ?? 0)
+                                    .($record->isRush() ? ' + təcili '.Price::format($record->rush_fee) : '')
+                                    .' = '.Price::format($record->total())
                                 : '—')
                             ->columnSpanFull(),
                         // Once the order has been changed after payment, the
@@ -209,15 +232,15 @@ class OrderResource extends Resource
                                 if (! $record) {
                                     return '—';
                                 }
-                                $lines = ['Artıq ödənilib: ' . Price::format($record->paidSoFar())];
+                                $lines = ['Artıq ödənilib: '.Price::format($record->paidSoFar())];
                                 if ($record->outstanding() > 0) {
-                                    $lines[] = 'Müştəri əlavə ödəməlidir: ' . Price::format($record->outstanding());
+                                    $lines[] = 'Müştəri əlavə ödəməlidir: '.Price::format($record->outstanding());
                                 }
                                 if ($record->owedBack() > 0) {
-                                    $lines[] = 'Müştəriyə qaytarılmalıdır: ' . Price::format($record->owedBack());
+                                    $lines[] = 'Müştəriyə qaytarılmalıdır: '.Price::format($record->owedBack());
                                 }
 
-                                return new \Illuminate\Support\HtmlString(implode('<br>', array_map('e', $lines)));
+                                return new HtmlString(implode('<br>', array_map('e', $lines)));
                             })
                             ->visible(fn (?Order $record) => (bool) $record?->hasOpenAdjustments())
                             ->columnSpanFull(),
@@ -235,7 +258,7 @@ class OrderResource extends Resource
         return Tables\Actions\Action::make($name)
             ->label('Statusu dəyiş')
             ->icon('heroicon-o-arrow-path')
-            ->modalHeading(fn (Order $record) => 'Sifariş #' . $record->id . ' — status')
+            ->modalHeading(fn (Order $record) => 'Sifariş #'.$record->id.' — status')
             ->modalSubmitActionLabel('Yadda saxla')
             ->modalWidth('sm')
             ->fillForm(fn (Order $record) => ['status' => $record->status])
@@ -255,8 +278,86 @@ class OrderResource extends Resource
                 $whatsapp = CustomerNotice::whatsapp($record);
                 Notification::make()->success()
                     ->title('Status dəyişdi')
-                    ->body('Sifariş #' . $record->id . ' — ' . self::STATUSES[$data['status']]
-                        . (CustomerNotice::$sent ? '. Müştəriyə e-poçt göndərildi.' : ''))
+                    ->body('Sifariş #'.$record->id.' — '.self::STATUSES[$data['status']]
+                        .(CustomerNotice::$sent ? '. Müştəriyə e-poçt göndərildi.' : ''))
+                    ->actions(array_filter([
+                        $whatsapp ? NotificationAction::make('whatsapp')
+                            ->label('WhatsApp-a yaz')
+                            ->url($whatsapp, shouldOpenInNewTab: true)
+                            ->button() : null,
+                    ]))
+                    ->persistent()
+                    ->send();
+            });
+    }
+
+    /**
+     * Handing the delivery to one of the shop's couriers. Until now a courier
+     * took an order himself by tapping the Telegram group, which left the
+     * owner no say in who carried what; this is the say.
+     */
+    private static function courierAction(string $name): Tables\Actions\Action
+    {
+        return Tables\Actions\Action::make($name)
+            ->label('Kuryerə ver')
+            ->icon('heroicon-o-truck')
+            ->color('info')
+            ->modalHeading(fn (Order $record) => 'Sifariş #'.$record->id.' — kuryer')
+            ->modalSubmitActionLabel('Yadda saxla')
+            ->modalWidth('sm')
+            ->visible(fn () => (bool) auth()->user()?->isStaff())
+            ->fillForm(fn (Order $record) => ['courier_id' => $record->courier_id])
+            ->form([
+                Forms\Components\Select::make('courier_id')
+                    ->label('Kuryer')
+                    ->options(fn () => User::couriers()->pluck('name', 'id')->all())
+                    ->placeholder('Kimsə seçilməyib')
+                    ->helperText(fn () => User::couriers()->isEmpty()
+                        ? 'Hələ kuryer yoxdur: adam saytda qeydiyyatdan keçsin, sonra «İstifadəçilər»də rolunu «Kuryer» edin.'
+                        : 'Sifariş yalnız onun telefonunda görünəcək.')
+                    ->native(false),
+            ])
+            ->action(function (Order $record, array $data) {
+                $courier = filled($data['courier_id'] ?? null)
+                    ? User::find((int) $data['courier_id'])
+                    : null;
+
+                Courier::assign($record, $courier);
+
+                Notification::make()->success()
+                    ->title($courier ? 'Kuryerə verildi' : 'Kuryer silindi')
+                    ->body($courier ? $courier->name.' — sifariş #'.$record->id : 'Sifariş #'.$record->id)
+                    ->send();
+            });
+    }
+
+    /**
+     * "Your courier is on the way" — the owner's own tap, because he is the
+     * one who knows the man has actually driven off. The letter goes in the
+     * customer's language and the same words sit on a WhatsApp button beside
+     * it, for the customers who read that sooner.
+     */
+    private static function onTheWayAction(string $name): Tables\Actions\Action
+    {
+        return Tables\Actions\Action::make($name)
+            ->label('Kuryer yoldadır')
+            ->icon('heroicon-o-paper-airplane')
+            ->color('warning')
+            ->requiresConfirmation()
+            ->modalHeading('Müştəriyə bildirilsin?')
+            ->modalDescription(fn (Order $record) => CustomerNotice::onTheWayText($record))
+            ->modalSubmitActionLabel('Göndər')
+            ->visible(fn (Order $record) => (bool) auth()->user()?->isStaff()
+                && filled($record->courierLabel())
+                && ! in_array($record->status, ['cancelled', 'refunded', 'completed'], true))
+            ->action(function (Order $record) {
+                $failed = Courier::tellCustomer($record);
+                $whatsapp = CustomerNotice::onTheWayWhatsapp($record);
+
+                Notification::make()
+                    ->status($failed ? 'warning' : 'success')
+                    ->title($failed ? 'Məktub getmədi' : 'Müştəriyə bildirildi')
+                    ->body($failed ?: 'Sifariş #'.$record->id)
                     ->actions(array_filter([
                         $whatsapp ? NotificationAction::make('whatsapp')
                             ->label('WhatsApp-a yaz')
@@ -281,7 +382,7 @@ class OrderResource extends Resource
                     ->label('Müştəri')
                     ->searchable()
                     ->weight('bold')
-                    ->description(fn (Order $r) => '#' . $r->id)
+                    ->description(fn (Order $r) => '#'.$r->id)
                     ->wrap(),   // two lines on a phone rather than pushing the status off the screen
                 // On a phone: customer, amount with the day, status — the rest from a tablet up.
                 Tables\Columns\TextColumn::make('contact_phone')
@@ -308,8 +409,8 @@ class OrderResource extends Resource
                     ->label('Məbləğ')
                     ->getStateUsing(fn (Order $r) => $r->total() > 0 ? Price::format($r->total()) : '—')
                     ->description(fn (Order $r) => $r->delivery_date
-                        ? new HtmlString(e(\Illuminate\Support\Carbon::parse($r->delivery_date)->format('d.m.Y'))
-                            . ($r->delivery_slot ? '<br>' . e(str_replace(' — ', '–', $r->delivery_slot)) : ''))
+                        ? new HtmlString(e(Carbon::parse($r->delivery_date)->format('d.m.Y'))
+                            .($r->delivery_slot ? '<br>'.e(str_replace(' — ', '–', $r->delivery_slot)) : ''))
                         : null)
                     ->wrap(),
                 // Tapped in the list, it asks for the new status straight away.
@@ -350,14 +451,16 @@ class OrderResource extends Resource
                         ->icon('heroicon-o-check-badge')
                         ->color('success')
                         ->requiresConfirmation()
-                        ->modalDescription(fn (Order $record) => 'Sifariş #' . $record->id . ' — ' . Price::format($record->total())
-                            . ($record->paymentAccount ? ' · ' . $record->paymentAccount->label : ''))
+                        ->modalDescription(fn (Order $record) => 'Sifariş #'.$record->id.' — '.Price::format($record->total())
+                            .($record->paymentAccount ? ' · '.$record->paymentAccount->label : ''))
                         ->visible(fn (Order $record) => in_array($record->status, ['awaiting_payment', 'payment_check'], true))
                         ->action(function (Order $record) {
                             $record->forceFill(['status' => 'confirmed', 'payment_confirmed_at' => now()])->save();
                             Notification::make()->success()->title('Ödəniş təsdiqləndi')->send();
                         }),
                     self::statusAction('status_change'),
+                    self::courierAction('courier_assign'),
+                    self::onTheWayAction('courier_on_the_way'),
                     // The same words, but by hand, for a customer who reads
                     // WhatsApp sooner than his mail.
                     Tables\Actions\Action::make('whatsapp')

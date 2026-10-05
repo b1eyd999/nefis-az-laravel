@@ -3,10 +3,15 @@
 namespace App\Models;
 
 use App\Support\Accounting;
+use App\Support\CustomerNotice;
+use App\Support\Epoint;
+use App\Support\Media;
+use App\Support\Telegram;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 class Order extends Model
 {
@@ -64,6 +69,9 @@ class Order extends Model
         'materials_cost',
         // Which courier took it, and the message in the group he took it from.
         'courier_name',
+        // His own account, when the owner handed the order to him rather than
+        // leaving it for whoever tapped it in the group first.
+        'courier_id',
         'courier_taken_at',
         'courier_chat_id',
         'courier_message_id',
@@ -94,6 +102,7 @@ class Order extends Model
             'delivery_lng' => 'float',
             'materials_cost' => 'float',
             'courier_taken_at' => 'datetime',
+            'on_the_way_at' => 'datetime',
             'receipt_at' => 'datetime',
             'payment_confirmed_at' => 'datetime',
             'payment_started_at' => 'datetime',
@@ -104,6 +113,28 @@ class Order extends Model
     public function paymentAccount(): BelongsTo
     {
         return $this->belongsTo(PaymentAccount::class);
+    }
+
+    /**
+     * The courier this one was handed to. Older orders have only the Telegram
+     * name of whoever took it in the group, so this can be empty while
+     * `courier_name` is not.
+     */
+    public function courier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'courier_id');
+    }
+
+    /** Whether the customer has been told the box has left. */
+    public function isOnTheWay(): bool
+    {
+        return $this->on_the_way_at !== null;
+    }
+
+    /** Whoever is carrying it, by whichever name the shop knows him. */
+    public function courierLabel(): ?string
+    {
+        return $this->courier?->name ?: ($this->courier_name ?: null);
     }
 
     public function statusLabel(): string
@@ -147,7 +178,7 @@ class Order extends Model
     {
         return $this->payment_started_at !== null
             && $this->payment_confirmed_at === null
-            && $this->payment_started_at->gt(now()->subMinutes(\App\Support\Epoint::IN_FLIGHT_MINUTES));
+            && $this->payment_started_at->gt(now()->subMinutes(Epoint::IN_FLIGHT_MINUTES));
     }
 
     private function whenNotInFlight(): ?self
@@ -157,7 +188,7 @@ class Order extends Model
 
     public function receiptUrl(): ?string
     {
-        return $this->payment_receipt ? \App\Support\Media::url($this->payment_receipt) : null;
+        return $this->payment_receipt ? Media::url($this->payment_receipt) : null;
     }
 
     protected static function booted(): void
@@ -177,7 +208,7 @@ class Order extends Model
             if ($order->wasChanged('payment_confirmed_at')
                 && $order->payment_confirmed_at !== null
                 && filled($order->promo_code)) {
-                \App\Models\PromoCode::where('code', $order->promo_code)->first()?->used();
+                PromoCode::where('code', $order->promo_code)->first()?->used();
             }
         });
 
@@ -198,11 +229,11 @@ class Order extends Model
 
             // Wherever the status was changed from — the list, the order's own
             // page, the payment flow — the customer hears about it here.
-            \App\Support\CustomerNotice::email($order);
+            CustomerNotice::email($order);
 
             // Made and waiting: the courier gets the address and the phone.
             if ($order->status === 'ready' && $was !== 'ready') {
-                \App\Support\Telegram::courier($order);
+                Telegram::courier($order);
             }
         });
     }
@@ -211,7 +242,7 @@ class Order extends Model
     public function mapUrl(): ?string
     {
         return $this->delivery_lat && $this->delivery_lng
-            ? 'https://www.google.com/maps/search/?api=1&query=' . $this->delivery_lat . ',' . $this->delivery_lng
+            ? 'https://www.google.com/maps/search/?api=1&query='.$this->delivery_lat.','.$this->delivery_lng
             : null;
     }
 
@@ -279,8 +310,8 @@ class Order extends Model
         return $this->hasMany(OrderAdjustment::class)->orderBy('id');
     }
 
-    /** @return \Illuminate\Support\Collection<int, OrderAdjustment> */
-    private function openAdjustments(): \Illuminate\Support\Collection
+    /** @return Collection<int, OrderAdjustment> */
+    private function openAdjustments(): Collection
     {
         return $this->relationLoaded('adjustments')
             ? $this->adjustments->filter(fn (OrderAdjustment $a) => $a->isOpen())
@@ -341,8 +372,8 @@ class Order extends Model
     public function deliverySummary(): ?string
     {
         return match ($this->delivery_type) {
-            DeliveryMethod::POST => trim(($this->recipient_name ? $this->recipient_name . ', ' : '') . 'poçt indeksi ' . $this->postal_index),
-            DeliveryMethod::METRO => 'Metro: ' . $this->metro_station,
+            DeliveryMethod::POST => trim(($this->recipient_name ? $this->recipient_name.', ' : '').'poçt indeksi '.$this->postal_index),
+            DeliveryMethod::METRO => 'Metro: '.$this->metro_station,
             default => $this->delivery_address,
         };
     }
