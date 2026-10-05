@@ -207,6 +207,31 @@ class CustomerNotice
         }
     }
 
+    /**
+     * A letter the owner writes himself from the order's page. His words go
+     * out as he typed them, in the language the order was placed in, and a
+     * mail problem comes back to him rather than into a log nobody reads.
+     */
+    public static function write(Order $order, string $subject, string $body): ?string
+    {
+        $to = trim((string) $order->user?->email);
+
+        if (! filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            return 'Müştərinin e-poçtu yoxdur.';
+        }
+
+        try {
+            Mail::mailer(self::mailer())->to($to)->locale(self::locale($order))
+                ->send(new \App\Mail\OrderMessage($order, $subject, $body));
+
+            return null;
+        } catch (Throwable $e) {
+            Log::error('Sifariş məktubu göndərilmədi: ' . $e->getMessage(), ['order' => $order->id]);
+
+            return $e->getMessage();
+        }
+    }
+
     /** The settings page's own try; gives back what went wrong, or nothing. */
     public static function test(string $to): ?string
     {
