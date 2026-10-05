@@ -184,6 +184,86 @@ class CourierTest extends TestCase
         $this->actingAs($courier)->get('/kuryer')->assertOk()->assertDontSee('Alınacaq');
     }
 
+    /* ------------------------------------------------------- the handover */
+
+    public function test_he_confirms_the_handover_and_the_hour_is_written_down(): void
+    {
+        $order = $this->order($courier = $this->courier());
+        $this->assertFalse($order->isDelivered());
+
+        $this->travelTo(now()->setTime(14, 32));
+        $this->actingAs($courier)->post('/kuryer/sifarish/'.$order->id.'/tehvil')
+            ->assertRedirect(route('courier.index'));
+
+        $order->refresh();
+        $this->assertTrue($order->isDelivered());
+        $this->assertSame('14:32', $order->delivered_at->format('H:i'));
+        $this->assertSame('completed', $order->status);
+    }
+
+    public function test_the_hour_is_the_handovers_and_a_later_edit_does_not_move_it(): void
+    {
+        $order = $this->order($courier = $this->courier());
+
+        $this->travelTo(now()->setTime(11, 5));
+        $this->actingAs($courier)->post('/kuryer/sifarish/'.$order->id.'/tehvil');
+        $stamped = $order->fresh()->delivered_at;
+
+        // Somebody tidies the order up two hours later.
+        $this->travelTo(now()->setTime(13, 40));
+        $order->fresh()->forceFill(['note' => 'sonradan yazıldı'])->save();
+
+        $this->assertSame($stamped->format('H:i'), $order->fresh()->delivered_at->format('H:i'),
+            'updated_at moves, this must not');
+    }
+
+    public function test_completing_an_order_anywhere_else_stamps_it_too(): void
+    {
+        $order = $this->order($this->courier());
+
+        // The panel, the list, the phone admin: all of them save the model.
+        $order->forceFill(['status' => 'completed'])->save();
+
+        $this->assertNotNull($order->fresh()->delivered_at);
+    }
+
+    public function test_an_order_taken_back_out_of_completed_loses_the_hour(): void
+    {
+        $order = $this->order($this->courier());
+        $order->forceFill(['status' => 'completed'])->save();
+        $this->assertNotNull($order->fresh()->delivered_at);
+
+        $order->fresh()->forceFill(['status' => 'ready'])->save();
+
+        $this->assertNull($order->fresh()->delivered_at, 'no date for a handover that was undone');
+    }
+
+    public function test_the_hour_is_on_his_screen_the_owners_and_the_customers(): void
+    {
+        $customer = User::factory()->create();
+        $order = Order::create(['user_id' => $customer->id, 'status' => 'ready', 'locale' => 'az',
+            'delivery_address' => 'Bakı', 'contact_phone' => '0501234567']);
+        Courier::assign($order, $courier = $this->courier());
+
+        $this->travelTo(now()->setTime(16, 20));
+        $this->actingAs($courier)->post('/kuryer/sifarish/'.$order->id.'/tehvil');
+        $when = $order->fresh()->delivered_at->format('d.m.Y, H:i');
+
+        // The courier's own page for that order.
+        $this->actingAs($courier)->get('/kuryer/sifarish/'.$order->id)
+            ->assertOk()->assertSee($when);
+
+        // The owner's.
+        $owner = User::factory()->create(['role' => User::ADMIN]);
+        $this->actingAs($owner)->get('/admin/orders/'.$order->id.'/edit')
+            ->assertOk()->assertSee('Təhvil verildi');
+        $this->actingAs($owner)->get('/admin-phone/sifarish/'.$order->id)
+            ->assertOk()->assertSee($when);
+
+        // And the customer's own list of orders.
+        $this->actingAs($customer)->get('/orders')->assertOk()->assertSee($when);
+    }
+
     /* ------------------------------------------------------------ where he is */
 
     public function test_nothing_is_stored_until_he_switches_sharing_on(): void

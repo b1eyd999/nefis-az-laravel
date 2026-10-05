@@ -50,7 +50,12 @@
   @empty
     <div class="ph-empty">
       <b>Hələ sifariş yoxdur</b>
-      Admin sizə sifariş verəndə burada görünəcək.
+      @if($me->isCourier())
+        Admin sizə sifariş verəndə burada görünəcək.
+      @else
+        Sifarişi kuryerə vermək üçün: admin panel → «Sifarişlər» → sifarişi açın → «Kuryerə ver».
+        Həmin kuryer öz telefonunda bu səhifəni açanda sifarişi burada görəcək.
+      @endif
     </div>
   @endforelse
 
@@ -59,7 +64,7 @@
     @foreach($done as $order)
       <div class="ph-line">
         <span>#{{ $order->id }} — {{ \Illuminate\Support\Str::limit($order->delivery_address, 40) ?: '—' }}</span>
-        <b>{{ $order->updated_at?->format('H:i') }}</b>
+        <b>{{ $order->delivered_at?->format('H:i') }}</b>
       </div>
     @endforeach
   @endif

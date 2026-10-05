@@ -45,9 +45,9 @@ class CourierController extends Controller
         $done = Order::query()
             ->where('courier_id', $me->id)
             ->where('status', 'completed')
-            ->where('updated_at', '>=', now()->startOfDay())
-            ->orderByDesc('updated_at')
-            ->get(['id', 'delivery_address', 'updated_at']);
+            ->where('delivered_at', '>=', now()->startOfDay())
+            ->orderByDesc('delivered_at')
+            ->get(['id', 'delivery_address', 'delivered_at']);
 
         return view('courier.index', ['me' => $me, 'orders' => $mine, 'done' => $done]);
     }
@@ -91,13 +91,18 @@ class CourierController extends Controller
         $this->mine($request, $order);
 
         if (! in_array($order->status, self::DONE, true)) {
+            // The model stamps the hour as it saves; it is read back for the
+            // words on his own screen and for the owner's message.
             $order->forceFill(['status' => 'completed'])->save();
+            $order->refresh();
+
             Telegram::send('✅ <b>Təhvil verildi</b>'."\n"
-                .'Sifariş #'.$order->id.' — '.e((string) $request->user()->name));
+                .'Sifariş #'.$order->id.' — '.e((string) $request->user()->name)."\n"
+                .$order->delivered_at?->format('d.m.Y H:i'));
         }
 
-        return redirect()->route('courier.index')
-            ->with('courier.flash', 'Sifariş #'.$order->id.' təhvil verildi.');
+        return redirect()->route('courier.index')->with('courier.flash',
+            'Sifariş #'.$order->id.' təhvil verildi — '.$order->delivered_at?->format('d.m.Y, H:i'));
     }
 
     /** The switch on his own screen: start sharing where he is, or stop. */

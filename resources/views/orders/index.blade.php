@@ -48,6 +48,13 @@
                 {{ $order->statusLabel() }}
               </span>
             </div>
+            {{-- The hour the courier handed it over, as he confirmed it at the
+                 door: the customer should be able to see it too. --}}
+            @if($order->isDelivered())
+              <div style="margin:-.5rem 0 1rem; font-size:.8125rem; color:var(--cocoa-soft);">
+                {{ __('Təhvil verildi') }}: {{ $order->delivered_at->format('d.m.Y, H:i') }}
+              </div>
+            @endif
             @foreach($order->items as $item)
               @php
                 $live = $item->ar_price !== null ? $item->livePhotos->sortByDesc('id')->first() : null;

@@ -81,6 +81,13 @@
       <span>Kuryer</span>
       <b>{{ $order->courierLabel() ?: '—' }}{{ $order->isOnTheWay() ? ' · yolda ' . $order->on_the_way_at->format('H:i') : '' }}</b>
     </div>
+    @if($order->isDelivered())
+      {{-- The hour the courier confirmed it at the door. --}}
+      <div class="ph-line">
+        <span>Təhvil verildi</span>
+        <b>{{ $order->delivered_at->format('d.m.Y, H:i') }}</b>
+      </div>
+    @endif
     @if($couriers->isNotEmpty())
       <form method="POST" action="{{ route('phone.orders.courier', $order) }}" data-once style="margin-top:.5rem;">
         @csrf

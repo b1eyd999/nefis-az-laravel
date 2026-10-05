@@ -71,9 +71,23 @@
     <div class="ph-err">@foreach($errors->all() as $m)<div>{{ $m }}</div>@endforeach</div>
   @endif
 
+  @php $sharing = $me->isCourier() && $me->isSharing(); @endphp
+
+  {{-- The owner may open this screen to see what his courier sees. Said out
+       loud, because otherwise it looks like a courier's screen that has
+       nothing on it and a switch that does nothing when you press it. --}}
+  @unless($me->isCourier())
+    <div class="ph-warn">
+      <b>Siz buraya admin kimi baxırsınız.</b>
+      Bu ekran kuryerindir: burada yalnız ona verilmiş sifarişlər görünür və lokasiyanı da
+      yalnız o özü yandıra bilər. Kuryer yaratmaq üçün: adam saytda qeydiyyatdan keçsin,
+      sonra admin paneldə «İstifadəçilər» → həmin hesab → rol «Kuryer».
+    </div>
+  @endunless
+
   {{-- The switch. He turns it on when he sets off and off when he is done;
        while it is on this screen says so, in words, the whole time. --}}
-  @php $sharing = $me->isSharing(); @endphp
+  @if($me->isCourier())
   <form method="POST" action="{{ route('courier.share') }}" class="ku-share {{ $sharing ? 'on' : '' }}" data-once>
     @csrf
     <input type="hidden" name="on" value="{{ $sharing ? 0 : 1 }}">
@@ -90,6 +104,7 @@
     <button class="ph-btn {{ $sharing ? '' : 'ph-btn-primary' }}" type="submit"
             data-busy="…">{{ $sharing ? 'Söndür' : 'Yandır' }}</button>
   </form>
+  @endif
 
   @yield('content')
 </main>

@@ -103,6 +103,7 @@ class Order extends Model
             'materials_cost' => 'float',
             'courier_taken_at' => 'datetime',
             'on_the_way_at' => 'datetime',
+            'delivered_at' => 'datetime',
             'receipt_at' => 'datetime',
             'payment_confirmed_at' => 'datetime',
             'payment_started_at' => 'datetime',
@@ -123,6 +124,12 @@ class Order extends Model
     public function courier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'courier_id');
+    }
+
+    /** Handed over, and when. Older orders were never stamped, hence null. */
+    public function isDelivered(): bool
+    {
+        return $this->delivered_at !== null;
     }
 
     /** Whether the customer has been told the box has left. */
@@ -193,6 +200,25 @@ class Order extends Model
 
     protected static function booted(): void
     {
+        /* The hour the box reached the door.
+         *
+         * Written here rather than in the courier's controller because an
+         * order is completed from four different screens, and `updated_at`
+         * — the only trace there was — moves again the moment anybody edits
+         * the order afterwards. Taken back off if the order is moved out of
+         * "completed" again, so the date on the screen is never one for a
+         * handover that did not happen. */
+        static::saving(function (Order $order) {
+            if (! $order->isDirty('status')) {
+                return;
+            }
+            if ($order->status === 'completed') {
+                $order->delivered_at ??= now();
+            } elseif ($order->getOriginal('status') === 'completed') {
+                $order->delivered_at = null;
+            }
+        });
+
         // An order taken off the books altogether: what its boxes took out of
         // stock goes back — unless it was cancelled first and already did.
         static::deleting(function (Order $order) {

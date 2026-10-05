@@ -130,6 +130,13 @@ class OrderResource extends Resource
                                 return $line;
                             })
                             ->visible(fn (?Order $record) => (bool) ($record?->courierLabel() || $record?->courier_chat_id)),
+                        /* The hour the courier confirmed the handover at the
+                           door. Stamped once, by the order's own save, and
+                           never moved by a later edit. */
+                        Forms\Components\Placeholder::make('delivered_at')
+                            ->label('Təhvil verildi')
+                            ->content(fn (?Order $record) => $record?->delivered_at?->format('d.m.Y, H:i'))
+                            ->visible(fn (?Order $record) => (bool) $record?->isDelivered()),
                         Forms\Components\Placeholder::make('delivery_method')
                             ->label('Üsul')
                             ->content(fn (?Order $record) => $record?->delivery_name
@@ -428,6 +435,13 @@ class OrderResource extends Resource
                     ])
                     ->formatStateUsing(fn (string $state): string => self::STATUSES[$state] ?? $state)
                     ->wrap(),
+                // When it actually reached the customer, for the orders that have.
+                Tables\Columns\TextColumn::make('delivered_at')
+                    ->label('Təhvil')
+                    ->dateTime('d.m.Y H:i')
+                    ->sortable()
+                    ->placeholder('—')
+                    ->visibleFrom('lg'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Tarix')
                     ->dateTime('d.m.Y H:i')

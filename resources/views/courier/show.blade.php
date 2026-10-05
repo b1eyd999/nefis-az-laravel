@@ -78,9 +78,19 @@
     @endif
   </div>
 
-  <form method="POST" action="{{ route('courier.delivered', $order) }}" data-once
-        onsubmit="return confirm('Sifariş #{{ $order->id }} təhvil verildi?')">
-    @csrf
-    <button class="ph-btn" style="width:100%" data-busy="…">Təhvil verdim</button>
-  </form>
+  {{-- The end of the trip. He confirms it himself at the door, and the hour
+       he confirms is the hour the shop shows from then on — nobody has to
+       remember it and nothing moves it afterwards. --}}
+  @if($order->isDelivered())
+    <div class="ph-block" style="text-align:center;">
+      <div class="ku-collect" style="font-size:1.1rem;">Təhvil verildi ✓</div>
+      <div class="ku-note">{{ $order->delivered_at->format('d.m.Y, H:i') }}</div>
+    </div>
+  @else
+    <form method="POST" action="{{ route('courier.delivered', $order) }}" data-once
+          onsubmit="return confirm('{{ $order->user?->name ?? 'Müştəri' }} sifarişi #{{ $order->id }} aldı?\nTəsdiqlənən vaxt qeyd olunacaq.')">
+      @csrf
+      <button class="ph-btn ph-btn-primary" style="width:100%" data-busy="…">Təhvil verdim</button>
+    </form>
+  @endif
 @endsection
