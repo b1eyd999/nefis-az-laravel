@@ -84,7 +84,15 @@
       @forelse($r['shares'] as $share)
         <div class="bl-card">
           <div class="k">{{ $share['name'] }} · {{ rtrim(rtrim(number_format($share['percent'], 2, '.', ''), '0'), '.') }}%</div>
-          <div class="v {{ $share['amount'] < 0 ? 'bl-neg' : '' }}">{{ $fmt($share['amount']) }}</div>
+          {{-- With an advance taken, the big figure is what is still his:
+               the share he earned is above it, so both are in sight. --}}
+          @if(($share['taken'] ?? 0) > 0)
+            <div class="s">payı {{ $fmt($share['amount']) }} · avans −{{ $fmt($share['taken']) }}</div>
+            <div class="v {{ $share['left'] < 0 ? 'bl-neg' : '' }}">{{ $fmt($share['left']) }}</div>
+            <div class="s">{{ $share['left'] < 0 ? 'artıq götürülüb — kassaya borc' : 'qalır' }}</div>
+          @else
+            <div class="v {{ $share['amount'] < 0 ? 'bl-neg' : '' }}">{{ $fmt($share['amount']) }}</div>
+          @endif
           @if($share['rest'] ?? false)
             <div class="s">paylanmamış qalan — biznesə qalır</div>
           @endif

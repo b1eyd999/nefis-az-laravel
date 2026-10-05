@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\Setting;
 use App\Models\User;
 use App\Support\Accounting;
+use App\Support\Price;
 use Carbon\Carbon;
 use Filament\Actions;
 use Filament\Forms;
@@ -98,6 +99,61 @@ class Balance extends Page
                 ->action(function () {
                     Setting::put(Setting::BOOKS_FROM, '');
                     Notification::make()->success()->title('Hesablar bütün tarixə qaytarıldı')->send();
+                }),
+            /* Paying somebody a slice of what he has earned. It is written
+               down as a withdrawal with his name on it, and the share cards
+               above subtract it — so the figure on his card is always what is
+               still his, not what he was owed before he took anything. */
+            Actions\Action::make('advance')
+                ->label('Avans ver')
+                ->icon('heroicon-o-banknotes')
+                ->color('warning')
+                ->modalHeading('Avans ver')
+                ->modalDescription('Pul kassadan çıxır və həmin adamın payından silinir.')
+                ->modalSubmitActionLabel('Yaz')
+                ->visible(fn () => collect($this->report['shares'])->contains(fn ($s) => $s['user_id'] !== null))
+                ->fillForm(fn () => ['taken_on' => now()->format('Y-m-d')])
+                ->form(fn () => [
+                    Forms\Components\Select::make('user_id')
+                        ->label('Kimə')
+                        ->options(collect($this->report['shares'])
+                            ->filter(fn ($s) => $s['user_id'] !== null)
+                            ->mapWithKeys(fn ($s) => [$s['user_id'] => $s['name'] . ' — qalır ' . Price::format($s['left'] ?? $s['amount'])])
+                            ->all())
+                        ->required()
+                        ->native(false),
+                    Forms\Components\TextInput::make('amount')
+                        ->label('Məbləğ, ₼')
+                        ->numeric()->minValue(0.01)->step('0.01')->required(),
+                    Forms\Components\DatePicker::make('taken_on')
+                        ->label('Nə vaxt')
+                        ->required(),
+                    Forms\Components\TextInput::make('note')
+                        ->label('Qeyd')
+                        ->maxLength(255)
+                        ->helperText('Nağd, köçürmə, nə üçün — özünüz üçün.'),
+                ])
+                ->action(function (array $data) {
+                    $share = collect($this->report['shares'])->firstWhere('user_id', (int) $data['user_id']);
+                    $amount = round((float) $data['amount'], 2);
+
+                    \App\Models\Withdrawal::create([
+                        'user_id' => (int) $data['user_id'],
+                        'amount' => $amount,
+                        'taken_on' => $data['taken_on'],
+                        'purpose' => 'Avans',
+                        'note' => $data['note'] ?? null,
+                    ]);
+
+                    $left = round(($share['left'] ?? 0) - $amount, 2);
+
+                    Notification::make()
+                        ->{$left < 0 ? 'warning' : 'success'}()
+                        ->title('Avans yazıldı: ' . Price::format($amount))
+                        ->body($left < 0
+                            ? $share['name'] . ' payından çox götürdü — kassaya ' . Price::format(abs($left)) . ' borcludur.'
+                            : $share['name'] . ' üçün qalır: ' . Price::format($left))
+                        ->send();
                 }),
             Actions\Action::make('shares')
                 ->label('Payları dəyiş')

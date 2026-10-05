@@ -282,7 +282,24 @@ class Accounting
             $shares->push(['user_id' => null, 'name' => self::BUSINESS, 'percent' => $rest, 'rest' => true]);
         }
 
-        $shares = $shares->map(fn ($s) => $s + ['amount' => round($net * $s['percent'] / 100, 2)])->values()->all();
+        // What each person has already drawn against their share. Money taken
+        // out with nobody's name on it — tax, cash set aside — is the shop's
+        // own and is not charged to anybody.
+        $drawn = $taken->whereNotNull('user_id')->groupBy('user_id')->map(fn ($rows) => (float) $rows->sum('amount'));
+
+        $shares = $shares->map(function (array $s) use ($net, $drawn) {
+            $amount = round($net * $s['percent'] / 100, 2);
+            $tookOut = round((float) ($s['user_id'] ? ($drawn[$s['user_id']] ?? 0) : 0), 2);
+
+            return $s + [
+                'amount' => $amount,
+                'taken' => $tookOut,
+                // What is still his to take. It may go negative: a man who
+                // drew more than he had earned is owed nothing and owes the
+                // till the difference, and the page should say so plainly.
+                'left' => round($amount - $tookOut, 2),
+            ];
+        })->values()->all();
 
         return [
             'orders' => $rows->count(),
