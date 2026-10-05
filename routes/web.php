@@ -18,6 +18,7 @@ use App\Http\Controllers\Phone\StockController as PhoneStock;
 use App\Http\Controllers\Phone\TaskController as PhoneTasks;
 use App\Http\Controllers\PlaceMapController;
 use App\Http\Controllers\PlacePrintController;
+use App\Http\Controllers\PwaController;
 use App\Http\Controllers\SceneEditorController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\StarMapController;
@@ -33,6 +34,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/i/{path}', [MediaController::class, 'show'])
     ->where('path', '[A-Za-z0-9][A-Za-z0-9._/-]*')
     ->name('media');
+
+/* What a phone reads to decide the shop is an application: its name, its
+   icon, the window it opens in. One per language, because all three of those
+   are different in each. */
+Route::get('/manifest-{lang}.webmanifest', [PwaController::class, 'manifest'])
+    ->where('lang', '[a-z]{2}')->name('manifest');
 
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 // The designs as a product feed, for Google Merchant Center's free listings.

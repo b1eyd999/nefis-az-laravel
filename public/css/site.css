@@ -1281,3 +1281,33 @@
 .ns-opt.is-on:hover{ background:var(--cocoa-2); }
 .ns-opt:disabled{ color:var(--cocoa-faint); cursor:default; background:transparent; }
 .ns-empty{ margin:0; padding:.9rem .65rem; text-align:center; color:var(--cocoa-faint); font-size:.9rem; }
+
+/* ---------- the shop on a home screen ---------- */
+/* The offer to install, and the share mark iPhone hides it behind. A bar at
+   the foot of the screen rather than a sheet over the page: it is an offer,
+   not a question, and the shop goes on behind it. */
+.pwa-bar{ position:fixed; z-index:60; left:50%; transform:translate(-50%, 140%);
+  bottom:calc(.9rem + env(safe-area-inset-bottom)); width:min(30rem, calc(100% - 1.5rem));
+  display:flex; align-items:center; gap:.8rem; padding:.8rem .9rem;
+  border:1px solid var(--line); border-radius:1.15rem; background:var(--paper);
+  box-shadow:0 20px 45px -22px rgba(58,38,23,.65); transition:transform .3s ease, opacity .3s ease;
+  opacity:0; }
+.pwa-bar.on{ transform:translate(-50%, 0); opacity:1; }
+/* display:flex above would otherwise beat the browser's own [hidden]. */
+.pwa-bar[hidden]{ display:none; }
+/* On a phone the chat button and the Instagram button already stand in that
+   corner, and the bar's close cross ended up underneath them. */
+@media (max-width:760px){ .pwa-bar{ bottom:calc(9.25rem + env(safe-area-inset-bottom)); } }
+.pwa-mark{ width:2.5rem; height:2.5rem; border-radius:.7rem; flex:none; }
+.pwa-words{ min-width:0; flex:1; line-height:1.35; }
+.pwa-words b{ display:block; font-size:.9375rem; }
+.pwa-words span{ display:none; font-size:.8125rem; color:var(--cocoa-soft); }
+.pwa-bar .pwa-and{ display:block; }
+.pwa-bar.is-ios .pwa-and{ display:none; }
+.pwa-bar.is-ios .pwa-ios{ display:block; }
+.pwa-go{ flex:none; font:inherit; font-weight:700; font-size:.875rem; color:#fff;
+  background:var(--gold-deep, #A9752C); border:0; border-radius:999px; padding:.6rem 1.1rem; }
+.pwa-x{ flex:none; font:inherit; font-size:1.4rem; line-height:1; color:var(--cocoa-faint);
+  background:none; border:0; padding:.2rem .35rem; }
+.pwa-x:hover{ color:var(--cocoa); }
+@media (prefers-reduced-motion: reduce){ .pwa-bar{ transition:none; } }

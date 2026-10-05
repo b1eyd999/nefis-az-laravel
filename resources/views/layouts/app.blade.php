@@ -69,6 +69,9 @@
 <link rel="icon" type="image/png" sizes="96x96" href="{{ \App\Support\Assets::url('images/icon-96.png') }}">
 <link rel="icon" type="image/png" sizes="192x192" href="{{ \App\Support\Assets::url('images/icon-192.png') }}">
 <link rel="apple-touch-icon" href="{{ \App\Support\Assets::url('images/apple-touch-icon.png') }}">
+{{-- What makes the shop an app on a phone: its own icon on the home screen,
+     its own window with no browser bar, its own opening screen. --}}
+@include('partials.pwa-head')
 {{-- The type is the phone's own — San Francisco on Apple — and Inter stands
      in for it everywhere else, so that one family is all a page loads. The
      twenty display faces belong to the box designs and the polaroid letter;
@@ -246,6 +249,8 @@
 
 <main id="main">
 @include('partials.unpaid-order')
+{{-- The offer to keep the shop on the home screen; it shows itself. --}}
+@include('partials.install-app')
 @yield('content')
 </main>
 
@@ -441,5 +446,7 @@ document.addEventListener('submit', function(e){
 <script defer src="{{ asset('js/date-picker.js') }}?v={{ \App\Support\Assets::version('js/date-picker.js') }}"></script>
 <script defer src="{{ asset('js/time-picker.js') }}?v={{ \App\Support\Assets::version('js/time-picker.js') }}"></script>
 <script defer src="{{ asset('js/select-picker.js') }}?v={{ \App\Support\Assets::version('js/select-picker.js') }}"></script>
+{{-- Hands the worker to the browser, and runs the bar above. --}}
+<script defer src="{{ asset('js/pwa.js') }}?v={{ \App\Support\Assets::version('js/pwa.js') }}"></script>
 </body>
 </html>

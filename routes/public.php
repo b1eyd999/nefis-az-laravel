@@ -7,23 +7,29 @@
  * added next to this file, in routes/web.php.
  */
 
+use App\Http\Controllers\AdjustmentController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CorporateController;
 use App\Http\Controllers\EpointController;
-use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LetterController;
 use App\Http\Controllers\LivePhotoController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\PwaController;
 use App\Http\Controllers\WrappingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/dizaynlar', [ProductController::class, 'index'])->name('designs.index');
+
+/* "No signal", in this language. A page of its own rather than a message the
+   worker invents, so it is the shop that is speaking even with no network. */
+Route::get('/oflayn', [PwaController::class, 'offline'])->name('offline');
 Route::get('/products/{product:slug}/customize', [ProductController::class, 'customize'])->name('products.customize');
 Route::get('/qablasdirma', [WrappingController::class, 'index'])->name('wrappings.index');
 
@@ -87,9 +93,9 @@ Route::middleware('auth')->group(function () {
         // The order changed after it was paid for, and the difference is owed.
         // Its own page, gated on the change rather than on the order's status.
         Route::prefix('elave/{adjustment}')->whereNumber('adjustment')->name('extra.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\AdjustmentController::class, 'show'])->name('show');
-            Route::post('/kart', [\App\Http\Controllers\AdjustmentController::class, 'card'])->name('card');
-            Route::post('/cek', [\App\Http\Controllers\AdjustmentController::class, 'receipt'])->name('receipt');
+            Route::get('/', [AdjustmentController::class, 'show'])->name('show');
+            Route::post('/kart', [AdjustmentController::class, 'card'])->name('card');
+            Route::post('/cek', [AdjustmentController::class, 'receipt'])->name('receipt');
         });
     });
 });
