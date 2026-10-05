@@ -22,9 +22,16 @@ class MaintenanceMode
      * The gateway's and Telegram's own addresses: a payment made a minute
      * before the shop closed is confirmed a minute after, and a 503 to that
      * message means the money arrives and the order stays unpaid for ever.
+     *
+     * Signing in and out is listed once for each language: only the
+     * Azerbaijani pair was here, so a Russian customer pressing «Выход» while
+     * the shop was closed was handed the maintenance page instead of being
+     * signed out. The courier's screen stays open too — the deliveries of the
+     * day do not stop because the shop is closed to new orders.
      */
-    private const OPEN = ['admin', 'admin/*', 'login', 'logout', 'livewire/*', 'filament/*', 'up',
-        'canli/*', 'epoint/*', 'telegram/*'];
+    private const OPEN = ['admin', 'admin/*', 'livewire/*', 'filament/*', 'up',
+        'login', 'logout', 'ru/login', 'ru/logout', 'en/login', 'en/logout',
+        'kuryer', 'kuryer/*', 'canli/*', 'epoint/*', 'telegram/*'];
 
     public function handle(Request $request, Closure $next): Response
     {

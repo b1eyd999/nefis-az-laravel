@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Http\Middleware\SignedInPagesAreNotKept;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -100,6 +101,22 @@ class SigningOutTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->get('/')->assertOk()
             ->assertHeader(SignedInPagesAreNotKept::HEADER, '1');
+    }
+
+    public function test_a_closed_shop_still_lets_people_in_and_out_in_every_language(): void
+    {
+        Setting::put(Setting::MAINTENANCE, '1');
+        $user = User::factory()->create();
+
+        // The shop itself is closed to a customer...
+        $this->get('/ru')->assertStatus(503);
+
+        // ...but the door is not locked from the inside.
+        foreach (['/login', '/ru/login', '/en/login'] as $door) {
+            $this->get($door)->assertOk();
+        }
+        $this->actingAs($user)->post('/ru/logout')->assertRedirect(route('ru.home'));
+        $this->assertGuest();
     }
 
     public function test_the_worker_knows_this_shops_real_addresses(): void

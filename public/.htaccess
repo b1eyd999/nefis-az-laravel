@@ -5,6 +5,13 @@
     <FilesMatch "\.js$">
         Header set Cache-Control "public, max-age=604800"
     </FilesMatch>
+
+    # Except the one script the browser keeps on its own behalf. A phone
+    # checks the worker for a new version, and a week-long cache means a
+    # correction can sit unseen for up to a day; this one is always asked for.
+    <Files "sw.js">
+        Header set Cache-Control "no-cache, max-age=0, must-revalidate"
+    </Files>
 </IfModule>
 
 <IfModule mod_rewrite.c>
