@@ -42,7 +42,7 @@ class MoneyController extends Controller
             ->when($from, fn ($q) => $q->where('created_at', '>=', $from))
             ->when($to, fn ($q) => $q->where('created_at', '<=', $to))
             ->get()
-            ->sum(fn (Order $o) => $o->itemsTotal() + (float) ($o->delivery_price ?? 0) + (float) ($o->rush_fee ?? 0));
+            ->sum(fn (Order $o) => $o->itemsTotal() + $o->deliveryCharged() + (float) ($o->rush_fee ?? 0));
 
         return view('phone.money', [
             'period' => $period,

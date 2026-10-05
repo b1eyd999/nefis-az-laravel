@@ -36,7 +36,12 @@ class OrderEditor
 
             $edit();
 
-            $order->load('items');
+            // Everything the order is worth, read again: its own columns as
+            // well as its lines. Reloading only the lines was enough while
+            // the admin edited lines, but a change to the order itself — the
+            // delivery waived, say — left the figure exactly as it was and
+            // the difference came out as nothing at all.
+            $order->refresh();
             $after = $order->total();
 
             // Stock follows the boxes, whether one was added or taken away.

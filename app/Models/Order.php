@@ -43,6 +43,9 @@ class Order extends Model
         'delivery_type',
         'delivery_name',
         'delivery_price',
+        // The owner's own decision, taken after the order exists; the
+        // checkout never offers it and never sets it.
+        'free_delivery',
         'rush_fee',
         'delivery_date',
         'delivery_slot',
@@ -82,6 +85,7 @@ class Order extends Model
     {
         return [
             'delivery_price' => 'float',
+            'free_delivery' => 'boolean',
             'rush_fee' => 'float',
             'promo_percent' => 'float',
             'discount' => 'float',
@@ -246,10 +250,22 @@ class Order extends Model
         return round(min($this->itemsTotal(), (float) ($this->discount ?? 0)), 2);
     }
 
+    /**
+     * What the customer actually pays for the delivery.
+     *
+     * The method and its price stay on the order whatever happens; this is
+     * the one figure everything else must use, so that waiving the delivery
+     * cannot leave two parts of the shop disagreeing about the total.
+     */
+    public function deliveryCharged(): float
+    {
+        return $this->free_delivery ? 0.0 : (float) ($this->delivery_price ?? 0);
+    }
+
     public function total(): float
     {
         return round($this->itemsTotal() - $this->discountOff()
-            + (float) ($this->delivery_price ?? 0) + (float) ($this->rush_fee ?? 0), 2);
+            + $this->deliveryCharged() + (float) ($this->rush_fee ?? 0), 2);
     }
 
     public function hasDiscount(): bool

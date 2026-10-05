@@ -50,7 +50,7 @@ class Analytics
         self::event('purchase', [
             'transaction_id' => (string) $order->id,
             'value' => round($order->total(), 2),
-            'shipping' => round((float) ($order->delivery_price ?? 0), 2),
+            'shipping' => round($order->deliveryCharged(), 2),
             'currency' => self::CURRENCY,
             'items' => $order->items->map(fn (OrderItem $item) => [
                 'item_id' => $item->product_id ? 'design-' . $item->product_id : (Str::slug($item->product_name) ?: 'extra'),

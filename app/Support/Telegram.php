@@ -310,7 +310,8 @@ class Telegram
         }
         $lines[] = '💰 <b>Cəmi: ' . Price::format($order->total()) . '</b>';
         if ($order->delivery_name) {
-            $lines[] = '🚚 ' . e($order->delivery_name) . ', ' . Price::format((float) $order->delivery_price);
+            $lines[] = '🚚 ' . e($order->delivery_name) . ', '
+                . ($order->free_delivery ? 'pulsuz' : Price::format((float) $order->delivery_price));
         }
         if ($order->delivery_date) {
             $lines[] = '🗓 ' . e(DeliveryTime::day($order->delivery_date) . ($order->delivery_slot ? ', ' . $order->delivery_slot : ''));

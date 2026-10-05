@@ -94,7 +94,7 @@
                 @if($order->delivery_date)
                   <br>🗓 {{ \App\Support\DeliveryTime::day($order->delivery_date) }}@if($order->delivery_slot), {{ $order->delivery_slot }}@endif
                 @endif
-                &middot; {{ $order->delivery_price > 0 ? \App\Support\Price::format($order->delivery_price) : 'pulsuz' }}
+                &middot; {{ $order->deliveryCharged() > 0 ? \App\Support\Price::format($order->deliveryCharged()) : 'pulsuz' }}
               </p>
             @endif
             @if($order->isRush())

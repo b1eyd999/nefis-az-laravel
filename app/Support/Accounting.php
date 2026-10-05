@@ -228,7 +228,7 @@ class Accounting
             // still owed either way over a later change has not moved yet — a
             // promise is no more income here than it is anywhere else.
             $goods = $o->itemsTotal() - (float) ($o->discount ?? 0) - $o->outstanding() + $o->owedBack();
-            $delivery = (float) ($o->delivery_price ?? 0);
+            $delivery = $o->deliveryCharged();
             $chocolate = (float) $o->items->sum(fn ($i) => (float) ($i->chocolate_cost ?? 0) * $i->quantity);
             $materials = (float) ($o->materials_cost ?? 0);
             // The rush fee is charged and settled by the bank like everything

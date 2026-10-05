@@ -110,8 +110,61 @@ class OrderResource extends Resource
                         Forms\Components\Placeholder::make('delivery_method')
                             ->label('Üsul')
                             ->content(fn (?Order $record) => $record?->delivery_name
-                                ? $record->delivery_name . ' — ' . ($record->delivery_price > 0 ? Price::format($record->delivery_price) : 'pulsuz')
+                                ? $record->delivery_name . ' — ' . ($record->free_delivery
+                                    ? 'pulsuz (siz bağışladınız' . ($record->delivery_price > 0 ? ', ' . Price::format($record->delivery_price) : '') . ')'
+                                    : ($record->delivery_price > 0 ? Price::format($record->delivery_price) : 'pulsuz'))
                                 : 'Seçilməyib (köhnə sifariş)'),
+                        /* The owner waives the delivery. It is his decision
+                           after the order exists — the checkout never offers
+                           it — and on an order already paid for it is money
+                           owed back, so it goes through OrderEditor like any
+                           other change and leaves its own line behind. */
+                        Forms\Components\Actions::make([
+                            Forms\Components\Actions\Action::make('free_delivery')
+                                ->label(fn (?Order $record) => $record?->free_delivery
+                                    ? 'Çatdırılmanı yenidən ödənişli et'
+                                    : 'Çatdırılmanı pulsuz et')
+                                ->icon('heroicon-o-truck')
+                                ->color(fn (?Order $record) => $record?->free_delivery ? 'gray' : 'warning')
+                                ->visible(fn (?Order $record) => $record !== null
+                                    && (bool) auth()->user()?->isAdmin()
+                                    && ((float) ($record->delivery_price ?? 0) > 0 || $record->free_delivery))
+                                ->requiresConfirmation()
+                                ->modalHeading(fn (?Order $record) => $record?->free_delivery
+                                    ? 'Çatdırılma yenidən ödənişli olsun?'
+                                    : 'Çatdırılma pulsuz olsun?')
+                                ->modalDescription(fn (?Order $record) => $record?->free_delivery
+                                    ? 'Çatdırılmanın qiyməti sifarişə qayıdır: ' . Price::format($record->delivery_price)
+                                    : 'Sifarişin məbləğindən ' . Price::format($record?->delivery_price ?? 0)
+                                        . ' düşəcək.' . ($record?->isPaidFor()
+                                            ? ' Sifariş artıq ödənilib, ona görə bu məbləğ müştəriyə qaytarılmalı kimi yazılacaq.'
+                                            : ''))
+                                ->action(function (Order $record, $livewire) {
+                                    $free = ! $record->free_delivery;
+
+                                    $money = \App\Support\OrderEditor::change(
+                                        $record,
+                                        $free ? 'Çatdırılma pulsuz edildi' : 'Çatdırılma yenidən ödənişli edildi',
+                                        fn () => $record->forceFill(['free_delivery' => $free])->save(),
+                                    );
+
+                                    $note = \Filament\Notifications\Notification::make()
+                                        ->success()
+                                        ->title($free ? 'Çatdırılma pulsuzdur' : 'Çatdırılma yenidən ödənişlidir');
+
+                                    if ($money) {
+                                        $note->warning()
+                                            ->title($money->isCharge()
+                                                ? 'Müştəri ' . Price::format((float) $money->amount) . ' əlavə ödəməlidir'
+                                                : 'Müştəriyə ' . Price::format((float) $money->amount) . ' qaytarılmalıdır')
+                                            ->body('Aşağıdakı «Sonradan edilən dəyişikliklər» cədvəlinə baxın.')
+                                            ->persistent();
+                                    }
+
+                                    $note->send();
+                                    $livewire->redirect(OrderResource::getUrl('edit', ['record' => $record]));
+                                }),
+                        ])->columnSpanFull(),
                         Forms\Components\TextInput::make('recipient_name')
                             ->label('Ad və soyad')
                             ->visible(fn (?Order $record) => $record?->delivery_type === DeliveryMethod::POST),

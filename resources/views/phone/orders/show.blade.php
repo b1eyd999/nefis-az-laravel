@@ -104,7 +104,7 @@
   <div class="ph-block">
     <h2>Məbləğ</h2>
     <div class="ph-line"><span>Məhsullar</span><b>{{ \App\Support\Price::format($order->itemsTotal()) }}</b></div>
-    <div class="ph-line"><span>Çatdırılma</span><b>{{ \App\Support\Price::format($order->delivery_price ?? 0) }}</b></div>
+    <div class="ph-line"><span>Çatdırılma</span><b>{{ \App\Support\Price::format($order->deliveryCharged()) }}</b></div>
     @if($order->isRush())
       <div class="ph-line"><span>Təcili</span><b>{{ \App\Support\Price::format($order->rush_fee ?? 0) }}</b></div>
     @endif
