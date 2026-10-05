@@ -184,6 +184,54 @@ class CourierTest extends TestCase
         $this->actingAs($courier)->get('/kuryer')->assertOk()->assertDontSee('Alınacaq');
     }
 
+    /* ------------------------------------------- finding it, and whose it is */
+
+    public function test_the_shop_tells_a_courier_where_his_own_screen_is(): void
+    {
+        // Nothing used to link to /kuryer: he had to be told the address aloud.
+        $this->actingAs($this->courier())->get('/')->assertOk()
+            ->assertSee(route('courier.index'), false);
+
+        $this->actingAs(User::factory()->create())->get('/')->assertOk()
+            ->assertDontSee(route('courier.index'), false);
+    }
+
+    public function test_an_owner_looking_at_it_is_told_so_rather_than_left_with_a_dead_button(): void
+    {
+        $owner = User::factory()->create(['role' => User::ADMIN]);
+
+        $this->actingAs($owner)->get('/kuryer')->assertOk()
+            ->assertSee('Siz buraya admin kimi baxırsınız')
+            ->assertDontSee('Yandır');
+
+        // And if the old form is posted from a tab left open, it says why.
+        $this->actingAs($owner)->post('/kuryer/paylas', ['on' => 1])
+            ->assertRedirect()
+            ->assertSessionHas('courier.flash', 'Lokasiyanı yalnız kuryer özü yandıra bilər.');
+        $this->assertNull($owner->fresh()->sharing_until);
+    }
+
+    public function test_the_trip_is_the_couriers_to_report_not_the_owners(): void
+    {
+        $order = $this->order($this->courier());
+        $owner = User::factory()->create(['role' => User::ADMIN]);
+
+        // He may read the page — that is what he is let in for...
+        $this->actingAs($owner)->get('/kuryer/sifarish/'.$order->id)->assertOk()
+            ->assertSee('Bu düymələr kuryerindədir')
+            ->assertDontSee('Təhvil verdim');
+
+        // ...but the shop must never record a handover nobody made, under his
+        // name, from a page he was only looking at.
+        $this->actingAs($owner)->post('/kuryer/sifarish/'.$order->id.'/yolda')->assertForbidden();
+        $this->actingAs($owner)->post('/kuryer/sifarish/'.$order->id.'/tehvil')->assertForbidden();
+
+        $order->refresh();
+        $this->assertNull($order->on_the_way_at);
+        $this->assertNull($order->delivered_at);
+        $this->assertSame('ready', $order->status);
+    }
+
     /* ------------------------------------------------------- the handover */
 
     public function test_he_confirms_the_handover_and_the_hour_is_written_down(): void

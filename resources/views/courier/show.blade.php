@@ -66,7 +66,12 @@
     @endif
   </div>
 
-  {{-- The two taps of the trip. --}}
+  {{-- The two taps of the trip — the courier's own, and only his. The owner
+       reading this page sees what the man sees and nothing he can press: he
+       completes an order from the panel, under his own name. --}}
+  @unless($me->isCourier())
+    <div class="ph-note">Bu düymələr kuryerindədir. Sifarişi siz paneldən tamamlaya bilərsiniz.</div>
+  @else
   <div class="ph-btns">
     @if(! $order->isOnTheWay())
       <form method="POST" action="{{ route('courier.way', $order) }}" data-once>
@@ -93,4 +98,5 @@
       <button class="ph-btn ph-btn-primary" style="width:100%" data-busy="…">Təhvil verdim</button>
     </form>
   @endif
+  @endunless
 @endsection

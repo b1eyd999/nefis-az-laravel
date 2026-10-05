@@ -73,6 +73,7 @@ class CourierController extends Controller
     public function onTheWay(Request $request, Order $order): RedirectResponse
     {
         $this->mine($request, $order);
+        $this->hisOwnHands($request);
 
         if (! $order->isOnTheWay()) {
             $order->forceFill(['on_the_way_at' => now()])->saveQuietly();
@@ -89,6 +90,7 @@ class CourierController extends Controller
     public function delivered(Request $request, Order $order): RedirectResponse
     {
         $this->mine($request, $order);
+        $this->hisOwnHands($request);
 
         if (! in_array($order->status, self::DONE, true)) {
             // The model stamps the hour as it saves; it is read back for the
@@ -112,9 +114,11 @@ class CourierController extends Controller
         $on = $request->boolean('on');
 
         if (! $me->isCourier()) {
-            // The owner may look at this screen, but his own phone is not a
-            // courier's and must never end up on the map as one.
-            return back();
+            /* The owner may look at this screen, but his own phone is not a
+               courier's and must never end up on the map as one. Said out
+               loud: a button that answers with the same screen and no word is
+               indistinguishable from a broken one. */
+            return back()->with('courier.flash', 'Lokasiyanı yalnız kuryer özü yandıra bilər.');
         }
 
         $on ? CourierTrail::start($me) : CourierTrail::stop($me);
@@ -156,6 +160,19 @@ class CourierController extends Controller
     public function live(): JsonResponse
     {
         return response()->json(['couriers' => CourierTrail::map()]);
+    }
+
+    /**
+     * The trip is the courier's to report.
+     *
+     * The owner is let onto these pages to see what his man is looking at,
+     * and that is all it is for: if an admin could tap them, the shop would
+     * record a handover that nobody made and announce the admin's own name as
+     * the courier. He completes an order from the panel, under his own name.
+     */
+    private function hisOwnHands(Request $request): void
+    {
+        abort_unless($request->user()?->isCourier(), 403, 'Bu düymələr kuryerindir.');
     }
 
     /** The one rule of this whole screen: the order has to be his. */

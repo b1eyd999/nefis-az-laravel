@@ -193,6 +193,11 @@
             @if(auth()->user()->isStaff())
               <a class="nav-item" href="{{ url('/admin') }}"><span class="ni-ico">⚙️</span><span><b>{{ __('Admin panel') }}</b></span></a>
             @endif
+            {{-- A courier signs in on the same shop as everybody else, so this
+                 is the only place he can be told where his own screen is. --}}
+            @if(auth()->user()->isCourier())
+              <a class="nav-item" href="{{ route('courier.index') }}"><span class="ni-ico">🚴</span><span><b>{{ __('Kuryer səhifəsi') }}</b></span></a>
+            @endif
             <form method="POST" action="{{ lroute('logout') }}">
               @csrf
               <button type="submit" class="nav-item"><span class="ni-ico">↩</span><span><b>{{ __('Çıxış') }}</b></span></button>
@@ -238,6 +243,9 @@
       <a href="{{ lroute('orders.index') }}">{{ __('Sifarişlərim') }}</a>
       @if(auth()->user()->isStaff())
         <a href="{{ url('/admin') }}">{{ __('Admin panel') }}</a>
+      @endif
+      @if(auth()->user()->isCourier())
+        <a href="{{ route('courier.index') }}">{{ __('Kuryer səhifəsi') }}</a>
       @endif
       {{-- The token is not decoration: without it every sign-out from the
            phone menu — which is the one most people use — came back as
