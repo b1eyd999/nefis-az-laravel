@@ -17,7 +17,7 @@
  *     map lookups are left alone entirely.
  */
 
-var VERSION = 'nefis-2026-10-05';
+var VERSION = 'nefis-2026-10-05b';
 var PAGES = 'pages-' + VERSION;
 var ASSETS = 'assets-' + VERSION;
 
@@ -32,12 +32,22 @@ var NEVER = [
   '/lokasiya', '/livewire', '/i/', '/canli', '/sitemap.xml', '/feed.xml'
 ];
 
-/* Pages that belong to one person rather than to everybody. Fetched, shown,
-   never kept. */
+/* Pages that belong to one person rather than to everybody, by address.
+   Fetched, shown, never kept. These are this shop's real paths — the sign-in
+   and the password pages included, because each carries a form token that is
+   only good for as long as the session behind it.
+
+   This list is the belt; the braces is the header below, which catches every
+   page drawn for somebody who is signed in, whatever its address. */
 var PRIVATE = [
-  '/cart', '/checkout', '/orders', '/hesab', '/daxil-ol', '/qeydiyyat',
-  '/sifaris', '/odenis', '/profil', '/cixis'
+  '/cart', '/checkout', '/orders', '/sifaris',
+  '/login', '/register', '/sifre-unutdum', '/sifre-yenile', '/canli-hazirla'
 ];
+
+/* Set by the server on anything drawn for a signed-in visitor. A phone gets
+   lent, and a form token kept past its session is how pressing "Çıxış" ends
+   at a page saying "Page Expired". */
+var PRIVATE_HEADER = 'X-Nefis-Private';
 
 /* How much is worth keeping. A phone's storage is not ours to fill. */
 var MAX_PAGES = 40;
@@ -126,7 +136,8 @@ self.addEventListener('fetch', function (event) {
     var keepIt = !startsWithAny(bare(path), PRIVATE) && !url.search;
     event.respondWith(
       fetch(request).then(function (response) {
-        if (keepIt && response && response.ok && response.type === 'basic') {
+        if (keepIt && response && response.ok && response.type === 'basic'
+            && !response.headers.get(PRIVATE_HEADER)) {
           var copy = response.clone();
           caches.open(PAGES).then(function (cache) {
             cache.put(request, copy);
