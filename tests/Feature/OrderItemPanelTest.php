@@ -49,7 +49,7 @@ class OrderItemPanelTest extends TestCase
     {
         $html = $this->panel($this->line());
 
-        $this->assertStringContainsString('data-oi-text="Sevda Mələyi"', $html);
+        $this->assertStringContainsString('data-text="Sevda Mələyi"', $html);
         $this->assertStringContainsString('Bütün mətnləri kopyala', $html, 'and all of them together');
         // The letter is the longest thing anyone retypes; it copies too.
         $this->assertStringContainsString('Məktubu kopyala', $html);
@@ -60,12 +60,12 @@ class OrderItemPanelTest extends TestCase
         $line = $this->line();
         $html = $this->panel($line);
 
-        // Fetched as a blob and handed to the browser, so the server's content
-        // type cannot turn a download into a preview.
-        $this->assertStringContainsString('data-oi-file=', $html);
-        $this->assertStringContainsString('sifaris-' . $line->order_id . '-' . $line->id . '-1.jpg', $html);
-        $this->assertStringContainsString('sifaris-' . $line->order_id . '-' . $line->id . '-mektub.jpg', $html);
-        $this->assertStringNotContainsString('<a href="' . \App\Support\Media::url('orders/sekil.jpg') . '" download', $html);
+        // A route that sends the file as an attachment, so the browser has
+        // nothing to decide — and no script to run, which is what broke the
+        // first attempt: Livewire redraws this table and the script never ran.
+        $this->assertStringContainsString(route('order.file', ['item' => $line, 'which' => 1]), $html);
+        $this->assertStringContainsString(route('order.file', ['item' => $line, 'which' => 'mektub']), $html);
+        $this->assertStringNotContainsString('<script', $html, 'nothing here depends on a script tag');
     }
 
     public function test_a_caption_the_design_holds_fixed_is_not_offered_for_copying(): void
@@ -85,5 +85,31 @@ class OrderItemPanelTest extends TestCase
         $this->assertStringContainsString('dizaynda sabit', $html);
         $this->assertStringNotContainsString('Bütün mətnləri kopyala', $html,
             'nothing of the customer\'s own to copy here');
+    }
+
+    public function test_the_file_comes_down_as_an_attachment_and_only_for_the_shop(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+        \Illuminate\Support\Facades\Storage::disk('public')
+            ->put('orders/sekil.jpg', 'not really a jpeg, but bytes all the same');
+
+        $line = $this->line();
+
+        // A customer, or anyone off the street, gets nothing.
+        $this->get(route('order.file', ['item' => $line, 'which' => 1]))->assertRedirect();
+        $this->actingAs(User::factory()->create())
+            ->get(route('order.file', ['item' => $line, 'which' => 1]))->assertForbidden();
+
+        $staff = User::factory()->create(['role' => User::ADMIN]);
+        $response = $this->actingAs($staff)->get(route('order.file', ['item' => $line, 'which' => 1]));
+
+        $response->assertOk();
+        $this->assertStringContainsString('attachment', (string) $response->headers->get('content-disposition'));
+        $this->assertStringContainsString(
+            'sifaris-' . $line->order_id . '-' . $line->id . '-1.jpg',
+            (string) $response->headers->get('content-disposition'));
+
+        // A photo the line does not have is not a way to read the disk.
+        $this->actingAs($staff)->get(route('order.file', ['item' => $line, 'which' => 9]))->assertNotFound();
     }
 }

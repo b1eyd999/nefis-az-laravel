@@ -10,67 +10,12 @@
       color:inherit; cursor:pointer; white-space:nowrap; }
     .oi-btn:hover{ border-color:#d97706; color:#d97706; }
     .oi-btn.ok{ border-color:#16a34a; color:#16a34a; }</style>
-  {{-- Copying a caption and getting the photo out are the two things the
-       workshop does with this panel, and both were a fight: the text had to be
-       dragged over with a mouse, and the browser shows a .jpg rather than
-       saving it however politely the link asks. So: one button that copies,
-       and one that fetches the file and hands it to the browser as a blob,
-       which is saved whatever the server's content type says. Bound once, on
-       the document, because Livewire redraws this table under us. --}}
-  <script>
-  if (!window.__oiTools) {
-    window.__oiTools = true;
-    document.addEventListener('click', function (e) {
-      var el = e.target instanceof Element ? e.target : null;
-      if (!el) return;
-
-      var copy = el.closest('[data-oi-text]');
-      if (copy) {
-        e.preventDefault();
-        var text = copy.getAttribute('data-oi-text') || '';
-        var was = copy.textContent;
-        var done = function () {
-          copy.textContent = 'Kopyalandı ✓'; copy.classList.add('ok');
-          setTimeout(function () { copy.textContent = was; copy.classList.remove('ok'); }, 1500);
-        };
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(done).catch(function () {});
-        } else {
-          var t = document.createElement('textarea');
-          t.value = text; document.body.appendChild(t); t.select();
-          try { document.execCommand('copy'); done(); } catch (err) {}
-          t.remove();
-        }
-        return;
-      }
-
-      var get = el.closest('[data-oi-file]');
-      if (get) {
-        e.preventDefault();
-        var url = get.getAttribute('data-oi-file');
-        var name = get.getAttribute('data-oi-name') || 'nefis';
-        var label = get.textContent;
-        get.textContent = '…';
-        fetch(url, { credentials: 'same-origin' })
-          .then(function (r) { if (!r.ok) throw new Error(r.status); return r.blob(); })
-          .then(function (blob) {
-            var a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = name;
-            document.body.appendChild(a); a.click(); a.remove();
-            setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
-            get.textContent = 'Endirildi ✓'; get.classList.add('ok');
-            setTimeout(function () { get.textContent = label; get.classList.remove('ok'); }, 1500);
-          })
-          .catch(function () {
-            // Whatever went wrong, the file itself is still one click away.
-            get.textContent = label;
-            window.open(url, '_blank', 'noopener');
-          });
-      }
-    });
-  }
-  </script>
+  {{-- Copying is Alpine's, not a <script> of our own: Livewire redraws this
+       table, and a script tag that arrives in a redraw is never run — which is
+       exactly how the first attempt at these buttons came to do nothing at
+       all. Alpine is already on the page and binds itself to whatever appears.
+       Downloading needs no script: it is a route that sends the file as an
+       attachment, so the browser has nothing to decide. --}}
   <div class="oi-phone" style="border-bottom:1px solid rgba(128,128,128,.3); padding-bottom:.6rem;">
     <div style="font-weight:700; font-size:.95rem; white-space:normal;">{{ $line->title() }}</div>
     <div style="font-size:.85rem; opacity:.85; margin-top:.2rem;">
@@ -149,10 +94,8 @@
             <img src="{{ $url }}" alt="{{ $photo['label'] }}"
                  style="width:7.5rem; height:7.5rem; object-fit:cover; border-radius:.6rem; border:1px solid rgba(128,128,128,.35); display:block;">
           </a>
-          @php $ext = pathinfo((string) $photo['path'], PATHINFO_EXTENSION) ?: 'jpg'; @endphp
-          <button type="button" class="oi-btn" style="margin-top:.35rem;"
-                  data-oi-file="{{ $url }}"
-                  data-oi-name="sifaris-{{ $line->order_id }}-{{ $line->id }}-{{ $loop->iteration }}.{{ $ext }}">⬇ Yüklə</button>
+          <a class="oi-btn" style="margin-top:.35rem; text-decoration:none;"
+             href="{{ route('order.file', ['item' => $line, 'which' => $loop->iteration]) }}">⬇ Yüklə</a>
         </div>
         @if($f = $photo['frame'])
           {{-- The same photo as it sat in its window when the customer approved
@@ -187,7 +130,10 @@
   @endphp
   @if($written->count() > 1)
     <button type="button" class="oi-btn" style="align-self:flex-start;"
-            data-oi-text="{{ $written->map(fn ($t) => $t['label'] . ': ' . $t['value'])->implode(chr(10) . chr(10)) }}">⧉ Bütün mətnləri kopyala</button>
+            x-data="{ done: false }" :class="done && 'ok'"
+            @click="navigator.clipboard.writeText($el.dataset.text).then(() => { done = true; setTimeout(() => done = false, 1500) })"
+            data-text="{{ $written->map(fn ($t) => $t['label'] . ': ' . $t['value'])->implode(chr(10) . chr(10)) }}"
+            x-text="done ? 'Kopyalandı ✓' : '⧉ Bütün mətnləri kopyala'">⧉ Bütün mətnləri kopyala</button>
   @endif
   @foreach($fields['texts'] as $text)
     <div>
@@ -197,7 +143,10 @@
           @if($text['fixed'])<span style="font-weight:400; opacity:.8;">· dizaynda sabit</span>@endif
         </div>
         @if($text['value'] !== '')
-          <button type="button" class="oi-btn" data-oi-text="{{ $text['value'] }}">⧉ Kopyala</button>
+          <button type="button" class="oi-btn" x-data="{ done: false }" :class="done && 'ok'"
+                  @click="navigator.clipboard.writeText($el.dataset.text).then(() => { done = true; setTimeout(() => done = false, 1500) })"
+                  data-text="{{ $text['value'] }}"
+                  x-text="done ? 'Kopyalandı ✓' : '⧉ Kopyala'">⧉ Kopyala</button>
         @endif
       </div>
       <div style="border:1px solid rgba(128,128,128,.35); border-radius:.6rem; padding:.5rem .75rem; font-size:.9rem; white-space:pre-wrap; word-break:break-word;{{ $text['fixed'] ? ' opacity:.65;' : '' }}">{{ $text['value'] !== '' ? $text['value'] : '—' }}</div>
@@ -275,15 +224,16 @@
             <a href="{{ $url }}" target="_blank" title="Tam ölçüdə aç">
               <img src="{{ $url }}" alt="Məktubun şəkli" style="width:6rem; height:6rem; object-fit:cover; border:5px solid #fbfaf6; border-bottom-width:16px; box-shadow:0 2px 8px rgba(0,0,0,.35); display:block;">
             </a>
-            @php $lext = pathinfo((string) $item->letter_photo, PATHINFO_EXTENSION) ?: 'jpg'; @endphp
-            <button type="button" class="oi-btn" style="margin-top:.35rem;"
-                    data-oi-file="{{ $url }}"
-                    data-oi-name="sifaris-{{ $item->order_id }}-{{ $item->id }}-mektub.{{ $lext }}">⬇ Yüklə</button>
+            <a class="oi-btn" style="margin-top:.35rem; text-decoration:none;"
+               href="{{ route('order.file', ['item' => $item, 'which' => 'mektub']) }}">⬇ Yüklə</a>
           </div>
         @endif
         <div style="flex:1; min-width:0;">
           @if($item->letter_text)
-            <button type="button" class="oi-btn" style="margin-bottom:.4rem;" data-oi-text="{{ $item->letter_text }}">⧉ Məktubu kopyala</button>
+            <button type="button" class="oi-btn" style="margin-bottom:.4rem;" x-data="{ done: false }" :class="done && 'ok'"
+                    @click="navigator.clipboard.writeText($el.dataset.text).then(() => { done = true; setTimeout(() => done = false, 1500) })"
+                    data-text="{{ $item->letter_text }}"
+                    x-text="done ? 'Kopyalandı ✓' : '⧉ Məktubu kopyala'">⧉ Məktubu kopyala</button>
           @endif
           <div style="font-size:.9rem; white-space:pre-wrap; word-break:break-word;">{{ $item->letter_text ?: ($url ? 'Mətnsiz' : '—') }}</div>
         </div>

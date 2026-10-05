@@ -126,6 +126,12 @@ Route::get('/admin-ulduz/{item}', [\App\Http\Controllers\StarMapController::clas
 Route::get('/admin-lokasiya/{item}', [\App\Http\Controllers\PlacePrintController::class, 'show'])
     ->middleware(['auth', 'staff'])->name('place.print');
 
+// A customer's own picture off an order line, handed over as a download
+// rather than shown — the workshop prints these, it does not look at them.
+Route::get('/admin-fayl/{item}/{which}', [\App\Http\Controllers\OrderFileController::class, 'show'])
+    ->where('which', 'mektub|[0-9]{1,2}')
+    ->middleware(['auth', 'staff'])->name('order.file');
+
 Route::middleware(['auth', 'locale', 'staff'])->prefix('admin-phone')->name('phone.')->group(function () {
     Route::get('/', [PhoneOrders::class, 'index'])->name('orders.index');
     Route::get('/sifarish/{order}', [PhoneOrders::class, 'show'])->whereNumber('order')->name('orders.show');
