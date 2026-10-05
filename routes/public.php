@@ -70,6 +70,10 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    // Does this code work, and what does it take off? Only what the customer
+    // is shown — the charge itself is worked out again when the order is sent.
+    Route::post('/promokod', [CheckoutController::class, 'promo'])
+        ->middleware('throttle:20,1')->name('checkout.promo');
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
 
     // Paying by transfer, and the receipt that follows it.

@@ -108,6 +108,9 @@
     @if($order->isRush())
       <div class="ph-line"><span>Təcili</span><b>{{ \App\Support\Price::format($order->rush_fee ?? 0) }}</b></div>
     @endif
+    @if($order->hasDiscount())
+      <div class="ph-line"><span>Promokod {{ $order->promo_code }}</span><b>−{{ \App\Support\Price::format($order->discountOff()) }}</b></div>
+    @endif
     <div class="ph-line ph-sum"><span>Cəmi</span><b>{{ \App\Support\Price::format($order->total()) }}</b></div>
   </div>
 

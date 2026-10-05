@@ -51,6 +51,13 @@
   .dlv-sum{ border:1px solid var(--line); border-radius:.9rem; padding:.75rem 1rem; display:flex; flex-direction:column; gap:.35rem; margin:1rem 0; }
   .dlv-sum div{ display:flex; justify-content:space-between; gap:1rem; color:var(--cocoa-soft); }
   .dlv-sum .total{ color:var(--cocoa); font-weight:700; font-size:1.0625rem; border-top:1px solid var(--line); padding-top:.45rem; margin-top:.1rem; }
+  .promo-row{ display:flex; gap:.5rem; align-items:stretch; }
+  .promo-row input{ flex:1; min-width:0; text-transform:uppercase; letter-spacing:.06em; }
+  .promo-row .btn{ flex:none; padding-inline:1.1rem; }
+  .promo-note{ margin:.4rem 0 0; font-size:.8125rem; line-height:1.5; }
+  .promo-note.ok{ color:#15803d; }
+  .promo-note.no{ color:#b91c1c; }
+  #sum-promo-row span:last-child{ color:#15803d; font-weight:600; }
 
   /* ---------- the delivery map, in the page's own colours ---------- */
   .map-tools{ display:flex; gap:.5rem; margin:.4rem 0 .6rem; }
@@ -93,7 +100,6 @@
    keep the total up to date. */
 (function(){
   var radios = Array.prototype.slice.call(document.querySelectorAll('input[name="delivery_method_id"]'));
-  if (!radios.length) return;
   var groups = Array.prototype.slice.call(document.querySelectorAll('.dlv-fields'));
   var sum = document.getElementById('dlv-sum');
   var items = parseFloat(sum.dataset.items) || 0;
@@ -104,6 +110,14 @@
   function fmt(v){ v = Math.round(v * 100) / 100; return (v % 1 === 0 ? v.toFixed(0) : v.toFixed(2)) + ' ₼'; }
   function update(){
     var picked = radios.filter(function(r){ return r.checked; })[0];
+    // With every delivery method switched off there are no radios at all, and
+    // the sum is just the goods less the code. The promo field still has to
+    // work: it used to be left dead because this whole block returned early.
+    if (!radios.length) {
+      var bare = items - discount + (rushBox && rushBox.checked ? rushFee : 0);
+      document.getElementById('sum-grand').textContent = bare > 0 ? fmt(bare) : '—';
+      return;
+    }
     var type = picked ? picked.dataset.type : null;
     groups.forEach(function(g){
       var on = g.dataset.for === type;
@@ -111,12 +125,66 @@
       g.querySelectorAll('input, select').forEach(function(el){ el.disabled = !on; el.required = on && !el.hasAttribute('data-optional'); });
     });
     var price = picked ? parseFloat(picked.dataset.price) || 0 : 0;
-    document.getElementById('sum-delivery').textContent = picked ? (price > 0 ? fmt(price) : @json(__('Pulsuz'))) : @json(__('seçilməyib'));
+    var dlvCell = document.getElementById('sum-delivery');
+    if (dlvCell) dlvCell.textContent = picked ? (price > 0 ? fmt(price) : @json(__('Pulsuz'))) : @json(__('seçilməyib'));
     var rush = rushBox && rushBox.checked ? rushFee : 0;
     if (rushRow) rushRow.hidden = rush === 0;
-    var total = items + price + rush;
+    var total = items - discount + price + rush;
     document.getElementById('sum-grand').textContent = total > 0 ? fmt(total) : '—';
   }
+
+  // ---- the promo code ----
+  var discount = 0;
+  var codeBox = document.getElementById('promo_code');
+  var apply = document.getElementById('promo-apply');
+  var note = document.getElementById('promo-note');
+  var promoRow = document.getElementById('sum-promo-row');
+  var promoSum = document.getElementById('sum-promo');
+  var promoLabel = document.getElementById('sum-promo-label');
+
+  function say(text, ok){
+    note.textContent = text;
+    note.className = 'promo-note ' + (ok ? 'ok' : 'no');
+    note.hidden = !text;
+  }
+
+  function check(){
+    var code = (codeBox.value || '').trim();
+    if (!code) { discount = 0; promoRow.hidden = true; say('', true); update(); return; }
+    apply.disabled = true;
+    fetch(@json(lroute('checkout.promo')), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json',
+                 // The form's own token: the customer layout carries no meta tag.
+                 'X-CSRF-TOKEN': (document.querySelector('input[name="_token"]') || {}).value || '' },
+      body: JSON.stringify({ code: code })
+    })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        apply.disabled = false;
+        if (d.ok) {
+          discount = parseFloat(d.discount) || 0;
+          codeBox.value = d.code;
+          promoLabel.textContent = @json(__('Endirim')) + ' · ' + d.code;
+          promoSum.textContent = '−' + fmt(discount);
+          promoRow.hidden = discount <= 0;
+          say(d.message, true);
+        } else {
+          discount = 0; promoRow.hidden = true;
+          say(d.message, false);
+        }
+        update();
+      })
+      .catch(function(){
+        apply.disabled = false;
+        say(@json(__('Yoxlamaq alınmadı, bir az sonra yenidən cəhd edin.')), false);
+      });
+  }
+
+  apply.addEventListener('click', check);
+  // Enter in the code box checks it instead of sending the whole order.
+  codeBox.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); check(); } });
+  if (codeBox.value.trim()) check();
   radios.forEach(function(r){ r.addEventListener('change', update); });
   if (rushBox) rushBox.addEventListener('change', update);
   update();
@@ -498,8 +566,23 @@
           <textarea id="note" name="note" rows="3">{{ old('note') }}</textarea>
         </div>
 
+        {{-- A promo code, if the customer has one. It is checked here only to
+             show him what it does; what he is charged is worked out again on
+             the server when the order is sent. --}}
+        <div class="field promo">
+          <label for="promo_code">{{ __('Promokod (varsa)') }}</label>
+          <div class="promo-row">
+            <input type="text" id="promo_code" name="promo_code" value="{{ old('promo_code') }}"
+                   autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="32"
+                   placeholder="{{ __('Kodu yazın') }}">
+            <button type="button" id="promo-apply" class="btn">{{ __('Yoxla') }}</button>
+          </div>
+          <p id="promo-note" class="promo-note" hidden></p>
+        </div>
+
         <div class="dlv-sum" id="dlv-sum" data-items="{{ $itemsTotal }}">
           <div><span>{{ __('Məhsullar') }}</span><span>{{ $itemsTotal > 0 ? \App\Support\Price::format($itemsTotal) : '—' }}</span></div>
+          <div id="sum-promo-row" hidden><span id="sum-promo-label">{{ __('Endirim') }}</span><span id="sum-promo">—</span></div>
           @if($methods->isNotEmpty())
             <div><span>{{ __('Çatdırılma') }}</span><span id="sum-delivery">{{ __('seçilməyib') }}</span></div>
           @endif

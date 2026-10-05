@@ -138,6 +138,10 @@ class OrderResource extends Resource
                             ->label('Məbləğ')
                             ->content(fn (?Order $record) => $record
                                 ? 'Məhsullar ' . Price::format($record->itemsTotal())
+                                    . ($record->hasDiscount()
+                                        ? ' − endirim ' . Price::format($record->discount)
+                                            . ' (' . $record->promo_code . ', ' . rtrim(rtrim(number_format((float) $record->promo_percent, 2, '.', ''), '0'), '.') . '%)'
+                                        : '')
                                     . ' + çatdırılma ' . Price::format($record->delivery_price ?? 0)
                                     . ($record->isRush() ? ' + təcili ' . Price::format($record->rush_fee) : '')
                                     . ' = ' . Price::format($record->total())

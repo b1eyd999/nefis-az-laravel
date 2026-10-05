@@ -52,6 +52,12 @@ class Order extends Model
         'delivery_lat',
         'delivery_lng',
         'locale',
+        // The promo code as it was typed, what it was worth then, and the
+        // manats it took off — all frozen, so the order still adds up after
+        // the code itself is edited or deleted.
+        'promo_code',
+        'promo_percent',
+        'discount',
         'materials_cost',
         // Which courier took it, and the message in the group he took it from.
         'courier_name',
@@ -77,6 +83,8 @@ class Order extends Model
         return [
             'delivery_price' => 'float',
             'rush_fee' => 'float',
+            'promo_percent' => 'float',
+            'discount' => 'float',
             'delivery_date' => 'date',
             'delivery_lat' => 'float',
             'delivery_lng' => 'float',
@@ -158,6 +166,17 @@ class Order extends Model
             }
         });
 
+        // A promo code is spent when the money arrives, not when the order
+        // is written down. Whichever way payment is confirmed — the gateway's
+        // own word, the owner's button, the phone admin — it passes here.
+        static::updated(function (Order $order) {
+            if ($order->wasChanged('payment_confirmed_at')
+                && $order->payment_confirmed_at !== null
+                && filled($order->promo_code)) {
+                \App\Models\PromoCode::where('code', $order->promo_code)->first()?->used();
+            }
+        });
+
         // Cancelling puts the boxes' materials back in stock; bringing an
         // order back from cancelled takes them again.
         static::updated(function (Order $order) {
@@ -207,9 +226,35 @@ class Order extends Model
         return (float) $this->items->sum(fn (OrderItem $i) => $i->unitPrice() * $i->quantity);
     }
 
+    /** The goods, before any code was taken off them. */
+    public function goodsTotal(): float
+    {
+        return $this->itemsTotal();
+    }
+
+    /**
+     * What came off the goods — never more than the goods themselves.
+     *
+     * The discount is frozen on the order, and the order can shrink after it:
+     * two boxes bought with a code worth all of them, then one line taken off
+     * in the admin. Unclamped, the total went negative and the shop was told
+     * to give back more than it ever took. The stored figure is left alone so
+     * the order still says what the code was worth on the day.
+     */
+    public function discountOff(): float
+    {
+        return round(min($this->itemsTotal(), (float) ($this->discount ?? 0)), 2);
+    }
+
     public function total(): float
     {
-        return $this->itemsTotal() + (float) ($this->delivery_price ?? 0) + (float) ($this->rush_fee ?? 0);
+        return round($this->itemsTotal() - $this->discountOff()
+            + (float) ($this->delivery_price ?? 0) + (float) ($this->rush_fee ?? 0), 2);
+    }
+
+    public function hasDiscount(): bool
+    {
+        return (float) ($this->discount ?? 0) > 0;
     }
 
     /** Everything the order was changed to after the customer had paid. */

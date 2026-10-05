@@ -223,10 +223,11 @@ class Accounting
             ->get();
 
         $rows = $orders->map(function (Order $o) {
-            // An order changed after it was paid for is worth its new figure,
-            // but money still owed either way has not moved yet — and a
-            // promise is not income here any more than it is anywhere else.
-            $goods = $o->itemsTotal() - $o->outstanding() + $o->owedBack();
+            // What was actually charged for the goods. A promo code came off
+            // them before the customer paid, so it never was income; and money
+            // still owed either way over a later change has not moved yet — a
+            // promise is no more income here than it is anywhere else.
+            $goods = $o->itemsTotal() - (float) ($o->discount ?? 0) - $o->outstanding() + $o->owedBack();
             $delivery = (float) ($o->delivery_price ?? 0);
             $chocolate = (float) $o->items->sum(fn ($i) => (float) ($i->chocolate_cost ?? 0) * $i->quantity);
             $materials = (float) ($o->materials_cost ?? 0);

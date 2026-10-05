@@ -100,6 +100,11 @@
             @if($order->isRush())
               <p style="font-size:.875rem; color:var(--flame-2); font-weight:600; margin-top:.35rem;">⚡ {{ __('Təcili hazırlansın') }} · {{ \App\Support\Price::format($order->rush_fee) }}</p>
             @endif
+            @if($order->hasDiscount())
+              <p style="font-size:.875rem; color:#15803d; font-weight:600; margin-top:.35rem;">
+                🎟 {{ __('Promokod') }} {{ $order->promo_code }} — −{{ \App\Support\Price::format($order->discount) }}
+              </p>
+            @endif
             @if($order->total() > 0)
               <p style="font-weight:700; margin-top:.35rem;">{{ __('Cəmi') }}: {{ \App\Support\Price::format($order->total()) }}</p>
             @endif

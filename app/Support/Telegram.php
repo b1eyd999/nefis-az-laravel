@@ -303,6 +303,11 @@ class Telegram
         }
 
         $lines[] = '';
+        if ($order->hasDiscount()) {
+            // Without this line the message does not add up: the items are
+            // printed at their own prices and the total is the smaller one.
+            $lines[] = '🎟 Promokod ' . $order->promo_code . ' — −' . Price::format($order->discountOff());
+        }
         $lines[] = '💰 <b>Cəmi: ' . Price::format($order->total()) . '</b>';
         if ($order->delivery_name) {
             $lines[] = '🚚 ' . e($order->delivery_name) . ', ' . Price::format((float) $order->delivery_price);

@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\PaymentAccount;
 use App\Models\Product;
+use App\Models\PromoCode;
 use App\Support\Accounting;
 use App\Support\Analytics;
 use App\Support\Cart;
@@ -45,6 +46,40 @@ class CheckoutController extends Controller
         return view('checkout.index', compact('items', 'itemsTotal', 'methods', 'rushFee'));
     }
 
+    /**
+     * The page asking whether a code works, before the order is sent. The
+     * answer is only what the customer is shown; what he is charged is worked
+     * out again in store().
+     */
+    public function promo(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $goods = self::goodsOf(Cart::items());
+
+        $promo = PromoCode::byCode($request->string('code')->toString());
+
+        if (! $promo) {
+            return response()->json(['ok' => false, 'message' => __('Belə promokod yoxdur.')]);
+        }
+
+        if ($why = $promo->refusal($goods)) {
+            return response()->json(['ok' => false, 'message' => $why]);
+        }
+
+        $discount = $promo->discountOn($goods);
+
+        if ($discount <= 0) {
+            return response()->json(['ok' => false, 'message' => __('Bu promokod bu səbətə heç nə tutmur.')]);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'code' => $promo->code,
+            'percent' => $promo->percent,
+            'discount' => $discount,
+            'message' => __(':percent% endirim tətbiq olundu', ['percent' => rtrim(rtrim(number_format($promo->percent, 2, '.', ''), '0'), '.')]),
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         // A cart can outlive the designs it was filled from.
@@ -65,7 +100,18 @@ class CheckoutController extends Controller
         $account = PaymentAccount::pick();
         $payable = $account !== null || Epoint::enabled();
 
+        // The code is read again here, whatever the page worked out: the page
+        // can be edited, the shop's own answer cannot.
+        $goods = self::goodsOf($items);
+        $promo = PromoCode::byCode($request->string('promo_code')->toString());
+        $discount = $promo && $promo->refusal((float) $goods) === null
+            ? $promo->discountOn((float) $goods)
+            : 0.0;
+
         $order = Order::create($delivery + [
+            'promo_code' => $discount > 0 ? $promo->code : null,
+            'promo_percent' => $discount > 0 ? $promo->percent : null,
+            'discount' => $discount,
             'user_id' => $request->user()->id,
             'locale' => \App\Support\Locale::current(),
             'status' => $payable ? 'awaiting_payment' : 'pending',
@@ -140,6 +186,9 @@ class CheckoutController extends Controller
             }
         }
 
+        // The code is not spent here: an order nobody pays for would eat the
+        // only use of it. Order::booted() counts it when the money lands.
+
         // The customers' videos go on to Yandex Disk once the page has been answered.
         if ($lives) {
             defer(function () use ($lives) {
@@ -191,11 +240,25 @@ class CheckoutController extends Controller
      * Returns the order's delivery columns, with the method's name and price
      * as they are now.
      */
+    /**
+     * What the goods on a basket come to — the same basket the order will
+     * hold. The quote and the charge must count the same things, or a design
+     * deleted while the customer shopped makes the two disagree.
+     */
+    private static function goodsOf(array $items): float
+    {
+        return (float) collect($items)
+            ->filter(fn (array $i) => Cart::isExtra($i) || Product::whereKey($i['product_id'] ?? null)->exists())
+            ->sum(fn (array $i) => Cart::unitPrice($i, Product::find($i['product_id'] ?? null)) * $i['quantity']);
+    }
+
     private function validateDelivery(Request $request): array
     {
         $common = [
             'contact_phone' => ['required', 'string', 'max:30'],
             'note' => ['nullable', 'string', 'max:500'],
+            // Anything but a string here used to take the checkout down with it.
+            'promo_code' => ['nullable', 'string', 'max:32'],
             // Nothing is ready before the shop has had its days. The page always
             // sends a day; without one the earliest possible is taken.
             'delivery_date' => ['nullable', 'date_format:Y-m-d',
