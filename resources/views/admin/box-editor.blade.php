@@ -441,6 +441,7 @@
            triangle cut out of a play button — still picks the layer, while a
            big empty area like the top of a fade lets it through. */
         entry.alpha = dilate(dilate(alpha, aw, ah, 8, 1, 0), aw, ah, 8, 0, 1);
+        entry.raw = alpha;   // undilated — for measuring what a layer covers
         entry.aw = aw; entry.ah = ah;
       } catch (e) {}
       render();
@@ -571,6 +572,48 @@
       }
     }
     return true;
+  }
+
+  /**
+   * How much of a photo window the layers above it actually hide.
+   *
+   * A design's artwork usually has a hole cut where the face goes. When it
+   * has not — and it happens — the customer picks his photograph, the box
+   * looks exactly as before, and nobody finds out until the order is printed.
+   * The editor can see it, so it says so: null when the window is clear,
+   * otherwise the percentage covered and the layers doing it.
+   */
+  function windowCover(index){
+    var ph = doc.photos[index];
+    if (!ph) return null;
+
+    var tops = [];
+    doc.layers.forEach(function(l, j){
+      if (l.placement !== 'above' || hiddenLayers[j]) return;
+      if (l.opacity != null && l.opacity < 85) return;
+      var e = images[l.url];
+      if (e && e.raw) tops.push({ l: l, b: boxOf('layer', l), e: e });
+    });
+    if (!tops.length) return null;
+
+    var N = 24, hit = 0, seen = 0, by = {};
+    for (var i = 0; i < N; i++) for (var j = 0; j < N; j++) {
+      var x = ph.x + ph.width * (i + 0.5) / N, y = ph.y + ph.height * (j + 0.5) / N;
+      seen++;
+      for (var k = 0; k < tops.length; k++) {
+        var o = tops[k], p = localPoint(o.b, x, y);
+        if (p.x < o.b.left || p.x > o.b.left + o.b.w || p.y < o.b.top || p.y > o.b.top + o.b.h) continue;
+        var ax = Math.floor((p.x - o.b.left) / o.b.w * o.e.aw);
+        var ay = Math.floor((p.y - o.b.top) / o.b.h * o.e.ah);
+        if (o.e.raw[clamp(ay, 0, o.e.ah - 1) * o.e.aw + clamp(ax, 0, o.e.aw - 1)] > 200) {
+          hit++; by[o.l.name || 'Qat'] = true; break;
+        }
+      }
+    }
+
+    var pct = Math.round(100 * hit / seen);
+
+    return pct < 70 ? null : { pct: pct, names: Object.keys(by) };
   }
 
   /* Topmost first: captions, layers over the photo, photo areas, layers under it. */
@@ -1299,6 +1342,7 @@
       h += '<h4>Sıra</h4><div class="actions">'
          + '<button class="btn small" data-act="front">Ən önə</button><button class="btn small" data-act="up">Bir irəli</button>'
          + '<button class="btn small" data-act="down">Bir geri</button><button class="btn small" data-act="back">Ən arxaya</button></div>';
+      h += '<p class="hint" style="margin-top:.35rem">Sıra yalnız öz qrupunda dəyişir. Qatı şəklin altına keçirmək üçün yuxarıdakı <b>Yeri</b> düyməsini — «Fotonun altında» — basın.</p>';
       h += '<h4>Ölçü</h4><div class="actions"><button class="btn small" data-act="natural">Orijinal ölçü</button><button class="btn small" data-act="fill">Bütün kətan</button>'
          + '<button class="btn small" data-act="center-h">Üfüqi mərkəz</button><button class="btn small" data-act="center-v">Şaquli mərkəz</button></div>';
       h += '<div class="actions"><button class="btn small" data-act="dup">Təkrarla</button><button class="btn small danger" data-act="del">Sil</button></div>';
@@ -1325,6 +1369,12 @@
     } else if (selection.kind === 'photo') {
       h += '<h3>Foto sahəsi</h3>';
       h += '<p class="hint">Müştərinin yüklədiyi şəkil bura düşür. "Fotonun üstündə" olan qatlar onu örtür.</p>';
+      var cov = windowCover(selection.index);
+      if (cov) {
+        h += '<p class="warn">⚠ Bu sahəni üstdəki qat ' + (cov.pct >= 95 ? 'tamamilə örtür' : 'çox hissəsini örtür (' + cov.pct + '%)')
+           + ' — müştərinin şəkli görünməyəcək.<br>Örtən: <b>' + esc(cov.names.join(', ')) + '</b>. '
+           + 'Həmin qatı seçib <b>Yeri → Fotonun altında</b> edin.</p>';
+      }
       h += '<div class="row one">' + field('Bura nə düşür', seg('fill', it.fill || 'photo', [['photo', 'Müştərinin şəkli'], ['sky', 'Ulduz xəritəsi'], ['map', 'Lokasiya xəritəsi']])) + '</div>';
       if (it.fill === 'map') {
         h += '<p class="hint">Müştəri yeri seçir — o yerin küçələri bura düşür. Yazılar (yerin adı, koordinatlar, tarix) ayrıca mətn sahələridir.</p>';
@@ -1579,6 +1629,8 @@
         kind = it.shape === 'heart' ? 'ürək'
           : (it.shape === 'home' ? 'ev'
           : (it.shape === 'ellipse' ? (sky || map ? 'dairə' : 'oval') : 'düzbucaqlı'));
+        var cv = windowCover(r.index);
+        if (cv) kind += ' · ⚠ üstdəki qat örtür';
       }
       else {
         thumb = it.kind === 'time' ? '⏱' : '<span style="font-family:&quot;' + esc(it.font_family) + '&quot;,Inter;font-weight:700">T</span>';
