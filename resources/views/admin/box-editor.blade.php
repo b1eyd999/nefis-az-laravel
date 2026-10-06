@@ -125,8 +125,20 @@
   .list li{ display:flex; align-items:center; gap:.5rem; padding:.35rem .45rem; border-radius:.5rem; border:1px solid transparent; font-size:13px; cursor:pointer; user-select:none; }
   .list li:hover{ background:var(--bg); }
   .list li.on{ background:#f3eefe; border-color:#ddd0fb; }
-  .list li.drop-before{ box-shadow:inset 0 2px 0 var(--accent); }
-  .list li.drop-after{ box-shadow:inset 0 -2px 0 var(--accent); }
+  .list li.drop-before{ box-shadow:inset 0 3px 0 var(--accent); }
+  .list li.drop-after{ box-shadow:inset 0 -3px 0 var(--accent); }
+  .list li.sep.drop-before, .list li.sep.drop-after{ background:#f3eefe; }
+  /* The grip says the row can be taken hold of, and is the handle a finger
+     uses — dragging anywhere else on a touch screen still scrolls the list. */
+  .list .grip{ flex:none; width:.85rem; text-align:center; color:#c7c7d1; font-size:13px; line-height:1; cursor:grab; touch-action:none; }
+  .list li:hover .grip{ color:var(--muted); }
+  .list li.dragging{ opacity:.35; }
+  body.dragging-row{ cursor:grabbing; }
+  body.dragging-row *{ cursor:grabbing !important; }
+  .drag-ghost{ position:fixed; z-index:60; pointer-events:none; display:flex; align-items:center; gap:.5rem;
+    padding:.35rem .45rem; border-radius:.5rem; border:1px solid var(--line); background:#fff; font-size:13px;
+    box-shadow:0 10px 26px rgba(0,0,0,.18); opacity:.96; }
+  .drag-ghost .mini{ display:none; }
   .list .thumb{ width:34px; height:34px; flex:none; border-radius:.35rem; border:1px solid var(--line); display:grid; place-items:center; overflow:hidden; font-size:15px;
     background:repeating-conic-gradient(#eef0f3 0 25%, #fff 0 50%) 0 0/10px 10px; }
   .list .thumb img{ max-width:100%; max-height:100%; }
@@ -1327,7 +1339,8 @@
          + '<kbd>Ctrl</kbd>+<kbd>Z</kbd> geri · <kbd>Ctrl</kbd>+<kbd>S</kbd> saxla<br>'
          + '<kbd>T</kbd> mətn · <kbd>V</kbd> vizual bələdçi · <kbd>Ctrl</kbd>+təkər zoom<br>'
          + 'Sürüşdürəndə <kbd>Alt</kbd> — yapışmadan, <kbd>Shift</kbd> — düz xətt üzrə<br>'
-         + 'Mətnə iki dəfə klik — birbaşa yaz</p>';
+         + 'Mətnə iki dəfə klik — birbaşa yaz<br>'
+         + 'Qatlar siyahısında sətri tutub dəyişdirin — «Müştərinin şəkli» xəttinin altına atılan qat fotonun altına keçir</p>';
       props.innerHTML = h;
       return;
     }
@@ -1615,7 +1628,7 @@
       var it = listOf(r.kind)[r.index];
       var on = selection && selection.kind === r.kind && selection.index === r.index;
       var thumb, name, kind;
-      if (r.kind === 'layer') { thumb = '<img src="' + esc(it.url) + '" alt="">'; name = it.name || 'Qat'; kind = it.placement === 'above' ? 'fotonun üstündə' : 'fotonun altında'; }
+      if (r.kind === 'layer') { thumb = '<img src="' + esc(it.url) + '" alt="" draggable="false">'; name = it.name || 'Qat'; kind = it.placement === 'above' ? 'fotonun üstündə' : 'fotonun altında'; }
       else if (r.kind === 'shape') {
         var SHAPE_NAMES = { rect: 'Düzbucaqlı', ellipse: 'Dairə', line: 'Xətt', triangle: 'Üçbucaq', heart: 'Ürək', star: 'Ulduz' };
         thumb = '◼';
@@ -1637,7 +1650,8 @@
         name = it.default_value || it.label || 'Mətn';
         kind = it.fixed ? '🔒 sabit — müştəri dəyişmir' : (it.kind === 'time' ? 'vaxt · ' : '') + (it.label || 'mətn');
       }
-      h += '<li draggable="true" data-kind="' + r.kind + '" data-index="' + r.index + '" class="' + (on ? 'on' : '') + (r.kind === 'layer' && hiddenLayers[r.index] ? ' hidden-layer' : '') + '">'
+      h += '<li data-kind="' + r.kind + '" data-index="' + r.index + '" class="' + (on ? 'on' : '') + (r.kind === 'layer' && hiddenLayers[r.index] ? ' hidden-layer' : '') + '">'
+         + '<span class="grip" title="Sürüşdürüb sıranı dəyişin">⠿</span>'
          + '<span class="thumb">' + thumb + '</span>'
          + '<span class="name">' + esc(name) + '<br><span class="kind">' + esc(kind) + '</span></span>';
       if (r.kind === 'layer') {
@@ -1663,32 +1677,20 @@
     if (li) select({ kind: li.dataset.kind, index: +li.dataset.index });
   });
 
-  /* Drag to reorder. A layer dropped across the photo row switches sides. */
-  var dragRow = null;
-  layerList.addEventListener('dragstart', function(e){
-    var li = e.target.closest('li[data-kind]');
-    if (!li) return;
-    dragRow = { kind: li.dataset.kind, index: +li.dataset.index };
-    e.dataTransfer.effectAllowed = 'move';
-  });
-  layerList.addEventListener('dragover', function(e){
-    if (!dragRow) return;
-    var li = e.target.closest('li');
-    layerList.querySelectorAll('.drop-before, .drop-after').forEach(function(n){ n.classList.remove('drop-before', 'drop-after'); });
-    if (!li) return;
-    e.preventDefault();
-    var r = li.getBoundingClientRect();
-    li.classList.add(e.clientY < r.top + r.height / 2 ? 'drop-before' : 'drop-after');
-  });
-  layerList.addEventListener('dragend', function(){ dragRow = null; layerList.querySelectorAll('.drop-before, .drop-after').forEach(function(n){ n.classList.remove('drop-before', 'drop-after'); }); });
-  layerList.addEventListener('drop', function(e){
-    if (!dragRow) return;
-    e.preventDefault();
-    var li = e.target.closest('li');
-    if (!li) return;
-    var before = e.clientY < li.getBoundingClientRect().top + li.getBoundingClientRect().height / 2;
-    var src = dragRow; dragRow = null;
+  /* ================================================================
+     Dragging a row
 
+     The list used to lean on the browser's own drag and drop. Nothing on a
+     row said it could be taken hold of, and under a finger it did nothing
+     at all, so the owner moved layers with the "Sıra" buttons — which only
+     reorder inside a group — and read the order as fixed. The same move is
+     done here with pointer events, so a mouse, a trackpad and a finger all
+     work, and the row follows the pointer while it is carried.
+     ================================================================ */
+
+  /* The move itself. Dropped across the customer's-photo line, a layer
+     changes sides; dropped on another layer, it lands beside it. */
+  function moveRow(src, li, before){
     if (src.kind === 'layer') {
       var moving = doc.layers[src.index];
       var placement, anchorIndex = null;
@@ -1698,6 +1700,8 @@
         var target = doc.layers[+li.dataset.index];
         placement = target.placement;
         anchorIndex = +li.dataset.index;
+      } else if (li.dataset.kind === 'shape') {
+        placement = (doc.shapes[+li.dataset.index] || {}).placement === 'below' ? 'below' : 'above';
       } else { placement = 'above'; }
       doc.layers.splice(src.index, 1);
       var insertAt;
@@ -1718,6 +1722,7 @@
       hiddenLayers = {};
       select({ kind: 'layer', index: insertAt });
       commit();
+
       return;
     }
 
@@ -1730,7 +1735,91 @@
     list.splice(at, 0, item);
     select({ kind: src.kind, index: at });
     commit();
+  }
+
+  var drag = null;
+  var swallowClick = false;
+
+  function clearMarks(){
+    layerList.querySelectorAll('.drop-before, .drop-after').forEach(function(n){
+      n.classList.remove('drop-before', 'drop-after');
+    });
+  }
+
+  /* The row the pointer is over, and which side of it — the separator row
+     counts, because that is where a layer changes sides. */
+  function rowAt(y){
+    var rows = layerList.children;
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i].getBoundingClientRect();
+      if (y < r.bottom) return { li: rows[i], before: y < r.top + r.height / 2 };
+    }
+
+    return rows.length ? { li: rows[rows.length - 1], before: false } : null;
+  }
+
+  layerList.addEventListener('pointerdown', function(e){
+    if (e.button) return;
+    if (e.target.closest('button')) return;      // the eye and the lock are not handles
+    var li = e.target.closest('li[data-kind]');
+    if (!li) return;
+    /* A finger scrolling the list must not carry a row off with it, so on a
+       touch screen only the grip picks one up. A mouse may take it anywhere. */
+    if (e.pointerType !== 'mouse' && !e.target.closest('.grip')) return;
+    drag = { kind: li.dataset.kind, index: +li.dataset.index, li: li,
+             x0: e.clientX, y0: e.clientY, on: false, id: e.pointerId, over: null };
+    try { layerList.setPointerCapture(e.pointerId); } catch (err) {}
   });
+
+  layerList.addEventListener('pointermove', function(e){
+    if (!drag || e.pointerId !== drag.id) return;
+    if (!drag.on) {
+      /* A few pixels of slop, so a click stays a click. */
+      if (Math.abs(e.clientY - drag.y0) < 5 && Math.abs(e.clientX - drag.x0) < 5) return;
+      var box = drag.li.getBoundingClientRect();
+      drag.on = true;
+      drag.hold = e.clientY - box.top;
+      drag.li.classList.add('dragging');
+      document.body.classList.add('dragging-row');
+      drag.ghost = drag.li.cloneNode(true);
+      drag.ghost.className = 'drag-ghost';
+      drag.ghost.style.width = box.width + 'px';
+      drag.ghost.style.left = box.left + 'px';
+      document.body.appendChild(drag.ghost);
+    }
+    e.preventDefault();
+    drag.ghost.style.top = (e.clientY - drag.hold) + 'px';
+
+    /* Carried to either end, the list keeps moving under the pointer. */
+    var pane = layerList.parentNode, pr = pane.getBoundingClientRect();
+    if (e.clientY < pr.top + 30) pane.scrollTop -= 12;
+    else if (e.clientY > pr.bottom - 30) pane.scrollTop += 12;
+
+    clearMarks();
+    drag.over = rowAt(e.clientY);
+    if (drag.over) drag.over.li.classList.add(drag.over.before ? 'drop-before' : 'drop-after');
+  });
+
+  function endDrag(drop){
+    if (!drag) return;
+    var d = drag; drag = null;
+    if (d.ghost) d.ghost.remove();
+    d.li.classList.remove('dragging');
+    document.body.classList.remove('dragging-row');
+    clearMarks();
+    if (!d.on) return;
+    swallowClick = true;                    // a carried row is not a clicked row
+    if (drop && d.over && d.over.li !== d.li) moveRow({ kind: d.kind, index: d.index }, d.over.li, d.over.before);
+  }
+
+  layerList.addEventListener('pointerup', function(e){ if (drag && e.pointerId === drag.id) endDrag(true); });
+  layerList.addEventListener('pointercancel', function(e){ if (drag && e.pointerId === drag.id) endDrag(false); });
+  layerList.addEventListener('click', function(e){
+    if (!swallowClick) return;
+    swallowClick = false;
+    e.stopPropagation();
+    e.preventDefault();
+  }, true);
 
   /* ================================================================
      Uploads

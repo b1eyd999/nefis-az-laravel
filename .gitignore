@@ -31,3 +31,4 @@ Thumbs.db
 # Local QA renders of admin pages
 /public/_qa_*.html
 /.claude
+.local-dev-account.md
