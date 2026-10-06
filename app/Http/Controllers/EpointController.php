@@ -143,8 +143,8 @@ class EpointController extends Controller
             'payment_confirmed_at' => now(),
             'payment_started_at' => null,
         ])->save();
-
-        defer(fn () => Telegram::paid($order));
+        // The order itself goes to Telegram from Order::booted(), now that
+        // the money is in — the same message for every way of confirming it.
 
         return response('ok', 200);
     }

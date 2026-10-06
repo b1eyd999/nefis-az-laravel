@@ -231,11 +231,19 @@ class Order extends Model
         // is written down. Whichever way payment is confirmed — the gateway's
         // own word, the owner's button, the phone admin — it passes here.
         static::updated(function (Order $order) {
-            if ($order->wasChanged('payment_confirmed_at')
-                && $order->payment_confirmed_at !== null
-                && filled($order->promo_code)) {
+            if (! $order->wasChanged('payment_confirmed_at') || $order->payment_confirmed_at === null) {
+                return;
+            }
+
+            if (filled($order->promo_code)) {
                 PromoCode::where('code', $order->promo_code)->first()?->used();
             }
+
+            /* And this is where the owner hears about the order at all. It is
+               not sent when the order is written down, because an unpaid one
+               is only a hope — the gateway's own word, the owner's button and
+               the phone admin all come through here. */
+            Telegram::order($order);
         });
 
         // Cancelling puts the boxes' materials back in stock; bringing an

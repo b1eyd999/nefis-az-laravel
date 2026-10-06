@@ -205,8 +205,16 @@ class CheckoutController extends Controller
         // Google counts the order on the next page, once.
         Analytics::purchase($order);
 
-        // …and the owner hears about it in Telegram, after the answer is out.
-        defer(fn () => Telegram::order($order));
+        /* …and the owner hears about it in Telegram — but only once the
+           money is in. An order written down is not an order: the customer
+           can close the payment page and never come back, and the owner was
+           starting boxes for orders nobody had paid for. When there is
+           nothing to pay through the site, there is nothing to wait for, so
+           it goes out now; otherwise Order::booted() sends it the moment
+           payment is confirmed, whichever way it is confirmed. */
+        if (! $payable) {
+            defer(fn () => Telegram::order($order));
+        }
 
         Cart::clear();
 

@@ -115,6 +115,45 @@ class TelegramTest extends TestCase
         });
     }
 
+    /**
+     * An order written down is not an order. The customer can close the
+     * payment page and never come back, and the owner was starting boxes for
+     * orders nobody had paid for.
+     */
+    public function test_an_unpaid_order_is_not_announced_until_the_money_is_in(): void
+    {
+        \App\Models\PaymentAccount::create([
+            'type' => \App\Models\PaymentAccount::CARD, 'label' => 'Kart', 'number' => '4169738111111111',
+        ]);
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true])]);
+
+        $order = $this->order();
+        $this->assertSame('awaiting_payment', $order->status);
+        Http::assertNothingSent();
+
+        // However it is confirmed — the gateway, the owner's button, the
+        // phone admin — the order goes out then, and says it is paid.
+        $order->forceFill(['status' => 'confirmed', 'payment_confirmed_at' => now()])->save();
+
+        Http::assertSent(function ($request) use ($order) {
+            $text = $request['text'];
+
+            return str_contains($text, 'Yeni sifariş #' . $order->id)
+                && str_contains($text, 'Ödənilib')
+                && str_contains($text, 'Love Story × 1');
+        });
+    }
+
+    public function test_an_order_the_site_never_asked_payment_for_is_announced_at_once(): void
+    {
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true])]);
+
+        $order = $this->order();
+
+        $this->assertSame('pending', $order->status);
+        Http::assertSent(fn ($request) => str_contains($request['text'], 'özünüz zəng edin'));
+    }
+
     public function test_nothing_is_sent_while_the_bot_is_not_set_up(): void
     {
         Http::fake();

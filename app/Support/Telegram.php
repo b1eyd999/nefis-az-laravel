@@ -309,6 +309,12 @@ class Telegram
             $lines[] = '🎟 Promokod ' . $order->promo_code . ' — −' . Price::format($order->discountOff());
         }
         $lines[] = '💰 <b>Cəmi: ' . Price::format($order->total()) . '</b>';
+        /* Said plainly, because this message is now only sent once the money
+           is in — except for an order the site never asked payment for, and
+           that one the owner has to ring about himself. */
+        $lines[] = $order->payment_confirmed_at
+            ? '✅ Ödənilib' . ($order->payment_method === 'card' ? ' (kart)' : '')
+            : '📞 Saytda ödəniş yoxdur — özünüz zəng edin';
         if ($order->delivery_name) {
             $lines[] = '🚚 ' . e($order->delivery_name) . ', '
                 . ($order->free_delivery ? 'pulsuz' : Price::format((float) $order->delivery_price));
@@ -469,13 +475,6 @@ class Telegram
 " . $what
             . "
 " . url('/admin/orders/' . $order->id . '/edit'));
-    }
-
-    /** Paid by card: the money is already in, nothing to check by hand. */
-    public static function paid(Order $order): void
-    {
-        self::send('💳 <b>Sifariş #' . $order->id . '</b> kartla ödənildi, ' . Price::format($order->total())
-            . "\n" . url('/admin/orders/' . $order->id . '/edit'));
     }
 
     /** The customer has paid the difference after the order was changed. */
