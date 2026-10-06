@@ -462,7 +462,7 @@
             </label>
             <input type="hidden" name="photo_frames[{{ $index }}]" class="photo-frame">
             <input type="file" class="photo-input" id="photo-input-{{ $index }}" name="photos[{{ $index }}]"
-                   accept="image/jpeg,image/png,image/webp" required style="display:none;">
+                   accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" required style="display:none;">
             <div class="range-row zoom-row" hidden>
               <span class="lbl">{{ __('Yaxınlaşdır') }}</span>
               <input type="range" class="zoom-range" min="50" max="500" value="100">
@@ -1697,6 +1697,23 @@
       var file = input.files && input.files[0];
       if (!file) return;
       label.textContent = file.name;
+
+      /* Every iPhone photographs in HEIC, and no browser will draw one into a
+         canvas — which is what the box, the cut-out and the preview all need.
+         It is turned into a JPEG here, before anything else touches it, and
+         comes back through this same handler as an ordinary picture. The
+         converted file is a .jpg, so this cannot run twice on one photo. */
+      if (window.NefisPhoto && window.NefisPhoto.isHeic && window.NefisPhoto.isHeic(file)
+          && typeof DataTransfer !== 'undefined') {
+        if (hint){ hint.hidden = false; hint.textContent = @json(__('Şəkil hazırlanır, bir neçə saniyə…')); }
+        window.NefisPhoto.toJpeg(file).then(function (jpeg) {
+          var box = new DataTransfer();
+          box.items.add(jpeg);
+          input.files = box.files;
+          input.dispatchEvent(new Event('change'));
+        }).catch(function(){ badFile(); });
+        return;
+      }
 
       /* A phone photo weighs ten to eighteen megabytes, and the shop refuses
          it only after the upload — with a refusal that comes back without

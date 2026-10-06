@@ -22,6 +22,88 @@
 (function () {
   'use strict';
 
+  /* The one format the browsers still refuse.
+   *
+   * Every iPhone photographs in HEIC. Safari shows one because the system
+   * decodes it, but no browser will draw it into a <canvas>, which is what
+   * every design on this site needs. The customer picks his picture, the box
+   * stays empty, and nothing tells him why.
+   *
+   * So it is turned into a JPEG first, here, in his own browser. The decoder
+   * is heavy (a wasm build of libheif), so it is fetched only when a HEIC
+   * actually turns up, and once per page. */
+  var HEIC_LIB = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+  var heicLib = null;
+
+  /** Does this file look like one, by what the picker said and by its name? */
+  function isHeic(file) {
+    if (!file) return false;
+    var type = (file.type || '').toLowerCase();
+    if (type.indexOf('heic') !== -1 || type.indexOf('heif') !== -1) return true;
+
+    return /\.(heic|heif)$/i.test(file.name || '');
+  }
+
+  /** And by what is actually inside it: the ISO box brand, bytes 8…12. */
+  function heicInside(file) {
+    if (!file || !file.slice) return Promise.resolve(false);
+
+    return file.slice(0, 16).arrayBuffer().then(function (buf) {
+      var v = new DataView(buf);
+      if (v.byteLength < 12 || v.getUint32(4) !== 0x66747970) return false;   // 'ftyp'
+      var brand = String.fromCharCode(v.getUint8(8), v.getUint8(9), v.getUint8(10), v.getUint8(11));
+
+      return ['heic', 'heix', 'heim', 'heis', 'hevc', 'hevx', 'mif1', 'msf1'].indexOf(brand) !== -1;
+    }).catch(function () { return false; });
+  }
+
+  function decoder() {
+    if (heicLib) return heicLib;
+
+    heicLib = new Promise(function (resolve, reject) {
+      if (window.heic2any) { resolve(window.heic2any); return; }
+      var s = document.createElement('script');
+      s.src = HEIC_LIB;
+      s.onload = function () {
+        window.heic2any ? resolve(window.heic2any) : reject(new Error('heic2any'));
+      };
+      s.onerror = function () { reject(new Error('heic2any')); };
+      document.head.appendChild(s);
+    });
+
+    // A failed fetch must not poison every later attempt.
+    heicLib.catch(function () { heicLib = null; });
+
+    return heicLib;
+  }
+
+  /** The same picture as a JPEG the browser can draw. */
+  function toJpeg(file) {
+    return decoder().then(function (convert) {
+      return convert({ blob: file, toType: 'image/jpeg', quality: 0.92 });
+    }).then(function (out) {
+      var blob = Array.isArray(out) ? out[0] : out;
+      var name = (file.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg';
+
+      return new File([blob], name, { type: 'image/jpeg', lastModified: Date.now() });
+    });
+  }
+
+  /**
+   * The file in a form the rest of the site can use: a HEIC comes back as a
+   * JPEG, everything else comes back untouched. If the conversion fails the
+   * original is handed back, so the caller's own error is what the customer
+   * reads rather than one of ours.
+   */
+  function usable(file) {
+    if (!file) return Promise.resolve(file);
+    if (isHeic(file)) return toJpeg(file).catch(function () { return file; });
+
+    return heicInside(file).then(function (yes) {
+      return yes ? toJpeg(file).catch(function () { return file; }) : file;
+    });
+  }
+
   /** Width and height straight out of the file's header, or null. */
   function headerSize(file) {
     return file.slice(0, 64 * 1024).arrayBuffer().then(function (buf) {
@@ -93,6 +175,23 @@
   function load(file, max) {
     max = max || 1600;
 
+    // An iPhone's own format, before anything tries to decode it.
+    if (isHeic(file)) {
+      return toJpeg(file).then(function (jpeg) { return decode(jpeg, max); });
+    }
+
+    return decode(file, max).catch(function (e) {
+      /* Nothing could open it. One explanation is left: a HEIC the picker
+         described as something else, or did not describe at all. */
+      return heicInside(file).then(function (yes) {
+        if (!yes) throw e;
+
+        return toJpeg(file).then(function (jpeg) { return decode(jpeg, max); });
+      });
+    });
+  }
+
+  function decode(file, max) {
     if (!file || typeof window.createImageBitmap !== 'function' || !file.slice || !File.prototype.arrayBuffer) {
       return viaImage(file, max);
     }
@@ -122,5 +221,11 @@
     });
   }
 
-  window.NefisPhoto = { load: load, headerSize: headerSize };
+  window.NefisPhoto = {
+    load: load,
+    headerSize: headerSize,
+    isHeic: isHeic,
+    toJpeg: toJpeg,
+    usable: usable,
+  };
 })();
