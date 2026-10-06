@@ -38,6 +38,37 @@
     box-shadow:0 8px 18px -10px var(--flame-shadow); }
   .rush-pick:has(input:focus-visible){ outline:2px solid var(--flame); outline-offset:2px; }
 
+  /* The station picker.
+
+     A <select> draws its own list and nothing can be done to it: in the
+     middle of a cream form the browser put up a grey system column. The
+     value still travels in an ordinary field, so the form and the server
+     are untouched; what the customer looks at is ours. */
+  .pick{ position:relative; }
+  .pick-value{ position:absolute; opacity:0; width:0; height:0; padding:0; border:0; pointer-events:none; }
+  .pick-btn{ display:flex; align-items:center; gap:.75rem; width:100%; text-align:start;
+    padding:.8rem 1rem; border:1px solid var(--line); border-radius:.7rem; background:var(--paper); color:var(--cocoa);
+    transition:border-color .2s, box-shadow .2s; }
+  .pick-btn:hover{ border-color:var(--gold); }
+  .pick-btn:focus-visible{ outline:none; border-color:var(--gold); box-shadow:0 0 0 3px var(--ring); }
+  .pick-text{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pick.empty .pick-text{ color:var(--cocoa-soft); }
+  .pick-chev{ flex:none; color:var(--gold-deep); transition:transform .2s; }
+  .pick.open .pick-btn{ border-color:var(--gold); }
+  .pick.open .pick-chev{ transform:rotate(180deg); }
+  .pick-panel{ position:absolute; z-index:30; left:0; right:0; top:calc(100% + .4rem);
+    background:var(--paper); border:1px solid var(--line); border-radius:.9rem; overflow:hidden;
+    box-shadow:0 18px 40px -24px rgba(60,32,12,.55); }
+  .pick-search{ display:flex; align-items:center; gap:.5rem; padding:.5rem .8rem; border-bottom:1px solid var(--line); color:var(--cocoa-soft); }
+  .pick-search input{ border:0; padding:.2rem 0; background:transparent; border-radius:0; }
+  .pick-search input:focus{ border:0; }
+  .pick-list{ max-height:15rem; overflow:auto; padding:.35rem; }
+  .pick-list li{ padding:.6rem .75rem; border-radius:.55rem; cursor:pointer; font-size:.9375rem; color:var(--cocoa-soft); }
+  .pick-list li:hover, .pick-list li.cursor{ background:var(--cream-2); color:var(--cocoa); }
+  .pick-list li.on{ background:var(--cream-2); color:var(--cocoa); font-weight:700; box-shadow:inset 0 0 0 1px var(--gold); }
+  .pick-list li[hidden]{ display:none; }
+  .pick-none{ padding:.8rem; margin:0; font-size:.875rem; color:var(--cocoa-soft); text-align:center; }
+
   .dlv-grid{ display:grid; gap:.6rem; margin-top:.4rem; }
   .dlv-card{ position:relative; display:flex; flex-direction:column; gap:.2rem; padding:.8rem 1rem; border:1.5px solid var(--line); border-radius:.9rem;
     background:var(--paper); cursor:pointer; margin:0; font-weight:400; transition:border-color .15s, box-shadow .15s; }
@@ -287,6 +318,103 @@
     });
   });
 
+  /* The station picker: open, search, choose. The value lives in the field
+     the form sends, so everything downstream — validation, old(), the
+     server — carries on as though a <select> were still there. */
+  (function(){
+    var pick = document.getElementById('metro-pick');
+    if (!pick) return;
+    var btn = pick.querySelector('.pick-btn');
+    var text = pick.querySelector('.pick-text');
+    var panel = pick.querySelector('.pick-panel');
+    var value = pick.querySelector('.pick-value');
+    var q = pick.querySelector('.pick-q');
+    var list = pick.querySelector('.pick-list');
+    var none = pick.querySelector('.pick-none');
+    var items = Array.prototype.slice.call(list.children);
+
+    /* Nobody types ə, ı or ş into a search box on a phone, and a plain
+       toLowerCase() turns İ into something that matches nothing. Both the
+       station and what was typed are folded to plain letters first, so
+       "iceri" finds İçərişəhər and "ceferc" finds Cəfər Cabbarlı. */
+    function fold(t){
+      /* Take the marks off first: lowercasing İ leaves a combining dot
+         behind, and that one invisible character is enough to miss. ə and
+         ı have no decomposition of their own, so they are named here. */
+      return t.normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .replace(/ə/g, 'e').replace(/Ə/g, 'e').replace(/ı/g, 'i')
+        .toLowerCase();
+    }
+    items.forEach(function(li){ li.dataset.fold = fold(li.textContent); });
+
+    function filter(s){
+      s = fold(s.trim());
+      var seen = 0;
+      items.forEach(function(li){
+        var hit = !s || li.dataset.fold.indexOf(s) >= 0;
+        li.hidden = !hit;
+        if (hit) seen++;
+      });
+      none.hidden = seen > 0;
+    }
+
+    function open(on){
+      pick.classList.toggle('open', on);
+      panel.hidden = !on;
+      btn.setAttribute('aria-expanded', on ? 'true' : 'false');
+      if (!on) return;
+      q.value = '';
+      filter('');
+      items.forEach(function(li){ li.classList.remove('cursor'); });
+      var cur = list.querySelector('.on');
+      if (cur) cur.scrollIntoView({ block: 'nearest' });
+      /* Not on a phone: the keyboard would come up over the very list the
+         customer opened, and twenty-six stations are quicker to scroll than
+         to type. */
+      if (window.matchMedia && window.matchMedia('(pointer: fine)').matches) q.focus();
+    }
+
+    function choose(li){
+      items.forEach(function(x){ x.classList.remove('on'); x.removeAttribute('aria-selected'); });
+      li.classList.add('on');
+      li.setAttribute('aria-selected', 'true');
+      value.value = li.dataset.v;
+      text.textContent = li.dataset.v;
+      pick.classList.remove('empty');
+      open(false);
+      btn.focus();
+    }
+
+    btn.addEventListener('click', function(){ open(panel.hidden); });
+    list.addEventListener('click', function(e){
+      var li = e.target.closest('li');
+      if (li) choose(li);
+    });
+    q.addEventListener('input', function(){ filter(q.value); });
+    document.addEventListener('click', function(e){ if (!pick.contains(e.target)) open(false); });
+
+    pick.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && !panel.hidden) { open(false); btn.focus(); return; }
+      if (panel.hidden) {
+        if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(true); }
+
+        return;
+      }
+      var shown = items.filter(function(li){ return !li.hidden; });
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        var at = shown.indexOf(list.querySelector('.cursor'));
+        at = e.key === 'ArrowDown' ? Math.min(shown.length - 1, at + 1) : Math.max(0, at < 0 ? 0 : at - 1);
+        shown.forEach(function(li){ li.classList.remove('cursor'); });
+        if (shown[at]) { shown[at].classList.add('cursor'); shown[at].scrollIntoView({ block: 'nearest' }); }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        var one = list.querySelector('.cursor') || shown[0];
+        if (one) choose(one);
+      }
+    });
+  })();
+
   var form = document.getElementById('checkout-form');
   var sendError = document.getElementById('send-error');
 
@@ -504,13 +632,32 @@
           @if($metro)
             <div class="dlv-fields" data-for="metro" hidden>
               <div class="field">
-                <label for="metro_station">{{ __('Metro stansiyası') }}</label>
-                <select id="metro_station" name="metro_station">
-                  <option value="">{{ __('Stansiyanı seçin') }}</option>
-                  @foreach($metro->stations() as $station)
-                    <option value="{{ $station }}" @selected(old('metro_station') === $station)>{{ $station }}</option>
-                  @endforeach
-                </select>
+                <label id="metro-label" for="metro-btn">{{ __('Metro stansiyası') }}</label>
+                @php $chosen = old('metro_station'); @endphp
+                <div class="pick @unless($chosen) empty @endunless" id="metro-pick">
+                  {{-- What is actually sent. Kept a real field, not a hidden
+                       one, so the browser still refuses an empty form. --}}
+                  <input class="pick-value" type="text" id="metro_station" name="metro_station"
+                         value="{{ $chosen }}" autocomplete="off" tabindex="-1" aria-hidden="true">
+                  <button type="button" class="pick-btn" id="metro-btn" aria-haspopup="listbox" aria-expanded="false">
+                    <span class="pick-text">{{ $chosen ?: __('Stansiyanı seçin') }}</span>
+                    <svg class="pick-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                  <div class="pick-panel" hidden>
+                    <div class="pick-search">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+                      <input type="search" class="pick-q" placeholder="{{ __('Stansiya axtarın…') }}" autocomplete="off" data-optional>
+                    </div>
+                    <ul class="pick-list" role="listbox" aria-labelledby="metro-label">
+                      @foreach($metro->stations() as $station)
+                        <li role="option" data-v="{{ $station }}"
+                            @class(['on' => $chosen === $station])
+                            @if($chosen === $station) aria-selected="true" @endif>{{ $station }}</li>
+                      @endforeach
+                    </ul>
+                    <p class="pick-none" hidden>{{ __('Belə stansiya yoxdur') }}</p>
+                  </div>
+                </div>
               </div>
             </div>
           @endif

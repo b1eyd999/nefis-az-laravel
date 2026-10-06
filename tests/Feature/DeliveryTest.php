@@ -190,6 +190,64 @@ class DeliveryTest extends TestCase
         $this->actingAs($this->customer)->get(route('orders.index'))->assertSee('Metro: Gənclik')->assertSee('Cəmi: 6 ₼', false);
     }
 
+    /**
+     * A <select> draws its own list and nothing can be done to it, so the
+     * station is picked from a list of ours. What the form sends is unchanged.
+     */
+    public function test_the_stations_are_offered_as_a_list_of_our_own(): void
+    {
+        $this->fillCart();
+        $metro = $this->method(DeliveryMethod::METRO);
+        $metro->update(['options' => ['stations' => ['Gənclik', 'Xocəsən']]]);
+
+        $page = $this->actingAs($this->customer)->get(route('checkout.index'))->assertOk();
+        $page->assertSee('id="metro-pick"', false);
+        $page->assertSee('data-v="Gənclik"', false);
+        $page->assertSee('data-v="Xocəsən"', false);
+        // The value still travels in a field the browser can refuse.
+        $page->assertSee('class="pick-value" type="text" id="metro_station" name="metro_station"', false);
+        $page->assertDontSee('<select id="metro_station"', false);
+    }
+
+    /** The owner's own list, and only it, reaches the customer. */
+    public function test_the_owner_edits_the_stations_in_the_admin(): void
+    {
+        $this->fillCart();
+        $metro = $this->method(DeliveryMethod::METRO);
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(\App\Filament\Resources\DeliveryMethodResource\Pages\EditDeliveryMethod::class,
+            ['record' => $metro->getRouteKey()])
+            ->fillForm(['options' => ['stations' => "Gənclik
+Xocəsən
+
+  28 May  "]])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(['Gənclik', 'Xocəsən', '28 May'], $metro->fresh()->stations());
+
+        $page = $this->actingAs($this->customer)->get(route('checkout.index'))->assertOk();
+        $page->assertSee('data-v="28 May"', false);
+        $page->assertDontSee('data-v="Nizami"', false);
+
+        // And a station he took off the list is no longer accepted.
+        $this->actingAs($this->customer)->post(route('checkout.store'), [
+            'delivery_method_id' => $metro->id, 'contact_phone' => '1', 'metro_station' => 'Nizami',
+        ])->assertSessionHasErrors('metro_station');
+    }
+
+    /** The list is also where it is edited, said on the table itself. */
+    public function test_the_admin_table_says_where_the_stations_live(): void
+    {
+        $this->method(DeliveryMethod::METRO);
+
+        $this->actingAs(User::factory()->create(['is_admin' => true]))->get('/admin/delivery-methods')
+            ->assertOk()
+            ->assertSee('stansiya');
+    }
+
     public function test_a_switched_off_way_is_neither_shown_nor_accepted(): void
     {
         $this->fillCart();

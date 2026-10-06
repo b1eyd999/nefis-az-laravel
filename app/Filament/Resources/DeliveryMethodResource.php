@@ -65,12 +65,25 @@ class DeliveryMethodResource extends Resource
                             ->visible(fn (?DeliveryMethod $record) => $record?->type === DeliveryMethod::DOOR)
                             ->columnSpanFull(),
                         Forms\Components\Textarea::make('options.stations')
-                            ->label('Metro stansiyaları (hər sətirdə bir)')
-                            ->helperText('Müştəri yalnız bu siyahıdan seçə bilər.')
-                            ->rows(12)
+                            ->label('Metro stansiyaları')
+                            ->helperText('Hər sətirdə bir stansiya. Müştəri sifariş səhifəsində yalnız bunları görür və axtara bilir; burada hansı sıradadırsa, orada da o sıradadır.')
+                            ->rows(14)
                             ->visible(fn (Get $get, ?DeliveryMethod $record) => $record?->type === DeliveryMethod::METRO)
                             ->formatStateUsing(fn ($state) => is_array($state) ? implode("\n", $state) : $state)
                             ->dehydrateStateUsing(fn ($state) => array_values(array_filter(array_map('trim', preg_split('/\R/', (string) $state)))))
+                            // Edited down to nothing, the shop would offer no
+                            // station at all; the list it came with is one tap
+                            // away, and nothing is written until "Saxla".
+                            ->hintAction(
+                                Forms\Components\Actions\Action::make('defaultStations')
+                                    ->label('Bakı metrosunun siyahısını qaytar')
+                                    ->icon('heroicon-m-arrow-path')
+                                    ->requiresConfirmation()
+                                    ->modalHeading('Siyahı əvəz olunsun?')
+                                    ->modalDescription('Yazdıqlarınızın yerinə Bakı metrosunun '
+                                        . count(DeliveryMethod::BAKU_METRO) . ' stansiyası yazılacaq. «Saxla» deməyincə dəyişiklik yadda qalmır.')
+                                    ->action(fn (Forms\Set $set) => $set('options.stations', implode("\n", DeliveryMethod::BAKU_METRO)))
+                            )
                             ->columnSpanFull(),
                     ])->columns(2),
                 \App\Filament\Forms\Translations::section(['name' => 'Ad', 'description' => 'Təsvir'], ['description']),
@@ -89,6 +102,15 @@ class DeliveryMethodResource extends Resource
                     ->label('Növ')
                     ->badge()
                     ->formatStateUsing(fn (string $state) => DeliveryMethod::TYPES[$state] ?? $state),
+                /* Where the stations are edited was written down nowhere, so
+                   the owner could not find it. The row says it. */
+                Tables\Columns\TextColumn::make('stations')
+                    ->label('Stansiyalar')
+                    ->state(fn (DeliveryMethod $r) => $r->type === DeliveryMethod::METRO
+                        ? count($r->stations()) . ' stansiya — «Redaktə et»'
+                        : '—')
+                    ->color(fn (DeliveryMethod $r) => $r->type === DeliveryMethod::METRO ? 'primary' : 'gray')
+                    ->size('sm'),
                 // Priced right here, without opening each one.
                 Tables\Columns\TextInputColumn::make('price')
                     ->label('Qiymət (₼)')
