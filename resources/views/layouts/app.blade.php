@@ -324,6 +324,16 @@
            gateway and an ordinary customer all look for it here. --}}
       <div class="footer-legal">{{ implode(' · ', $legal) }}</div>
     @endif
+    {{-- The cards the shop takes. People look for these at the very bottom of
+         a shop before they get out their wallet, so that is where they are:
+         the acceptance marks themselves, on white, the way both schemes ask
+         for them. The payment page itself is ePoint's — no card number ever
+         reaches this site. --}}
+    <div class="footer-pay">
+      <span>{{ __('Təhlükəsiz ödəniş') }}</span>
+      <img src="{{ \App\Support\Assets::url('images/pay/visa.svg') }}" alt="Visa" width="56" height="18" loading="lazy" decoding="async">
+      <img src="{{ \App\Support\Assets::url('images/pay/mastercard.svg') }}" alt="Mastercard" width="30" height="23" loading="lazy" decoding="async">
+    </div>
     <div class="footer-bottom">
       <span>© {{ date('Y') }} Nefis Şokolad Evi. {{ __('Bütün hüquqlar qorunur.') }}
         {{ __('Dizaynlar müəllif hüququ ilə qorunur.') }}</span>

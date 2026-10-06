@@ -1311,3 +1311,14 @@
   background:none; border:0; padding:.2rem .35rem; }
 .pwa-x:hover{ color:var(--cocoa); }
 @media (prefers-reduced-motion: reduce){ .pwa-bar{ transition:none; } }
+
+/* ---------- the cards we take ---------- */
+/* Acceptance marks, each on its own white chip: the band behind them is cream
+   in the light and dark brown at night, and a mark that changes colour with
+   the theme is no longer the mark. */
+.footer-pay{ display:flex; align-items:center; justify-content:center; flex-wrap:wrap;
+  gap:.6rem; padding:1.1rem 0 .2rem; }
+.footer-pay span{ font-size:.8125rem; color:var(--on-band-soft); margin-right:.15rem; }
+.footer-pay img{ display:block; height:1.6rem; width:auto; padding:.32rem .5rem;
+  background:#fff; border-radius:.4rem; box-shadow:0 1px 3px rgba(0,0,0,.12); }
+@media (max-width:480px){ .footer-pay{ gap:.5rem; } .footer-pay span{ width:100%; text-align:center; margin:0 0 .15rem; } }
