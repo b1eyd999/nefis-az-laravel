@@ -337,6 +337,91 @@
   var visualUrl = @json($design['visual']);
   var autoBoxColor = @json($design['box_color_auto']);
 
+  /* ================================================================
+     One order for the whole design
+
+     A box used to be drawn in six fixed bands around the customer's
+     photograph, and "Yeri" was the only control there was — so artwork could
+     never sit between two faces. Every row now carries a `z`, and the box is
+     drawn from the bottom of that one stack to the top.
+
+     KIND_RANK and the tie-break below must read the same as
+     App\Support\DesignStack::KINDS on the server. Nothing can test that the
+     two agree, so they are the thing to re-read after a change here.
+     ================================================================ */
+  var KIND_RANK = { layer: 0, shape: 1, photo: 2, text: 3 };
+
+  /* The old six bands as a number — what a row with no place of its own is
+     ranked by. Never change it: it is how a design saved before the stack
+     existed, and a template kept on the shelf, come back looking the same. */
+  function bandZ(kind, it, i){
+    var rank = kind === 'layer' ? (it.placement === 'below' ? 0 : 4)
+      : kind === 'shape' ? (it.placement === 'below' ? 1 : 3)
+      : kind === 'photo' ? 2 : 5;
+
+    return rank * 1000 + i;
+  }
+
+  function stackBottomUp(){
+    var rows = [];
+    ['layer', 'shape', 'photo', 'text'].forEach(function(kind){
+      listOf(kind).forEach(function(it, i){
+        rows.push({ kind: kind, index: i, z: it.z == null ? bandZ(kind, it, i) : +it.z });
+      });
+    });
+    rows.sort(function(a, b){
+      return (a.z - b.z) || (KIND_RANK[a.kind] - KIND_RANK[b.kind]) || (a.index - b.index);
+    });
+
+    return rows;
+  }
+
+  /* Dense 0…n-1 over the whole design, so a half number from a drag — "just
+     above that one" — becomes a place of its own. */
+  function renumber(){
+    stackBottomUp().forEach(function(r, z){ listOf(r.kind)[r.index].z = z; });
+  }
+
+  /* Everything that arrives without a place gets the one the old bands gave
+     it. Called before the first snapshot, so opening an old box does not
+     show "Saxlanılmayıb" on a design nobody has touched. */
+  function normaliseZ(){ renumber(); }
+
+  function topZ(){
+    var top = -1;
+    ['layer', 'shape', 'photo', 'text'].forEach(function(kind){
+      listOf(kind).forEach(function(it){ if (it.z != null && +it.z > top) top = +it.z; });
+    });
+
+    return top;
+  }
+
+  /* The lowest and highest window, for the two one-click shortcuts that stand
+     in for the old "Yeri". */
+  function photoFloor(){
+    var z = null;
+    doc.photos.forEach(function(p){ if (p.z != null && (z === null || +p.z < z)) z = +p.z; });
+
+    return z;
+  }
+  /* The old below/above, worked out from the stack. The payload still
+     carries it: a server rolled back to before the stack reads it, and so
+     does everything in the shop that has not learned about z. */
+  function placeFor(z){
+    var floor = photoFloor();
+
+    return floor !== null && +z < floor ? 'below' : 'above';
+  }
+
+  function photoCeiling(){
+    var z = null;
+    doc.photos.forEach(function(p){ if (p.z != null && (z === null || +p.z > z)) z = +p.z; });
+
+    return z;
+  }
+
+  normaliseZ();
+
   /* Editor-only state, never saved. */
   var images = {};        // url -> {img, alpha, aw, ah}
   var hiddenLayers = {};  // layer index -> true (eye toggle)
@@ -595,31 +680,53 @@
    * The editor can see it, so it says so: null when the window is clear,
    * otherwise the percentage covered and the layers doing it.
    */
-  function windowCover(index){
-    var ph = doc.photos[index];
-    if (!ph) return null;
+  var coverMemo = {};
+  function coverOf(kind, index){
+    var key = kind + ':' + index;
+    if (coverMemo[key] !== undefined) return coverMemo[key];
 
+    return (coverMemo[key] = measureCover(kind, index));
+  }
+
+  function measureCover(kind, index){
+    var me = listOf(kind)[index];
+    if (!me || me.z == null) return null;
+    var b0 = boxOf(kind, me);
+
+    /* Everything standing higher in the stack. A caption that has slid under
+       a solid picture prints empty, which is the new way to lose work that
+       free ordering makes possible — so captions are checked too. */
     var tops = [];
-    doc.layers.forEach(function(l, j){
-      if (l.placement !== 'above' || hiddenLayers[j]) return;
-      if (l.opacity != null && l.opacity < 85) return;
-      var e = images[l.url];
-      if (e && e.raw) tops.push({ l: l, b: boxOf('layer', l), e: e });
+    stackBottomUp().forEach(function(r){
+      if (+listOf(r.kind)[r.index].z <= +me.z) return;
+      var it = listOf(r.kind)[r.index];
+      if (r.kind === 'layer') {
+        if (hiddenLayers[r.index]) return;
+        if (it.opacity != null && it.opacity < 85) return;
+        var e = images[it.url];
+        if (e && e.raw) tops.push({ name: it.name || 'Qat', b: boxOf('layer', it), e: e });
+      } else if (r.kind === 'shape') {
+        // A shape has no alpha map, so a filled one counts solid everywhere
+        // inside its box. It over-warns on a heart; over-warning beats silence.
+        if (!it.fill || (it.opacity != null && it.opacity < 85)) return;
+        tops.push({ name: 'Forma', b: boxOf('shape', it), e: null });
+      }
     });
     if (!tops.length) return null;
 
     var N = 24, hit = 0, seen = 0, by = {};
     for (var i = 0; i < N; i++) for (var j = 0; j < N; j++) {
-      var x = ph.x + ph.width * (i + 0.5) / N, y = ph.y + ph.height * (j + 0.5) / N;
+      var x = b0.left + b0.w * (i + 0.5) / N, y = b0.top + b0.h * (j + 0.5) / N;
       seen++;
       for (var k = 0; k < tops.length; k++) {
         var o = tops[k], p = localPoint(o.b, x, y);
         if (p.x < o.b.left || p.x > o.b.left + o.b.w || p.y < o.b.top || p.y > o.b.top + o.b.h) continue;
-        var ax = Math.floor((p.x - o.b.left) / o.b.w * o.e.aw);
-        var ay = Math.floor((p.y - o.b.top) / o.b.h * o.e.ah);
-        if (o.e.raw[clamp(ay, 0, o.e.ah - 1) * o.e.aw + clamp(ax, 0, o.e.aw - 1)] > 200) {
-          hit++; by[o.l.name || 'Qat'] = true; break;
+        if (o.e) {
+          var ax = Math.floor((p.x - o.b.left) / o.b.w * o.e.aw);
+          var ay = Math.floor((p.y - o.b.top) / o.b.h * o.e.ah);
+          if (o.e.raw[clamp(ay, 0, o.e.ah - 1) * o.e.aw + clamp(ax, 0, o.e.aw - 1)] <= 200) continue;
         }
+        hit++; by[o.name] = true; break;
       }
     }
 
@@ -628,16 +735,9 @@
     return pct < 70 ? null : { pct: pct, names: Object.keys(by) };
   }
 
-  /* Topmost first: captions, layers over the photo, photo areas, layers under it. */
+  /* Topmost first — what a click meets, and the order of the layer list. */
   function stackTopDown(){
-    var out = [], i;
-    for (i = doc.texts.length - 1; i >= 0; i--) out.push({ kind: 'text', index: i });
-    for (i = doc.layers.length - 1; i >= 0; i--) if (doc.layers[i].placement === 'above') out.push({ kind: 'layer', index: i });
-    for (i = doc.shapes.length - 1; i >= 0; i--) if (doc.shapes[i].placement === 'above') out.push({ kind: 'shape', index: i });
-    for (i = doc.photos.length - 1; i >= 0; i--) out.push({ kind: 'photo', index: i });
-    for (i = doc.shapes.length - 1; i >= 0; i--) if (doc.shapes[i].placement === 'below') out.push({ kind: 'shape', index: i });
-    for (i = doc.layers.length - 1; i >= 0; i--) if (doc.layers[i].placement === 'below') out.push({ kind: 'layer', index: i });
-    return out;
+    return stackBottomUp().reverse();
   }
 
   /* Anything on the design can be pinned down, not only an uploaded picture:
@@ -710,7 +810,7 @@
       box: { x: -p.width / 2, y: -p.height / 2, w: p.width, h: p.height },
       /* The streets arrive after the frame is drawn; when they do, the whole
          canvas is drawn again rather than patched. */
-      onReady: function(){ draw(); }
+      onReady: function(){ render(); }
     });
     ctx.restore();
 
@@ -752,18 +852,20 @@
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, W, H);
 
-    doc.layers.forEach(function(l, i){
-      if (l.placement === 'below' && !hiddenLayers[i]) { var e = loadImage(l.url); NefisBox.drawLayer(ctx, e && e.img, l); }
-    });
-    doc.shapes.forEach(function(s){ if (s.placement === 'below') NefisBox.drawShape(ctx, renderShape(s)); });
-    doc.photos.forEach(drawPhotoArea);
-    doc.shapes.forEach(function(s){ if (s.placement !== 'below') NefisBox.drawShape(ctx, renderShape(s)); });
-    doc.layers.forEach(function(l, i){
-      if (l.placement === 'above' && !hiddenLayers[i]) { var e = loadImage(l.url); NefisBox.drawLayer(ctx, e && e.img, l); }
-    });
-    doc.texts.forEach(function(t){
-      // The caption being edited is drawn too: the inline editor sits over it, invisible.
-      NefisBox.drawText(ctx, t.default_value || t.placeholder || '', renderText(t));
+    stackBottomUp().forEach(function(r){
+      var it = listOf(r.kind)[r.index];
+      if (r.kind === 'layer') {
+        // loadImage stays in here: its onload is what redraws a late picture.
+        var e = loadImage(it.url);
+        if (!hiddenLayers[r.index]) NefisBox.drawLayer(ctx, e && e.img, it);
+      } else if (r.kind === 'shape') {
+        NefisBox.drawShape(ctx, renderShape(it));
+      } else if (r.kind === 'photo') {
+        drawPhotoArea(it);
+      } else {
+        // The caption being edited is drawn too: the inline editor sits over it, invisible.
+        NefisBox.drawText(ctx, it.default_value || it.placeholder || '', renderText(it));
+      }
     });
 
     if (guideOn.checked && visualImg && visualImg.complete) {
@@ -865,7 +967,7 @@
      ================================================================ */
   function snapTargets(except){
     var xs = [0, W / 2, W], ys = [0, H / 2, H];
-    [['layer', doc.layers], ['photo', doc.photos], ['text', doc.texts]].forEach(function(pair){
+    [['layer', doc.layers], ['shape', doc.shapes], ['photo', doc.photos], ['text', doc.texts]].forEach(function(pair){
       pair[1].forEach(function(it, i){
         if (except && except.kind === pair[0] && except.index === i) return;
         if (pair[0] === 'layer' && hiddenLayers[i]) return;
@@ -1108,7 +1210,7 @@
     renderList();
   }
 
-  function refresh(){ render(); renderProps(); renderList(); updateDirty(); updateBoxColorUI(); }
+  function refresh(){ coverMemo = {}; render(); renderProps(); renderList(); updateDirty(); updateBoxColorUI(); }
 
   function addLayer(entry){
     var w = entry.width, h = entry.height;
@@ -1119,7 +1221,7 @@
     doc.layers.push({
       name: entry.name, image: entry.image, url: entry.url,
       x: round((W - w) / 2), y: round((H - h) / 2), width: round(w), height: round(h),
-      rotation: 0, opacity: 100, placement: 'above', locked: false
+      rotation: 0, opacity: 100, placement: 'above', locked: false, z: topZ() + 1
     });
     loadImage(entry.url);
     select({ kind: 'layer', index: doc.layers.length - 1 });
@@ -1129,7 +1231,8 @@
   function addPhoto(){
     var s = 560;
     doc.photos.push({ label: doc.photos.length ? 'Şəkil ' + (doc.photos.length + 1) : 'Şəkil',
-      x: round((W - s) / 2), y: round((H - s) / 2), width: s, height: s, rotation: 0, shape: 'rectangle' });
+      x: round((W - s) / 2), y: round((H - s) / 2), width: s, height: s, rotation: 0, shape: 'rectangle',
+      z: topZ() + 1 });
     select({ kind: 'photo', index: doc.photos.length - 1 });
     commit();
   }
@@ -1138,7 +1241,7 @@
     var w = round(W * 0.6), h = round(H * 0.12);
     doc.shapes.push({ kind: 'rect', x: round((W - w) / 2), y: round((H - h) / 2), width: w, height: h,
       rotation: 0, fill: '#ffffff', stroke_color: '#000000', stroke_width: 0, radius: 0,
-      opacity: 100, placement: 'above' });
+      opacity: 100, placement: 'above', z: topZ() + 1 });
     select({ kind: 'shape', index: doc.shapes.length - 1 });
     commit();
   }
@@ -1152,7 +1255,7 @@
       x: round(W / 2), y: round(H / 2), max_width: 600, font_size: 72, color: '#000000', align: 'center', rotation: 0,
       font_family: f.family, font_file: f.file, font_weight: f.weight || 400,
       stroke_color: '#000000', stroke_width: 0, shadow_color: null, shadow_blur: 0, shadow_x: 0, shadow_y: 0,
-      max_lines: 1, max_length: time ? 5 : 255, link_key: null
+      max_lines: 1, max_length: time ? 5 : 255, link_key: null, z: topZ() + 1
     });
     select({ kind: 'text', index: doc.texts.length - 1 });
     commit();
@@ -1173,6 +1276,7 @@
     list.splice(selection.index, 1);
     if (selection.kind === 'layer') hiddenLayers = {};
     selection = null;
+    renumber();
     commit();
     refresh();
   }
@@ -1241,6 +1345,8 @@
 
   function place(kind, item){
     var list = listOf(kind);
+    // Copied in a tab that knew nothing about the stack, or from another box.
+    item.z = topZ() + 1;
     list.push(item);
     select({ kind: kind, index: list.length - 1 });
     commit();
@@ -1254,25 +1360,36 @@
     var copy = clone(list[selection.index]);
     copy.x += 20; copy.y += 20;
     if (copy.locked) copy.locked = false;
+    copy.z = (+list[selection.index].z) + 0.5;      // straight above the original
     list.splice(selection.index + 1, 0, copy);
+    renumber();
     select({ kind: selection.kind, index: selection.index + 1 });
     commit();
   }
 
   /* Moves a layer within its group (under/over the photo), or across it. */
-  function moveLayer(index, where){
-    var l = doc.layers[index];
-    var same = doc.layers.map(function(x, i){ return i; }).filter(function(i){ return doc.layers[i].placement === l.placement; });
-    var pos = same.indexOf(index);
-    var target;
-    if (where === 'front') target = same[same.length - 1];
-    else if (where === 'back') target = same[0];
-    else if (where === 'up') target = same[Math.min(same.length - 1, pos + 1)];
-    else target = same[Math.max(0, pos - 1)];
-    if (target === undefined || target === index) return;
-    doc.layers.splice(index, 1);
-    doc.layers.splice(target, 0, l);
-    select({ kind: 'layer', index: target });
+  /* Up and down the whole design, not inside a group: "Ən arxaya" used to
+     leave a layer exactly where it was, because there was nothing below it
+     in its own band, and read as a dead button. */
+  function moveItem(sel, where){
+    var it = sel && itemOf(sel);
+    if (!it) return;
+    var rows = stackBottomUp();
+    var pos = rows.findIndex(function(r){ return r.kind === sel.kind && r.index === sel.index; });
+    if (pos < 0) return;
+
+    if (where === 'front') it.z = topZ() + 1;
+    else if (where === 'back') it.z = -1;
+    else {
+      var swapWith = rows[where === 'up' ? pos + 1 : pos - 1];
+      if (!swapWith) return;
+      var other = listOf(swapWith.kind)[swapWith.index];
+      var keep = +other.z;
+      other.z = +it.z;
+      it.z = keep;
+    }
+    renumber();
+    select(sel);
     commit();
   }
 
@@ -1315,6 +1432,27 @@
     var it = itemOf(selection);
     var h = '';
 
+    /* The order block, the same for artwork, shapes, windows and captions —
+       there is one stack now, so there is one way to move about in it. */
+    function orderBlock(kind){
+      var out = '<h4>Sıra (bütün dizayn üzrə)</h4><div class="actions">'
+        + '<button class="btn small" data-act="front">Ən önə</button><button class="btn small" data-act="up">Bir irəli</button>'
+        + '<button class="btn small" data-act="down">Bir geri</button><button class="btn small" data-act="back">Ən arxaya</button></div>';
+      if (doc.photos.length && kind !== 'photo') {
+        out += '<div class="actions"><button class="btn small" data-act="under-photo">Fotoların altına</button>'
+             + '<button class="btn small" data-act="over-photo">Fotoların üstünə</button></div>';
+      }
+      out += '<p class="hint" style="margin-top:.35rem">Sıra bütün dizayn üzrə dəyişir — qatı iki foto pəncərəsinin arasına da qoya bilərsiniz. Siyahıda sətri tutub da sürüşdürə bilərsiniz.</p>';
+      if (kind === 'photo' || kind === 'text') {
+        out += '<h4>Müştəri formasında sıra</h4>'
+             + '<p class="hint" style="margin-top:0">Bu, çəkiliş sırası deyil — sifariş səhifəsindəki xananın sırasıdır.</p>'
+             + '<div class="actions"><button class="btn small" data-act="form-up">Yuxarı</button>'
+             + '<button class="btn small" data-act="form-down">Aşağı</button></div>';
+      }
+
+      return out;
+    }
+
     if (!it) {
       h += '<h3>Dizayn</h3>';
       h += '<h4>Vizual (bələdçi)</h4>';
@@ -1340,7 +1478,7 @@
          + '<kbd>T</kbd> mətn · <kbd>V</kbd> vizual bələdçi · <kbd>Ctrl</kbd>+təkər zoom<br>'
          + 'Sürüşdürəndə <kbd>Alt</kbd> — yapışmadan, <kbd>Shift</kbd> — düz xətt üzrə<br>'
          + 'Mətnə iki dəfə klik — birbaşa yaz<br>'
-         + 'Qatlar siyahısında sətri tutub dəyişdirin — «Müştərinin şəkli» xəttinin altına atılan qat fotonun altına keçir</p>';
+         + 'Qatlar siyahısında sətri tutub istənilən yerə atın — mətn, qat, forma və foto pəncərəsi hamısı bir sıradadır</p>';
       props.innerHTML = h;
       return;
     }
@@ -1348,14 +1486,10 @@
     if (selection.kind === 'layer') {
       h += '<h3>Qat</h3>';
       h += '<div class="row one">' + field('Ad', txt('name', it.name)) + '</div>';
-      h += '<div class="row one">' + field('Yeri', seg('placement', it.placement, [['below', 'Fotonun altında'], ['above', 'Fotonun üstündə']])) + '</div>';
       h += '<div class="row four">' + field('X', num('x', it.x)) + field('Y', num('y', it.y)) + field('En', num('width', it.width)) + field('Hünd.', num('height', it.height)) + '</div>';
       h += '<div class="row">' + field('Bucaq °', num('rotation', it.rotation)) + field('Şəffaflıq ' + it.opacity + '%', '<input type="range" min="0" max="100" data-k="opacity" value="' + it.opacity + '">') + '</div>';
       h += '<label class="check"><input type="checkbox" data-k="locked"' + (it.locked ? ' checked' : '') + '> Kilidlə (kətanda seçilmir, yerindən oynamır)</label>';
-      h += '<h4>Sıra</h4><div class="actions">'
-         + '<button class="btn small" data-act="front">Ən önə</button><button class="btn small" data-act="up">Bir irəli</button>'
-         + '<button class="btn small" data-act="down">Bir geri</button><button class="btn small" data-act="back">Ən arxaya</button></div>';
-      h += '<p class="hint" style="margin-top:.35rem">Sıra yalnız öz qrupunda dəyişir. Qatı şəklin altına keçirmək üçün yuxarıdakı <b>Yeri</b> düyməsini — «Fotonun altında» — basın.</p>';
+      h += orderBlock('layer');
       h += '<h4>Ölçü</h4><div class="actions"><button class="btn small" data-act="natural">Orijinal ölçü</button><button class="btn small" data-act="fill">Bütün kətan</button>'
          + '<button class="btn small" data-act="center-h">Üfüqi mərkəz</button><button class="btn small" data-act="center-v">Şaquli mərkəz</button></div>';
       h += '<div class="actions"><button class="btn small" data-act="dup">Təkrarla</button><button class="btn small danger" data-act="del">Sil</button></div>';
@@ -1363,7 +1497,6 @@
       h += '<h3>Forma</h3>';
       h += '<p class="hint">Rəngli zolaq, xətt, dairə — Photoshop-da çəkib PNG kimi yükləməyə ehtiyac yoxdur. İstənilən ölçüdə kəskin çap olunur.</p>';
       h += '<div class="row one">' + field('Növ', seg('kind', it.kind, [['rect', 'Düzbucaqlı'], ['ellipse', 'Dairə'], ['line', 'Xətt'], ['triangle', 'Üçbucaq'], ['heart', 'Ürək'], ['star', 'Ulduz']])) + '</div>';
-      h += '<div class="row one">' + field('Yeri', seg('placement', it.placement, [['below', 'Fotonun altında'], ['above', 'Fotonun üstündə']])) + '</div>';
       if (it.kind !== 'line') {
         h += '<div class="row">' + field('Doldurma', seg('fill_on', it.fill ? 1 : 0, [[1, 'Var'], [0, 'Yox']]))
            + (it.fill ? field('Rəng', color('fill', it.fill)) : '') + '</div>';
@@ -1378,15 +1511,16 @@
       h += '<div class="row four">' + field('X', num('x', it.x)) + field('Y', num('y', it.y)) + field('En', num('width', it.width)) + field('Hünd.', num('height', it.height)) + '</div>';
       h += '<div class="row">' + field('Bucaq °', num('rotation', it.rotation)) + '</div>';
       h += '<div class="actions"><button class="btn small" data-act="fill">Bütün kətan</button><button class="btn small" data-act="center-h">Üfüqi mərkəz</button><button class="btn small" data-act="center-v">Şaquli mərkəz</button></div>';
+      h += orderBlock('shape');
       h += '<div class="actions"><button class="btn small" data-act="dup">Təkrarla</button><button class="btn small danger" data-act="del">Sil</button></div>';
     } else if (selection.kind === 'photo') {
       h += '<h3>Foto sahəsi</h3>';
-      h += '<p class="hint">Müştərinin yüklədiyi şəkil bura düşür. "Fotonun üstündə" olan qatlar onu örtür.</p>';
-      var cov = windowCover(selection.index);
+      h += '<p class="hint">Müştərinin yüklədiyi şəkil bura düşür. Siyahıda bundan yuxarıda duran hər şey onu örtür.</p>';
+      var cov = coverOf('photo', selection.index);
       if (cov) {
         h += '<p class="warn">⚠ Bu sahəni üstdəki qat ' + (cov.pct >= 95 ? 'tamamilə örtür' : 'çox hissəsini örtür (' + cov.pct + '%)')
            + ' — müştərinin şəkli görünməyəcək.<br>Örtən: <b>' + esc(cov.names.join(', ')) + '</b>. '
-           + 'Həmin qatı seçib <b>Yeri → Fotonun altında</b> edin.</p>';
+           + 'Həmin qatı siyahıda bu sətrin altına çəkin.</p>';
       }
       h += '<div class="row one">' + field('Bura nə düşür', seg('fill', it.fill || 'photo', [['photo', 'Müştərinin şəkli'], ['sky', 'Ulduz xəritəsi'], ['map', 'Lokasiya xəritəsi']])) + '</div>';
       if (it.fill === 'map') {
@@ -1404,6 +1538,7 @@
         [['zoom', 'Yaxınlığı'], ['pin', 'Nişanı görünsünmü'], ['marker', 'Nişanın formasını']].forEach(function(c){
           h += '<div class="row one">' + field(c[1], seg('mapchoice_' + c[0], mpicked.indexOf(c[0]) >= 0 ? 1 : 0, [[1, 'Seçə bilər'], [0, 'Yox']])) + '</div>';
         });
+        h += orderBlock('photo');
         h += '<div class="actions"><button class="btn small" data-act="dup">Təkrarla</button><button class="btn small danger" data-act="del">Sil</button></div>';
 
         /* Like the sky below, a map window asks nothing about a photograph,
@@ -1430,6 +1565,7 @@
         [['lines', 'Bürc xətləri'], ['labels', 'Bürc adları'], ['milky', 'Süd Yolu'], ['time', 'Tarixdə saat']].forEach(function(c){
           h += '<div class="row one">' + field(c[1], seg('choice_' + c[0], picked.indexOf(c[0]) >= 0 ? 1 : 0, [[1, 'Seçə bilər'], [0, 'Yox']])) + '</div>';
         });
+        h += orderBlock('photo');
         h += '<div class="actions"><button class="btn small" data-act="dup">Təkrarla</button><button class="btn small danger" data-act="del">Sil</button></div>';
 
         /* A sky window is done here — it asks nothing about a photograph.
@@ -1447,6 +1583,7 @@
       h += '<div class="row four">' + field('X', num('x', it.x)) + field('Y', num('y', it.y)) + field('En', num('width', it.width)) + field('Hünd.', num('height', it.height)) + '</div>';
       h += '<div class="row">' + field('Bucaq °', num('rotation', it.rotation)) + '</div>';
       h += '<div class="actions"><button class="btn small" data-act="fill">Bütün kətan</button><button class="btn small" data-act="center-h">Üfüqi mərkəz</button><button class="btn small" data-act="center-v">Şaquli mərkəz</button></div>';
+      h += orderBlock('photo');
       h += '<div class="actions"><button class="btn small" data-act="dup">Təkrarla</button><button class="btn small danger" data-act="del">Sil</button></div>';
     } else {
       var f = fontFor(it);
@@ -1482,6 +1619,7 @@
       h += '<div class="row one">' + field('Nə yazılsın', seg('auto', it.auto || 'none', [['none', 'Müştəri yazır'], ['coords', 'Koordinatlar'], ['date_long', 'Tarix sözlə'], ['date', 'Tarix rəqəmlə'], ['place', 'Yerin adı']])) + '</div>';
       h += '<p class="hint">Ulduz xəritəsi olan dizaynlarda: müştəri tarixi və yeri seçir, bu yazı özü dolur — ondan soruşulmur.</p>';
       h += '<h4>Təkrarlanan ad</h4><div class="row one">' + field('Qrup', txt('link_key', it.link_key, 'məs. ad — eyni qrupdakılar bir sahədən dolur')) + '</div>';
+      h += orderBlock('text');
       h += '<div class="actions"><button class="btn small" data-act="center-h">Üfüqi mərkəz</button><button class="btn small" data-act="dup">Təkrarla</button><button class="btn small danger" data-act="del">Sil</button></div>';
     }
     props.innerHTML = h;
@@ -1593,7 +1731,26 @@
     if (act === 'font') return document.getElementById('file-font').click();
     if (act === 'del') return removeSelected();
     if (act === 'dup') return duplicateSelected();
-    if (['front', 'back', 'up', 'down'].indexOf(act) >= 0) return moveLayer(selection.index, act);
+    if (['front', 'back', 'up', 'down'].indexOf(act) >= 0) return moveItem(selection, act);
+    if (act === 'under-photo' || act === 'over-photo') {
+      var edge = act === 'under-photo' ? photoFloor() : photoCeiling();
+      if (edge === null) return;
+      itemOf(selection).z = edge + (act === 'under-photo' ? -0.5 : 0.5);
+      renumber(); select(selection); commit(); refresh();
+
+      return;
+    }
+    if (act === 'form-up' || act === 'form-down') {
+      var list = listOf(selection.kind);
+      var to = selection.index + (act === 'form-up' ? -1 : 1);
+      if (to < 0 || to >= list.length) return;
+      var moved = list.splice(selection.index, 1)[0];
+      list.splice(to, 0, moved);
+      select({ kind: selection.kind, index: to });
+      commit(); refresh();
+
+      return;
+    }
     if (!it) return;
     var bx = boxOf(selection.kind, it);
     if (act === 'natural') {
@@ -1610,25 +1767,16 @@
      ================================================================ */
   function renderList(){
     var h = '';
-    var rows = [];
-    for (var i = doc.texts.length - 1; i >= 0; i--) rows.push({ kind: 'text', index: i });
-    var above = [], below = [];
-    doc.layers.forEach(function(l, j){ (l.placement === 'above' ? above : below).push(j); });
-    above.reverse().forEach(function(j){ rows.push({ kind: 'layer', index: j }); });
-    var sAbove = [], sBelow = [];
-    doc.shapes.forEach(function(s, j){ (s.placement === 'below' ? sBelow : sAbove).push(j); });
-    sAbove.reverse().forEach(function(j){ rows.push({ kind: 'shape', index: j }); });
-    rows.push({ sep: 'Müştərinin şəkli' });
-    for (var p = doc.photos.length - 1; p >= 0; p--) rows.push({ kind: 'photo', index: p });
-    sBelow.reverse().forEach(function(j){ rows.push({ kind: 'shape', index: j }); });
-    below.reverse().forEach(function(j){ rows.push({ kind: 'layer', index: j }); });
+    /* One list, top of the design first. The windows are ordinary rows now:
+       whatever is above one in the list covers it, and nothing has to be
+       learned about which group a row belongs to. */
+    var rows = stackTopDown();
 
     rows.forEach(function(r){
-      if (r.sep) { h += '<li class="sep" data-sep="1">' + r.sep + ' ↓ altında / ↑ üstündə</li>'; return; }
       var it = listOf(r.kind)[r.index];
       var on = selection && selection.kind === r.kind && selection.index === r.index;
       var thumb, name, kind;
-      if (r.kind === 'layer') { thumb = '<img src="' + esc(it.url) + '" alt="" draggable="false">'; name = it.name || 'Qat'; kind = it.placement === 'above' ? 'fotonun üstündə' : 'fotonun altında'; }
+      if (r.kind === 'layer') { thumb = '<img src="' + esc(it.url) + '" alt="" draggable="false">'; name = it.name || 'Qat'; kind = Math.round(it.width) + '×' + Math.round(it.height) + (it.opacity != null && it.opacity < 100 ? ' · ' + it.opacity + '%' : ''); }
       else if (r.kind === 'shape') {
         var SHAPE_NAMES = { rect: 'Düzbucaqlı', ellipse: 'Dairə', line: 'Xətt', triangle: 'Üçbucaq', heart: 'Ürək', star: 'Ulduz' };
         thumb = '◼';
@@ -1642,13 +1790,14 @@
         kind = it.shape === 'heart' ? 'ürək'
           : (it.shape === 'home' ? 'ev'
           : (it.shape === 'ellipse' ? (sky || map ? 'dairə' : 'oval') : 'düzbucaqlı'));
-        var cv = windowCover(r.index);
+        var cv = coverOf('photo', r.index);
         if (cv) kind += ' · ⚠ üstdəki qat örtür';
       }
       else {
         thumb = it.kind === 'time' ? '⏱' : '<span style="font-family:&quot;' + esc(it.font_family) + '&quot;,Inter;font-weight:700">T</span>';
         name = it.default_value || it.label || 'Mətn';
         kind = it.fixed ? '🔒 sabit — müştəri dəyişmir' : (it.kind === 'time' ? 'vaxt · ' : '') + (it.label || 'mətn');
+        if (coverOf('text', r.index)) kind += ' · ⚠ üstdəki qat örtür';
       }
       h += '<li data-kind="' + r.kind + '" data-index="' + r.index + '" class="' + (on ? 'on' : '') + (r.kind === 'layer' && hiddenLayers[r.index] ? ' hidden-layer' : '') + '">'
          + '<span class="grip" title="Sürüşdürüb sıranı dəyişin">⠿</span>'
@@ -1690,54 +1839,22 @@
 
   /* The move itself. Dropped across the customer's-photo line, a layer
      changes sides; dropped on another layer, it lands beside it. */
+  /* Anything may be dropped anywhere, including between two windows. The
+     arrays are not touched — only the row's place in the stack — so the
+     selection, the eye toggles and every index keyed on them survive. */
   function moveRow(src, li, before){
-    if (src.kind === 'layer') {
-      var moving = doc.layers[src.index];
-      var placement, anchorIndex = null;
-      if (li.dataset.sep || li.dataset.kind === 'photo') {
-        placement = before ? 'above' : 'below';
-      } else if (li.dataset.kind === 'layer') {
-        var target = doc.layers[+li.dataset.index];
-        placement = target.placement;
-        anchorIndex = +li.dataset.index;
-      } else if (li.dataset.kind === 'shape') {
-        placement = (doc.shapes[+li.dataset.index] || {}).placement === 'below' ? 'below' : 'above';
-      } else { placement = 'above'; }
-      doc.layers.splice(src.index, 1);
-      var insertAt;
-      if (anchorIndex !== null) {
-        if (anchorIndex > src.index) anchorIndex--;
-        /* The list shows the top first, so "before" means higher in the stack. */
-        insertAt = before ? anchorIndex + 1 : anchorIndex;
-      } else if (placement === 'above') {
-        var firstAbove = doc.layers.findIndex(function(l){ return l.placement === 'above'; });
-        insertAt = firstAbove < 0 ? doc.layers.length : firstAbove;
-      } else {
-        var lastBelow = -1;
-        doc.layers.forEach(function(l, i){ if (l.placement === 'below') lastBelow = i; });
-        insertAt = lastBelow + 1;
-      }
-      moving.placement = placement;
-      doc.layers.splice(insertAt, 0, moving);
-      hiddenLayers = {};
-      select({ kind: 'layer', index: insertAt });
-      commit();
-
-      return;
-    }
-
-    if (li.dataset.kind !== src.kind) return;
-    var list = listOf(src.kind);
-    var to = +li.dataset.index;
-    var item = list.splice(src.index, 1)[0];
-    if (to > src.index) to--;
-    var at = before ? to + 1 : to;
-    list.splice(at, 0, item);
-    select({ kind: src.kind, index: at });
+    if (li.dataset.kind == null) return;
+    var it = itemOf(src);
+    var target = itemOf({ kind: li.dataset.kind, index: +li.dataset.index });
+    if (!it || !target || it === target) return;
+    // The list reads top down, so "before" means higher in the stack.
+    it.z = (+target.z) + (before ? 0.5 : -0.5);
+    renumber();
+    select(src);
     commit();
   }
 
-  var drag = null;
+  var dragRow = null;
   var swallowClick = false;
 
   function clearMarks(){
@@ -1746,16 +1863,16 @@
     });
   }
 
-  /* The row the pointer is over, and which side of it — the separator row
-     counts, because that is where a layer changes sides. */
+  /* The row the pointer is over, and which side of it. */
   function rowAt(y){
-    var rows = layerList.children;
+    var rows = layerList.querySelectorAll('li[data-kind]'), last = null;
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i].getBoundingClientRect();
+      last = rows[i];
       if (y < r.bottom) return { li: rows[i], before: y < r.top + r.height / 2 };
     }
 
-    return rows.length ? { li: rows[rows.length - 1], before: false } : null;
+    return last ? { li: last, before: false } : null;
   }
 
   layerList.addEventListener('pointerdown', function(e){
@@ -1766,29 +1883,29 @@
     /* A finger scrolling the list must not carry a row off with it, so on a
        touch screen only the grip picks one up. A mouse may take it anywhere. */
     if (e.pointerType !== 'mouse' && !e.target.closest('.grip')) return;
-    drag = { kind: li.dataset.kind, index: +li.dataset.index, li: li,
+    dragRow = { kind: li.dataset.kind, index: +li.dataset.index, li: li,
              x0: e.clientX, y0: e.clientY, on: false, id: e.pointerId, over: null };
     try { layerList.setPointerCapture(e.pointerId); } catch (err) {}
   });
 
   layerList.addEventListener('pointermove', function(e){
-    if (!drag || e.pointerId !== drag.id) return;
-    if (!drag.on) {
+    if (!dragRow || e.pointerId !== dragRow.id) return;
+    if (!dragRow.on) {
       /* A few pixels of slop, so a click stays a click. */
-      if (Math.abs(e.clientY - drag.y0) < 5 && Math.abs(e.clientX - drag.x0) < 5) return;
-      var box = drag.li.getBoundingClientRect();
-      drag.on = true;
-      drag.hold = e.clientY - box.top;
-      drag.li.classList.add('dragging');
+      if (Math.abs(e.clientY - dragRow.y0) < 5 && Math.abs(e.clientX - dragRow.x0) < 5) return;
+      var box = dragRow.li.getBoundingClientRect();
+      dragRow.on = true;
+      dragRow.hold = e.clientY - box.top;
+      dragRow.li.classList.add('dragging');
       document.body.classList.add('dragging-row');
-      drag.ghost = drag.li.cloneNode(true);
-      drag.ghost.className = 'drag-ghost';
-      drag.ghost.style.width = box.width + 'px';
-      drag.ghost.style.left = box.left + 'px';
-      document.body.appendChild(drag.ghost);
+      dragRow.ghost = dragRow.li.cloneNode(true);
+      dragRow.ghost.className = 'dragRow-ghost';
+      dragRow.ghost.style.width = box.width + 'px';
+      dragRow.ghost.style.left = box.left + 'px';
+      document.body.appendChild(dragRow.ghost);
     }
     e.preventDefault();
-    drag.ghost.style.top = (e.clientY - drag.hold) + 'px';
+    dragRow.ghost.style.top = (e.clientY - dragRow.hold) + 'px';
 
     /* Carried to either end, the list keeps moving under the pointer. */
     var pane = layerList.parentNode, pr = pane.getBoundingClientRect();
@@ -1796,13 +1913,13 @@
     else if (e.clientY > pr.bottom - 30) pane.scrollTop += 12;
 
     clearMarks();
-    drag.over = rowAt(e.clientY);
-    if (drag.over) drag.over.li.classList.add(drag.over.before ? 'drop-before' : 'drop-after');
+    dragRow.over = rowAt(e.clientY);
+    if (dragRow.over) dragRow.over.li.classList.add(dragRow.over.before ? 'drop-before' : 'drop-after');
   });
 
   function endDrag(drop){
-    if (!drag) return;
-    var d = drag; drag = null;
+    if (!dragRow) return;
+    var d = dragRow; dragRow = null;
     if (d.ghost) d.ghost.remove();
     d.li.classList.remove('dragging');
     document.body.classList.remove('dragging-row');
@@ -1812,8 +1929,8 @@
     if (drop && d.over && d.over.li !== d.li) moveRow({ kind: d.kind, index: d.index }, d.over.li, d.over.before);
   }
 
-  layerList.addEventListener('pointerup', function(e){ if (drag && e.pointerId === drag.id) endDrag(true); });
-  layerList.addEventListener('pointercancel', function(e){ if (drag && e.pointerId === drag.id) endDrag(false); });
+  layerList.addEventListener('pointerup', function(e){ if (dragRow && e.pointerId === dragRow.id) endDrag(true); });
+  layerList.addEventListener('pointercancel', function(e){ if (dragRow && e.pointerId === dragRow.id) endDrag(false); });
   layerList.addEventListener('click', function(e){
     if (!swallowClick) return;
     swallowClick = false;
@@ -1902,6 +2019,10 @@
       doc.photos = design.photos || [];
       doc.texts = design.texts || [];
       if (design.box_color) doc.box_color = design.box_color;
+      /* A template kept on the shelf before the stack existed carries only
+         the old grouping, and useTemplate drops layers whose file has gone —
+         both come back as a proper order here. */
+      normaliseZ();
       hiddenLayers = {};
       doc.layers.forEach(function(l){ loadImage(l.url); });
       selection = null;
@@ -2205,11 +2326,14 @@
     commit();
     var payload = {
       layers: doc.layers.map(function(l){ return { name: l.name, image: l.image, x: l.x, y: l.y, width: l.width, height: l.height,
-        rotation: l.rotation || 0, opacity: l.opacity == null ? 100 : l.opacity, placement: l.placement, locked: !!l.locked }; }),
+        rotation: l.rotation || 0, opacity: l.opacity == null ? 100 : l.opacity,
+        // The server works placement out from the stack; this is sent so a
+        // server rolled back to before the stack still draws the box right.
+        placement: placeFor(l.z), locked: !!l.locked, z: l.z }; }),
       shapes: doc.shapes.map(function(s){ return { kind: s.kind, x: s.x, y: s.y, width: s.width, height: s.height,
         rotation: s.rotation || 0, fill: s.fill || null, stroke_color: s.stroke_color || null,
         stroke_width: +s.stroke_width || 0, radius: +s.radius || 0,
-        opacity: s.opacity == null ? 100 : s.opacity, placement: s.placement || 'above', locked: !!s.locked }; }),
+        opacity: s.opacity == null ? 100 : s.opacity, placement: placeFor(s.z), locked: !!s.locked, z: s.z }; }),
       photos: doc.photos.map(function(p){ return { label: p.label, i18n: p.i18n || null, x: p.x, y: p.y, width: p.width, height: p.height, rotation: p.rotation || 0, shape: p.shape, cutout: p.cutout ? 1 : 0,
         fill: p.fill || 'photo', sky_style: p.sky_style || 'night',
         sky_ring_kind: p.sky_ring_kind || 'degrees',
@@ -2219,7 +2343,7 @@
         map_style: p.map_style || 'ink', map_marker: p.map_marker || 'heart',
         map_zoom: Math.max(11, Math.min(18, +p.map_zoom || 15)),
         map_choices: p.map_choices == null ? 'zoom' : p.map_choices,
-        map_pin: p.map_pin === false ? 0 : 1, locked: !!p.locked }; }),
+        map_pin: p.map_pin === false ? 0 : 1, locked: !!p.locked, z: p.z }; }),
       texts: doc.texts.map(function(t){
         var o = clone(t);
         o.rotation = o.rotation || 0;

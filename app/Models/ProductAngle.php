@@ -38,11 +38,11 @@ class ProductAngle extends Model
 
     public function photoSlots(): MorphMany
     {
-        return $this->morphMany(PhotoSlot::class, 'slotable')->orderBy('sort_order');
+        return $this->morphMany(PhotoSlot::class, 'slotable')->orderBy('sort_order')->orderBy('id');
     }
 
     public function textSlots(): MorphMany
     {
-        return $this->morphMany(TextSlot::class, 'slotable')->orderBy('sort_order');
+        return $this->morphMany(TextSlot::class, 'slotable')->orderBy('sort_order')->orderBy('id');
     }
 }

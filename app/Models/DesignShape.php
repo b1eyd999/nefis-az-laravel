@@ -31,6 +31,7 @@ class DesignShape extends Model
         'placement',
         'locked',
         'sort_order',
+        'z',
     ];
 
     protected $casts = ['locked' => 'boolean'];

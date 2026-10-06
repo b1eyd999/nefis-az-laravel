@@ -40,6 +40,7 @@ class TextSlot extends Model
         'max_length',
         'max_lines',
         'sort_order',
+        'z',
         'rotation',
         'font_weight',
         // The typography of the caption, in the units the design was drawn in.

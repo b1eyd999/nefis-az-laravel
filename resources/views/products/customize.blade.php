@@ -1149,6 +1149,25 @@
   function drawLayers(mctx, list){
     (list || []).forEach(function(l){ NefisBox.drawLayer(mctx, layerImage(l.url), l); });
   }
+
+  /* One of the customer's windows: the night sky, a place on the map, or the
+     photograph he uploaded. `i` is the window's own number — the field that
+     fills it — and never its place in the stack. */
+  function drawArea(mctx, area, i){
+    if (!area) return;
+    if (area.fill === 'sky') { drawSkyInArea(mctx, area); return; }
+    if (area.fill === 'map') { drawMapInArea(mctx, area); return; }
+    if (photos[i]) drawPhotoInArea(mctx, area, photos[i]);
+  }
+
+  /* A caption. `i` is its number among the captions: `.text-input` is worn by
+     the sky and map fields too, so this index may not be counted from the
+     stack. */
+  function drawTextSlot(mctx, t, i){
+    if (!t) return;
+    var input = textInputs[i];
+    if (input && input.value) NefisBox.drawText(mctx, input.value, t);
+  }
   /* Pictures of the owner's mockup scenes, and the scratch canvases their
      warps are drawn in (one set for the big view, one per thumbnail). */
   var sceneImages = {}, sceneCache = {}, thumbCaches = {};
@@ -1370,24 +1389,28 @@
     mctx.clearRect(0, 0, a.tw, a.th);
 
     if (a.url && templateReady) mctx.drawImage(template, 0, 0, a.tw, a.th);
-    drawLayers(mctx, a.layers && a.layers.below);
-    drawShapes(mctx, a.shapes && a.shapes.below);
 
-    a.areas.forEach(function(area, i){
-      if (area.fill === 'sky') { drawSkyInArea(mctx, area); return; }
-      if (area.fill === 'map') { drawMapInArea(mctx, area); return; }
-      if (photos[i]) drawPhotoInArea(mctx, area, photos[i]);
-    });
-
-    /* Foreground artwork (frames, fades, props) must cover the photo edges. */
-    drawShapes(mctx, a.shapes && a.shapes.above);
-    drawLayers(mctx, a.layers && a.layers.above);
-    if (a.overlay && overlayReady) mctx.drawImage(overlay, 0, 0, a.tw, a.th);
-
-    a.texts.forEach(function(t, i){
-      var input = textInputs[i];
-      if (input && input.value) NefisBox.drawText(mctx, input.value, t);
-    });
+    if (a.stack && a.stack.length) {
+      /* The design as the owner arranged it: one order over artwork, shapes,
+         the customer's windows and the captions together. */
+      a.stack.forEach(function(e){
+        if (e.kind === 'layer') { NefisBox.drawLayer(mctx, layerImage(e.layer.url), e.layer); return; }
+        if (e.kind === 'shape') { NefisBox.drawShape(mctx, e.shape); return; }
+        if (e.kind === 'area') { drawArea(mctx, a.areas[e.i], e.i); return; }
+        drawTextSlot(mctx, a.texts[e.i], e.i);
+      });
+    } else {
+      /* A design from before the stack — or a product the numbering has not
+         reached yet. Drawn in the six bands, exactly as it always was. */
+      drawLayers(mctx, a.layers && a.layers.below);
+      drawShapes(mctx, a.shapes && a.shapes.below);
+      a.areas.forEach(function(area, i){ drawArea(mctx, area, i); });
+      /* Foreground artwork (frames, fades, props) must cover the photo edges. */
+      drawShapes(mctx, a.shapes && a.shapes.above);
+      drawLayers(mctx, a.layers && a.layers.above);
+      if (a.overlay && overlayReady) mctx.drawImage(overlay, 0, 0, a.tw, a.th);
+      a.texts.forEach(function(t, i){ drawTextSlot(mctx, t, i); });
+    }
 
     return mockupCanvas;
   }

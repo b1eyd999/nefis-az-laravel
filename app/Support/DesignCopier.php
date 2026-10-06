@@ -71,6 +71,11 @@ class DesignCopier
             $made['texts']++;
         }
 
+        /* `z` rides along with the rest of the attributes, but a source whose
+           own stack has not been written yet would hand the copy a design with
+           no order at all. */
+        DesignStack::number($to);
+
         /* The flat picture some designs are built on, and the colour of the
            box underneath. The cover in the catalogue is the box's own and is
            never touched. */

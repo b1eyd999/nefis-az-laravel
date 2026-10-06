@@ -10,12 +10,14 @@ use App\Models\LibraryAsset;
 use App\Models\PhotoSlot;
 use App\Models\Product;
 use App\Models\TextSlot;
+use App\Support\DesignStack;
 use App\Support\ImageStore;
 use App\Support\Media;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
@@ -64,13 +66,14 @@ class BoxEditorController extends Controller
                 'name' => $l->name, 'image' => $l->image, 'url' => Media::url($l->image),
                 'x' => $l->x, 'y' => $l->y, 'width' => $l->width, 'height' => $l->height,
                 'rotation' => $l->rotation, 'opacity' => $l->opacity,
-                'placement' => $l->placement, 'locked' => $l->locked,
+                'placement' => $l->placement, 'locked' => $l->locked, 'z' => $l->z,
             ])->values(),
             'shapes' => $product->shapes->map(fn ($s) => [
                 'kind' => $s->kind, 'x' => $s->x, 'y' => $s->y, 'width' => $s->width, 'height' => $s->height,
                 'rotation' => $s->rotation, 'fill' => $s->fill, 'stroke_color' => $s->stroke_color,
                 'stroke_width' => (float) $s->stroke_width, 'radius' => (int) $s->radius,
                 'opacity' => (int) $s->opacity, 'placement' => $s->placement, 'locked' => (bool) $s->locked,
+                'z' => $s->z,
             ])->values(),
             'photos' => $product->photoSlots->map(fn ($s) => [
                 'label' => $s->label, 'i18n' => $s->i18n,
@@ -84,7 +87,7 @@ class BoxEditorController extends Controller
                 'x' => $s->x, 'y' => $s->y,
                 'width' => $s->width, 'height' => $s->height,
                 'rotation' => $s->rotation, 'shape' => $s->shape, 'cutout' => (bool) $s->cutout,
-                'locked' => (bool) $s->locked,
+                'locked' => (bool) $s->locked, 'z' => $s->z,
             ])->values(),
             'texts' => $product->textSlots->map(fn ($s) => [
                 'label' => $s->label, 'i18n' => $s->i18n, 'kind' => $s->kind ?: TextSlot::KIND_TEXT, 'fixed' => (bool) $s->fixed,
@@ -102,6 +105,7 @@ class BoxEditorController extends Controller
                 'shadow_x' => (int) $s->shadow_x, 'shadow_y' => (int) $s->shadow_y,
                 'max_lines' => max(1, (int) $s->max_lines), 'max_length' => (int) $s->max_length,
                 'link_key' => $s->link_key, 'auto' => $s->auto ?: 'none', 'locked' => (bool) $s->locked,
+                'z' => $s->z,
             ])->values(),
         ];
     }
@@ -233,7 +237,10 @@ class BoxEditorController extends Controller
             'layers.*.height' => ['required', 'numeric', 'min:1'],
             'layers.*.rotation' => ['required', 'numeric', 'between:-360,360'],
             'layers.*.opacity' => ['required', 'integer', 'between:0,100'],
-            'layers.*.placement' => ['required', 'in:below,above'],
+            // Derived from the stack now, but still accepted: an editor tab
+            // older than this change sends it, and sends no place at all.
+            'layers.*.placement' => ['nullable', 'in:below,above'],
+            'layers.*.z' => ['nullable', 'numeric', 'min:0', 'max:65535'],
             'layers.*.locked' => ['boolean'],
 
             'shapes' => ['nullable', 'array'],
@@ -248,7 +255,8 @@ class BoxEditorController extends Controller
             'shapes.*.stroke_width' => ['nullable', 'numeric', 'between:0,200'],
             'shapes.*.radius' => ['nullable', 'integer', 'between:0,2000'],
             'shapes.*.opacity' => ['nullable', 'integer', 'between:0,100'],
-            'shapes.*.placement' => ['required', 'in:below,above'],
+            'shapes.*.placement' => ['nullable', 'in:below,above'],
+            'shapes.*.z' => ['nullable', 'numeric', 'min:0', 'max:65535'],
             'shapes.*.locked' => ['nullable', 'boolean'],
 
             'photos' => ['present', 'array'],
@@ -275,9 +283,11 @@ class BoxEditorController extends Controller
             'photos.*.map_choices' => ['nullable', 'string', 'max:60'],
             'photos.*.map_pin' => ['nullable', 'boolean'],
             'photos.*.cutout' => ['nullable', 'boolean'],
+            'photos.*.z' => ['nullable', 'numeric', 'min:0', 'max:65535'],
             'photos.*.locked' => ['nullable', 'boolean'],
 
             'texts' => ['present', 'array'],
+            'texts.*.z' => ['nullable', 'numeric', 'min:0', 'max:65535'],
             'texts.*.label' => ['nullable', 'string', 'max:60'],
             'texts.*.i18n' => ['nullable', 'array'],
             'texts.*.i18n.*.label' => ['nullable', 'string', 'max:60'],
@@ -334,7 +344,26 @@ class BoxEditorController extends Controller
 
         $canvas = config('boxes.canvas');
 
-        DB::transaction(function () use ($product, $data, $canvas) {
+        /* Shapes an older editor tab never mentions are not deleted, so they
+           live through this save and still have to be given a place with the
+           rest — otherwise two rows come back claiming one. */
+        $surviving = array_key_exists('shapes', $data)
+            ? []
+            : $product->shapes()->orderBy('sort_order')->orderBy('id')->get(['id', 'z', 'placement', 'sort_order'])->all();
+        $stack = DesignStack::renumber($data, $surviving);
+        $floor = DesignStack::floorOfPhotos($stack['photos']);
+        /* The hosting copies the files into place before it runs migrations.
+           In that minute the column does not exist yet, and a save must still
+           work: the editor sends the placement it worked out, so the box keeps
+           its order and the next save writes the stack. */
+        $hasZ = Schema::hasColumn('design_layers', 'z');
+        $at = fn (array $map, int $order) => $hasZ ? ['z' => $map[$order]] : [];
+        /* "Below the photo" is no longer something the owner sets — it is read
+           off the stack, so everything that still asks the column gets the
+           truth without having to learn about z. */
+        $side = fn (int $z) => $floor !== null && $z < $floor ? DesignLayer::BELOW : DesignLayer::ABOVE;
+
+        DB::transaction(function () use ($product, $data, $canvas, $stack, $side, $hasZ, $at) {
             $product->forceFill([
                 'template_width' => $canvas['width'],
                 'template_height' => $canvas['height'],
@@ -348,9 +377,10 @@ class BoxEditorController extends Controller
                     'x' => (int) round($l['x']), 'y' => (int) round($l['y']),
                     'width' => (int) round($l['width']), 'height' => (int) round($l['height']),
                     'rotation' => (int) round($l['rotation']), 'opacity' => $l['opacity'],
-                    'placement' => $l['placement'], 'locked' => (bool) ($l['locked'] ?? false),
+                    'placement' => $hasZ ? $side($stack['layers'][$order]) : ($l['placement'] ?? 'above'),
+                    'locked' => (bool) ($l['locked'] ?? false),
                     'sort_order' => $order,
-                ]);
+                ] + $at($stack['layers'], $order));
             }
 
             // The slots are rewritten from scratch, so what they said about
@@ -384,10 +414,10 @@ class BoxEditorController extends Controller
                     'stroke_width' => $s['stroke_width'] ?? 0,
                     'radius' => (int) ($s['radius'] ?? 0),
                     'opacity' => (int) ($s['opacity'] ?? 100),
-                    'placement' => $s['placement'],
+                    'placement' => $hasZ ? $side($stack['shapes'][$order]) : ($s['placement'] ?? 'above'),
                     'locked' => array_key_exists('locked', $s) ? (bool) $s['locked'] : ($shapeLocks[$order] ?? false),
                     'sort_order' => $order,
-                ]);
+                ] + $at($stack['shapes'], $order));
             }
 
             $photoLocks = $wasLocked('photoSlots', count($data['photos']));
@@ -432,8 +462,19 @@ class BoxEditorController extends Controller
                     // the face cutting off on a box that has it.
                     'cutout' => array_key_exists('cutout', $p) ? (bool) $p['cutout'] : ($kept[$order] ?? false),
                     'locked' => array_key_exists('locked', $p) ? (bool) $p['locked'] : ($photoLocks[$order] ?? false),
+                    // Where it is drawn, and — separately — which field of the
+                    // customer's form fills it. Moving a window up the stack
+                    // must not hand an ordered photograph to another window.
                     'sort_order' => $order,
-                ]);
+                ] + $at($stack['photos'], $order));
+            }
+
+            /* The shapes an older tab did not mention: left where they are,
+               renumbered into the stack the rest were just given. */
+            if ($hasZ) {
+                foreach ($stack['keep'] as $id => $z) {
+                    DesignShape::whereKey($id)->update(['z' => $z, 'placement' => $side($z)]);
+                }
             }
 
             $product->textSlots()->delete();
@@ -472,7 +513,7 @@ class BoxEditorController extends Controller
                     'locked' => array_key_exists('locked', $t) ? (bool) $t['locked'] : ($textLocks[$order] ?? false),
                     'auto' => in_array($t['auto'] ?? null, TextSlot::AUTO, true) ? $t['auto'] : 'none',
                     'sort_order' => $order,
-                ]);
+                ] + $at($stack['texts'], $order));
             }
         });
 

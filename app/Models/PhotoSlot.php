@@ -72,6 +72,7 @@ class PhotoSlot extends Model
         'cutout',
         'locked',
         'sort_order',
+        'z',
     ];
 
     protected function casts(): array

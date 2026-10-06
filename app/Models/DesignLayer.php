@@ -27,6 +27,7 @@ class DesignLayer extends Model
         'placement',
         'locked',
         'sort_order',
+        'z',
     ];
 
     protected function casts(): array

@@ -10,6 +10,7 @@ use App\Models\ProductAngle;
 use App\Models\ProductCategory;
 use App\Models\Scene;
 use App\Models\Wrapping;
+use App\Support\DesignStack;
 use App\Support\Media;
 
 class ProductController extends Controller
@@ -159,6 +160,10 @@ class ProductController extends Controller
                 'below' => $product->shapes->where('placement', DesignLayer::BELOW)->map($shape)->values()->all(),
                 'above' => $product->shapes->where('placement', DesignLayer::ABOVE)->map($shape)->values()->all(),
             ],
+            // One order for the whole design: artwork, shapes, windows and
+            // captions together, so a drawing can sit between two faces. The
+            // buckets above stay for the fallback below.
+            'stack' => $this->designStack($product, $layer, $shape),
             'tw' => $w,
             'th' => $h,
             'scene' => null,
@@ -183,6 +188,42 @@ class ProductController extends Controller
     }
 
     /**
+     * The design as one list, bottom first, for the browser to draw in order.
+     *
+     * Empty when any row has no place of its own — a product the backfill has
+     * not reached, or the minutes between the files landing on the hosting and
+     * the migration running. The page then draws the old bands, which is what
+     * it did before this existed, so nothing is ever half-ordered.
+     */
+    private function designStack(Product $p, callable $layer, callable $shape): array
+    {
+        $rows = [];
+        $take = function (string $kind, $items, callable $entry) use (&$rows) {
+            foreach ($items->values() as $i => $row) {
+                if ($row->z === null) {
+                    return false;
+                }
+                $rows[] = [(int) $row->z, DesignStack::KINDS[$kind], $i, $entry($row, $i)];
+            }
+
+            return true;
+        };
+
+        $whole = $take('layer', $p->layers, fn ($l) => ['kind' => 'layer', 'layer' => $layer($l)])
+            && $take('shape', $p->shapes, fn ($s) => ['kind' => 'shape', 'shape' => $shape($s)])
+            && $take('photo', $p->photoSlots, fn ($s, $i) => ['kind' => 'area', 'i' => $i])
+            && $take('text', $p->textSlots, fn ($s, $i) => ['kind' => 'text', 'i' => $i]);
+
+        if (! $whole) {
+            return [];
+        }
+
+        usort($rows, fn (array $a, array $b) => [$a[0], $a[1], $a[2]] <=> [$b[0], $b[1], $b[2]]);
+
+        return array_map(fn (array $r) => $r[3], $rows);
+    }
+
+    /**
      * Designs from before the editor: the front view lives on the product
      * itself and each extra angle is a ProductAngle with its own slots.
      */
@@ -193,6 +234,9 @@ class ProductController extends Controller
             'overlay' => Media::url($view->overlay_image),
             'layers' => ['below' => [], 'above' => []],
             'shapes' => ['below' => [], 'above' => []],
+            // A design from before the editor has no stack; it is drawn by the
+            // old bands, which is also where its overlay belongs.
+            'stack' => [],
             'label' => $view instanceof ProductAngle ? $view->label : null,
             'tw' => (int) $view->template_width,
             'th' => (int) $view->template_height,
