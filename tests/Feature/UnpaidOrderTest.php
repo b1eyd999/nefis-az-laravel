@@ -53,6 +53,58 @@ class UnpaidOrderTest extends TestCase
         $this->actingAs($user)->get(route('cart.index'))->assertSee('Səbətiniz hələ boşdur', false);
     }
 
+    /**
+     * He ordered, thought better of it, and the bar went on asking for money.
+     * He can be rid of it himself.
+     */
+    public function test_the_customer_drops_an_order_he_never_paid_for(): void
+    {
+        $user = User::factory()->create();
+        $order = $this->order($user);
+
+        $this->actingAs($user)->get(route('orders.index'))->assertOk()
+            ->assertSee(route('orders.cancel', $order), false)
+            ->assertSee('Sifarişi ləğv et');
+
+        $this->actingAs($user)->post(route('orders.cancel', $order))
+            ->assertRedirect(route('orders.index'))
+            ->assertSessionHas('status');
+
+        $this->assertSame('cancelled', $order->fresh()->status);
+        // Cancelled, not deleted: the owner keeps the row and its boxes' paper
+        // goes back to the stock he reorders from.
+        $this->assertNotNull(Order::find($order->id));
+        // And the bar that was following him around is gone.
+        $this->actingAs($user)->get('/')->assertOk()->assertDontSee('unpaid-bar', false);
+    }
+
+    public function test_only_an_unpaid_order_of_his_own_can_be_dropped(): void
+    {
+        $user = User::factory()->create();
+        $order = $this->order($user);
+
+        // Somebody else's order is not his to cancel.
+        $stranger = User::factory()->create();
+        $this->actingAs($stranger)->post(route('orders.cancel', $order))->assertForbidden();
+
+        // Nor one whose receipt is waiting for the owner to look at it.
+        $order->forceFill(['payment_receipt' => 'receipts/x.jpg'])->save();
+        $this->actingAs($user)->post(route('orders.cancel', $order))->assertForbidden();
+        $order->forceFill(['payment_receipt' => null])->save();
+
+        // Nor one whose payment is at the bank this minute.
+        $order->forceFill(['payment_started_at' => now()])->save();
+        $this->actingAs($user)->post(route('orders.cancel', $order))->assertForbidden();
+        $order->forceFill(['payment_started_at' => null])->save();
+
+        // Nor one that is paid for.
+        $order->forceFill(['status' => 'confirmed', 'payment_confirmed_at' => now()])->save();
+        $this->actingAs($user)->post(route('orders.cancel', $order))->assertForbidden();
+        $this->assertSame('confirmed', $order->fresh()->status);
+
+        $this->actingAs($user)->get(route('orders.index'))->assertOk()->assertDontSee('Sifarişi ləğv et');
+    }
+
     /** A day at the bank with no answer: the order is cancelled, its stock and the bar are freed. */
     public function test_an_order_nobody_paid_for_expires_on_its_own(): void
     {

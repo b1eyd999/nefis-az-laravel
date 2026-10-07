@@ -85,6 +85,8 @@ Route::middleware('auth')->group(function () {
     // Paying by transfer, and the receipt that follows it.
     Route::prefix('sifaris/{order}')->whereNumber('order')->name('orders.')->group(function () {
         Route::get('/odenis', [PaymentController::class, 'show'])->name('pay');
+        // Ordered and thought better of it, before any money moved.
+        Route::post('/legv', [OrderController::class, 'cancel'])->name('cancel');
         Route::post('/odenis/usul', [PaymentController::class, 'method'])->name('pay.method');
         Route::post('/odenis/cek', [PaymentController::class, 'receipt'])->name('pay.receipt');
         // Paying by card: the customer is sent to the bank's own page.

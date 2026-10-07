@@ -14,6 +14,12 @@
   .order-extra-sum b{ font-size:1.15rem; color:var(--gold-deep); font-variant-numeric:tabular-nums; }
   .order-extra.back .order-extra-sum b{ color:#15803d; }
   .order-extra-why{ margin:.35rem 0 0; font-size:.8125rem; line-height:1.6; color:var(--cocoa-soft); }
+  /* Letting go of an order nobody has paid for. Quiet on purpose: it sits
+     next to the button that asks for money, and must not compete with it. */
+  .order-drop{ margin-top:.5rem; }
+  .order-drop button{ border:0; background:none; padding:.25rem 0; font-size:.8125rem;
+    color:var(--cocoa-soft); text-decoration:underline; text-underline-offset:3px; }
+  .order-drop button:hover{ color:var(--red, #b91c1c); }
 @endsection
 
 @section('content')
@@ -119,6 +125,15 @@
               <a href="{{ lroute('orders.pay', $order) }}" class="btn btn-primary" style="margin-top:.75rem;">
                 {{ $order->payment_receipt ? __('Ödəniş səhifəsi') : __('Ödənişi tamamla') }}
               </a>
+              {{-- Ordered and thought better of it. Nothing has been paid,
+                   so he does not have to write to the shop to be rid of it. --}}
+              @if($order->mayBeDroppedBy(auth()->user()))
+                <form method="POST" action="{{ lroute('orders.cancel', $order) }}" class="order-drop"
+                      onsubmit="return confirm(@js(__('Sifariş #:id ləğv edilsin?', ['id' => $order->id])))">
+                  @csrf
+                  <button type="submit">{{ __('Sifarişi ləğv et') }}</button>
+                </form>
+              @endif
             @endif
 
             {{-- The order was changed after it was paid for. The customer sees

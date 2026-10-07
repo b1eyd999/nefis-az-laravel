@@ -142,6 +142,15 @@
 
       <div style="text-align:center;">
         <a href="{{ lroute('orders.index') }}" style="font-size:.9rem; text-decoration:underline; color:var(--cocoa-soft);">{{ __('Sifarişlərim') }}</a>
+        @if($order->mayBeDroppedBy(auth()->user()))
+          {{-- The bar at the top of every page brought him here; if he has
+               changed his mind, this is where he says so. --}}
+          <form method="POST" action="{{ lroute('orders.cancel', $order) }}" class="order-drop"
+                onsubmit="return confirm(@js(__('Sifariş #:id ləğv edilsin?', ['id' => $order->id])))">
+            @csrf
+            <button type="submit">{{ __('Sifarişi ləğv et') }}</button>
+          </form>
+        @endif
       </div>
     </div>
   </div>

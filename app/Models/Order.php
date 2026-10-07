@@ -177,6 +177,25 @@ class Order extends Model
     }
 
     /**
+     * An order the customer may let go of himself.
+     *
+     * He ordered, thought better of it, and the bar at the top of every page
+     * went on asking him for money — the only way out was to write to the
+     * shop. He can drop it here, on the same terms the nightly expiry uses:
+     * nothing has been paid, no receipt is waiting for the owner to judge,
+     * and he is not at the bank this minute.
+     */
+    public function mayBeDroppedBy(?User $user): bool
+    {
+        return $user !== null
+            && $this->user_id === $user->id
+            && $this->status === 'awaiting_payment'
+            && $this->payment_confirmed_at === null
+            && blank($this->payment_receipt)
+            && ! $this->paymentInFlight();
+    }
+
+    /**
      * The customer is at the bank, or has just come back from it and the
      * bank's own message to us is still on its way. Asking him to pay again
      * now is asking for a second charge.

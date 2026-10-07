@@ -39,3 +39,9 @@
   .pay-file input{ display:none; }
   .pay-file .name{ font-weight:600; margin-top:.35rem; word-break:break-all; }
   .pay-sent{ border:1px solid #16a34a; border-radius:.75rem; padding:.8rem 1rem; color:#16a34a; font-weight:600; font-size:.9rem; }
+  /* Letting go of an order nobody has paid for. Quiet on purpose: it sits
+     next to the button that asks for money, and must not compete with it. */
+  .order-drop{ margin-top:.5rem; }
+  .order-drop button{ border:0; background:none; padding:.25rem 0; font-size:.8125rem;
+    color:var(--cocoa-soft); text-decoration:underline; text-underline-offset:3px; }
+  .order-drop button:hover{ color:var(--red, #b91c1c); }
