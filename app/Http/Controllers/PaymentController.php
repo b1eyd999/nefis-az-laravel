@@ -75,7 +75,8 @@ class PaymentController extends Controller
         $old = $order->payment_receipt;
 
         // A photographed receipt is re-encoded like any other upload; a PDF is kept as it is.
-        $path = strtolower($file->getClientOriginalExtension()) === 'pdf'
+        // What it is, not what the phone called it: "CEK.PDF" is a PDF too.
+        $path = $file->guessExtension() === 'pdf'
             ? $file->store('receipts', 'public')
             : ImageStore::store($file, 'receipts', 'cek', 82, 1600)[0];
 

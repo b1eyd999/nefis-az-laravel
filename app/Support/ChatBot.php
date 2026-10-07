@@ -97,16 +97,21 @@ class ChatBot
             return false;
         }
 
-        $who = trim((string) $message->name);
-        $phone = trim((string) $message->phone);
+        /* Every word here came from a stranger on the internet and goes out
+           with parse_mode=HTML. Unescaped, he writes the owner's Telegram for
+           him: a link that reads as the shop's own, or an unclosed tag that
+           swallows the rest of the message — including the line that says how
+           to answer. */
+        $who = e(trim((string) $message->name));
+        $phone = e(trim((string) $message->phone));
         $head = '💬 ' . ($who !== '' ? $who : 'Saytdan mesaj');
         if ($phone !== '') {
             $head .= ' · ' . $phone;
         }
 
-        $text = $head . "\n\n" . $message->body;
+        $text = $head . "\n\n" . e((string) $message->body);
         if ($message->page) {
-            $text .= "\n\n" . $message->page;
+            $text .= "\n\n" . e((string) $message->page);
         }
         $text .= "\n\nCavab vermək üçün bu mesaja cavab (reply) yazın.";
 

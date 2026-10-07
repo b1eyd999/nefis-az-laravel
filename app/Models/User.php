@@ -57,6 +57,25 @@ class User extends Authenticatable implements FilamentUser
      * 55 123 45 67). The last nine digits are the number itself, so they are
      * what is compared; if two accounts answer to them, neither is taken.
      */
+    /**
+     * The one string that stands for whoever is being looked up.
+     *
+     * The lock on the login form counts tries against this, not against what
+     * was typed: "+994 50 123 45 67", "0501234567" and "994501234567" all
+     * reach the same account, so counted apart they bought five fresh tries
+     * each.
+     */
+    public static function loginKey(string $login): string
+    {
+        $login = trim($login);
+        if (str_contains($login, '@')) {
+            return 'e:' . \Illuminate\Support\Str::lower($login);
+        }
+        $digits = preg_replace('/\D/', '', $login);
+
+        return 'p:' . substr((string) $digits, -9);
+    }
+
     public static function byLogin(string $login): ?self
     {
         $login = trim($login);

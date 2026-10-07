@@ -34,15 +34,18 @@ Route::get('/products/{product:slug}/customize', [ProductController::class, 'cus
 Route::get('/qablasdirma', [WrappingController::class, 'index'])->name('wrappings.index');
 
 Route::get('/mektub', [LetterController::class, 'create'])->name('letters.create');
-Route::post('/mektub', [LetterController::class, 'store'])->name('letters.store');
+Route::post('/mektub', [LetterController::class, 'store'])->middleware('throttle:10,60')->name('letters.store');
 
 /* The small chocolate a company puts its own logo on. Priced by the number,
    so the page ends in a request rather than a basket. */
 Route::get('/sirketler-ucun', [CorporateController::class, 'index'])->name('corporate.index');
-Route::post('/sirketler-ucun', [CorporateController::class, 'store'])->name('corporate.store');
+Route::post('/sirketler-ucun', [CorporateController::class, 'store'])->middleware('throttle:10,60')->name('corporate.store');
 
 Route::get('/canli-sekil', [LivePhotoController::class, 'create'])->name('live.create');
-Route::post('/canli-sekil', [LivePhotoController::class, 'store'])->name('live.store');
+/* Anybody at all may post an 18 MB video here. Ten an hour from one address
+   is far more than a customer needs and keeps the disk out of a stranger's
+   hands. */
+Route::post('/canli-sekil', [LivePhotoController::class, 'store'])->middleware('throttle:10,60')->name('live.store');
 
 // The shop's own rules: how an order works, what we know about a customer,
 // and when money comes back. Plain pages, one per subject.
@@ -56,7 +59,7 @@ Route::delete('/cart/{id}', [CartController::class, 'remove'])->name('cart.remov
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,10');
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
 

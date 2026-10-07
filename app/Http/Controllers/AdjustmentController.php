@@ -87,9 +87,14 @@ class AdjustmentController extends Controller
         ])['receipt'];
 
         $old = $adjustment->payment_receipt;
-        $path = $file->getClientOriginalExtension() === 'pdf'
+        /* ImageStore::put() has never existed, so every photographed receipt
+           for a surcharge threw a fatal error and the money went uncollected;
+           only a PDF ever got through. The order's own receipt path is the
+           one that works, and it reads the kind off the bytes, so a phone
+           that writes "CEK.PDF" or hands over a HEIC is handled too. */
+        $path = $file->guessExtension() === 'pdf'
             ? $file->store('receipts', 'public')
-            : ImageStore::put($file, 'receipts');
+            : ImageStore::store($file, 'receipts', 'cek', 82, 1600)[0];
 
         $adjustment->forceFill([
             'payment_method' => 'transfer',

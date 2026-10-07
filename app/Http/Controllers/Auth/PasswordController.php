@@ -107,6 +107,14 @@ class PasswordController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
+        /* And whoever else was in the account is put out. A password is reset
+           because somebody is where he should not be; leaving his session
+           alive makes the reset a gesture. */
+        DB::table('sessions')
+            ->where('user_id', $user->id)
+            ->where('id', '!=', $request->session()->getId())
+            ->delete();
+
         return redirect()->intended(lroute('home'))->with('status', __('Şifrəniz yeniləndi.'));
     }
 }

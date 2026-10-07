@@ -32,6 +32,15 @@ class OrderEditor
     {
         return DB::transaction(function () use ($order, $reason, $edit, $by) {
             $order->load('items');
+
+            /* Not while he is standing at the bank. The order is not paid yet,
+               so no difference would be written down; the bank then confirms
+               the old amount, the order is marked paid, and the shop has
+               quietly collected less than the order is now worth. */
+            if ($order->paymentInFlight()) {
+                throw new \RuntimeException('Müştəri bu anda ödəniş səhifəsindədir. Bir neçə dəqiqə sonra yenidən cəhd edin.');
+            }
+
             $before = $order->total();
 
             $edit();

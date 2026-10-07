@@ -16,12 +16,29 @@ class ImageStore
     /**
      * @return array{0: string, 1: int, 2: int} path on the public disk, width, height
      */
+    /**
+     * What may be written out untouched when there is no converter for it.
+     * Deliberately short, and deliberately without svg: an SVG is a script
+     * that happens to draw, and these files are served from the shop's own
+     * address.
+     */
+    private const KEPT_AS_IS = ['gif', 'pdf', 'png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'];
+
     public static function store(UploadedFile $file, string $dir, string $prefix, int $quality = 90, ?int $maxSide = null): array
     {
         [$width, $height] = getimagesize($file->getRealPath()) ?: [0, 0];
         $name = $prefix . '-' . Str::lower(Str::random(10));
 
-        $source = match (strtolower($file->getClientOriginalExtension())) {
+        /* What the file IS, read from its own bytes — never what it is
+         * called. A real PNG named "cek.html" used to fall past the converter
+         * below and be written as .html into storage/app/public, which is
+         * symlinked into the document root: the shop then served the
+         * customer's own script from nefis.az, and the owner ran it in his
+         * admin session the moment he opened the receipt to check it.
+         */
+        $kind = strtolower((string) $file->guessExtension());
+
+        $source = match ($kind) {
             'png' => function_exists('imagecreatefrompng') ? @imagecreatefrompng($file->getRealPath()) : false,
             'jpg', 'jpeg' => function_exists('imagecreatefromjpeg') ? @imagecreatefromjpeg($file->getRealPath()) : false,
             'webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($file->getRealPath()) : false,
@@ -56,8 +73,12 @@ class ImageStore
             return [$path, (int) $width, (int) $height];
         }
 
-        // No converter available: keep the file as it came.
-        $path = $file->storeAs($dir, $name . '.' . strtolower($file->getClientOriginalExtension()), 'public');
+        /* Nothing could be re-encoded — an animated GIF, a PDF, or a build
+           without GD. It is kept as it came, but only if what it actually is
+           is something this shop stores, and under that name. */
+        abort_unless(in_array($kind, self::KEPT_AS_IS, true), 422, 'Bu fayl növü qəbul edilmir.');
+
+        $path = $file->storeAs($dir, $name . '.' . $kind, 'public');
 
         return [$path, (int) $width, (int) $height];
     }

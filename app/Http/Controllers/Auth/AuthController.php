@@ -68,7 +68,7 @@ class AuthController extends Controller
         ], [], ['login' => __('E-poçt və ya telefon')]);
 
         // A password is not guessed by hand: after five tries the door waits.
-        $key = 'login:' . Str::lower($data['login']) . '|' . $request->ip();
+        $key = 'login:' . User::loginKey($data['login']) . '|' . $request->ip();
         if (RateLimiter::tooManyAttempts($key, 5)) {
             return back()->withErrors([
                 'login' => __('Çox cəhd oldu. :seconds saniyə sonra yenidən yoxlayın.',
