@@ -113,6 +113,13 @@
     var shown = opening();
     shown.setDate(1);
 
+    /* Which of the three the panel is showing. A birthday is a hundred and
+       twenty years back from here, and stepping to it a month at a time is
+       four hundred taps; the title zooms out instead — days to months,
+       months to years — and the years come twenty-four to a page. */
+    var view = 'days';
+    var YEARS_PER_PAGE = 24;
+
     function label() {
       /* An empty field says what it is waiting for; a dash alone reads as
          something broken. */
@@ -126,6 +133,29 @@
       return (min && d < min && ! sameDay(d, min)) || (max && d > max && ! sameDay(d, max));
     }
 
+    /** A month nobody can reach: it ends before the earliest day, or starts after the last. */
+    function monthBlocked(year, month) {
+      var last = new Date(year, month + 1, 0);
+      var first = new Date(year, month, 1);
+
+      return (min && last < min) || (max && first > max);
+    }
+
+    function yearBlocked(year) {
+      return (min && new Date(year, 11, 31) < min) || (max && new Date(year, 0, 1) > max);
+    }
+
+    /* The first year of the page the given year sits on, kept inside the
+       field's own range so the arrows never walk off into empty pages. */
+    function yearPage(year) {
+      var base = Math.floor(year / YEARS_PER_PAGE) * YEARS_PER_PAGE;
+      if (min && base < min.getFullYear()) {
+        base = Math.floor(min.getFullYear() / YEARS_PER_PAGE) * YEARS_PER_PAGE;
+      }
+
+      return base;
+    }
+
     function choose(d) {
       chosen = d;
       input.value = iso(d);
@@ -137,6 +167,36 @@
       input.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
+    function monthCells() {
+      var cells = '';
+      for (var m = 0; m < 12; m++) {
+        var cls = 'np-cell';
+        if (m === shown.getMonth()) cls += ' is-on';
+        else if (chosen && chosen.getFullYear() === shown.getFullYear() && chosen.getMonth() === m) cls += ' is-today';
+        cells += monthBlocked(shown.getFullYear(), m)
+          ? '<span class="np-cell is-off">' + W.months[m].slice(0, 3) + '</span>'
+          : '<button type="button" class="' + cls + '" data-month="' + m + '">' + W.months[m].slice(0, 3) + '</button>';
+      }
+
+      return '<div class="np-grid is-months">' + cells + '</div>';
+    }
+
+    function yearCells() {
+      var base = yearPage(shown.getFullYear());
+      var cells = '';
+      for (var i = 0; i < YEARS_PER_PAGE; i++) {
+        var y = base + i;
+        var cls = 'np-cell';
+        if (y === shown.getFullYear()) cls += ' is-on';
+        else if (chosen && chosen.getFullYear() === y) cls += ' is-today';
+        cells += yearBlocked(y)
+          ? '<span class="np-cell is-off">' + y + '</span>'
+          : '<button type="button" class="' + cls + '" data-year="' + y + '">' + y + '</button>';
+      }
+
+      return '<div class="np-grid is-years">' + cells + '</div>';
+    }
+
     function draw() {
       var first = new Date(shown.getFullYear(), shown.getMonth(), 1);
       var lead = weekday(first);
@@ -145,11 +205,23 @@
       var today = new Date();
       today.setHours(0, 0, 0, 0);
 
+      var title = view === 'days' ? W.months[shown.getMonth()] + ', ' + shown.getFullYear()
+        : view === 'months' ? String(shown.getFullYear())
+        : yearPage(shown.getFullYear()) + ' – ' + (yearPage(shown.getFullYear()) + YEARS_PER_PAGE - 1);
+
       var head = '<div class="np-head">'
         + '<button type="button" class="np-nav" data-step="-1" aria-label="&#8592;">‹</button>'
-        + '<span class="np-title">' + W.months[shown.getMonth()] + ', ' + shown.getFullYear() + '</span>'
+        + (view === 'years'
+          ? '<span class="np-title">' + title + '</span>'
+          : '<button type="button" class="np-title np-zoom">' + title + '</button>')
         + '<button type="button" class="np-nav" data-step="1" aria-label="&#8594;">›</button>'
         + '</div>';
+
+      if (view !== 'days') {
+        pop.innerHTML = head + '<div class="np-body">' + (view === 'months' ? monthCells() : yearCells()) + '</div>';
+
+        return;
+      }
 
       var names = '<div class="np-week">' + W.days.map(function (d) {
         return '<span>' + d + '</span>';
@@ -181,6 +253,7 @@
     function open() {
       shown = opening();
       shown.setDate(1);
+      view = 'days';
       draw();
       pop.hidden = false;
       wrap.classList.add('is-open');
@@ -206,11 +279,43 @@
     pop.addEventListener('click', function (e) {
       var step = e.target.closest('.np-nav');
       if (step) {
-        shown.setMonth(shown.getMonth() + Number(step.dataset.step));
+        var by = Number(step.dataset.step);
+        if (view === 'days') shown.setMonth(shown.getMonth() + by);
+        else if (view === 'months') shown.setFullYear(shown.getFullYear() + by);
+        else shown.setFullYear(yearPage(shown.getFullYear()) + by * YEARS_PER_PAGE);
         draw();
 
         return;
       }
+
+      // The title zooms out: the month opens its year, the year opens the page.
+      if (e.target.closest('.np-zoom')) {
+        view = view === 'days' ? 'months' : 'years';
+        draw();
+
+        return;
+      }
+
+      var year = e.target.closest('.np-cell[data-year]');
+      if (year) {
+        shown.setDate(1);
+        shown.setFullYear(Number(year.dataset.year));
+        view = 'months';
+        draw();
+
+        return;
+      }
+
+      var month = e.target.closest('.np-cell[data-month]');
+      if (month) {
+        shown.setDate(1);
+        shown.setMonth(Number(month.dataset.month));
+        view = 'days';
+        draw();
+
+        return;
+      }
+
       var day = e.target.closest('.np-day[data-day]');
       if (day) {
         choose(new Date(shown.getFullYear(), shown.getMonth(), Number(day.dataset.day)));
@@ -220,10 +325,15 @@
     });
 
     wrap.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && ! pop.hidden) {
-        close();
-        button.focus();
+      if (e.key !== 'Escape' || pop.hidden) {
+        return;
       }
+      /* One step back at a time: out of the years to the months, out of the
+         months to the days, and only then out of the panel. */
+      if (view === 'years') { view = 'months'; draw(); return; }
+      if (view === 'months') { view = 'days'; draw(); return; }
+      close();
+      button.focus();
     });
 
     label();

@@ -1198,6 +1198,27 @@
 .np-day.is-on:hover{ background:var(--cocoa-2); }
 .np-day.is-other{ color:var(--cocoa-faint); cursor:default; font-weight:500; }
 .np-day.is-off{ color:var(--cocoa-faint); cursor:default; opacity:.5; }
+/* Months and years, for the dates nobody reaches by stepping: a birthday is
+   a hundred and twenty months-at-a-time taps away. */
+.np-title.np-zoom{
+  border:0; background:transparent; color:inherit; font:inherit; font-weight:700;
+  padding:.2rem .45rem; border-radius:.45rem; cursor:pointer;
+}
+.np-title.np-zoom:hover{ background:rgba(255,255,255,.12); }
+.np-title.np-zoom:focus-visible{ outline:2px solid var(--paper); outline-offset:1px; }
+.np-grid.is-months{ grid-template-columns:repeat(3, 1fr); gap:.25rem; }
+.np-grid.is-years{ grid-template-columns:repeat(4, 1fr); gap:.25rem; }
+.np-cell{
+  height:2.6rem; display:flex; align-items:center; justify-content:center;
+  border:0; background:transparent; border-radius:.5rem; font:inherit; font-size:.92rem;
+  font-weight:600; color:var(--cocoa-2); cursor:pointer;
+}
+.np-cell:hover{ background:var(--cream-2); }
+.np-cell.is-today{ box-shadow:inset 0 0 0 1px var(--gold); }
+.np-cell.is-on{ background:var(--cocoa); color:var(--paper); font-weight:700; }
+.np-cell.is-on:hover{ background:var(--cocoa-2); }
+.np-cell.is-off{ color:var(--cocoa-faint); cursor:default; opacity:.5; }
+
 /* The clock: the calendar's panel, with the days swapped for hours. Six to a
    row rather than seven, because a day has twenty-four of them. */
 .np-grid.is-hours, .np-grid.is-minutes{ grid-template-columns:repeat(6, 1fr); }
