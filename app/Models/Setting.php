@@ -84,6 +84,12 @@ class Setting extends Model
     /** JSON: the letter page's wording and the Polaroid's look (see App\Support\Letter::PAGE_DEFAULTS). */
     public const LETTER_PAGE = 'letter_page';
 
+    /** JSON: which lines the "Məhsullar" menu shows, their badges and their order. */
+    public const MENU = 'menu_items';
+
+    /** JSON: the wording of the xonça page (see App\Support\Xonca::DEFAULTS). */
+    public const XONCA = 'xonca_page';
+
     /** JSON: the live photo page's wording (see App\Support\LivePage::DEFAULTS). */
     public const LIVE_PAGE = 'live_page';
 

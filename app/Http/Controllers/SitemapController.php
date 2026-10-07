@@ -66,6 +66,11 @@ class SitemapController extends Controller
             if (\App\Support\CorporatePage::enabled()) {
                 $this->add(fn () => [route($name('corporate.index'))]);
             }
+            /* Only once there is something on it: a page that says "coming
+               soon" is worth a menu line, not a place in the index. */
+            if (\App\Support\Xonca::ready()) {
+                $this->add(fn () => [route($name('xonca.index'))]);
+            }
             foreach ($products as $product) {
                 $this->add(fn () => [
                     route($name('products.customize'), $product->slug),

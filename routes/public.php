@@ -22,6 +22,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PwaController;
 use App\Http\Controllers\WrappingController;
+use App\Http\Controllers\XoncaController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -42,6 +43,10 @@ Route::get('/sirketler-ucun', [CorporateController::class, 'index'])->name('corp
 Route::post('/sirketler-ucun', [CorporateController::class, 'store'])->middleware('throttle:10,60')->name('corporate.store');
 
 Route::get('/canli-sekil', [LivePhotoController::class, 'create'])->name('live.create');
+
+/* The small chocolates a xonça is piled with, for an engagement, a henna
+   night or a wedding: their own designs, their own page. */
+Route::get('/xonca', [XoncaController::class, 'index'])->name('xonca.index');
 /* Anybody at all may post an 18 MB video here. Ten an hour from one address
    is far more than a customer needs and keeps the disk out of a stranger's
    hands. */
