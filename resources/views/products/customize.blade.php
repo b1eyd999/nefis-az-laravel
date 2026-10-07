@@ -364,10 +364,28 @@
   .price-sum div{ display:flex; justify-content:space-between; gap:1rem; color:var(--cocoa-soft); }
   .price-sum div[hidden]{ display:none; }
   .price-sum .total{ color:var(--cocoa); font-weight:700; font-size:1.0625rem; border-top:1px solid var(--line); padding-top:.45rem; margin-top:.1rem; }
+
+  /* On a phone the box itself has to be the first thing on the screen.
+     The old head — breadcrumbs, the eyebrow, the name, the price and the
+     description — filled the whole first screen, and the customer scrolled
+     past a design he had not seen yet to reach it. The name and the price
+     stay (they are what the page is, and what Google reads); everything
+     that only repeats what he already knows steps aside. */
+  @media (max-width: 760px){
+    .pd-hero{ padding-top:.6rem; }
+    .pd-hero .crumbs,
+    .pd-hero .eyebrow,
+    .pd-hero .lede,
+    .pd-hero .occ-chips{ display:none; }
+    .pd-hero h1{ font-size:1.45rem; line-height:1.2; }
+    .pd-hero .price-from{ margin-top:.2rem; font-size:.95rem; }
+    /* And the air the section below keeps for a desktop page. */
+    .pd-hero + section{ padding-top:.75rem; }
+  }
 @endsection
 
 @section('content')
-<section class="page-hero" style="padding-bottom:0;">
+<section class="page-hero pd-hero" style="padding-bottom:0;">
   <div class="wrap">
     <nav class="crumbs" aria-label="{{ __('Səhifənin yeri') }}">
       <a href="{{ lroute('home') }}">{{ __('Ana səhifə') }}</a><span aria-hidden="true">›</span>
