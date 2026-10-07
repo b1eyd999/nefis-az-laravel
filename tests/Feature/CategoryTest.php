@@ -34,9 +34,13 @@ class CategoryTest extends TestCase
     public function test_the_shop_starts_with_the_shelves_it_had(): void
     {
         $this->assertSame(
-            ['sokolad', 'poster', 'love-is', 'xerite', 'spotify'],
+            // "xonca" comes last and switched off: the shelf has to exist
+            // before a xonça design can be filed under it, but an empty one
+            // on the catalogue page would read as a mistake.
+            ['sokolad', 'poster', 'love-is', 'xerite', 'spotify', 'xonca'],
             ProductCategory::inOrder()->pluck('slug')->all()
         );
+        $this->assertFalse((bool) ProductCategory::where('slug', 'xonca')->value('is_active'));
     }
 
     public function test_the_catalogue_is_arranged_the_way_the_owner_arranged_it(): void
