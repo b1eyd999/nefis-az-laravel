@@ -1352,3 +1352,26 @@
   vertical-align:.08em; color:#fff; background:var(--flame-grad, linear-gradient(135deg,#fa7512,#f59e0b));
 }
 .mobile-nav .ni-badge{ font-size:.6rem; }
+
+/* ---------- the owner's banner ---------- */
+/* Moved out of the home page's own sheet when the banner became something
+   any page may carry. The markup is partials/hero.blade.php. */
+.hero .hero-title{ margin-top:1.25rem; font-size:clamp(2.25rem, 5vw, 3.75rem); line-height:1.08; }
+.hero-visual.has-img{ background:var(--cream-2); }
+.hero-visual.has-img::before{ display:none; }
+.hero-visual img{ position:absolute; inset:0; width:100%; height:100%; }
+.hero-visual img.fit-cover{ object-fit:cover; }
+.hero-visual img.fit-contain{ object-fit:contain; padding:1.5rem; }
+.hero-visual .hero-ribbon{ z-index:2; }
+.hero-slider .hero-track{ display:grid; }
+.hero-slider .hero-slide{ grid-area:1 / 1; opacity:0; visibility:hidden; transition:opacity .7s var(--ease), visibility .7s; }
+.hero-slider .hero-slide.is-on{ opacity:1; visibility:visible; }
+.hero-slider .hero-slide:not(.is-on) .hero-in{ animation:none; opacity:0; }
+.hero-nav{ position:relative; z-index:2; display:flex; align-items:center; justify-content:center; gap:1rem; margin-top:2.5rem; }
+.hero-dots{ display:flex; align-items:center; gap:.5rem; }
+.hero-dot{ width:.6rem; height:.6rem; border-radius:999px; border:0; padding:0; background:var(--line);
+.hero-dot:hover{ width:1.9rem; background:linear-gradient(120deg, #FFD166, #F5B301);
+.hero-dot.is-on{ width:1.9rem; background:var(--flame-grad); box-shadow:0 4px 12px -4px var(--flame-shadow); }
+.hero-dot:focus-visible{ outline:2px solid var(--flame); outline-offset:3px; }
+@media (prefers-reduced-motion:reduce){ .hero-slider .hero-slide{ transition:none; } }
+.collections-foot{ display:flex; justify-content:center; margin-top:3rem; }

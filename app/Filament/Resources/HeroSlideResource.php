@@ -24,11 +24,11 @@ class HeroSlideResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationLabel = 'Ana səhifə slaydları';
+    protected static ?string $navigationLabel = 'Slaydlar';
 
     protected static ?string $modelLabel = 'slayd';
 
-    protected static ?string $pluralModelLabel = 'ana səhifə slaydları';
+    protected static ?string $pluralModelLabel = 'slaydlar';
 
     protected static ?int $navigationSort = 85;
 
@@ -54,6 +54,16 @@ class HeroSlideResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\Section::make('Yeri')
+                    ->description('Bu slayd hansı səhifənin başında dursun.')
+                    ->schema([
+                        Forms\Components\Select::make('place')
+                            ->label('Səhifə')
+                            ->options(HeroSlide::PLACES)
+                            ->default('home')
+                            ->selectablePlaceholder(false)
+                            ->required(),
+                    ]),
                 Forms\Components\Section::make('Mətn')
                     ->schema([
                         Forms\Components\TextInput::make('eyebrow')
@@ -126,7 +136,22 @@ class HeroSlideResource extends Resource
                     ->formatStateUsing(fn (string $state) => Str::limit(str_replace("\n", ' ', $state), 60))
                     ->description(fn (HeroSlide $s) => $s->eyebrow)
                     ->weight('bold'),
+                Tables\Columns\TextColumn::make('place')
+                    ->label('Səhifə')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state) => HeroSlide::PLACES[$state] ?? HeroSlide::PLACES['home']),
                 Tables\Columns\ToggleColumn::make('is_active')->label('Saytda'),
+            ])
+            /* Dragging sets the order inside one page, so the list is read one
+               page at a time — mixed together, the handles would lie. */
+            ->groups([
+                Tables\Grouping\Group::make('place')
+                    ->label('Səhifə')
+                    ->getTitleFromRecordUsing(fn (HeroSlide $s) => HeroSlide::PLACES[$s->place] ?? HeroSlide::PLACES['home']),
+            ])
+            ->defaultGroup('place')
+            ->filters([
+                Tables\Filters\SelectFilter::make('place')->label('Səhifə')->options(HeroSlide::PLACES),
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order')
@@ -134,7 +159,7 @@ class HeroSlideResource extends Resource
                 ->beforeReplicaSaved(fn (HeroSlide $replica) => $replica->fill(['is_active' => false, 'image' => null])),
                 Tables\Actions\DeleteAction::make()])
             ->emptyStateHeading('Slayd yoxdur')
-            ->emptyStateDescription('Slayd olmayanda ana səhifə birbaşa dizaynlarla başlayır.');
+            ->emptyStateDescription('Slayd olmayanda səhifə birbaşa məzmunla başlayır.');
     }
 
     public static function getPages(): array

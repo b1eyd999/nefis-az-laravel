@@ -28,6 +28,8 @@
 @endsection
 
 @section('content')
+@include('partials.hero')
+
 <section class="page-hero" style="padding-bottom:0;">
   <div class="wrap">
     <nav class="crumbs" aria-label="{{ __('Səhifənin yeri') }}">

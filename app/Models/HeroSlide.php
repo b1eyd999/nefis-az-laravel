@@ -16,7 +16,13 @@ class HeroSlide extends Model
     protected $fillable = [
         'i18n',
         'eyebrow', 'title', 'text', 'button1_label', 'button1_url', 'button2_label', 'button2_url',
-        'badges', 'image', 'image_fit', 'ribbon', 'is_active', 'sort_order',
+        'badges', 'image', 'image_fit', 'ribbon', 'is_active', 'sort_order', 'place',
+    ];
+
+    /** The pages that may carry a banner of their own. */
+    public const PLACES = [
+        'home' => 'Ana səhifə',
+        'xonca' => 'Xonça və nişan',
     ];
 
     protected function casts(): array
@@ -37,9 +43,16 @@ class HeroSlide extends Model
         });
     }
 
-    public function scopeShown(Builder $query): Builder
+    /**
+     * The slides of one page, in the owner's order. The page is named, and
+     * named by default, so an old row written before slides had a place goes
+     * on standing where it always stood.
+     */
+    public function scopeShown(Builder $query, string $place = 'home'): Builder
     {
-        return $query->where('is_active', true)->orderBy('sort_order')->orderBy('id');
+        return $query->where('is_active', true)
+            ->where('place', $place)
+            ->orderBy('sort_order')->orderBy('id');
     }
 
     /**

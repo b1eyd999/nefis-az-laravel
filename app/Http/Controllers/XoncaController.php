@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\HeroSlide;
 use App\Support\Xonca;
 use Illuminate\View\View;
 
@@ -19,6 +20,8 @@ class XoncaController extends Controller
         return view('xonca.index', [
             'page' => Xonca::page(),
             'designs' => Xonca::designs(),
+            // The owner's own banner for this page, if he has written one.
+            'slides' => HeroSlide::shown('xonca')->get(),
         ]);
     }
 }

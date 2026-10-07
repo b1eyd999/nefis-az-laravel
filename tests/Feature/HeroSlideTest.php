@@ -31,13 +31,44 @@ class HeroSlideTest extends TestCase
             ->assertDontSee('data-go=', false);
     }
 
+    /**
+     * A slide stands on one page. The home page's banner was the only one
+     * there was; the xonça page wants its own, and neither may show up on
+     * the other's screen.
+     */
+    public function test_a_slide_stands_on_the_page_it_was_written_for(): void
+    {
+        HeroSlide::create(['title' => 'Ana səhifə bannerı', 'place' => 'home', 'is_active' => true, 'sort_order' => 0]);
+        HeroSlide::create(['title' => 'Xonça bannerı', 'place' => 'xonca', 'is_active' => true, 'sort_order' => 0]);
+
+        $this->get(route('home'))->assertOk()
+            ->assertSee('Ana səhifə bannerı')
+            ->assertDontSee('Xonça bannerı');
+
+        $this->get(route('xonca.index'))->assertOk()
+            ->assertSee('Xonça bannerı')
+            ->assertDontSee('Ana səhifə bannerı');
+    }
+
+    /** Written before slides had a page at all: it stays where it was showing. */
+    public function test_an_older_slide_still_belongs_to_the_home_page(): void
+    {
+        $slide = HeroSlide::create(['title' => 'Köhnə slayd', 'is_active' => true, 'sort_order' => 0]);
+
+        $this->assertSame('home', $slide->fresh()->place);
+        $this->get(route('home'))->assertOk()->assertSee('Köhnə slayd');
+        $this->get(route('xonca.index'))->assertOk()->assertDontSee('Köhnə slayd');
+    }
+
     public function test_the_owner_writes_a_second_slide_and_they_turn(): void
     {
         Storage::fake('public');
         $this->actingAs(User::factory()->create(['role' => User::ADMIN]));
         Filament::setCurrentPanel(Filament::getPanel('admin'));
 
-        $this->get('/admin/hero-slides')->assertOk()->assertSee('Ana səhifə slaydları');
+        // The banner is no longer the home page's alone, so the screen is
+        // "Slaydlar" and each row says which page it stands on.
+        $this->get('/admin/hero-slides')->assertOk()->assertSee('Slaydlar');
 
         Livewire::test(CreateHeroSlide::class)
             ->fillForm([
