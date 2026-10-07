@@ -294,6 +294,22 @@
   .choc-brand:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
   /* Thumb-sized on a phone. */
   @media (max-width: 560px){ .choc-brand{ padding:.55rem .85rem; } }
+  /* Thirty brands held half the page. Eight stay out; the rest wait behind
+     a button shaped like the one that opens a brand's own bars below. */
+  .choc-brands.is-folded .choc-brand.is-more{ display:none; }
+  .brand-more{
+    display:flex; align-items:center; justify-content:center; gap:.45rem; width:100%;
+    margin:.15rem 0 .25rem; padding:.65rem 1rem; border-radius:999px; cursor:pointer;
+    border:1.5px solid var(--line); background:var(--paper); color:var(--cocoa);
+    font:inherit; font-size:.9375rem; font-weight:600;
+    transition:border-color .2s, background .2s;
+  }
+  .brand-more:hover{ border-color:rgba(250,117,18,.55); background:var(--cream-2); }
+  .brand-more:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+  .brand-more b{ font-weight:800; color:var(--gold-deep); }
+  .brand-more svg{ width:1.15rem; height:1.15rem; transition:transform .25s var(--ease); }
+  .brand-more[aria-expanded="true"] svg{ transform:rotate(180deg); }
+  .brand-more[aria-expanded="true"] .l, .brand-more:not([aria-expanded="true"]) .m{ display:none; }
   /* The owner's top brands (Milka, Alpen Gold…): orange, with a slow glow. */
   .choc-brand.top{ background:linear-gradient(135deg, #FB923C, #EA580C); border-color:#F97316; color:#fff; box-shadow:0 0 10px rgba(249,115,22,.4); }
   .choc-brand.top span{ opacity:.85; }
@@ -726,12 +742,38 @@
           <div class="choc-block" id="choc-block">
             <label>{{ __('Qutunun içindəki şokolad') }}</label>
             @if($brands->count() > 1)
-              <div class="choc-brands" aria-label="{{ __('Marka seçin') }}">
+              @php
+                /* Thirty brands held half the page and the chocolate itself
+                   was below the fold. The ones the owner marked, the one that
+                   is open and the one already chosen are always on screen;
+                   the rest wait behind the button under them. */
+                $alwaysOn = 8;
+                $folded = [];
+                $seen = 0;
+                foreach ($brands as $brand => $bars) {
+                    $must = in_array($brand, $top, true)
+                        || $brand === $openBrand
+                        || ($picked && $picked['brand'] === $brand);
+                    if ($must || $seen < $alwaysOn) {
+                        $seen++;
+                        continue;
+                    }
+                    $folded[] = $brand;
+                }
+              @endphp
+              <div class="choc-brands @if($folded) is-folded @endif" aria-label="{{ __('Marka seçin') }}">
                 @foreach($brands as $brand => $bars)
-                  <button type="button" class="choc-brand{{ in_array($brand, $top, true) ? ' top' : '' }}{{ $brand === $openBrand ? ' active' : '' }}{{ $picked && $picked['brand'] === $brand ? ' has-pick' : '' }}"
+                  <button type="button" class="choc-brand{{ in_array($brand, $top, true) ? ' top' : '' }}{{ $brand === $openBrand ? ' active' : '' }}{{ $picked && $picked['brand'] === $brand ? ' has-pick' : '' }}{{ in_array($brand, $folded, true) ? ' is-more' : '' }}"
                           data-brand="{{ $brand }}" aria-pressed="{{ $brand === $openBrand ? 'true' : 'false' }}">{{ $brand === \App\Support\ChocolateBrand::OTHER ? __($brand) : $brand }} <span>{{ $bars->count() }}</span></button>
                 @endforeach
               </div>
+              @if($folded)
+                <button type="button" class="brand-more" id="brand-more" aria-expanded="false">
+                  <span class="l">{{ __('Bütün markalar') }} <b>{{ count($folded) }}</b></span>
+                  <span class="m">{{ __('Yığ') }}</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+              @endif
             @endif
             <div role="radiogroup" aria-label="{{ __('Şokolad seçin') }}">
               @foreach($brands as $brand => $bars)
@@ -2159,6 +2201,19 @@
     });
   }
   chips.forEach(function(c){ c.addEventListener('click', function(){ show(c.dataset.brand); }); });
+
+  /* Thirty brands held half the page. Eight stay out, the rest open from
+     the button under them — and stay open, because somebody who asked for
+     the whole list is looking through it. */
+  var moreBrands = document.getElementById('brand-more');
+  if (moreBrands) {
+    moreBrands.addEventListener('click', function(){
+      var open = moreBrands.getAttribute('aria-expanded') === 'true';
+      moreBrands.setAttribute('aria-expanded', open ? 'false' : 'true');
+      block.querySelector('.choc-brands').classList.toggle('is-folded', open);
+      if (open) moreBrands.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  }
   block.querySelectorAll('.choc-more').forEach(function(btn){
     btn.addEventListener('click', function(){
       var group = btn.closest('.choc-group');

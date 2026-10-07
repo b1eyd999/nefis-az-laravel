@@ -119,10 +119,12 @@
   <!-- COLLECTIONS -->
   <section id="collections">
     <div class="wrap">
-      <div class="section-head reveal">
-        <span class="eyebrow">{{ __('Kolleksiya') }}</span>
-        {{-- The page's one heading, whatever the banner above is doing. --}}
-        <h1 class="hero-title" style="font-size:clamp(2rem, 4.2vw, 3rem);">{{ __('Bakıda şəkilli şokolad qutuları və fərdi hədiyyələr') }}</h1>
+      {{-- The page's one heading, whatever the banner above is doing. It is
+           a label over the designs, not a billboard: at the old size it ran
+           to three lines and pushed the first row of boxes off the screen. --}}
+      <div class="section-head center reveal" style="margin-bottom:1.75rem;">
+        <span class="eyebrow" style="justify-content:center;">{{ __('Kolleksiya') }}</span>
+        <h1 style="font-size:clamp(1.5rem, 2.6vw, 2rem); line-height:1.25; max-width:34rem; margin-inline:auto;">{{ __('Bakıda şəkilli şokolad qutuları və fərdi hədiyyələr') }}</h1>
       </div>
       <div class="cards-grid">
         @forelse($products as $product)
