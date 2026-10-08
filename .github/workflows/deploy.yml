@@ -117,7 +117,9 @@ jobs:
 
       - name: The suite
         # 512M because the image tests paint at print size.
-        run: php -d memory_limit=512M artisan test --no-interaction
+        # No --no-interaction here: artisan hands anything it does not know
+        # straight to PHPUnit, which refuses it and stops.
+        run: php -d memory_limit=512M artisan test
 
   deploy:
     name: Pull and deploy on the hosting
