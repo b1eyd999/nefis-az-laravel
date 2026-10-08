@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\Contact;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -84,18 +85,46 @@ class User extends Authenticatable implements FilamentUser
             return static::where('email', $login)->first();
         }
 
-        $digits = preg_replace('/\D/', '', $login);
-        if (strlen($digits) < 7) {
+        $matches = static::samePhone($login)->limit(5)->get();
+
+        if ($matches->count() === 1) {
+            return $matches->first();
+        }
+
+        /* The same digits on more than one account. If exactly one of them
+           is written the way the shop writes numbers — the others being
+           older rows kept in some other shape — that is the one meant;
+           without this neither owner could sign in by the number at all.
+           Two accounts genuinely sharing a telephone still open nothing:
+           there is no way to tell which of them is asking. */
+        $written = Contact::az($login);
+        if ($written === null) {
             return null;
         }
 
-        $matches = static::whereNotNull('phone')
-            ->whereRaw("REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') LIKE ?",
-                ['%'.substr($digits, -9)])
-            ->limit(2)
-            ->get();
+        $exact = $matches->where('phone', $written);
 
-        return $matches->count() === 1 ? $matches->first() : null;
+        return $exact->count() === 1 ? $exact->first() : null;
+    }
+
+    /**
+     * Accounts whose number is this number, however either was typed.
+     *
+     * The stored value has its spaces, brackets, dashes and plus taken out
+     * in the query, and the last nine digits are compared — so +994 55 123
+     * 45 67, 0551234567 and 551234567 are all one number.
+     */
+    public function scopeSamePhone($query, ?string $value)
+    {
+        $key = Contact::key($value);
+
+        if ($key === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereNotNull('phone')
+            ->whereRaw("REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') LIKE ?",
+                ['%'.$key]);
     }
 
     public function canAccessPanel(Panel $panel): bool

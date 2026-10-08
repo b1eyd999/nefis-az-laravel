@@ -73,6 +73,18 @@ class Contact
             : null;
     }
 
+    /**
+     * The nine digits that make an Azerbaijani number itself, whatever it
+     * was typed with — +994, a leading zero, spaces, brackets or nothing.
+     * Two numbers are the same number when these match.
+     */
+    public static function key(?string $value): ?string
+    {
+        $d = preg_replace('/\D/', '', (string) $value);
+
+        return strlen((string) $d) >= 9 ? substr((string) $d, -9) : null;
+    }
+
     /** Keeps whatever the owner typed as digits with a leading plus. */
     public static function clean(?string $value): string
     {

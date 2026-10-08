@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\SavedCart;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 
@@ -25,17 +26,40 @@ class Cart
     /** Whether the customer asked for his order to be made before the others. */
     protected const RUSH = 'cart_rush';
 
+    /** Whose kept basket this session has already been filled from. */
+    protected const FILLED = 'cart_filled_for';
+
     public static function rush(): bool
     {
+        // Asked for with the basket and kept with it, so it is read the
+        // same way: whatever was kept is put back first.
+        self::fillOnce();
+
         return (bool) Session::get(self::RUSH, false);
     }
 
     public static function setRush(bool $wanted): void
     {
         Session::put(self::RUSH, $wanted);
+        self::keep();
     }
 
+    /**
+     * What is in the basket.
+     *
+     * The first time a signed-in customer reads it, whatever was kept for
+     * him is put back in — he made it on another telephone, or last week on
+     * this one. Every page reads the basket, so there is no moment to miss.
+     */
     public static function items(): array
+    {
+        self::fillOnce();
+
+        return self::raw();
+    }
+
+    /** The session's own copy, with nothing fetched and nothing filled. */
+    protected static function raw(): array
     {
         return Session::get(self::KEY, []);
     }
@@ -49,7 +73,7 @@ class Cart
         array $photoLabels = [], array $textLabels = [], ?array $chocolate = null, ?array $wrapping = null, ?array $letter = null, ?array $ar = null, ?string $spotify = null,
         array $photoFrames = [], ?array $star = null, ?array $spot = null): void
     {
-        $items = self::items();
+        $items = self::raw();
         $items[] = [
             'id' => Str::uuid()->toString(),
             'product_id' => $productId,
@@ -68,12 +92,13 @@ class Cart
             'spotify' => $spotify,
         ];
         Session::put(self::KEY, $items);
+        self::keep();
     }
 
     /** A Polaroid letter bought on its own, without a box. */
     public static function addLetter(array $letter, int $quantity = 1): void
     {
-        $items = self::items();
+        $items = self::raw();
         $items[] = [
             'id' => Str::uuid()->toString(),
             'kind' => 'letter',
@@ -84,6 +109,7 @@ class Cart
             'letter' => $letter,
         ];
         Session::put(self::KEY, $items);
+        self::keep();
     }
 
     public static function isLetter(array $item): bool
@@ -94,7 +120,7 @@ class Cart
     /** A live photo bought on its own: the customer's picture and video, no box. */
     public static function addLive(array $ar): void
     {
-        $items = self::items();
+        $items = self::raw();
         $items[] = [
             'id' => Str::uuid()->toString(),
             'kind' => 'live',
@@ -105,6 +131,7 @@ class Cart
             'ar' => $ar,
         ];
         Session::put(self::KEY, $items);
+        self::keep();
     }
 
     public static function isLive(array $item): bool
@@ -128,18 +155,20 @@ class Cart
 
     public static function remove(string $id): void
     {
-        $items = array_values(array_filter(self::items(), fn ($item) => $item['id'] !== $id));
+        $items = array_values(array_filter(self::raw(), fn ($item) => $item['id'] !== $id));
         Session::put(self::KEY, $items);
         // An empty basket hurries nothing.
         if ($items === []) {
             Session::forget(self::RUSH);
         }
+        self::keep();
     }
 
     public static function clear(): void
     {
         Session::forget(self::KEY);
         Session::forget(self::RUSH);
+        self::keep();
     }
 
     /**
@@ -163,5 +192,74 @@ class Cart
         }
 
         Session::put(self::KEY, $out);
+        self::keep();
+    }
+
+    /**
+     * The basket as it stands, kept where the session cannot lose it.
+     *
+     * Only for somebody who has signed in — there is nowhere to keep a
+     * stranger's basket, and nothing to find it by again.
+     */
+    public static function keep(): void
+    {
+        $id = auth()->id();
+        if (! $id) {
+            return;
+        }
+
+        SavedCart::updateOrCreate(
+            ['user_id' => $id],
+            ['items' => self::raw(), 'rush' => (bool) Session::get(self::RUSH, false)],
+        );
+    }
+
+    /**
+     * Once per session, put back what was kept for whoever has signed in.
+     *
+     * If he has built something since — a basket filled before signing in —
+     * neither is thrown away: the two are put together, because losing ten
+     * minutes of somebody's work is worse than a line he can delete. Lines
+     * are matched by their id, so signing in again doubles nothing.
+     */
+    protected static function fillOnce(): void
+    {
+        $id = auth()->id();
+        if (! $id || Session::get(self::FILLED) === $id) {
+            return;
+        }
+
+        // Written before the work, not after: everything below reads the
+        // basket again, and this is what keeps that from looping.
+        Session::put(self::FILLED, $id);
+
+        $saved = SavedCart::where('user_id', $id)->first();
+        if (! $saved) {
+            // Nothing kept yet; what he is carrying becomes what is kept.
+            self::keep();
+
+            return;
+        }
+
+        $here = self::raw();
+        $seen = array_flip(array_column($here, 'id'));
+
+        $out = $here;
+        foreach ($saved->lines() as $line) {
+            if (count($out) >= SavedCart::MOST) {
+                break;
+            }
+            if (isset($line['id']) && isset($seen[$line['id']])) {
+                continue;
+            }
+            $out[] = $line;
+        }
+
+        Session::put(self::KEY, $out);
+        if ($saved->rush) {
+            Session::put(self::RUSH, true);
+        }
+
+        self::keep();
     }
 }

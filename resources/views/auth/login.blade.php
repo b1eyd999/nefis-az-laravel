@@ -31,6 +31,9 @@
         @csrf
         <div class="field">
           <label for="login">{{ __('E-poçt və ya telefon') }}</label>
+          {{-- The number is found by its digits, so there is nothing to get
+               right; saying so saves the ones who try twice and give up. --}}
+          <small class="hint">{{ __('Nömrəni istədiyiniz kimi yazın: 0551234567 və ya +994 55 123 45 67.') }}</small>
           {{-- No example inside the field: the label above already says what goes here. --}}
           <input type="text" id="login" name="login" value="{{ old('login') }}" required autofocus
                  autocomplete="username" inputmode="email">

@@ -30,7 +30,7 @@ class AuthController extends Controller
             'phone' => ['required', 'string', 'max:30', function ($attribute, $value, $fail) {
                 if (! Contact::az($value)) {
                     $fail(__('Telefon nömrəsini +994 55 555 55 55 şəklində yazın.'));
-                } elseif (User::where('phone', Contact::az($value))->exists()) {
+                } elseif (User::samePhone($value)->exists()) {
                     // Two accounts on one number can never sign in by it again,
                     // and there is no password reset to fall back on.
                     $fail(__('Bu nömrə ilə artıq hesab var — daxil olun.'));

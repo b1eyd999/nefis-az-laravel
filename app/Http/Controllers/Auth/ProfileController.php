@@ -39,7 +39,7 @@ class ProfileController extends Controller
             'phone' => ['required', 'string', 'max:30', function ($attribute, $value, $fail) use ($user) {
                 if (! Contact::az($value)) {
                     $fail(__('Telefon nömrəsini +994 55 555 55 55 şəklində yazın.'));
-                } elseif (User::where('phone', Contact::az($value))->whereKeyNot($user->id)->exists()) {
+                } elseif (User::samePhone($value)->whereKeyNot($user->id)->exists()) {
                     $fail(__('Bu nömrə ilə artıq hesab var.'));
                 }
             }],

@@ -123,4 +123,54 @@ class ProfileTest extends TestCase
             ->assertSee(route('profile.index'), false)
             ->assertSee('Hesabım');
     }
+
+    /**
+     * Registered as +994551234567, signing in as 0551234567 — the digits
+     * are what make it the same number, not the shape it was typed in.
+     */
+    public function test_he_signs_in_with_his_number_written_any_way(): void
+    {
+        $user = User::factory()->create([
+            'phone' => Contact::az('+994551234567'),
+            'password' => Hash::make('chocolate8'),
+        ]);
+
+        foreach (['0551234567', '+994551234567', '994551234567', '551234567',
+            '+994 55 123 45 67', '(055) 123-45-67'] as $typed) {
+            $this->post(route('logout'));
+            app('auth')->forgetGuards();
+
+            $this->post(route('login'), ['login' => $typed, 'password' => 'chocolate8'])
+                ->assertRedirect()
+                ->assertSessionHasNoErrors();
+            $this->assertAuthenticatedAs($user);
+        }
+    }
+
+    /**
+     * Two accounts with the same digits in different shapes used to lock
+     * both owners out: the lookup found two and gave up. The one written
+     * the way the shop writes numbers is the one meant — and a second
+     * account with those digits cannot be made any more.
+     */
+    public function test_the_same_number_in_two_shapes_still_signs_the_right_one_in(): void
+    {
+        $proper = User::factory()->create([
+            'phone' => Contact::az('+994551234567'),
+            'password' => Hash::make('chocolate8'),
+        ]);
+        // As an older row could be: the digits, unformatted.
+        User::factory()->create(['phone' => '0551234567']);
+
+        $this->post(route('login'), ['login' => '0551234567', 'password' => 'chocolate8'])
+            ->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertAuthenticatedAs($proper);
+
+        // And nobody signs up on that number again, however they write it.
+        $this->post(route('logout'));
+        $this->post(route('register'), [
+            'name' => 'Başqası', 'email' => 'basqa@example.com',
+            'phone' => '+994 55 123 45 67', 'password' => 'chocolate8',
+        ])->assertSessionHasErrors('phone');
+    }
 }

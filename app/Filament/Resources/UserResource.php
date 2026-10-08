@@ -110,7 +110,7 @@ class UserResource extends Resource
                         Forms\Components\TextInput::make('phone')->label('Telefon')->tel()
                             ->rule(fn (?User $record) => function (string $attribute, $value, Closure $fail) use ($record) {
                                 $phone = Contact::az((string) $value);
-                                if ($phone && User::where('phone', $phone)->whereKeyNot($record?->id)->exists()) {
+                                if ($phone && User::samePhone($value)->whereKeyNot($record?->id)->exists()) {
                                     $fail('Bu nömrə başqa hesabdadır.');
                                 }
                             }),
