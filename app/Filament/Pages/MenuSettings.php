@@ -53,7 +53,8 @@ class MenuSettings extends Page implements HasForms
 
         $rows = [];
         foreach ($saved as $key => $row) {
-            $rows[] = ['key' => $key, 'on' => $row['on'], 'badge' => $row['badge'], 'place' => $row['place']];
+            $rows[] = ['key' => $key, 'on' => $row['on'], 'badge' => $row['badge'],
+                'place' => $row['place'], 'link' => $row['link']];
         }
 
         $pictures = [];
@@ -70,7 +71,10 @@ class MenuSettings extends Page implements HasForms
             ->statePath('data')
             ->schema([
                 Forms\Components\Section::make('Məhsullar menyusu')
-                    ->description('Sətri tutub sırasını dəyişin. «Göstər» söndürülsə, həmin səhifə menyuda görünmür — səhifənin özü isə ünvanı ilə açıq qalır.')
+                    ->description('Sətri tutub sırasını dəyişin. «Göstər» söndürülsə, həmin səhifə menyuda '
+                        . 'görünmür — səhifənin özü isə ünvanı ilə açıq qalır. «Yeri» ilə sətri «Məhsullar» '
+                        . 'siyahısından çıxarıb menyunun özünə ayrıca söz kimi qoya bilərsiniz, «Səhifəyə keçid» '
+                        . 'ilə isə yazını saxlayıb keçidi bağlaya bilərsiniz.')
                     ->schema([
                         Forms\Components\Repeater::make('rows')
                             ->label('Menyu sətirləri')
@@ -93,6 +97,11 @@ class MenuSettings extends Page implements HasForms
                                     ->datalist(Menu::BADGES)
                                     ->placeholder('Məs. Yeni, Tezliklə')
                                     ->helperText('Menyuda adın yanında kiçik yazı. Boş qoysanız, nişan olmur.'),
+                                Forms\Components\Toggle::make('link')
+                                    ->label('Səhifəyə keçid')
+                                    ->default(true)
+                                    ->helperText('Söndürülsə, menyuda yazı görünür, amma ona basmaq olmur — '
+                                        . 'səhifə hazır olana qədər «Tezliklə» üçün.'),
                                 Forms\Components\Select::make('place')
                                     ->label('Yeri')
                                     ->options(Menu::PLACES)

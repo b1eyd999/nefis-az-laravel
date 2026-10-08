@@ -133,22 +133,32 @@
           </button>
           <div class="nav-panel">
             @foreach($navDrop as $item)
-              <a class="nav-item" href="{{ lroute($item['route']) }}">
+              {{-- A line whose page is not ready yet is a word, not a door. --}}
+              @php $tag = $item['link'] ? 'a' : 'span'; @endphp
+              <{{ $tag }} class="nav-item{{ $item['link'] ? '' : ' is-shut' }}" {!! $item['link'] ? 'href="' . e(lroute($item['route'])) . '"' : 'aria-disabled="true"' !!}>
                 <span class="ni-ico">{{ $item['icon'] }}</span>
                 <span>
                   <b>{{ \App\Support\Menu::title($item) }}@if($item['badge'])<i class="ni-badge">{{ __($item['badge']) }}</i>@endif</b>
                   <small>{{ \App\Support\Menu::note($item, $navGifts) }}</small>
                 </span>
-              </a>
+              </{{ $tag }}>
             @endforeach
           </div>
         </div>
       @elseif(count($navDrop) === 1)
         {{-- One line left in the list is not a list; it is a link. --}}
-        <a href="{{ lroute($navDrop[0]['route']) }}">{{ \App\Support\Menu::title($navDrop[0]) }}@if($navDrop[0]['badge'])<i class="ni-badge">{{ __($navDrop[0]['badge']) }}</i>@endif</a>
+        @if($navDrop[0]['link'])
+          <a href="{{ lroute($navDrop[0]['route']) }}">{{ \App\Support\Menu::title($navDrop[0]) }}@if($navDrop[0]['badge'])<i class="ni-badge">{{ __($navDrop[0]['badge']) }}</i>@endif</a>
+        @else
+          <span class="nav-top is-shut" aria-disabled="true">{{ \App\Support\Menu::title($navDrop[0]) }}@if($navDrop[0]['badge'])<i class="ni-badge">{{ __($navDrop[0]['badge']) }}</i>@endif</span>
+        @endif
       @endif
       @foreach($navTop as $item)
-        <a class="nav-top" href="{{ lroute($item['route']) }}">{{ \App\Support\Menu::title($item) }}@if($item['badge'])<i class="ni-badge">{{ __($item['badge']) }}</i>@endif</a>
+        @if($item['link'])
+          <a class="nav-top" href="{{ lroute($item['route']) }}">{{ \App\Support\Menu::title($item) }}@if($item['badge'])<i class="ni-badge">{{ __($item['badge']) }}</i>@endif</a>
+        @else
+          <span class="nav-top is-shut" aria-disabled="true">{{ \App\Support\Menu::title($item) }}@if($item['badge'])<i class="ni-badge">{{ __($item['badge']) }}</i>@endif</span>
+        @endif
       @endforeach
       <a href="{{ lroute('home') }}#how">{{ __('Necə İşləyir') }}</a>
       <a href="{{ lroute('home') }}#faq">{{ __('Suallar') }}</a>
@@ -215,7 +225,11 @@
     <div class="mn-group">
       <span class="mn-head">{{ __('Məhsullar') }}</span>
       @foreach($navDrop as $item)
-        <a href="{{ lroute($item['route']) }}">{{ $item['icon'] }} {{ \App\Support\Menu::title($item) }}@if($item['badge'])<i class="ni-badge">{{ __($item['badge']) }}</i>@endif</a>
+        @if($item['link'])
+          <a href="{{ lroute($item['route']) }}">{{ $item['icon'] }} {{ \App\Support\Menu::title($item) }}@if($item['badge'])<i class="ni-badge">{{ __($item['badge']) }}</i>@endif</a>
+        @else
+          <span class="is-shut" aria-disabled="true">{{ $item['icon'] }} {{ \App\Support\Menu::title($item) }}@if($item['badge'])<i class="ni-badge">{{ __($item['badge']) }}</i>@endif</span>
+        @endif
       @endforeach
     </div>
   @endif
@@ -224,7 +238,11 @@
   @if($navTop)
     <div class="mn-group">
       @foreach($navTop as $item)
-        <a href="{{ lroute($item['route']) }}">{{ $item['icon'] }} {{ \App\Support\Menu::title($item) }}@if($item['badge'])<i class="ni-badge">{{ __($item['badge']) }}</i>@endif</a>
+        @if($item['link'])
+          <a href="{{ lroute($item['route']) }}">{{ $item['icon'] }} {{ \App\Support\Menu::title($item) }}@if($item['badge'])<i class="ni-badge">{{ __($item['badge']) }}</i>@endif</a>
+        @else
+          <span class="is-shut" aria-disabled="true">{{ $item['icon'] }} {{ \App\Support\Menu::title($item) }}@if($item['badge'])<i class="ni-badge">{{ __($item['badge']) }}</i>@endif</span>
+        @endif
       @endforeach
     </div>
   @endif
@@ -284,7 +302,7 @@
       </div>
       <div class="footer-col">
         <h3>{{ __('Naviqasiya') }}</h3>
-        @foreach($navMenu as $item)<a href="{{ lroute($item['route']) }}">{{ \App\Support\Menu::title($item) }}</a>@endforeach
+        @foreach($navMenu as $item)@if($item['link'])<a href="{{ lroute($item['route']) }}">{{ \App\Support\Menu::title($item) }}</a>@else<span class="is-shut">{{ \App\Support\Menu::title($item) }}</span>@endif @endforeach
         <a href="{{ lroute('home') }}#how">{{ __('Necə İşləyir') }}</a>
         <a href="{{ lroute('home') }}#faq">{{ __('Suallar') }}</a>
       </div>

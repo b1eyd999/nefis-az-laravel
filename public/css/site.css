@@ -252,6 +252,14 @@
     html[lang="ru"] .menu-btn{ display:flex; }
   }
   @media (max-width:1220px){ html[lang="ru"] nav.primary > a .ni-badge{ display:none; } }
+  /* A line the owner has not opened yet: the word is there, with its badge,
+     and nothing happens when it is pressed. */
+  nav.primary .nav-top.is-shut{ color:var(--cocoa-faint); cursor:default; }
+  .nav-panel .nav-item.is-shut{ cursor:default; color:var(--cocoa-soft); }
+  .nav-panel .nav-item.is-shut:hover{ background:none; }
+  .nav-panel .nav-item.is-shut:hover .ni-ico{ background:var(--cream-2); }
+  .mobile-nav .is-shut{ display:block; padding:.55rem 0; color:var(--cocoa-faint); cursor:default; }
+  .footer-col .is-shut{ display:block; padding:.3rem 0; font-size:.9375rem; opacity:.65; cursor:default; }
   /* drop-downs: open on hover or focus, and on a tap for touch screens (the script adds .open) */
   .nav-drop{ position:relative; }
   .nav-drop > button:not(.icon-btn){ background:none; border:0; padding:0; color:inherit; font:inherit; display:inline-flex; align-items:center; gap:.35rem; transition:color .25s; }

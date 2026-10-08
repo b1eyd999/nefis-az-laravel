@@ -100,6 +100,10 @@ class Menu
                    is already fixed, and the family buying one is not browsing
                    a list of products — they are looking for that word. */
                 'place' => $key === 'xonca' ? 'top' : 'drop',
+                /* And it is a word, not a door: the designs are not drawn,
+                   so the line says «Tezliklə» and goes nowhere. The owner
+                   opens it in the admin when there is something behind it. */
+                'link' => $key !== 'xonca',
                 'order' => $at++,
             ];
         }
@@ -120,6 +124,7 @@ class Menu
                 'on' => (bool) ($saved[$key]['on'] ?? $row['on']),
                 'badge' => trim((string) ($saved[$key]['badge'] ?? $row['badge'])),
                 'place' => self::place($saved[$key]['place'] ?? $row['place']),
+                'link' => (bool) ($saved[$key]['link'] ?? $row['link']),
                 'order' => (int) ($saved[$key]['order'] ?? $row['order']),
             ];
         }
@@ -147,6 +152,9 @@ class Menu
                 'place' => array_key_exists('place', $row)
                     ? self::place($row['place'])
                     : ($standing[$key]['place'] ?? 'drop'),
+                'link' => array_key_exists('link', $row)
+                    ? (bool) $row['link']
+                    : ($standing[$key]['link'] ?? true),
                 'order' => $at++,
             ];
         }
@@ -220,6 +228,7 @@ class Menu
                 'key' => $key,
                 'badge' => $row['badge'],
                 'place' => $row['place'],
+                'link' => $row['link'],
             ];
         }
 

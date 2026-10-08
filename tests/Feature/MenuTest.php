@@ -33,7 +33,10 @@ class MenuTest extends TestCase
         $xonca = collect(Menu::shown())->firstWhere('key', 'xonca');
         $this->assertSame('Tezliklə', $xonca['badge']);
 
-        $this->get(route('home'))->assertOk()->assertSee('Tezliklə')->assertSee(route('xonca.index'), false);
+        // It stands with its word on it, and does not open yet — the
+        // designs are not drawn, so there is nothing behind the door.
+        $this->assertFalse($xonca['link']);
+        $this->get(route('home'))->assertOk()->assertSee('Tezliklə')->assertSee('Xonça və nişan');
     }
 
     public function test_the_owner_hides_a_line_and_hangs_a_badge_on_another(): void
@@ -90,8 +93,17 @@ class MenuTest extends TestCase
         return $m[0];
     }
 
-    /** A word standing on the bar in its own right. */
-    private function barHas(string $html, string $url): bool
+    /** A line standing on the bar in its own right, open or shut. */
+    private function barHas(string $html, string $title): bool
+    {
+        return (bool) preg_match(
+            '~<(a|span) class="nav-top[^"]*"[^>]*>' . preg_quote($title, '~') . '~',
+            $this->bar($html)
+        );
+    }
+
+    /** …and the same line actually opening its page. */
+    private function barLinks(string $html, string $url): bool
     {
         return (bool) preg_match(
             '~<a class="nav-top" href="' . preg_quote($url, '~') . '"~',
@@ -113,18 +125,18 @@ class MenuTest extends TestCase
         $xonca = route('xonca.index');
         $html = $this->get(route('home'))->assertOk()->getContent();
 
-        $this->assertTrue($this->barHas($html, $xonca), 'xonça is a word of its own on the bar');
+        $this->assertTrue($this->barHas($html, 'Xonça və nişan'), 'xonça is a word of its own on the bar');
         $this->assertFalse($this->listHas($html, $xonca), 'and not also inside «Məhsullar»');
 
         // The badge travels with it.
         $this->assertMatchesRegularExpression(
-            '~<a class="nav-top" href="' . preg_quote($xonca, '~') . '"[^>]*>[^<]*<i class="ni-badge">Tezliklə</i>~',
-            $html
+            '~<(a|span) class="nav-top[^"]*"[^>]*>Xonça və nişan<i class="ni-badge">Tezliklə</i>~',
+            $this->bar($html)
         );
 
         // Everything else is still under the one word.
         $this->assertTrue($this->listHas($html, route('designs.index')));
-        $this->assertFalse($this->barHas($html, route('designs.index')));
+        $this->assertFalse($this->barHas($html, 'Dizaynlar'));
     }
 
     public function test_the_owner_moves_a_line_between_the_bar_and_the_list(): void
@@ -135,9 +147,9 @@ class MenuTest extends TestCase
         // Xonça back into the list, corporate out onto the bar.
         Livewire::test(\App\Filament\Pages\MenuSettings::class)
             ->set('data.rows', [
-                ['key' => 'designs', 'on' => true, 'badge' => '', 'place' => 'drop'],
-                ['key' => 'xonca', 'on' => true, 'badge' => 'Tezliklə', 'place' => 'drop'],
-                ['key' => 'corporate', 'on' => true, 'badge' => 'Yeni', 'place' => 'top'],
+                ['key' => 'designs', 'on' => true, 'badge' => '', 'place' => 'drop', 'link' => true],
+                ['key' => 'xonca', 'on' => true, 'badge' => 'Tezliklə', 'place' => 'drop', 'link' => true],
+                ['key' => 'corporate', 'on' => true, 'badge' => 'Yeni', 'place' => 'top', 'link' => true],
             ])
             ->call('save');
 
@@ -150,9 +162,9 @@ class MenuTest extends TestCase
         $this->assertNotContains('corporate', $drop);
 
         $html = $this->get(route('home'))->assertOk()->getContent();
-        $this->assertTrue($this->barHas($html, route('corporate.index')));
+        $this->assertTrue($this->barLinks($html, route('corporate.index')));
         $this->assertTrue($this->listHas($html, route('xonca.index')));
-        $this->assertFalse($this->barHas($html, route('xonca.index')));
+        $this->assertFalse($this->barHas($html, 'Xonça və nişan'));
     }
 
     /** A place nobody has heard of puts the line back where it is safe. */
@@ -221,7 +233,7 @@ class MenuTest extends TestCase
         $this->assertSame(['xonca'], array_column(Menu::shownIn('top'), 'key'));
 
         $html = $this->get(route('home'))->assertOk()->getContent();
-        $this->assertTrue($this->barHas($html, route('xonca.index')));
+        $this->assertTrue($this->barHas($html, 'Xonça və nişan'));
         $this->assertFalse($this->listHas($html, route('xonca.index')));
     }
 
@@ -244,13 +256,80 @@ class MenuTest extends TestCase
         $html = $this->get(route('home'))->assertOk()->getContent();
 
         // The drawer is the only place that prints the icon beside the name.
-        $this->assertSame(1, substr_count($html, '<a href="' . route('xonca.index') . '">💍 '),
+        $this->assertSame(1, substr_count($html, '💍 Xonça və nişan'),
             'the phone drawer still lists it exactly once');
 
         preg_match('~<span class="mn-head">Məhsullar</span>(.*?)</div>~s', $html, $m);
         $this->assertNotEmpty($m, 'the drawer still groups the products');
-        $this->assertStringNotContainsString(route('xonca.index'), $m[1],
+        $this->assertStringNotContainsString('Xonça və nişan', $m[1],
             'but not under the heading it was pulled out of');
         $this->assertStringContainsString(route('designs.index'), $m[1]);
+    }
+
+    /**
+     * «Tezliklə» on a line that still opens the page is half a promise: the
+     * visitor reads "soon", presses it anyway and lands on an empty page.
+     */
+    public function test_a_line_can_be_a_word_without_a_door_behind_it(): void
+    {
+        $bar = $this->bar($this->get(route('home'))->assertOk()->getContent());
+
+        $this->assertStringContainsString(
+            '<span class="nav-top is-shut" aria-disabled="true">Xonça və nişan<i class="ni-badge">Tezliklə</i></span>',
+            $bar
+        );
+        $this->assertFalse($this->barLinks($bar, route('xonca.index')), 'nothing to press');
+
+        // The page itself is still there for anyone who knows the address.
+        $this->get(route('xonca.index'))->assertOk();
+    }
+
+    public function test_the_owner_opens_the_door_when_the_designs_are_drawn(): void
+    {
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        Livewire::test(\App\Filament\Pages\MenuSettings::class)
+            ->set('data.rows', [
+                ['key' => 'xonca', 'on' => true, 'badge' => '', 'place' => 'top', 'link' => true],
+            ])
+            ->call('save');
+
+        $html = $this->get(route('home'))->assertOk()->getContent();
+        $this->assertTrue($this->barLinks($html, route('xonca.index')));
+        $this->assertStringNotContainsString('nav-top is-shut', $this->bar($html));
+    }
+
+    /** The same inside the «Məhsullar» list, where a line has a note too. */
+    public function test_a_shut_line_inside_the_list_is_not_a_link_either(): void
+    {
+        $rows = [];
+        foreach (array_keys(Menu::ENTRIES) as $key) {
+            $rows[$key] = [
+                'on' => true,
+                // «Dizaynlar» is the one line that is ready in every test.
+                'badge' => $key === 'designs' ? 'Tezliklə' : '',
+                'place' => 'drop',
+                'link' => $key !== 'designs',
+                'order' => count($rows),
+            ];
+        }
+        Setting::put(Setting::MENU, json_encode($rows));
+
+        $bar = $this->bar($this->get(route('home'))->assertOk()->getContent());
+        $this->assertStringContainsString('class="nav-item is-shut"', $bar);
+        $this->assertFalse($this->listHas($bar, route('designs.index')));
+        // Its neighbours are untouched.
+        $this->assertTrue($this->listHas($bar, route('xonca.index')));
+    }
+
+    /** A save that says nothing about the door leaves it as it was. */
+    public function test_saving_without_the_link_field_leaves_the_door_as_it_was(): void
+    {
+        $this->assertFalse(collect(Menu::shown())->firstWhere('key', 'xonca')['link']);
+
+        Menu::save([['key' => 'xonca', 'on' => true, 'badge' => 'Tezliklə']]);
+
+        $this->assertFalse(collect(Menu::shown())->firstWhere('key', 'xonca')['link']);
     }
 }
