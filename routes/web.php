@@ -30,20 +30,27 @@ use Illuminate\Support\Facades\Route;
 // The same in every language: files, feeds and the pages a QR code opens.
 // ---------------------------------------------------------------------------
 
+/* None of these four is a page a visitor is on, and all four are asked for
+   by the browser itself. Without 'data' Laravel writes them down as the page
+   to come back to — and the manifest is asked for on EVERY page, so a wrong
+   password dropped the customer onto {"id":"nefis.az",…} instead of the
+   login form. See App\Http\Middleware\AnswerIsNotAPage. */
+
 // Artwork lives on Yandex Disk, not on this hosting; this only redirects.
 Route::get('/i/{path}', [MediaController::class, 'show'])
     ->where('path', '[A-Za-z0-9][A-Za-z0-9._/-]*')
+    ->middleware('data')
     ->name('media');
 
 /* What a phone reads to decide the shop is an application: its name, its
    icon, the window it opens in. One per language, because all three of those
    are different in each. */
 Route::get('/manifest-{lang}.webmanifest', [PwaController::class, 'manifest'])
-    ->where('lang', '[a-z]{2}')->name('manifest');
+    ->where('lang', '[a-z]{2}')->middleware('data')->name('manifest');
 
-Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->middleware('data')->name('sitemap');
 // The designs as a product feed, for Google Merchant Center's free listings.
-Route::get('/feed.xml', [FeedController::class, 'index'])->name('feed');
+Route::get('/feed.xml', [FeedController::class, 'index'])->middleware('data')->name('feed');
 
 // A live photo's own page: the address is printed on the box, so it never moves.
 // Azerbaijani unless the order it belongs to was placed in another language

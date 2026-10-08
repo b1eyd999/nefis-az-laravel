@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Hash;
 
 /**
  * The site's users, and the role each has: customer, manager (the orders
@@ -80,6 +81,22 @@ class UserResource extends Resource
                 ? 0
                 : round((float) $percent, 2),
         ])->save();
+    }
+
+    /**
+     * A password that can be read down a telephone or pasted into Instagram:
+     * no letter that could be a digit, no digit that could be a letter.
+     */
+    public static function readablePassword(): string
+    {
+        $alphabet = 'abcdefghjkmnpqrstuvwxyzACDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+        $out = '';
+        for ($i = 0; $i < 10; $i++) {
+            $out .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+        }
+
+        return $out;
     }
 
     public static function form(Form $form): Form
@@ -168,6 +185,38 @@ class UserResource extends Resource
                         self::applyRole($u, $data['role'], $data['profit_percent'] ?? 0);
                         $share = $u->profit_percent > 0 ? ' · pay '.rtrim(rtrim(number_format($u->profit_percent, 2, '.', ''), '0'), '.').'%' : '';
                         Notification::make()->success()->title($u->name.': '.User::ROLES[$data['role']].$share)->send();
+                    }),
+                /* A customer writes that he cannot sign in — the number he
+                   typed at the sign-up was wrong, or he has forgotten what
+                   he chose. The owner gives him a new password here and
+                   sends it to him himself; the old one stops working. */
+                Tables\Actions\Action::make('password')
+                    ->label('Şifrə')
+                    ->icon('heroicon-o-key')
+                    ->color('gray')
+                    ->modalHeading(fn (User $u) => $u->name . ' — yeni şifrə')
+                    ->modalDescription('Köhnə şifrə dərhal işləməyəcək. Yenisini özünüz müştəriyə göndərin.')
+                    ->modalSubmitActionLabel('Şifrəni dəyiş')
+                    ->fillForm(fn () => ['password' => self::readablePassword()])
+                    ->form([
+                        Forms\Components\TextInput::make('password')
+                            ->label('Yeni şifrə')
+                            ->required()
+                            ->minLength(8)
+                            ->maxLength(72)
+                            ->password()
+                            ->revealable()
+                            ->helperText('Hazır bir şifrə yazılıb — gözə basıb oxuyun, istəsəniz özünüz dəyişin.'),
+                    ])
+                    ->action(function (User $u, array $data) {
+                        $u->forceFill(['password' => Hash::make($data['password'])])->save();
+
+                        Notification::make()->success()
+                            ->title('Şifrə dəyişdirildi')
+                            // Shown in full on purpose: he has to send it on.
+                            ->body($u->name . ': ' . $data['password'])
+                            ->persistent()
+                            ->send();
                     }),
                 Tables\Actions\EditAction::make()->label('Bax'),
             ])

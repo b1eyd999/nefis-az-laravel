@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -99,5 +100,56 @@ class UsersTest extends TestCase
         $this->get('/admin')->assertOk()
             ->assertSee('Sayta qayıt')
             ->assertSee('href="' . url('/') . '"', false);
+    }
+
+    /**
+     * A customer writes that he cannot sign in. The owner gives him a new
+     * password from the panel and sends it on himself.
+     */
+    public function test_the_owner_gives_a_customer_a_new_password(): void
+    {
+        $owner = User::factory()->create(['is_admin' => true]);
+        $aysel = User::factory()->create(['name' => 'Aysel', 'password' => Hash::make('kohne-sifre')]);
+        $this->panel($owner);
+
+        Livewire::test(ListUsers::class)
+            ->callTableAction('password', $aysel, ['password' => 'yeni-sifre-9'])
+            ->assertHasNoTableActionErrors();
+
+        $aysel->refresh();
+        $this->assertTrue(Hash::check('yeni-sifre-9', $aysel->password));
+        $this->assertFalse(Hash::check('kohne-sifre', $aysel->password), 'the old one stops working');
+    }
+
+    public function test_a_password_too_short_to_be_one_is_refused(): void
+    {
+        $owner = User::factory()->create(['is_admin' => true]);
+        $aysel = User::factory()->create(['password' => Hash::make('kohne-sifre')]);
+        $this->panel($owner);
+
+        Livewire::test(ListUsers::class)
+            ->callTableAction('password', $aysel, ['password' => 'qisa'])
+            ->assertHasTableActionErrors(['password']);
+
+        $this->assertTrue(Hash::check('kohne-sifre', $aysel->fresh()->password));
+    }
+
+    /** The one it offers can be read down a telephone without spelling it out. */
+    public function test_the_offered_password_has_no_letter_that_could_be_a_digit(): void
+    {
+        for ($i = 0; $i < 30; $i++) {
+            $made = \App\Filament\Resources\UserResource::readablePassword();
+            $this->assertSame(10, strlen($made));
+            $this->assertMatchesRegularExpression('~^[a-zA-Z2-9]+$~', $made);
+            $this->assertDoesNotMatchRegularExpression('~[OIl01]~', $made);
+        }
+    }
+
+    public function test_a_manager_cannot_reach_the_users_at_all(): void
+    {
+        $manager = User::factory()->create(['role' => User::MANAGER, 'is_admin' => false]);
+        $this->panel($manager);
+
+        $this->get('/admin/users')->assertForbidden();
     }
 }

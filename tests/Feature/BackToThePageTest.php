@@ -74,4 +74,32 @@ class BackToThePageTest extends TestCase
         $this->get('/')->assertOk()
             ->assertSee("'X-Requested-With':'XMLHttpRequest'", false);
     }
+
+    /**
+     * The same trap, and the worst of them: every page carries
+     * `<link rel="manifest">`, so the browser asks for the manifest by
+     * itself the moment the page loads — and that made the manifest "the
+     * page we were on" everywhere on the site. A wrong password then
+     * dropped the customer onto {"id":"nefis.az","name":…}.
+     */
+    public function test_what_the_browser_fetches_by_itself_is_not_the_page_either(): void
+    {
+        $this->get(route('login'))->assertOk();
+
+        $this->get(route('manifest', ['lang' => 'az']))->assertOk();
+        $this->get(route('sitemap'))->assertOk();
+        $this->get(route('feed'))->assertOk();
+
+        $this->assertSame(route('login'), session()->previousUrl());
+    }
+
+    public function test_a_wrong_password_after_the_manifest_comes_back_to_the_login_page(): void
+    {
+        $this->get(route('login'))->assertOk();
+        // the browser, a moment later, on its own
+        $this->get(route('manifest', ['lang' => 'az']))->assertOk();
+
+        $this->post(route('login'), ['login' => 'nobody@example.com', 'password' => 'wrong'])
+            ->assertRedirect(route('login'));
+    }
 }
