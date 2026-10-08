@@ -1,7 +1,9 @@
 @extends('layouts.app')
 
-@section('title', $page['title'] . ', ' . __('nişan və toy xonçası üçün') . ' | Nefis')
-@section('description', \App\Support\Seo::snippet($page['lede']))
+@section('title', __($page['title']) . ', ' . __('nişan və toy xonçası üçün') . ' | Nefis')
+{{-- 'meta_description' is the name the layout yields; 'description' went
+     nowhere and the page fell back to the shop's own sentence. --}}
+@section('meta_description', \App\Support\Seo::snippet(__($page['lede'])))
 
 @section('page_style')
   /* The designs run as a row the finger pushes, the way a xonça is actually
@@ -66,27 +68,33 @@
   <div class="wrap">
     <nav class="crumbs" aria-label="{{ __('Səhifənin yeri') }}">
       <a href="{{ lroute('home') }}">{{ __('Ana səhifə') }}</a><span aria-hidden="true">›</span>
-      <span aria-current="page">{{ $page['title'] }}</span>
+      <span aria-current="page">{{ __($page['title']) }}</span>
     </nav>
-    <span class="eyebrow" style="justify-content:center;">{{ $page['eyebrow'] }}</span>
-    <h1>{{ $page['title'] }}</h1>
-    <p class="lede" style="margin-inline:auto;">{{ $page['lede'] }}</p>
+    <span class="eyebrow" style="justify-content:center;">{{ __($page['eyebrow']) }}</span>
+    <h1>{{ __($page['title']) }}</h1>
+    <p class="lede" style="margin-inline:auto;">{{ __($page['lede']) }}</p>
 
     <div class="xo-facts">
-      <div class="xo-fact"><span>{{ $page['size_label'] }}</span>{{ $page['size'] }}</div>
-      <div class="xo-fact"><span>{{ $page['note_title'] }}</span>{{ $page['note'] }}</div>
+      <div class="xo-fact"><span>{{ __($page['size_label']) }}</span>{{ __($page['size']) }}</div>
+      <div class="xo-fact"><span>{{ __($page['note_title']) }}</span>{{ __($page['note']) }}</div>
     </div>
   </div>
 </section>
 
 @php
+  /* Said in the visitor's language where we have the words, and in the
+     owner's where we do not — an empty line is left alone, because __('')
+     is not an empty string. */
+  $say = fn (string $v) => $v === '' ? '' : (string) __($v);
+
   /* A band is worth drawing when the owner has put something in it. */
   $bands = collect([1, 2, 3])
     ->map(fn ($n) => [
-      'eyebrow' => trim((string) ($page['block' . $n . '_eyebrow'] ?? '')),
-      'title' => trim((string) ($page['block' . $n . '_title'] ?? '')),
-      'text' => trim((string) ($page['block' . $n . '_text'] ?? '')),
-      'button' => trim((string) ($page['block' . $n . '_button'] ?? '')),
+      'eyebrow' => $say(trim((string) ($page['block' . $n . '_eyebrow'] ?? ''))),
+      'title' => $say(trim((string) ($page['block' . $n . '_title'] ?? ''))),
+      'text' => $say(trim((string) ($page['block' . $n . '_text'] ?? ''))),
+      'button' => $say(trim((string) ($page['block' . $n . '_button'] ?? ''))),
+      // An address is not a sentence; it is the same in every language.
       'url' => \App\Models\HeroSlide::href(trim((string) ($page['block' . $n . '_url'] ?? ''))),
       'image' => \App\Support\Xonca::image($n),
       'size' => \App\Support\Xonca::size($n),
@@ -125,7 +133,7 @@
 <section>
   <div class="wrap">
     @if($designs->isEmpty())
-      <p class="xo-empty">{{ $page['empty'] }}</p>
+      <p class="xo-empty">{{ __($page['empty']) }}</p>
     @else
       <div class="xo-rail">
         @foreach($designs as $i => $design)
@@ -138,10 +146,10 @@
 
 <section class="tinted">
   <div class="wrap wrap-narrow">
-    <h2>{{ $page['how_title'] }}</h2>
+    <h2>{{ __($page['how_title']) }}</h2>
     <div class="xo-steps">
       @foreach(['how_1', 'how_2', 'how_3', 'how_4'] as $n => $key)
-        <div class="xo-step"><b>{{ $n + 1 }}</b><span>{{ $page[$key] }}</span></div>
+        <div class="xo-step"><b>{{ $n + 1 }}</b><span>{{ __($page[$key]) }}</span></div>
       @endforeach
     </div>
   </div>

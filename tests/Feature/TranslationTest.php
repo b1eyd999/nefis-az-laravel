@@ -146,4 +146,34 @@ class TranslationTest extends TestCase
         // And Azerbaijani still reads Azerbaijani.
         $this->get('/products/alpen-gold/customize')->assertOk()->assertSee('Alpen gold');
     }
+
+    /**
+     * The xonça page printed its stored wording straight out, so it stayed
+     * Azerbaijani however many translations existed for it.
+     */
+    public function test_the_xonca_page_is_read_in_the_visitors_language(): void
+    {
+        $this->get('/xonca')->assertOk()
+            ->assertSee('Xonçaya kiçik şokoladlar')
+            ->assertSee('Necə sifariş olunur')
+            ->assertSee('Nə qədər vaxt lazımdır');
+
+        $this->get('/ru/xonca')->assertOk()
+            ->assertSee('Маленькие шоколадки для хончи')   // the heading
+            ->assertSee('Как заказать')                    // the steps
+            ->assertSee('Количество зависит от размера хончи')
+            ->assertSee('Дизайны для этих дней уже готовятся. Скоро они появятся здесь.')
+            ->assertDontSee('Necə sifariş olunur');
+
+        $this->get('/en/xonca')->assertOk()
+            ->assertSee('How to order')
+            ->assertSee('All in one design')
+            ->assertDontSee('Necə sifariş olunur');
+
+        // The page's own sentence reaches the head, under the name the
+        // layout actually yields.
+        $this->get('/ru/xonca')->assertOk()
+            ->assertSee('Шоколадки меньше обычной коробки', false)
+            ->assertSee('<title>Маленькие шоколадки для хончи, на помолвку и свадьбу | Nefis</title>', false);
+    }
 }
