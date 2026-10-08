@@ -53,7 +53,7 @@ class MenuSettings extends Page implements HasForms
 
         $rows = [];
         foreach ($saved as $key => $row) {
-            $rows[] = ['key' => $key, 'on' => $row['on'], 'badge' => $row['badge']];
+            $rows[] = ['key' => $key, 'on' => $row['on'], 'badge' => $row['badge'], 'place' => $row['place']];
         }
 
         $pictures = [];
@@ -93,6 +93,14 @@ class MenuSettings extends Page implements HasForms
                                     ->datalist(Menu::BADGES)
                                     ->placeholder('Məs. Yeni, Tezliklə')
                                     ->helperText('Menyuda adın yanında kiçik yazı. Boş qoysanız, nişan olmur.'),
+                                Forms\Components\Select::make('place')
+                                    ->label('Yeri')
+                                    ->options(Menu::PLACES)
+                                    ->default('drop')
+                                    ->selectablePlaceholder(false)
+                                    ->helperText('«Yuxarı sətirdə» seçilsə, sətir «Məhsullar» siyahısından çıxır '
+                                        . 'və menyuda ayrıca söz kimi durur — həmişə «Məhsullar»dan sonra.')
+                                    ->columnSpanFull(),
                             ])
                             ->columns(2),
                     ]),

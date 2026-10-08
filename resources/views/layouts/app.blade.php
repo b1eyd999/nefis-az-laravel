@@ -86,8 +86,10 @@
 </head>
 <body>
 {{-- The "Məhsullar" menu as the owner arranged it in admin → Menyu: which
-     lines show, what each carries beside it, and in what order. --}}
+     lines show, what each carries beside it, in what order, and which of them
+     he has pulled out of the list to stand on the bar itself. --}}
 @php $navMenu = \App\Support\Menu::shown(); @endphp
+@php ['drop' => $navDrop, 'top' => $navTop] = \App\Support\Menu::split($navMenu); @endphp
 @php $navGifts = \App\Models\GiftPage::shown()->inLocale(\App\Support\Locale::current())->get(); @endphp
 
 
@@ -120,15 +122,17 @@
   <div class="wrap">
     <a href="{{ lroute('home') }}" class="brand"><img src="/images/logo.svg" alt="Nefis"></a>
     <nav class="primary" aria-label="{{ __('Əsas menyu') }}">
-      {{-- Everything for sale under one word, so the bar stays short however many there are. --}}
-      @if(count($navMenu) > 1)
+      {{-- Everything for sale under one word, so the bar stays short however
+           many there are — all but the lines the owner has pulled out, which
+           stand beside it in their own right. --}}
+      @if(count($navDrop) > 1)
         <div class="nav-drop">
           <button type="button" aria-expanded="false" aria-haspopup="true">
             {{ __('Məhsullar') }}
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
           </button>
           <div class="nav-panel">
-            @foreach($navMenu as $item)
+            @foreach($navDrop as $item)
               <a class="nav-item" href="{{ lroute($item['route']) }}">
                 <span class="ni-ico">{{ $item['icon'] }}</span>
                 <span>
@@ -139,10 +143,13 @@
             @endforeach
           </div>
         </div>
-      @else
-        <a href="{{ lroute('designs.index') }}">{{ __('Dizaynlar') }}</a>
-        @if($navCorporate)<a href="{{ lroute('corporate.index') }}">{{ __('Şirkətlər üçün') }}</a>@endif
+      @elseif(count($navDrop) === 1)
+        {{-- One line left in the list is not a list; it is a link. --}}
+        <a href="{{ lroute($navDrop[0]['route']) }}">{{ \App\Support\Menu::title($navDrop[0]) }}@if($navDrop[0]['badge'])<i class="ni-badge">{{ __($navDrop[0]['badge']) }}</i>@endif</a>
       @endif
+      @foreach($navTop as $item)
+        <a class="nav-top" href="{{ lroute($item['route']) }}">{{ \App\Support\Menu::title($item) }}@if($item['badge'])<i class="ni-badge">{{ __($item['badge']) }}</i>@endif</a>
+      @endforeach
       <a href="{{ lroute('home') }}#how">{{ __('Necə İşləyir') }}</a>
       <a href="{{ lroute('home') }}#faq">{{ __('Suallar') }}</a>
     </nav>
@@ -204,12 +211,23 @@
 
 <div class="mobile-nav" id="mobile-nav">
   <button class="close-btn" id="menu-close" aria-label="{{ __('Bağla') }}">✕</button>
-  <div class="mn-group">
-    <span class="mn-head">{{ __('Məhsullar') }}</span>
-    @foreach($navMenu as $item)
-      <a href="{{ lroute($item['route']) }}">{{ $item['icon'] }} {{ \App\Support\Menu::title($item) }}@if($item['badge'])<i class="ni-badge">{{ __($item['badge']) }}</i>@endif</a>
-    @endforeach
-  </div>
+  @if($navDrop)
+    <div class="mn-group">
+      <span class="mn-head">{{ __('Məhsullar') }}</span>
+      @foreach($navDrop as $item)
+        <a href="{{ lroute($item['route']) }}">{{ $item['icon'] }} {{ \App\Support\Menu::title($item) }}@if($item['badge'])<i class="ni-badge">{{ __($item['badge']) }}</i>@endif</a>
+      @endforeach
+    </div>
+  @endif
+  {{-- A line the owner pulled out of «Məhsullar» does not belong under that
+       heading here either; it stands on its own, as it does on the bar. --}}
+  @if($navTop)
+    <div class="mn-group">
+      @foreach($navTop as $item)
+        <a href="{{ lroute($item['route']) }}">{{ $item['icon'] }} {{ \App\Support\Menu::title($item) }}@if($item['badge'])<i class="ni-badge">{{ __($item['badge']) }}</i>@endif</a>
+      @endforeach
+    </div>
+  @endif
   @if(\App\Support\Contact::has())
     <div class="mn-group">
       <span class="mn-head">{{ __('Əlaqə') }}</span>
@@ -334,6 +352,7 @@
 
   /* header shrink on scroll */
   var header = document.getElementById("site-header");
+
   var floatCta = document.getElementById("float-cta");
   var onScroll = function(){
     if (window.scrollY > 24) header.classList.add("scrolled");

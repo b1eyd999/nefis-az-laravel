@@ -202,7 +202,9 @@
      the letters now and then the way light runs over a wrapper when the box
      is turned, and it leans towards the cursor. The gleam is painted through
      the logo's own shape, so nothing of it falls on the paper around it. */
-  .brand{ display:flex; align-items:center; gap:.6rem; position:relative; }
+  /* The mark never gives up its width: the bar is a flex row, and a longer
+     menu used to squeeze it to nothing just above 900px. */
+  .brand{ display:flex; align-items:center; gap:.6rem; position:relative; flex:none; }
   .brand img{ height:5.9rem; width:auto; display:block;
     transition:transform .35s cubic-bezier(.2,.8,.3,1.25);
     animation:brand-in .55s cubic-bezier(.2,.8,.3,1) backwards; }
@@ -225,8 +227,31 @@
   }
   nav.primary{ display:none; align-items:center; gap:2rem; font-weight:500; font-size:.9375rem; color:var(--cocoa-soft); }
   nav.primary a{ transition:color .25s; position:relative; }
+  /* A line standing on the bar in its own right can carry its badge there. */
+  nav.primary a.nav-top{ display:inline-flex; align-items:center; }
   nav.primary a:hover{ color:var(--cocoa); }
-  @media (min-width:900px){ nav.primary{ display:flex; } }
+  /* A menu word never breaks across lines, and between 900px and 1150px —
+     where the bar first appears and is tightest — the words close ranks. */
+  nav.primary > a, nav.primary .nav-drop > button{ white-space:nowrap; }
+  /* The bar carries one more word than it used to, so it waits for the room
+     to hold it; below this the burger menu has everything. */
+  @media (min-width:980px){ nav.primary{ display:flex; } }
+  @media (min-width:980px) and (max-width:1150px){ nav.primary{ gap:1rem; font-size:.9rem; } }
+  /* Where the bar only just holds its words, the badge is the first thing
+     to go rather than the header spilling off-screen. Only the badge ON the
+     bar: the drop-down panel is absolutely positioned and costs the bar
+     nothing, so the badge stays there, and in the drawer. */
+  @media (max-width:1100px){ nav.primary > a .ni-badge{ display:none; } }
+  /* Russian says the same things in longer words — «Как это работает» against
+     «Necə İşləyir», «Регистрация» against «Qeydiyyat» — and a stylesheet
+     cannot measure them. Measured by hand instead: there the bar waits for
+     more room, and the badge for more still, rather than pushing the sign-up
+     button off the edge of the screen. */
+  @media (max-width:1120px){
+    html[lang="ru"] nav.primary{ display:none; }
+    html[lang="ru"] .menu-btn{ display:flex; }
+  }
+  @media (max-width:1220px){ html[lang="ru"] nav.primary > a .ni-badge{ display:none; } }
   /* drop-downs: open on hover or focus, and on a tap for touch screens (the script adds .open) */
   .nav-drop{ position:relative; }
   .nav-drop > button:not(.icon-btn){ background:none; border:0; padding:0; color:inherit; font:inherit; display:inline-flex; align-items:center; gap:.35rem; transition:color .25s; }
@@ -253,7 +278,7 @@
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .header-actions{ display:flex; align-items:center; gap:.75rem; }
   .header-cta{ display:none; }
-  @media (min-width:900px){ .header-cta{ display:inline-flex; } }
+  @media (min-width:980px){ .header-cta{ display:inline-flex; } }
   .icon-btn{
     position:relative; display:flex; width:2.75rem; height:2.75rem; align-items:center; justify-content:center;
     border-radius:50%; border:1px solid var(--line); background:var(--paper); font-size:1.15rem; flex:none;
@@ -276,7 +301,7 @@
   .menu-btn span{ display:block; width:1.1rem; height:2px; background:var(--cocoa); position:relative; }
   .menu-btn span::before,.menu-btn span::after{ content:""; position:absolute; left:0; width:100%; height:2px; background:var(--cocoa); }
   .menu-btn span::before{ top:-6px; } .menu-btn span::after{ top:6px; }
-  @media (min-width:900px){ .menu-btn{ display:none; } }
+  @media (min-width:980px){ .menu-btn{ display:none; } }
 
   .mobile-nav{
     position:fixed; inset:0; z-index:80; background:var(--cream);

@@ -74,6 +74,18 @@ class Menu
     /** The badges offered, beyond leaving it empty. */
     public const BADGES = ['Yeni', 'Tezliklə'];
 
+    /**
+     * Where a line stands.
+     *
+     * Everything for sale lives under one word so the bar stays short however
+     * many pages there are — but a line the shop is pushing is worth a word of
+     * its own up there, where nobody has to open anything to find it.
+     */
+    public const PLACES = [
+        'drop' => 'Məhsullar siyahısında',
+        'top' => 'Yuxarı sətirdə',
+    ];
+
     /** How the menu stands until the owner arranges it. */
     public static function defaults(): array
     {
@@ -84,6 +96,10 @@ class Menu
                 'on' => true,
                 // Until the designs are drawn the line says so itself.
                 'badge' => $key === 'xonca' ? 'Tezliklə' : '',
+                /* Xonça stands on the bar. A tray is ordered for a date that
+                   is already fixed, and the family buying one is not browsing
+                   a list of products — they are looking for that word. */
+                'place' => $key === 'xonca' ? 'top' : 'drop',
                 'order' => $at++,
             ];
         }
@@ -103,6 +119,7 @@ class Menu
             $out[$key] = [
                 'on' => (bool) ($saved[$key]['on'] ?? $row['on']),
                 'badge' => trim((string) ($saved[$key]['badge'] ?? $row['badge'])),
+                'place' => self::place($saved[$key]['place'] ?? $row['place']),
                 'order' => (int) ($saved[$key]['order'] ?? $row['order']),
             ];
         }
@@ -112,6 +129,11 @@ class Menu
 
     public static function save(array $rows): void
     {
+        // What a row does not say about its place is what it says now, not
+        // 'drop': the form always sends the field, but anything else calling
+        // this would otherwise pull a line off the bar without meaning to.
+        $standing = self::settings();
+
         $keep = [];
         $at = 0;
         foreach ($rows as $row) {
@@ -122,11 +144,23 @@ class Menu
             $keep[$key] = [
                 'on' => (bool) ($row['on'] ?? false),
                 'badge' => mb_substr(trim((string) ($row['badge'] ?? '')), 0, 20),
+                'place' => array_key_exists('place', $row)
+                    ? self::place($row['place'])
+                    : ($standing[$key]['place'] ?? 'drop'),
                 'order' => $at++,
             ];
         }
 
         Setting::put(Setting::MENU, json_encode($keep, JSON_UNESCAPED_UNICODE));
+    }
+
+    /** A place the menu knows about; anything else goes back in the list. */
+    private static function place(mixed $value): string
+    {
+        // A hand-edited setting can hold anything at all, an array included.
+        $value = is_string($value) ? $value : '';
+
+        return isset(self::PLACES[$value]) ? $value : 'drop';
     }
 
     /**
@@ -182,10 +216,42 @@ class Menu
             if (! $row['on'] || ! self::ready($key)) {
                 continue;
             }
-            $out[] = self::ENTRIES[$key] + ['key' => $key, 'badge' => $row['badge']];
+            $out[] = self::ENTRIES[$key] + [
+                'key' => $key,
+                'badge' => $row['badge'],
+                'place' => $row['place'],
+            ];
         }
 
         return $out;
+    }
+
+    /**
+     * The shown lines split into the two places, in the owner's order.
+     *
+     * Takes the list rather than fetching it, because working out what is
+     * shown asks the database whether each page has anything on it — the
+     * header needs both halves and must not pay for that twice.
+     *
+     * @return array{drop: array, top: array}
+     */
+    public static function split(?array $shown = null): array
+    {
+        $out = ['drop' => [], 'top' => []];
+        foreach ($shown ?? self::shown() as $item) {
+            $out[$item['place']][] = $item;
+        }
+
+        return $out;
+    }
+
+    /**
+     * The lines standing in one place: 'drop' inside «Məhsullar», 'top' on
+     * the bar beside it.
+     */
+    public static function shownIn(string $place): array
+    {
+        return self::split()[$place] ?? [];
     }
 
     /**
