@@ -20,6 +20,11 @@ class LivePage
         'lede' => 'Şəklinizi canlandırın: QR kodu oxudub telefonu şəklə tutanda, üstündə sizin videonuz oynayır, heç bir tətbiq yükləmədən.',
         'preview' => 'Şəkil və video seçin, burada necə canlanacağını görəcəksiniz',
         'caption' => 'Telefonda belə görünəcək: kamera şəkli tanıyır və video onun üzərinə düşür.',
+        /* The page explained the camera and the video and never said where
+           the code that starts it is. It is on the back of the box. */
+        'back_title' => 'QR kod qutunun arxasında olur',
+        'back_note' => 'Hədiyyəni alan qutunu çevirir, kodu oxuyur — və şəkil canlanır. '
+            . 'Kodu biz hazırlayırıq, sizdən bir şey tələb olunmur.',
         'photo_label' => 'Canlanacaq şəkil',
         'photo_button' => 'Şəkil seçin',
         'photo_hint' => 'Bu şəkil QR kodla birlikdə çap olunur. Aydın, detallı şəkillər kamera tərəfindən daha yaxşı tanınır.',

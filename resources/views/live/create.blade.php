@@ -28,6 +28,19 @@
   .live-scan{ position:absolute; left:50%; bottom:1rem; transform:translateX(-50%); padding:.35rem .8rem; border-radius:999px; font-size:.7rem;
     background:rgba(23,17,13,.7); color:#fff; white-space:nowrap; }
   .live-caption{ font-size:.85rem; color:var(--cocoa-soft); text-align:center; max-width:20rem; }
+  /* The box and the phone stand next to each other: the code is on the
+     back of the one, and the video plays on the other. A sentence saying
+     so is worth less than the two of them side by side. */
+  .live-pair{ display:flex; align-items:center; justify-content:center; gap:1rem; width:100%; }
+  .live-pair .live-phone{ width:min(14rem, 46vw); }
+  .live-back{ flex:none; width:min(7rem, 26vw); margin:0; }
+  .live-back img{ display:block; width:100%; height:auto; border-radius:.6rem; box-shadow:var(--shadow-sm); }
+  .live-back figcaption{ margin-top:.5rem; font-size:.7rem; line-height:1.45; text-align:center; color:var(--cocoa-soft); }
+  @media (min-width:900px){
+    .live-pair{ gap:1.35rem; }
+    .live-pair .live-phone{ width:14.5rem; }
+    .live-back{ width:7.4rem; }
+  }
   .live-form{ display:flex; flex-direction:column; gap:1.1rem; }
   .live-file{ display:flex; align-items:center; justify-content:center; gap:.5rem; border:1.5px dashed var(--ring); border-radius:.9rem;
     padding:1rem; text-align:center; cursor:pointer; font-weight:600; margin:0; word-break:break-word; }
@@ -70,13 +83,25 @@
 
       <div class="live-grid">
         <div class="live-stage">
-          <div class="live-phone" aria-hidden="true">
-            <div class="live-screen">
-              <div class="live-pic empty" id="live-pic">{{ \App\Support\LivePage::text('preview') }}</div>
-              <span class="live-scan" id="live-scan" hidden>▶ {{ __('Video şəklin üstündə oynayır') }}</span>
+          {{-- The box on the left, the phone on the right: the code is on
+               the back of the one and the video plays on the other. --}}
+          <div class="live-pair">
+            <figure class="live-back">
+              <img src="{{ asset('images/live/qutunun-arxasi.jpg') }}" width="800" height="1412"
+                   alt="{{ __('Qutunun arxası, üstündə QR kod') }}" loading="lazy" decoding="async">
+              <figcaption>{{ \App\Support\LivePage::text('back_title') }}</figcaption>
+            </figure>
+
+            <div class="live-phone" aria-hidden="true">
+              <div class="live-screen">
+                <div class="live-pic empty" id="live-pic">{{ \App\Support\LivePage::text('preview') }}</div>
+                <span class="live-scan" id="live-scan" hidden>▶ {{ __('Video şəklin üstündə oynayır') }}</span>
+              </div>
             </div>
           </div>
+
           <p class="live-caption">{{ \App\Support\LivePage::text('caption') }}</p>
+          <p class="live-caption">{{ \App\Support\LivePage::text('back_note') }}</p>
         </div>
 
         <form class="live-form" id="live-form" method="POST" action="{{ lroute('live.store') }}" enctype="multipart/form-data">

@@ -45,4 +45,33 @@ class LivePageTextsTest extends TestCase
         $this->get(route('ru.live.create'))->assertOk()
             ->assertSee(__(LivePage::DEFAULTS['lede'], [], 'ru'));
     }
+
+    /**
+     * The page explained the camera and the video and never said where the
+     * code that starts it is. It is on the back of the box, and the back of
+     * the box is now on the page.
+     */
+    public function test_the_page_shows_where_the_qr_code_is(): void
+    {
+        $this->get(route('live.create'))->assertOk()
+            ->assertSee(LivePage::DEFAULTS['back_title'])
+            ->assertSee(LivePage::DEFAULTS['back_note'])
+            ->assertSee('images/live/qutunun-arxasi.jpg', false);
+
+        $this->assertFileExists(public_path('images/live/qutunun-arxasi.jpg'));
+    }
+
+    public function test_the_owner_rewrites_what_the_back_of_the_box_says(): void
+    {
+        Setting::put(Setting::LIVE_PAGE, json_encode(
+            ['back_title' => 'Kod arxadadır'],
+            JSON_UNESCAPED_UNICODE
+        ));
+
+        $this->get(route('live.create'))->assertOk()
+            ->assertSee('Kod arxadadır')
+            ->assertDontSee(LivePage::DEFAULTS['back_title'])
+            // and the line he left alone keeps its own wording
+            ->assertSee(LivePage::DEFAULTS['back_note']);
+    }
 }

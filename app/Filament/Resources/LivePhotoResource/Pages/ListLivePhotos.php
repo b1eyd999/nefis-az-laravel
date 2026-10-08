@@ -137,6 +137,10 @@ class ListLivePhotos extends ListRecords
                         ->placeholder(LivePage::DEFAULTS['preview']),
                     Forms\Components\Textarea::make('caption')->label('Telefonun altındakı yazı')->rows(2)->maxLength(200)
                         ->placeholder(LivePage::DEFAULTS['caption'])->columnSpanFull(),
+                    Forms\Components\TextInput::make('back_title')->label('Qutunun arxası — başlıq')->maxLength(80)
+                        ->placeholder(LivePage::DEFAULTS['back_title']),
+                    Forms\Components\Textarea::make('back_note')->label('Qutunun arxası — izah')->rows(2)->maxLength(240)
+                        ->placeholder(LivePage::DEFAULTS['back_note'])->columnSpanFull(),
                     Forms\Components\Textarea::make('step1')->label('1-ci şəkilli addım')->rows(2)->maxLength(200)
                         ->placeholder(LivePage::DEFAULTS['step1'])->columnSpanFull(),
                     Forms\Components\Textarea::make('step2')->label('2-ci şəkilli addım')->rows(2)->maxLength(200)
