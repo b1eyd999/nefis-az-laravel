@@ -56,7 +56,12 @@ class MenuSettings extends Page implements HasForms
             $rows[] = ['key' => $key, 'on' => $row['on'], 'badge' => $row['badge']];
         }
 
-        $this->form->fill(['rows' => $rows] + Xonca::page());
+        $pictures = [];
+        foreach ([1, 2, 3] as $n) {
+            $pictures['block' . $n . '_image'] = Xonca::raw('block' . $n . '_image');
+        }
+
+        $this->form->fill(['rows' => $rows] + $pictures + Xonca::page());
     }
 
     public function form(Form $form): Form
@@ -104,7 +109,8 @@ class MenuSettings extends Page implements HasForms
     /** @return array<int, Forms\Components\Component> */
     private static function xoncaFields(): array
     {
-        $long = ['lede', 'note', 'empty'];
+        $long = ['lede', 'note', 'empty', 'block1_text', 'block2_text', 'block3_text'];
+        $bands = [1 => 'Birinci', 2 => 'İkinci', 3 => 'Üçüncü'];
         $fields = [];
         $labels = [
             'eyebrow' => 'Üst yazı', 'title' => 'Başlıq', 'lede' => 'Giriş mətni',
@@ -121,6 +127,43 @@ class MenuSettings extends Page implements HasForms
                     ->placeholder(Xonca::DEFAULTS[$key])->columnSpanFull()
                 : Forms\Components\TextInput::make($key)->label($label)->maxLength(160)
                     ->placeholder(Xonca::DEFAULTS[$key]);
+        }
+
+        /* The three wide bands, one fieldset each: a picture on one half and
+           these words on the other. Leave a band empty and it does not show. */
+        foreach ($bands as $n => $word) {
+            $fields[] = Forms\Components\Fieldset::make($word . ' blok')
+                ->schema([
+                    Forms\Components\FileUpload::make('block' . $n . '_image')
+                        ->label('Şəkil')
+                        ->helperText('Blokun yarısını tutur. Eni hündürlüyündən böyük şəkillər yaxşı oturur.')
+                        ->image()->disk('public')->directory('xonca')->maxSize(8192)
+                        ->imageEditor()->columnSpanFull(),
+                    Forms\Components\TextInput::make('block' . $n . '_eyebrow')
+                        ->label('Üst yazı')->maxLength(60)
+                        ->placeholder(Xonca::DEFAULTS['block' . $n . '_eyebrow']),
+                    Forms\Components\TextInput::make('block' . $n . '_title')
+                        ->label('Başlıq')->maxLength(120)
+                        ->placeholder(Xonca::DEFAULTS['block' . $n . '_title']),
+                    Forms\Components\Textarea::make('block' . $n . '_text')
+                        ->label('Mətn')->rows(4)
+                        ->placeholder(Xonca::DEFAULTS['block' . $n . '_text'])->columnSpanFull(),
+                    Forms\Components\TextInput::make('block' . $n . '_button')
+                        ->label('Düymənin adı (istəyə bağlı)')->maxLength(60)
+                        ->placeholder(Xonca::DEFAULTS['block' . $n . '_button'] ?: 'Məs. Dizaynlara bax'),
+                    Forms\Components\TextInput::make('block' . $n . '_url')
+                        ->label('Düymənin ünvanı')
+                        ->helperText('Saytın öz səhifəsi (/dizaynlar) və ya tam ünvan (https://…).')
+                        ->maxLength(255)
+                        ->placeholder('/dizaynlar'),
+                    Forms\Components\Select::make('block' . $n . '_size')
+                        ->label('Hündürlük')
+                        ->helperText('Blokun ekranda nə qədər yer tutduğu. Telefonda hamısı özünü yığır.')
+                        ->options(Xonca::SIZES)
+                        ->default('orta')
+                        ->selectablePlaceholder(false),
+                ])
+                ->columns(2);
         }
 
         return $fields;

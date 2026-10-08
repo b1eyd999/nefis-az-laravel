@@ -25,6 +25,38 @@
     background:var(--cream-2); color:var(--gold-deep); font-size:.8125rem; }
   .xo-empty{ border:1px dashed var(--line); border-radius:1rem; padding:2rem 1.25rem; text-align:center;
     color:var(--cocoa-soft); background:var(--paper); }
+  /* Three wide bands: a photograph holding one half, the words and a button
+     on the other. They turn sides as they go down, so the page does not read
+     as three of the same thing. On a phone the picture goes on top. */
+  .xo-band{ display:grid; gap:0; align-items:stretch; border-radius:1.25rem; overflow:hidden;
+    background:var(--paper); border:1px solid var(--line); margin-top:1.5rem; }
+  .xo-band + .xo-band{ margin-top:1.25rem; }
+  /* Three heights the owner picks from in the admin. The picture's own
+     height is what makes the band tall; the words sit in the middle of
+     whatever it comes to. */
+  .xo-band-pic{ background:var(--cream-2); min-height:12rem; }
+  .xo-band.is-alcaq .xo-band-pic{ min-height:9rem; }
+  .xo-band.is-orta .xo-band-pic{ min-height:13rem; }
+  .xo-band.is-hundur .xo-band-pic{ min-height:17rem; }
+  @media (min-width:860px){
+    .xo-band.is-alcaq .xo-band-pic{ min-height:12rem; }
+    .xo-band.is-orta .xo-band-pic{ min-height:17rem; }
+    .xo-band.is-hundur .xo-band-pic{ min-height:24rem; }
+  }
+  .xo-band-pic img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .xo-band-body{ padding:1.75rem 1.5rem 2rem; display:flex; flex-direction:column; justify-content:center; gap:.65rem; }
+  .xo-band-body .eyebrow{ margin:0; }
+  .xo-band-body h3{ font-size:clamp(1.3rem, 2.2vw, 1.85rem); line-height:1.2; margin:0; }
+  .xo-band-body p{ font-size:.9375rem; line-height:1.7; color:var(--cocoa-soft); margin:0; max-width:34rem; }
+  .xo-band-body .btn{ align-self:flex-start; margin-top:.35rem; }
+  @media (min-width:860px){
+    .xo-band{ grid-template-columns:1fr 1fr; }
+    .xo-band-body{ padding:2.5rem 2.75rem; }
+    /* The second band turns round: the picture moves to the right. */
+    .xo-band.is-flipped .xo-band-pic{ order:2; }
+  }
+  /* A band with no picture is only its words, and takes the whole width. */
+  .xo-band.no-pic{ grid-template-columns:1fr; }
 @endsection
 
 @section('content')
@@ -46,6 +78,49 @@
     </div>
   </div>
 </section>
+
+@php
+  /* A band is worth drawing when the owner has put something in it. */
+  $bands = collect([1, 2, 3])
+    ->map(fn ($n) => [
+      'eyebrow' => trim((string) ($page['block' . $n . '_eyebrow'] ?? '')),
+      'title' => trim((string) ($page['block' . $n . '_title'] ?? '')),
+      'text' => trim((string) ($page['block' . $n . '_text'] ?? '')),
+      'button' => trim((string) ($page['block' . $n . '_button'] ?? '')),
+      'url' => \App\Models\HeroSlide::href(trim((string) ($page['block' . $n . '_url'] ?? ''))),
+      'image' => \App\Support\Xonca::image($n),
+      'size' => \App\Support\Xonca::size($n),
+    ])
+    ->filter(fn ($b) => $b['title'] !== '' || $b['text'] !== '' || $b['image'])
+    ->values();
+@endphp
+@if($bands->isNotEmpty())
+  <section>
+    <div class="wrap">
+      @foreach($bands as $i => $band)
+        <div class="xo-band is-{{ $band['size'] }}{{ $band['image'] ? ($i % 2 ? ' is-flipped' : '') : ' no-pic' }}">
+          @if($band['image'])
+            <div class="xo-band-pic">
+              <img src="{{ $band['image'] }}" alt="{{ $band['title'] }}" loading="lazy" decoding="async">
+            </div>
+          @endif
+          <div class="xo-band-body">
+            @if($band['eyebrow'])<span class="eyebrow">{{ $band['eyebrow'] }}</span>@endif
+            @if($band['title'])<h3>{{ $band['title'] }}</h3>@endif
+            @if($band['text'])<p>{{ $band['text'] }}</p>@endif
+            @if($band['button'] && $band['url'])
+              <a href="{{ $band['url'] }}" class="btn btn-primary"
+                 @if(preg_match('#^https?://#i', $band['url'])) target="_blank" rel="noopener" @endif>
+                {{ $band['button'] }}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg>
+              </a>
+            @endif
+          </div>
+        </div>
+      @endforeach
+    </div>
+  </section>
+@endif
 
 <section>
   <div class="wrap">
