@@ -36,7 +36,11 @@ class AuthController extends Controller
                     $fail(__('Bu nömrə ilə artıq hesab var — daxil olun.'));
                 }
             }],
-            'password' => ['required', 'confirmed', Password::min(8)],
+            /* Asked for once, not twice: the second field was work on a
+               phone and this shop loses people at the sign-up. What a typo
+               used to cost is covered by the eye beside the field and by
+               the password reset. */
+            'password' => ['required', Password::min(8)],
         ]);
 
         $user = User::create([

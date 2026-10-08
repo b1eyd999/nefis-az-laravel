@@ -189,6 +189,21 @@
   .btn svg{ width:1rem; height:1rem; transition:transform .3s var(--ease); }
   .btn:hover svg{ transform:translate(3px,-3px); }
 
+  /* ---------- a password typed once ---------- */
+  /* The sign-up asks for it one time now; the eye is what catches a typo. */
+  .pw{ position:relative; }
+  .pw input{ padding-inline-end:3rem; }
+  .pw-eye{ position:absolute; inset-inline-end:.45rem; top:50%; transform:translateY(-50%);
+    display:flex; align-items:center; justify-content:center; width:2.1rem; height:2.1rem;
+    padding:0; border:0; border-radius:50%; background:none; cursor:pointer;
+    color:var(--cocoa-soft); opacity:.65; transition:opacity .2s, background .2s; }
+  .pw-eye:hover, .pw-eye:focus-visible{ opacity:1; background:var(--cream-2); }
+  .pw-eye.on{ opacity:1; color:var(--cocoa); }
+  .pw-eye svg{ width:1.15rem; height:1.15rem; }
+  .pw-eye .shut{ display:none; }
+  .pw-eye.on .open{ display:none; }
+  .pw-eye.on .shut{ display:block; }
+
   /* ---------- header ---------- */
   header{
     position:sticky; top:0; z-index:50; padding:1.25rem 0;

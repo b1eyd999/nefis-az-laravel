@@ -42,11 +42,10 @@
         </div>
         <div class="field">
           <label for="password">{{ __('Şifrə') }}</label>
-          <input type="password" id="password" name="password" required>
-        </div>
-        <div class="field">
-          <label for="password_confirmation">{{ __('Şifrəni Təkrarlayın') }}</label>
-          <input type="password" id="password_confirmation" name="password_confirmation" required>
+          {{-- Typed once. Whoever is unsure looks at it instead of typing
+               it a second time on a telephone keyboard. --}}
+          @include('partials.password-field', ['id' => 'password', 'name' => 'password', 'autocomplete' => 'new-password'])
+          <small class="hint">{{ __('Ən azı 8 simvol.') }}</small>
         </div>
         <button type="submit" class="btn btn-primary btn-block">{{ __('Qeydiyyatdan Keç') }}</button>
       </form>
@@ -58,6 +57,7 @@
 @endsection
 
 @section('page_script')
+<script defer src="{{ asset('js/password-eye.js') }}?v={{ \App\Support\Assets::version('js/password-eye.js') }}"></script>
 <script>
 /* The number writes itself as it is typed: the country code stays where it
    is and the rest falls into +994 55 555 55 55, however it was pasted in. */

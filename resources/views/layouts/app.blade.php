@@ -195,6 +195,7 @@
           </button>
           <div class="nav-panel right">
             <div class="nav-who">{{ auth()->user()->name }}</div>
+            <a class="nav-item" href="{{ lroute('profile.index') }}"><span class="ni-ico">👤</span><span><b>{{ __('Hesabım') }}</b></span></a>
             <a class="nav-item" href="{{ lroute('orders.index') }}"><span class="ni-ico">📦</span><span><b>{{ __('Sifarişlərim') }}</b></span></a>
             @if(auth()->user()->isStaff())
               <a class="nav-item" href="{{ url('/admin') }}"><span class="ni-ico">⚙️</span><span><b>{{ __('Admin panel') }}</b></span></a>
@@ -262,6 +263,7 @@
     <span class="mn-head">{{ __('Hesab') }}</span>
     <a href="{{ lroute('cart.index') }}">{{ __('Səbət') }}</a>
     @auth
+      <a href="{{ lroute('profile.index') }}">{{ __('Hesabım') }}</a>
       <a href="{{ lroute('orders.index') }}">{{ __('Sifarişlərim') }}</a>
       @if(auth()->user()->isStaff())
         <a href="{{ url('/admin') }}">{{ __('Admin panel') }}</a>

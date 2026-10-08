@@ -10,6 +10,7 @@
 use App\Http\Controllers\AdjustmentController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\ProfileController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CartHandoffController;
 use App\Http\Controllers\CheckoutController;
@@ -101,6 +102,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/promokod', [CheckoutController::class, 'promo'])
         ->middleware('throttle:20,1')->name('checkout.promo');
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+
+    /* The customer's own page. Until now he could sign in and look at his
+       orders and nothing else — a number typed wrong at the sign-up stayed
+       wrong, and a new password meant saying you had forgotten the old. */
+    Route::get('/hesabim', [ProfileController::class, 'show'])->name('profile.index');
+    Route::post('/hesabim', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/hesabim/sifre', [ProfileController::class, 'password'])
+        ->middleware('throttle:10,10')->name('profile.password');
 
     // Paying by transfer, and the receipt that follows it.
     Route::prefix('sifaris/{order}')->whereNumber('order')->name('orders.')->group(function () {
