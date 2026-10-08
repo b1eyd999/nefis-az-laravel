@@ -141,4 +141,27 @@ class Cart
         Session::forget(self::KEY);
         Session::forget(self::RUSH);
     }
+
+    /**
+     * Put a whole basket in place of whatever was there.
+     *
+     * Used when the shop has filled a basket for a customer and he opens it:
+     * he was sent this one, and two baskets mixed together belong to nobody.
+     * Each line is given a fresh id, so removing one here cannot reach back
+     * into the basket it was copied from.
+     */
+    public static function replace(array $items): void
+    {
+        $out = [];
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+            $item['id'] = Str::uuid()->toString();
+            $item['quantity'] = max(1, (int) ($item['quantity'] ?? 1));
+            $out[] = $item;
+        }
+
+        Session::put(self::KEY, $out);
+    }
 }

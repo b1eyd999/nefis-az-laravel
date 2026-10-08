@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CartHandoff;
 use App\Models\DeliveryMethod;
 use App\Models\LivePhoto;
 use App\Models\Order;
@@ -214,6 +215,13 @@ class CheckoutController extends Controller
            payment is confirmed, whichever way it is confirmed. */
         if (! $payable) {
             defer(fn () => Telegram::order($order));
+        }
+
+        /* If this basket was one the shop filled and sent, the two are
+           tied together now — so the owner's list says which of his links
+           turned into an order, and the same link cannot be ordered twice. */
+        if ($handoff = CartHandoff::find(session()->pull(CartHandoffController::SESSION))) {
+            $handoff->forceFill(['order_id' => $order->id])->save();
         }
 
         Cart::clear();

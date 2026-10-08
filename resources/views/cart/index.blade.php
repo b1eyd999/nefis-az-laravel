@@ -3,6 +3,22 @@
 @section('title', __('Səbət') . ', Nefis Şokolad Evi')
 @section('robots', 'noindex, nofollow')
 
+@section('page_style')
+  /* The shop's own corner of the basket page, and the address it hands out. */
+  .handoff-make{ margin-top:1rem; padding:.9rem 1rem; border:1px dashed var(--line); border-radius:var(--radius);
+    background:var(--cream); }
+  .handoff-make b{ display:block; font-size:.9375rem; }
+  .handoff-make p{ font-size:.8125rem; line-height:1.55; color:var(--cocoa-soft); margin:.3rem 0 .7rem; }
+  .handoff-make input{ width:100%; margin-bottom:.6rem; }
+  .handoff-made{ margin-bottom:1.2rem; padding:1rem 1.1rem; border:1px solid var(--line);
+    border-radius:var(--radius); background:var(--paper); box-shadow:var(--shadow-sm); }
+  .handoff-made b{ display:block; }
+  .handoff-made .who{ font-size:.8125rem; color:var(--cocoa-soft); margin:.2rem 0 0; }
+  .handoff-made input{ width:100%; margin:.7rem 0; font-size:.8125rem; }
+  .handoff-made .row{ display:flex; gap:.6rem; flex-wrap:wrap; }
+  .handoff-made small{ display:block; margin-top:.6rem; font-size:.78rem; color:var(--cocoa-soft); }
+@endsection
+
 @section('content')
 <section class="page-hero" style="padding-bottom:0;">
   <div class="wrap">
@@ -15,6 +31,29 @@
   <div class="wrap" style="max-width:52rem;">
     @if(session('status'))
       <div class="alert alert-success">{{ session('status') }}</div>
+    @endif
+
+    @if($errors->has('handoff'))
+      <div class="alert alert-error">{{ $errors->first('handoff') }}</div>
+    @endif
+
+    {{-- The basket has just been turned into an address to send. It is shown
+         here rather than in the panel because this is where he was standing
+         when he made it, and because his own basket is empty again now. --}}
+    @php $made = session('handoff.made') ? \App\Models\CartHandoff::find(session('handoff.made')) : null; @endphp
+    @if($made)
+      <div class="handoff-made">
+        <b>{{ __('Səbət hazırdır. Linki müştəriyə göndərin.') }}</b>
+        @if($made->note)<p class="who">{{ $made->note }}</p>@endif
+        <input type="text" readonly value="{{ $made->url() }}" id="handoff-url"
+               onclick="this.select()" aria-label="{{ __('Səbətin linki') }}">
+        <div class="row">
+          <button type="button" class="btn btn-primary" id="handoff-copy">{{ __('Linki kopyala') }}</button>
+          <a class="btn btn-ghost" href="https://wa.me/?text={{ urlencode($made->url()) }}"
+             target="_blank" rel="noopener">WhatsApp</a>
+        </div>
+        <small>{{ __('Link :days gün işləyir. Müştəri onu açanda səbət onun qarşısına çıxır.', ['days' => \App\Models\CartHandoff::DAYS]) }}</small>
+      </div>
     @endif
 
     @if($items->isEmpty())
@@ -108,8 +147,46 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
           {{ __('Alış-verişə davam et') }}
         </a>
+
+        {{-- Only the shop sees this. Most conversations start in Instagram,
+             and some customers never get through the design page; the owner
+             builds the box here himself and sends one address. --}}
+        @if(auth()->user()?->isAdmin())
+          <form method="POST" action="{{ lroute('cart.handoff.store') }}" class="handoff-make">
+            @csrf
+            <b>{{ __('Müştəri üçün hazır səbət') }}</b>
+            <p>{{ __('Bu səbəti linkə çevirin. Müştəri linki açır, səbət onun qarşısına çıxır — ünvanı və ödənişi özü edir.') }}</p>
+            <input type="text" name="note" maxlength="120" value="{{ old('note') }}"
+                   placeholder="{{ __('Kimin üçün? Məs. Aygün, Instagram') }}">
+            <button type="submit" class="btn btn-ghost btn-block">{{ __('Linki yarat') }}</button>
+          </form>
+        @endif
       </div>
     @endif
   </div>
 </section>
+@endsection
+
+@section('page_script')
+<script>
+  (function () {
+    var button = document.getElementById('handoff-copy');
+    var field = document.getElementById('handoff-url');
+    if (!button || !field) return;
+    button.addEventListener('click', function () {
+      field.select();
+      var done = function () { button.textContent = @json(__('Kopyalandı ✓')); };
+      /* The clipboard is refused on an insecure page and in some browsers;
+         the old command still works there, and the field is selected
+         either way so it can be copied by hand. */
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(field.value).then(done, function () {
+          try { document.execCommand('copy'); done(); } catch (e) {}
+        });
+      } else {
+        try { document.execCommand('copy'); done(); } catch (e) {}
+      }
+    });
+  })();
+</script>
 @endsection

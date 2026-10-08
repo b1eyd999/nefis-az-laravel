@@ -11,6 +11,7 @@ use App\Http\Controllers\AdjustmentController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CartHandoffController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CorporateController;
 use App\Http\Controllers\EpointController;
@@ -62,6 +63,14 @@ Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart', [CartController::class, 'add'])->name('cart.add');
 Route::delete('/cart/{id}', [CartController::class, 'remove'])->name('cart.remove');
 
+/* A basket the shop filled for one customer. The address is the whole key —
+   whoever holds it holds the basket — so the token is long and random, and
+   the road is slowed down against anyone trying tokens one after another. */
+Route::get('/hazir-sebet/{token}', [CartHandoffController::class, 'open'])
+    ->where('token', '[A-Za-z0-9]{40}')
+    ->middleware('throttle:20,1')
+    ->name('cart.handoff.open');
+
 Route::middleware('guest')->group(function () {
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,10');
@@ -81,6 +90,9 @@ Route::middleware('auth')->group(function () {
        language groups the address says nothing, and the page then came back
        in whatever language the server itself is set to. */
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    // The owner turns the basket he has just built into a link to send.
+    Route::post('/hazir-sebet', [CartHandoffController::class, 'store'])->name('cart.handoff.store');
 
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
