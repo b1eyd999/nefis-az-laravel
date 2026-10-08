@@ -1166,6 +1166,26 @@
 
   var canvas = document.getElementById('preview-canvas');
   var ctx = canvas.getContext('2d');
+
+  /* How many pixels the preview actually paints.
+     The canvas used to be the design's own print size — 1600 x 2000 on some
+     of them — and every letter typed repainted all 3.2 million of those.
+     A telephone holds that surface in about 13 MB and redraws it on every
+     keystroke, which is what made this page stop answering on Android.
+     The box is printed from the files the customer sends and never from
+     this canvas, so the preview only needs the pixels a screen can show.
+     Everything below still draws in the design's own coordinates; the
+     transform set in draw() is the single place they become pixels. */
+  var PREVIEW_CAP = window.innerWidth < 700 ? 900 : 1400;
+  var drawScale = 1, logicalW = 0, logicalH = 0;
+
+  function sizeCanvas(w, h){
+    logicalW = w;
+    logicalH = h;
+    drawScale = Math.min(1, PREVIEW_CAP / Math.max(w, h));
+    canvas.width = Math.max(1, Math.round(w * drawScale));
+    canvas.height = Math.max(1, Math.round(h * drawScale));
+  }
   var addBtn = document.getElementById('add-to-cart-btn');
   var addHint = document.getElementById('add-hint');
   /* A shut button with nothing said about it reads as a broken one, so the
@@ -1485,14 +1505,16 @@
   };
 
   function draw(){
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Design coordinates in, painted pixels out.
+    ctx.setTransform(drawScale, 0, 0, drawScale, 0, 0);
+    ctx.clearRect(0, 0, logicalW, logicalH);
     var a = currentAngle();
 
     if (a.scene) {
       /* The owner's mockup: the box design corner-pinned onto a rendered box. */
       NefisScene.drawScene(ctx, a.scene, renderMockup(), sceneImage, sceneCache, { boxColor: a.boxColor });
     } else if (a.bg) {
-      if (bgReady) ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+      if (bgReady) ctx.drawImage(bgImg, 0, 0, logicalW, logicalH);
       var mockup = renderMockup();
       var box = a.boxArea, cb = a.contentBox;
       var scale = box.w / cb.w;
@@ -1507,7 +1529,7 @@
       ctx.drawImage(mockup, 0, 0, a.tw, a.th);
       ctx.restore();
     } else {
-      ctx.drawImage(renderMockup(), 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(renderMockup(), 0, 0, logicalW, logicalH);
     }
     scheduleThumbs();
   }
@@ -1560,18 +1582,15 @@
     }
 
     if (a.scene) {
-      canvas.width = a.scene.w;
-      canvas.height = a.scene.h;
+      sizeCanvas(a.scene.w, a.scene.h);
     } else if (a.bg) {
-      canvas.width = a.bgW;
-      canvas.height = a.bgH;
+      sizeCanvas(a.bgW, a.bgH);
       bgReady = false;
       bgImg = new Image();
       bgImg.onload = function(){ bgReady = true; draw(); };
       bgImg.src = a.bg;
     } else {
-      canvas.width = a.tw;
-      canvas.height = a.th;
+      sizeCanvas(a.tw, a.th);
     }
 
     angleThumbs.forEach(function(btn){
@@ -2030,8 +2049,8 @@
   function toCanvasPixel(clientX, clientY){
     var rect = canvas.getBoundingClientRect();
     return {
-      x: (clientX - rect.left) * (canvas.width / rect.width),
-      y: (clientY - rect.top) * (canvas.height / rect.height)
+      x: (clientX - rect.left) * (logicalW / rect.width),
+      y: (clientY - rect.top) * (logicalH / rect.height)
     };
   }
 

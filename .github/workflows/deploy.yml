@@ -83,8 +83,46 @@ defaults:
     shell: bash
 
 jobs:
+  # ---------------------------------------------------------------------
+  # Nothing reaches the shop until the suite has run. This job holds no
+  # secret and no environment, so actions/checkout here cannot read what
+  # the deploy job carries - which is why that job still has none.
+  # ---------------------------------------------------------------------
+  tests:
+    name: Run the test suite
+    if: github.repository == 'b1eyd999/nefis-az-laravel'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The extensions the suite needs
+        # The suite paints real images to prove they come out right, and runs
+        # on sqlite in memory. Installed with apt rather than a third-party
+        # action, to keep this workflow to GitHub's own.
+        run: |
+          PHPV=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq php$PHPV-gd php$PHPV-sqlite3 php$PHPV-mbstring php$PHPV-xml php$PHPV-curl php$PHPV-intl php$PHPV-zip php$PHPV-bcmath
+          php -v
+          php -m
+
+      - name: Install what composer.lock says
+        run: composer install --no-interaction --prefer-dist --no-progress --no-ansi
+
+      - name: A key to run with
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+
+      - name: The suite
+        # 512M because the image tests paint at print size.
+        run: php -d memory_limit=512M artisan test --no-interaction
+
   deploy:
     name: Pull and deploy on the hosting
+    # Nothing is deployed over a red suite.
+    needs: tests
     # A fork that switches Actions on gets this file too. It has no token and
     # no business calling our panel, so it stops right here.
     if: github.repository == 'b1eyd999/nefis-az-laravel'
