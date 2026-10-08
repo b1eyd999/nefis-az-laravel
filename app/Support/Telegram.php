@@ -272,6 +272,9 @@ class Telegram
         if ($request->qr_target) {
             $lines[] = '🔗 QR: ' . e($request->qr_target);
         }
+        if ($request->designUrl()) {
+            $lines[] = '🎨 Hazır dizayn: ' . e($request->designUrl());
+        }
         if ($request->note) {
             $lines[] = '';
             $lines[] = '<i>' . e($request->note) . '</i>';

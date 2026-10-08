@@ -62,6 +62,39 @@
   .co-shot img{ display:block; width:100%; border-radius:var(--radius-sm); box-shadow:var(--shadow-sm); }
   .co-shot figcaption{ margin-top:.5rem; font-size:.82rem; color:var(--cocoa-soft); }
 
+  /* A company with a designer of its own: our template goes out, their
+     finished artwork comes back through the same form. Folded away until
+     they say they have one, so it does not lengthen the form for everyone. */
+  .co-designer{ border:1px solid var(--line); border-radius:var(--radius);
+    padding:.95rem 1.1rem; background:var(--cream); }
+  .co-designer .co-check{ display:flex; align-items:center; gap:.6rem; margin:0; cursor:pointer; }
+  .co-designer .co-check input{ width:1.05rem; height:1.05rem; accent-color:var(--terracotta); margin:0; }
+  .co-designer .co-check span{ display:inline; margin:0; font-size:.9375rem; font-weight:600;
+    color:var(--cocoa); }
+  .co-designer-body{ display:none; margin-top:.9rem; }
+  .co-designer.is-open .co-designer-body{ display:block; }
+  .co-designer:has(.co-check input:checked) .co-designer-body{ display:block; }
+  .co-designer-body > p{ font-size:.875rem; line-height:1.65; color:var(--cocoa-soft); margin:0 0 .9rem; }
+  .co-designer-grid{ display:grid; gap:1rem; }
+  @media (min-width:38rem){ .co-designer-grid{ grid-template-columns:1fr 1fr; align-items:center; } }
+  .co-tpl{ display:flex; align-items:center; gap:.85rem; text-decoration:none; color:inherit;
+    border:1px solid var(--line); border-radius:.85rem; padding:.7rem .85rem; background:var(--paper); }
+  .co-tpl:hover{ border-color:var(--cocoa-faint); }
+  .co-tpl img{ width:3rem; height:4.2rem; object-fit:cover; object-position:top center;
+    border-radius:.35rem; border:1px solid var(--line); background:#fff; flex:none; }
+  .co-tpl b{ display:block; font-size:.9rem; }
+  .co-tpl small{ display:block; font-size:.78rem; color:var(--cocoa-soft); margin-top:.2rem; }
+  .co-design-file{ display:block; margin-top:1rem; }
+  .co-designer-body input[type=file]{ font-size:.85rem; }
+  .co-designer-body label > small{ display:block; font-size:.78rem; color:var(--cocoa-soft); margin-top:.35rem; }
+
+  /* Until now a rejected form came back silent; a wrong design file has to
+     say what was wrong with it. */
+  .co-errors{ list-style:none; margin:1.2rem 0 0; padding:.85rem 1rem; border-radius:var(--radius);
+    background:rgba(181,71,63,.08); border:1px solid rgba(181,71,63,.3); color:var(--red);
+    font-size:.875rem; line-height:1.6; }
+  .co-errors li + li{ margin-top:.3rem; }
+
   .co-form{ display:grid; gap:1rem; grid-template-columns:repeat(auto-fit, minmax(14rem, 1fr)); }
   .co-form .full{ grid-column:1 / -1; }
   .co-form label > span{ display:block; font-size:.8rem; font-weight:600; color:var(--cocoa-soft); margin-bottom:.3rem; }
@@ -114,6 +147,7 @@
       <div class="co-card"><span class="ico">🏷️</span><b>{{ __($page['front_title']) }}</b><p>{{ __($page['front_text']) }}</p></div>
       <div class="co-card"><span class="ico">📱</span><b>{{ __($page['back_title']) }}</b><p>{{ __($page['back_text']) }}</p></div>
     </div>
+
   </div>
 </section>
 
@@ -247,6 +281,12 @@
       <p class="co-sent" style="margin-top:1.2rem;">✓ {{ session('corporate.sent') }}</p>
     @endif
 
+    @if($errors->any())
+      <ul class="co-errors">
+        @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+      </ul>
+    @endif
+
     <form method="POST" action="{{ lroute('corporate.store') }}" enctype="multipart/form-data"
           class="co-form" style="margin-top:1.4rem;">
       @csrf
@@ -269,6 +309,39 @@
         <input type="text" name="qr_target" value="{{ old('qr_target') }}" maxlength="300"></label>
       <label class="full"><span>{{ __('Qeyd') }}</span>
         <textarea name="note" rows="3" maxlength="1000">{{ old('note') }}</textarea></label>
+
+      {{-- A company that draws its own box: the template out, the finished
+           file back. Open from the start if the last attempt was rejected,
+           so the message above is beside the field it is about. --}}
+      <div class="full co-designer{{ $errors->has('design') ? ' is-open' : '' }}" id="co-designer">
+        <label class="co-check">
+          <input type="checkbox" @checked($errors->has('design'))>
+          <span>{{ __($page['designer_check']) }}</span>
+        </label>
+        <div class="co-designer-body">
+          <p>{{ __($page['designer_note']) }}</p>
+          <div class="co-designer-grid">
+            <a class="co-tpl" href="{{ asset(\App\Support\CorporatePage::TEMPLATE) }}" download>
+              <img src="{{ asset(\App\Support\CorporatePage::TEMPLATE) }}" alt="" loading="lazy" decoding="async">
+              <span>
+                <b>{{ __($page['designer_template']) }}</b>
+                <small>{{ __($page['designer_template_note']) }}</small>
+              </span>
+            </a>
+            <a class="co-tpl" href="{{ asset(\App\Support\CorporatePage::BACK_SHOT) }}" target="_blank" rel="noopener">
+              <img src="{{ asset(\App\Support\CorporatePage::BACK_SHOT) }}" alt="" loading="lazy" decoding="async"
+                   style="object-position:center">
+              <span>
+                <b>{{ __($page['back_title']) }} — {{ __('nümunə') }}</b>
+                <small>{{ __($page['back_shot']) }}</small>
+              </span>
+            </a>
+          </div>
+          <label class="co-design-file"><span>{{ __($page['designer_field']) }}</span>
+            <input type="file" name="design" accept=".pdf,.ai,.eps,.png,.jpg,.jpeg,.webp,.zip">
+            <small>{{ __($page['designer_formats']) }}</small></label>
+        </div>
+      </div>
 
       {{-- Filled in by the try-on above, so the request carries the colour
            they were actually looking at when they decided to write. --}}
@@ -343,6 +416,16 @@ document.addEventListener('DOMContentLoaded', function () {
     var input = document.getElementById(pair[0]);
     if (input) input.addEventListener('input', function () { box.set(pair[1], input.value); });
   });
+
+  /* The designer fold. CSS opens it on its own where :has() is understood;
+     this is for the browsers where it is not. */
+  var designer = document.getElementById('co-designer');
+  if (designer) {
+    var check = designer.querySelector('.co-check input');
+    var sync = function () { designer.classList.toggle('is-open', check.checked); };
+    check.addEventListener('change', sync);
+    sync();
+  }
 
   var logo = document.getElementById('co-logo');
   if (logo) {

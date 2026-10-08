@@ -197,9 +197,32 @@
   }
   header.scrolled{ padding:.85rem 0; }
   header .wrap{ display:flex; align-items:center; justify-content:space-between; gap:1rem; }
-  .brand{ display:flex; align-items:center; gap:.6rem; }
-  .brand img{ height:4.95rem; width:auto; display:block; }
-  .footer-brand .brand img{ height:5.6rem; }
+  /* The mark is on every page, so it is the one place where a little
+     movement earns its keep: it arrives with the page, a slow gleam crosses
+     the letters now and then the way light runs over a wrapper when the box
+     is turned, and it leans towards the cursor. The gleam is painted through
+     the logo's own shape, so nothing of it falls on the paper around it. */
+  .brand{ display:flex; align-items:center; gap:.6rem; position:relative; }
+  .brand img{ height:5.9rem; width:auto; display:block;
+    transition:transform .35s cubic-bezier(.2,.8,.3,1.25);
+    animation:brand-in .55s cubic-bezier(.2,.8,.3,1) backwards; }
+  .brand:hover img{ transform:scale(1.045) rotate(-1.5deg); }
+  .brand::after{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    -webkit-mask:url(/images/logo.svg) center/contain no-repeat;
+            mask:url(/images/logo.svg) center/contain no-repeat;
+    background:linear-gradient(100deg, transparent 42%, rgba(255,255,255,.92) 50%, transparent 58%);
+    background-size:280% 100%; background-position:170% 0;
+    animation:brand-gleam 7s ease-in-out 1.6s infinite;
+  }
+  @keyframes brand-in{ from{ opacity:0; transform:translateY(-7px) scale(.94); } }
+  @keyframes brand-gleam{ 0%, 74%{ background-position:170% 0; } 94%, 100%{ background-position:-70% 0; } }
+  .footer-brand .brand img{ height:6.6rem; }
+  /* A visitor who has asked for less movement gets the mark standing still. */
+  @media (prefers-reduced-motion: reduce){
+    .brand img, .brand::after{ animation:none; }
+    .brand:hover img{ transform:none; }
+  }
   nav.primary{ display:none; align-items:center; gap:2rem; font-weight:500; font-size:.9375rem; color:var(--cocoa-soft); }
   nav.primary a{ transition:color .25s; position:relative; }
   nav.primary a:hover{ color:var(--cocoa); }

@@ -96,8 +96,27 @@ class CorporateSettings extends Page implements HasForms
                         $text('back_title', 'Arxa tərəfin adı', 40),
                         Forms\Components\Textarea::make('front_text')->label('Ön tərəf haqqında')->rows(2)->maxLength(300)
                             ->placeholder(CorporatePage::DEFAULTS['front_text']),
-                        Forms\Components\Textarea::make('back_text')->label('Arxa tərəf haqqında')->rows(2)->maxLength(300)
-                            ->placeholder(CorporatePage::DEFAULTS['back_text']),
+                        Forms\Components\Textarea::make('back_text')->label('Arxa tərəf haqqında')->rows(2)
+                            ->maxLength(300)->placeholder(CorporatePage::DEFAULTS['back_text']),
+                        Forms\Components\Textarea::make('back_shot')->label('Arxa şəklin altındakı yazı')->rows(2)
+                            ->maxLength(300)->placeholder(CorporatePage::DEFAULTS['back_shot'])->columnSpanFull(),
+                    ])->columns(2),
+
+                Forms\Components\Section::make('Öz dizayneri olan şirkətlər')
+                    ->description('Formada açılan bölmə: şablonu yükləyirlər, hazır faylı bizə göndərirlər.')
+                    ->schema([
+                        $text('designer_check', 'Açan sətir', 120),
+                        $text('designer_template', 'Şablon düyməsinin yazısı', 60),
+                        $text('designer_template_note', 'Düymənin altındakı yazı', 80),
+                        $text('designer_field', 'Fayl sahəsinin adı', 60),
+                        Forms\Components\Textarea::make('designer_note')->label('İzah')->rows(2)
+                            ->maxLength(400)->placeholder(CorporatePage::DEFAULTS['designer_note'])->columnSpanFull(),
+                        $text('designer_formats', 'Qəbul edilən fayllar', 120),
+                        Forms\Components\Placeholder::make('designer_file')->label('Şablon faylı')
+                            ->content(new \Illuminate\Support\HtmlString(
+                                '<a href="/' . CorporatePage::TEMPLATE . '" target="_blank" rel="noopener" '
+                                . 'style="text-decoration:underline">dizayn-sablonu.jpg</a> — ölçülər, kəsim xətti və nümunə.'
+                            )),
                     ])->columns(2),
 
                 Forms\Components\Section::make('Kimlər sifariş edir')

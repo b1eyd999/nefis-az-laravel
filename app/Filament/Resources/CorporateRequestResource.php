@@ -72,6 +72,27 @@ class CorporateRequestResource extends Resource
                                 . '<br><a href="' . e($record->logoUrl()) . '" download style="font-size:.8rem; text-decoration:underline">Yüklə</a>')
                             : 'Loqo göndərməyiblər')
                         ->columnSpanFull(),
+                    /* A company with a designer of its own sends the finished
+                       artwork. Shown here if it is a picture, linked if it is
+                       a print file the browser cannot open. */
+                    Forms\Components\Placeholder::make('design_view')->label('Öz dizaynları')
+                        ->content(function (?CorporateRequest $record) {
+                            $url = $record?->designUrl();
+                            if (! $url) {
+                                return 'Öz dizaynlarını göndərməyiblər';
+                            }
+
+                            $preview = $record->designIsImage()
+                                ? '<a href="' . e($url) . '" target="_blank" rel="noopener">'
+                                    . '<img src="' . e($url) . '" alt="" style="max-height:12rem; max-width:100%; '
+                                    . 'background:#fff; padding:.6rem; border-radius:.6rem; border:1px solid rgba(128,128,128,.35)"></a><br>'
+                                : '';
+
+                            return new HtmlString($preview . '<a href="' . e($url) . '" download '
+                                . 'style="font-size:.85rem; text-decoration:underline">'
+                                . e(basename($record->design)) . ' — yüklə</a>');
+                        })
+                        ->columnSpanFull(),
                     Forms\Components\Placeholder::make('box_color_view')->label('Qutunun rəngi')
                         ->content(fn (?CorporateRequest $record) => $record?->box_color
                             ? new HtmlString('<span style="display:inline-flex; align-items:center; gap:.5rem">'
@@ -95,6 +116,9 @@ class CorporateRequestResource extends Resource
                 Tables\Columns\TextColumn::make('phone')->label('Telefon')->searchable()
                     ->url(fn (CorporateRequest $record) => 'tel:' . preg_replace('~[^0-9+]~', '', $record->phone)),
                 Tables\Columns\ImageColumn::make('logo')->label('Loqo')->disk('public')->height(38)->visibleFrom('lg'),
+                Tables\Columns\IconColumn::make('design')->label('Dizayn')->boolean()
+                    ->trueIcon('heroicon-o-paint-brush')->falseIcon('heroicon-o-minus-small')
+                    ->tooltip('Öz dizaynlarını göndəriblər')->visibleFrom('lg'),
                 Tables\Columns\TextColumn::make('status')->label('Vəziyyət')->badge()
                     ->formatStateUsing(fn (string $state) => CorporateRequest::STATUSES[$state] ?? $state)
                     ->color(fn (string $state) => match ($state) {

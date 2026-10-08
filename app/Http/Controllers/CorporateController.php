@@ -41,6 +41,15 @@ class CorporateController extends Controller
             'email' => ['nullable', 'email', 'max:150'],
             'quantity' => ['required', 'integer', 'min:' . $minimum, 'max:1000000'],
             'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:4096'],
+            /* The artwork a company's own designer drew. Checked by what the
+               file actually is, not by what it is called: the name is the
+               one thing an uploader controls completely. */
+            'design' => ['nullable', 'file', 'max:20480', 'mimetypes:' . implode(',', [
+                'image/png', 'image/jpeg', 'image/webp',
+                'application/pdf', 'application/postscript', 'application/illustrator',
+                'image/x-eps', 'application/eps', 'application/x-eps',
+                'application/zip', 'application/x-zip-compressed', 'multipart/x-zip',
+            ])],
             'box_color' => ['nullable', 'string', 'max:30'],
             'slogan' => ['nullable', 'string', 'max:120'],
             'qr_target' => ['nullable', 'string', 'max:300'],
@@ -52,12 +61,20 @@ class CorporateController extends Controller
             'quantity.min' => __('Ən azı :min ədəddən sifariş qəbul edirik.', ['min' => $minimum]),
             'logo.image' => __('Loqo şəkil olmalıdır (PNG, JPG, SVG).'),
             'logo.max' => __('Loqo 4 MB-dan böyük ola bilməz.'),
+            'design.mimetypes' => __('Dizayn faylı PDF, AI, EPS, PNG, JPG və ya ZIP olmalıdır.'),
+            'design.max' => __('Dizayn faylı 20 MB-dan böyük ola bilməz.'),
         ]);
 
         // Kept beside the cart's own uploads, in a folder of its own so a
         // clean-up of customer photos never touches a company's logo.
         if ($request->hasFile('logo')) {
             $data['logo'] = $request->file('logo')->store('corporate-logos', 'public');
+        }
+
+        // Stored under a name of our own making, with the extension taken
+        // from the file's contents — an uploaded name never reaches the disk.
+        if ($request->hasFile('design')) {
+            $data['design'] = $request->file('design')->store('corporate-designs', 'public');
         }
 
         $made = CorporateRequest::create($data);

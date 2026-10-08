@@ -39,6 +39,19 @@ class CorporatePage
         'back_title' => 'Arxa tərəf',
         'back_text' => 'QR kod: saytınıza, Instagram səhifənizə, menyuya və ya rəy formasına aparır.',
 
+        'back_shot' => 'Qutunun arxası: QR kod ağ fonda, altında ünvanınız.',
+
+        /* A company with a designer of its own does not want our mock-up; it
+           wants the measurements. The template says what the printer needs,
+           and the finished file comes back through the same form. */
+        'designer_check' => 'Dizaynı öz dizaynerimiz hazırlayacaq',
+        'designer_note' => 'Şablonu yükləyin, dizayneriniz onun üstündə işləsin, hazır faylı burada bizə göndərin. '
+            . 'Şablonda qutunun ölçüləri, kəsim xətti və QR kodun yeri göstərilib.',
+        'designer_template' => 'Dizayn şablonunu yüklə',
+        'designer_template_note' => 'JPG · A4 · 300 dpi — ölçülər və nümunə',
+        'designer_field' => 'Hazır dizayn faylı',
+        'designer_formats' => 'PDF, AI, EPS, PNG, JPG və ya ZIP. 20 MB-a qədər.',
+
         'whom_title' => 'Kimlər sifariş edir',
         'try_title' => 'Loqonuzu yoxlayın',
         'try_note' => 'Loqonuzu yükləyin, qutunun rəngini seçin — necə görünəcəyini elə burada görürsünüz. '
@@ -100,6 +113,11 @@ class CorporatePage
             'corners' => [[0.70437, 0.40975], [0.85313, 0.41256], [0.84688, 0.64041], [0.695, 0.6376]],
         ],
     ];
+
+    /** The sheet a company's own designer works on, and the back of the box. */
+    public const TEMPLATE = 'images/corporate/dizayn-sablonu.jpg';
+
+    public const BACK_SHOT = 'images/corporate/qutunun-arxasi.jpg';
 
     /** The colours the box is offered in; the owner may add his own. */
     public const COLORS = [

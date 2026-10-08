@@ -26,7 +26,7 @@ class CorporateRequest extends Model
 
     protected $fillable = [
         'company', 'person', 'phone', 'email', 'quantity',
-        'logo', 'box_color', 'slogan', 'qr_target', 'note', 'status',
+        'logo', 'design', 'box_color', 'slogan', 'qr_target', 'note', 'status',
     ];
 
     protected function casts(): array
@@ -36,11 +36,13 @@ class CorporateRequest extends Model
 
     protected static function booted(): void
     {
-        // The logo was uploaded for this request alone; nothing else points
-        // at it, so it goes when the request does.
+        // The logo and the artwork were uploaded for this request alone;
+        // nothing else points at them, so they go when the request does.
         static::deleted(function (CorporateRequest $request) {
-            if ($request->logo) {
-                Storage::disk('public')->delete($request->logo);
+            foreach ([$request->logo, $request->design] as $file) {
+                if ($file) {
+                    Storage::disk('public')->delete($file);
+                }
             }
         });
     }
@@ -53,6 +55,19 @@ class CorporateRequest extends Model
     public function logoUrl(): ?string
     {
         return $this->logo ? Media::url($this->logo) : null;
+    }
+
+    /** The artwork their own designer drew, if they sent one. */
+    public function designUrl(): ?string
+    {
+        return $this->design ? Media::url($this->design) : null;
+    }
+
+    /** Whether that artwork is something the admin can show rather than link. */
+    public function designIsImage(): bool
+    {
+        return in_array(strtolower(pathinfo((string) $this->design, PATHINFO_EXTENSION)),
+            ['png', 'jpg', 'jpeg', 'webp'], true);
     }
 
     /** The shop writing back on WhatsApp, with the number as they left it. */

@@ -250,4 +250,118 @@ class CorporateTest extends TestCase
         $this->assertTrue(CorporateSettings::canAccess());
         $this->assertTrue(\App\Filament\Resources\CorporateRequestResource::canViewAny());
     }
+
+    /**
+     * A real file on disk under a name of our choosing.
+     *
+     * `UploadedFile::fake()` reports the type its *name* implies, which is
+     * the one thing being tested here: what the bytes are has to decide.
+     */
+    private function realFile(string $name, string $content): UploadedFile
+    {
+        $tmp = tempnam(sys_get_temp_dir(), 'nefis');
+        file_put_contents($tmp, $content);
+
+        // Laravel's own class, marked as a test upload: a Symfony one is
+        // re-wrapped on the way in and then fails `is_uploaded_file()`.
+        return new UploadedFile($tmp, $name, mime_content_type($tmp) ?: null, null, true);
+    }
+
+    private function pdfNamed(string $name): UploadedFile
+    {
+        return $this->realFile(
+            $name,
+            "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n"
+        );
+    }
+
+    public function test_a_company_with_its_own_designer_sends_the_finished_artwork(): void
+    {
+        Storage::fake('public');
+
+        $this->post(route('corporate.store'), [
+            'company' => 'Atlas Klinika',
+            'phone' => '+994 50 111 22 33',
+            'quantity' => 300,
+            'design' => $this->pdfNamed('qutu.pdf'),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $asked = CorporateRequest::sole();
+        $this->assertNotNull($asked->design);
+        $this->assertStringStartsWith('corporate-designs/', $asked->design);
+        Storage::disk('public')->assertExists($asked->design);
+        // The admin links it rather than trying to show a print file.
+        $this->assertFalse($asked->designIsImage());
+    }
+
+    public function test_the_template_the_designer_works_on_is_there_to_download(): void
+    {
+        $this->get(route('corporate.index'))
+            ->assertOk()
+            ->assertSee(CorporatePage::TEMPLATE)
+            ->assertSee(CorporatePage::BACK_SHOT);
+
+        foreach ([CorporatePage::TEMPLATE, CorporatePage::BACK_SHOT] as $file) {
+            $this->assertFileExists(public_path($file));
+        }
+    }
+
+    public function test_a_web_page_called_a_design_is_refused(): void
+    {
+        Storage::fake('public');
+
+        $this->post(route('corporate.store'), [
+            'company' => 'Atlas Klinika',
+            'phone' => '+994 50 111 22 33',
+            'quantity' => 300,
+            'design' => $this->realFile(
+                'qutu.pdf',
+                "<!doctype html><html><body><script>alert(1)</script></body></html>"
+            ),
+        ])->assertSessionHasErrors(['design' => 'Dizayn faylı PDF, AI, EPS, PNG, JPG və ya ZIP olmalıdır.']);
+
+        $this->assertSame(0, CorporateRequest::count());
+    }
+
+    public function test_the_artwork_goes_when_the_request_does(): void
+    {
+        Storage::fake('public');
+
+        $this->post(route('corporate.store'), [
+            'company' => 'Atlas Klinika',
+            'phone' => '+994 50 111 22 33',
+            'quantity' => 300,
+            'logo' => UploadedFile::fake()->image('logo.png'),
+            'design' => $this->pdfNamed('qutu.pdf'),
+        ])->assertSessionHasNoErrors();
+
+        $asked = CorporateRequest::sole();
+        [$logo, $design] = [$asked->logo, $asked->design];
+        $asked->delete();
+
+        Storage::disk('public')->assertMissing($logo);
+        Storage::disk('public')->assertMissing($design);
+    }
+
+    public function test_the_owner_opens_a_request_and_finds_the_artwork_on_it(): void
+    {
+        Storage::fake('public');
+
+        $this->post(route('corporate.store'), [
+            'company' => 'Atlas Klinika',
+            'phone' => '+994 50 111 22 33',
+            'quantity' => 300,
+            'design' => $this->pdfNamed('qutu.pdf'),
+        ])->assertSessionHasNoErrors();
+
+        $asked = CorporateRequest::sole();
+
+        $this->actingAs($this->owner());
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        Livewire::test(\App\Filament\Resources\CorporateRequestResource\Pages\EditCorporateRequest::class,
+            ['record' => $asked->getKey()])
+            ->assertOk()
+            ->assertSee(basename($asked->design));
+    }
 }
