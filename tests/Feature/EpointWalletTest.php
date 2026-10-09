@@ -179,6 +179,48 @@ class EpointWalletTest extends TestCase
         $this->actingAs($order->user)->get(route('orders.pay', $order))->assertOk()->assertSee('Kartla ödə');
     }
 
+    /**
+     * The way out of a wait nobody earned.
+     *
+     * Straight away it is refused — a customer who really is at the bank
+     * must not be handed a second payment button — but after two minutes he
+     * may say he never paid, and the buttons come back.
+     */
+    public function test_a_customer_can_end_a_wait_he_never_earned(): void
+    {
+        $this->switchOn();
+        $order = $this->order();
+
+        $order->forceFill(['payment_started_at' => now()])->save();
+        $this->assertTrue($order->fresh()->paymentInFlight());
+
+        $this->actingAs($order->user)->post(route('orders.pay.wait.stop', $order))->assertRedirect();
+        $this->assertTrue($order->fresh()->paymentInFlight(), 'not in the first two minutes');
+
+        $order->forceFill(['payment_started_at' => now()->subMinutes(3)])->save();
+        $this->actingAs($order->user)->get(route('orders.pay', $order))
+            ->assertOk()->assertSee('gözləməni dayandır', false);
+
+        $this->actingAs($order->user)->post(route('orders.pay.wait.stop', $order))->assertRedirect();
+
+        $order->refresh();
+        $this->assertNull($order->payment_started_at);
+        $this->assertFalse($order->paymentInFlight());
+        $this->actingAs($order->user)->get(route('orders.pay', $order))->assertOk()->assertSee('Kartla ödə');
+    }
+
+    public function test_nobody_else_can_end_your_wait(): void
+    {
+        $this->switchOn();
+        $order = $this->order();
+        $order->forceFill(['payment_started_at' => now()->subMinutes(3)])->save();
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('orders.pay.wait.stop', $order))->assertForbidden();
+
+        $this->assertNotNull($order->fresh()->payment_started_at);
+    }
+
     public function test_the_button_is_on_the_payment_page(): void
     {
         $this->switchOn();

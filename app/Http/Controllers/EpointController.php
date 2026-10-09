@@ -53,6 +53,24 @@ class EpointController extends Controller
     }
 
     /**
+     * "I did not pay" — the wait ends and the buttons come back.
+     *
+     * Only the stamp is removed. If the bank's answer turns up afterwards it
+     * still settles the order, because the callback finds it by order_id and
+     * not by anything written here.
+     */
+    public function stopWaiting(Request $request, Order $order): RedirectResponse
+    {
+        abort_unless($order->user_id === $request->user()->id, 403);
+
+        if ($order->mayStopWaiting()) {
+            $order->forceFill(['payment_started_at' => null])->save();
+        }
+
+        return redirect(lroute('orders.pay', $order));
+    }
+
+    /**
      * The same payment, inside the shop: an address for the wallet widget.
      *
      * Answered as JSON because the page opens it in an iframe rather than

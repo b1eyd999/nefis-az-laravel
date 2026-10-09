@@ -62,6 +62,13 @@
           <p class="pay-note" style="margin:.4rem 0 0;">{{ __('Bankdan cavab gözləyirik. Bu bir neçə dəqiqə çəkə bilər — səhifəni yeniləyin.') }}</p>
           <a class="btn btn-block" style="margin-top:.85rem;" href="{{ lroute('orders.pay', $order) }}">{{ __('Yenilə') }}</a>
           <p class="pay-note">{{ __('Kartınızdan pul çıxıbsa, ikinci dəfə ödəməyin — sifariş özü təsdiqlənəcək.') }}</p>
+          @if($order->mayStopWaiting())
+            {{-- The way out for somebody who never got as far as paying. --}}
+            <form method="POST" action="{{ lroute('orders.pay.wait.stop', $order) }}" class="order-drop">
+              @csrf
+              <button type="submit">{{ __('Mən ödəməmişəm — gözləməni dayandır') }}</button>
+            </form>
+          @endif
         </div>
       @elseif($card)
         <div class="pay-card pay-now">

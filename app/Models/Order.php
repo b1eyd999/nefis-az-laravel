@@ -207,6 +207,21 @@ class Order extends Model
             && $this->payment_started_at->gt(now()->subMinutes(Epoint::IN_FLIGHT_MINUTES));
     }
 
+    /**
+     * Whether the customer may say he never paid and have the button back.
+     *
+     * Not at once: a man who has just been sent to the bank is still at the
+     * bank, and the half-hour wait exists so that he is not asked for the
+     * money twice. But a window that opened blank, or a page he closed
+     * straight away, leaves him looking at a wait he has no reason to serve.
+     * After two minutes he may say so himself.
+     */
+    public function mayStopWaiting(): bool
+    {
+        return $this->paymentInFlight()
+            && $this->payment_started_at->lt(now()->subMinutes(2));
+    }
+
     private function whenNotInFlight(): ?self
     {
         return $this->paymentInFlight() ? null : $this;

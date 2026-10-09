@@ -124,6 +124,10 @@ Route::middleware('auth')->group(function () {
         // at the bank's. Throttled: each call opens a payment at the gateway.
         Route::post('/odenis/cuzdan', [EpointController::class, 'wallet'])
             ->middleware('throttle:10,1')->name('pay.wallet');
+        // A wait the customer never earned: the page that opened blank, or
+        // the bank page he shut at once. After two minutes he may say so.
+        Route::post('/odenis/gozleme', [EpointController::class, 'stopWaiting'])
+            ->middleware('throttle:10,1')->name('pay.wait.stop');
 
         // The order changed after it was paid for, and the difference is owed.
         // Its own page, gated on the change rather than on the order's status.
