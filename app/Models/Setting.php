@@ -34,6 +34,16 @@ class Setting extends Model
     /* Paying by card through ePoint. The private key signs every request and
        every answer, so it is a secret: it lives here, never in the repository. */
     public const EPOINT_ENABLED = 'epoint_enabled';
+
+    /**
+     * Google Pay / Apple Pay through epoint's widget.
+     *
+     * Its own switch, and off until the gateway has turned the widget on for
+     * this merchant: an account without it is answered with a redirect to
+     * epoint's own home page, which inside the window is a blank sheet — and
+     * a customer who meets that has not paid and does not know why.
+     */
+    public const EPOINT_WALLET = 'epoint_wallet';
     public const EPOINT_PUBLIC_KEY = 'epoint_public_key';
     public const EPOINT_PRIVATE_KEY = 'epoint_private_key';
 
@@ -229,6 +239,7 @@ class Setting extends Model
         self::MAINTENANCE => '0',
         self::SALE_TOASTS => '1',
         self::EPOINT_ENABLED => '0',
+        self::EPOINT_WALLET => '0',
         self::GEOAPIFY_KEY => '',
         self::EPOINT_PUBLIC_KEY => '',
         self::EPOINT_PRIVATE_KEY => '',

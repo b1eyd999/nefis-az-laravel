@@ -242,6 +242,20 @@ class Epoint
     }
 
     /**
+     * Whether the wallet window is offered at all.
+     *
+     * Its own switch on top of card payment, and off until epoint has turned
+     * the widget on for this merchant. An account without it is answered with
+     * a redirect to epoint's own home page, which inside the window is a
+     * blank sheet — and a customer who meets that has paid nothing and has no
+     * idea why.
+     */
+    public static function walletOffered(): bool
+    {
+        return self::enabled() && Setting::get(Setting::EPOINT_WALLET) === '1';
+    }
+
+    /**
      * The address of the wallet widget for this order.
      *
      * The same money as start(), asked for differently: instead of sending
@@ -251,13 +265,16 @@ class Epoint
      * the payment is the signed callback, exactly as before, and the message
      * the iframe posts back is only permission to stop waiting on screen.
      *
-     * The order is stamped the same way a card payment stamps it, so the
-     * callback finds it by the same reference and the shop will not offer to
-     * take the money twice while the bank's answer is on its way.
+     * Asking for the address is NOT the start of a payment, and the order is
+     * not stamped as paying. It was, at first, and that was the worse of the
+     * two faults: when the window came up blank the customer had paid nothing,
+     * yet the card button was hidden from him for the next half hour. The
+     * callback reads the order out of order_id, so nothing needs keeping here
+     * for it to find its way home.
      */
     public static function wallet(Order $order): ?string
     {
-        if (! self::enabled()) {
+        if (! self::walletOffered()) {
             return null;
         }
 
@@ -279,13 +296,6 @@ class Epoint
 
             return null;
         }
-
-        $order->forceFill([
-            'payment_method' => 'card',
-            'epoint_ref' => $reference,
-            'payment_started_at' => now(),
-            'payment_asked_for' => number_format($order->total(), 2, '.', ''),
-        ])->save();
 
         return $answer['widget_url'];
     }

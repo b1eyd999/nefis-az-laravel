@@ -52,6 +52,13 @@ class EpointWalletTest extends TestCase
         Setting::put(Setting::EPOINT_PUBLIC_KEY, 'i000000001');
         Epoint::savePrivateKey(self::KEY);
         Setting::put(Setting::EPOINT_ENABLED, true);
+        Setting::put(Setting::EPOINT_WALLET, true);
+    }
+
+    /** Card payment on, wallet switch still off — the state every shop starts in. */
+    private function walletOff(): void
+    {
+        Setting::put(Setting::EPOINT_WALLET, false);
     }
 
     private function order(?User $user = null): Order
@@ -95,8 +102,15 @@ class EpointWalletTest extends TestCase
         });
     }
 
-    /** The order is marked as paying, so the shop will not ask twice. */
-    public function test_the_order_is_stamped_as_in_flight(): void
+    /**
+     * Opening the window is not paying.
+     *
+     * It used to stamp the order the way the card page does, and when the
+     * widget came up blank — which is what an account without the service
+     * gets — the customer had paid nothing and could not reach the card
+     * button for half an hour.
+     */
+    public function test_opening_the_window_does_not_lock_the_order(): void
     {
         $this->switchOn();
         $order = $this->order();
@@ -104,13 +118,30 @@ class EpointWalletTest extends TestCase
         $this->actingAs($order->user)->postJson(route('orders.pay.wallet', $order))->assertOk();
 
         $order->refresh();
-        $this->assertNotNull($order->payment_started_at);
-        $this->assertNotNull($order->epoint_ref);
-        $this->assertSame('card', $order->payment_method);
-        $this->assertTrue($order->paymentInFlight());
+        $this->assertNull($order->payment_started_at);
+        $this->assertFalse($order->paymentInFlight(), 'the card button stays within reach');
 
-        // And a second press is refused while the first answer is on its way.
-        $this->actingAs($order->user)->postJson(route('orders.pay.wallet', $order))->assertStatus(409);
+        // The card page is still offered, and pressing again is still allowed.
+        $this->actingAs($order->user)->get(route('orders.pay', $order))->assertOk()->assertSee('Kartla ödə');
+        $this->actingAs($order->user)->postJson(route('orders.pay.wallet', $order))->assertOk();
+    }
+
+    /** Off until epoint turns the widget on for this merchant. */
+    public function test_the_wallet_has_a_switch_of_its_own(): void
+    {
+        $this->switchOn();
+        $this->walletOff();
+        $order = $this->order();
+
+        $this->actingAs($order->user)->postJson(route('orders.pay.wallet', $order))->assertNotFound();
+
+        /* Not the words — the hosted card page has offered both wallets in its
+           own line since long before this button existed. The button itself is
+           what must be gone, and it is the only thing that carries the route. */
+        $page = $this->actingAs($order->user)->get(route('orders.pay', $order))->assertOk();
+        $page->assertDontSee(route('orders.pay.wallet', $order));
+        $page->assertDontSee('id="pay-wallet"', false);
+        $page->assertSee('Kartla ödə');
     }
 
     public function test_nobody_else_can_open_a_payment_for_your_order(): void
@@ -145,6 +176,7 @@ class EpointWalletTest extends TestCase
         $order->refresh();
         $this->assertNull($order->payment_started_at);
         $this->assertFalse($order->paymentInFlight());
+        $this->actingAs($order->user)->get(route('orders.pay', $order))->assertOk()->assertSee('Kartla ödə');
     }
 
     public function test_the_button_is_on_the_payment_page(): void

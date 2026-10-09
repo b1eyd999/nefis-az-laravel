@@ -74,6 +74,7 @@
               {{ __('Kartla ödə') }} — {{ \App\Support\Price::format($order->total()) }}
             </button>
           </form>
+          @if(\App\Support\Epoint::walletOffered())
           {{-- The same money, without leaving the shop: epoint's wallet widget
                opens in a window on this page, and on a telephone that has
                Google Pay or Apple Pay set up the button appears inside it.
@@ -87,10 +88,12 @@
             {{ __('Google Pay / Apple Pay') }}
           </button>
           <p class="pay-note pay-wallet-bad" id="pay-wallet-bad" hidden></p>
+          @endif
           <p class="pay-note">{{ __('Ödəniş epoint.az-ın qorunan səhifəsində aparılır, kart məlumatları bizdə saxlanmır.') }}</p>
         </div>
 
         {{-- The window the widget lives in. Empty until it is asked for. --}}
+        @if(\App\Support\Epoint::walletOffered())
         <div class="wallet-sheet" id="wallet-sheet" hidden>
           <div class="wallet-box">
             <div class="wallet-top">
@@ -101,6 +104,7 @@
                     referrerpolicy="origin"></iframe>
           </div>
         </div>
+        @endif
 
         @if($offered)
           <div class="pay-or"><span>{{ __('və ya köçürmə ilə') }}</span></div>

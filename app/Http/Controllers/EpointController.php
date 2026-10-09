@@ -62,7 +62,7 @@ class EpointController extends Controller
     public function wallet(Request $request, Order $order): JsonResponse
     {
         abort_unless($order->user_id === $request->user()->id, 403);
-        abort_unless(Epoint::enabled(), 404);
+        abort_unless(Epoint::walletOffered(), 404);
 
         if (! $order->awaitsPayment() || $order->paymentInFlight()) {
             return response()->json(['error' => __('Bu sifariş üçün ödəniş artıq başlayıb.')], 409);

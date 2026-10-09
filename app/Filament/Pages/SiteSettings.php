@@ -60,6 +60,7 @@ class SiteSettings extends Page implements HasActions, HasForms
             'payment_window_hours' => (int) Setting::get(Setting::PAYMENT_WINDOW_HOURS),
             'payment_note' => Setting::get(Setting::PAYMENT_NOTE),
             'epoint_enabled' => Setting::get(Setting::EPOINT_ENABLED) === '1',
+            'epoint_wallet' => Setting::get(Setting::EPOINT_WALLET) === '1',
             'epoint_public_key' => Epoint::publicKey(),
             'epoint_private_key' => Epoint::privateKey(),
             'geoapify_key' => \App\Support\MapImage::key(),
@@ -339,6 +340,11 @@ class SiteSettings extends Page implements HasActions, HasForms
                             ->label('Kartla ödəniş açıq olsun')
                             ->helperText('Hər iki açar yazılmayınca düymə görünmür.')
                             ->columnSpanFull(),
+                        Forms\Components\Toggle::make('epoint_wallet')
+                            ->label('Google Pay / Apple Pay düyməsi')
+                            ->helperText('Epoint bu xidməti hesabınız üçün açandan sonra işə salın. '
+                                . 'Bağlı olanda müştəri yalnız adi kart səhifəsini görür.')
+                            ->columnSpanFull(),
                         Forms\Components\TextInput::make('epoint_public_key')
                             ->label('Public key')
                             ->autocomplete(false)
@@ -590,6 +596,7 @@ class SiteSettings extends Page implements HasActions, HasForms
         Epoint::savePrivateKey($data['epoint_private_key'] ?? '');
         \App\Support\MapImage::saveKey($data['geoapify_key'] ?? '');
         Setting::put(Setting::EPOINT_ENABLED, ! empty($data['epoint_enabled']));
+        Setting::put(Setting::EPOINT_WALLET, ! empty($data['epoint_wallet']));
         Setting::put(Setting::MAINTENANCE, (bool) $data['maintenance']);
         Setting::put(Setting::MAINTENANCE_MESSAGE, $data['maintenance_message']);
         Setting::put(Setting::SEO_GOOGLE, Seo::cleanCode($data['seo_google'] ?? ''));
