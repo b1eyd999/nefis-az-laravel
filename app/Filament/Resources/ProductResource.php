@@ -6,6 +6,7 @@ use App\Filament\Concerns\AdminOnly;
 use App\Filament\Resources\ProductResource\Pages;
 use App\Models\Product;
 use App\Models\Scene;
+use App\Models\Setting;
 use App\Support\Media;
 use App\Support\Price;
 use App\Support\YandexDisk;
@@ -255,6 +256,131 @@ class ProductResource extends Resource
                         blank: fn ($q) => $q,
                     ),
             ])
+            ->headerActions([
+                /* Every box's price in one go.
+                   Prices move together — the paper goes up, the bar goes up —
+                   and editing twenty-seven designs by hand is an evening's
+                   work and a typo waiting to happen. What the last change did
+                   is kept, so it can be put back with one more click. */
+                Tables\Actions\Action::make('reprice')
+                    ->label('Qiymətləri dəyiş')
+                    ->icon('heroicon-o-banknotes')
+                    ->color('warning')
+                    ->modalHeading('Bütün qutuların qiyməti')
+                    ->modalSubmitActionLabel('Dəyiş')
+                    ->form([
+                        Forms\Components\Radio::make('how')
+                            ->label('Necə')
+                            ->options([
+                                'percent' => 'Faizlə artır / azalt',
+                                'amount' => 'Məbləğ əlavə et / çıx',
+                                'set' => 'Hamısına eyni qiymət yaz',
+                            ])
+                            ->default('percent')
+                            ->live()
+                            ->required(),
+                        Forms\Components\TextInput::make('value')
+                            ->label(fn (Forms\Get $get) => match ($get('how')) {
+                                'amount' => 'Məbləğ (₼). Azaltmaq üçün mənfi yazın',
+                                'set' => 'Yeni qiymət (₼)',
+                                default => 'Faiz (%). Azaltmaq üçün mənfi yazın',
+                            })
+                            ->numeric()
+                            ->required()
+                            ->live(debounce: 400)
+                            ->placeholder(fn (Forms\Get $get) => $get('how') === 'percent' ? '10' : '0.50'),
+                        Forms\Components\Select::make('round')
+                            ->label('Yuvarlaqlaşdır')
+                            ->options([
+                                'none' => 'Olduğu kimi (0.01)',
+                                '0.10' => 'Ən yaxın 0.10',
+                                '0.50' => 'Ən yaxın 0.50',
+                                '1' => 'Tam manata',
+                                '.90' => 'Sonu .90 olsun',
+                                '.99' => 'Sonu .99 olsun',
+                            ])
+                            ->default('none')
+                            ->live()
+                            ->required(),
+                        Forms\Components\Toggle::make('active_only')
+                            ->label('Yalnız aktiv qutular')
+                            ->default(false)
+                            ->live(),
+                        /* What it will do, before it does it: the cheapest and
+                           the dearest box as they would stand afterwards. */
+                        Forms\Components\Placeholder::make('preview')
+                            ->label('Nəticə')
+                            ->content(function (Forms\Get $get) {
+                                $prices = Product::whereNotNull('price')->where('price', '>', 0)
+                                    ->when($get('active_only'), fn ($q) => $q->where('is_active', true))
+                                    ->pluck('price');
+                                if ($prices->isEmpty()) {
+                                    return new HtmlString('<span style="opacity:.7">Qiyməti olan qutu yoxdur.</span>');
+                                }
+                                $value = (float) $get('value');
+                                $lines = [];
+                                foreach ([$prices->min(), $prices->max()] as $old) {
+                                    $fresh = static::repriced((float) $old, (string) $get('how'), $value, (string) $get('round'));
+                                    $lines[] = Price::format((float) $old) . ' → <b>' . Price::format($fresh) . '</b>';
+                                }
+
+                                return new HtmlString($prices->count() . ' qutu. ' . implode(' · ', array_unique($lines)));
+                            }),
+                    ])
+                    ->action(function (array $data) {
+                        $rows = Product::whereNotNull('price')->where('price', '>', 0)
+                            ->when($data['active_only'] ?? false, fn ($q) => $q->where('is_active', true))
+                            ->get(['id', 'price']);
+
+                        $before = [];
+                        $changed = 0;
+                        foreach ($rows as $row) {
+                            $old = (float) $row->price;
+                            $fresh = static::repriced($old, (string) $data['how'], (float) $data['value'], (string) $data['round']);
+                            $before[$row->id] = $old;
+                            if (abs($fresh - $old) >= 0.005) {
+                                $changed++;
+                            }
+                            Product::whereKey($row->id)->update(['price' => $fresh]);
+                        }
+
+                        // Kept so the next click can put it back. One step only:
+                        // the owner wanted a way out of a mistake, not a history.
+                        Setting::put('price_undo', json_encode($before));
+
+                        Notification::make()
+                            ->success()
+                            ->title($changed . ' qutunun qiyməti dəyişdi')
+                            ->body('Səhv olubsa, «Qiyməti geri qaytar» düyməsi əvvəlki qiymətləri qaytarır.')
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('repriceUndo')
+                    ->label('Qiyməti geri qaytar')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('gray')
+                    ->visible(fn () => (bool) Setting::get('price_undo'))
+                    ->requiresConfirmation()
+                    ->modalHeading('Əvvəlki qiymətlər qaytarılsın?')
+                    ->modalDescription('Sonuncu toplu dəyişiklikdən əvvəlki qiymətlər geri yazılacaq.')
+                    ->action(function () {
+                        $before = json_decode((string) Setting::get('price_undo'), true);
+                        if (! is_array($before) || ! $before) {
+                            Notification::make()->warning()->title('Qaytarılacaq bir şey yoxdur')->send();
+
+                            return;
+                        }
+
+                        foreach ($before as $id => $price) {
+                            Product::whereKey($id)->update(['price' => (float) $price]);
+                        }
+                        Setting::put('price_undo', '');
+
+                        Notification::make()
+                            ->success()
+                            ->title(count($before) . ' qutunun qiyməti qaytarıldı')
+                            ->send();
+                    }),
+            ])
             ->actions([
                 // Behind one ⋮ button, so the row fits a phone screen.
                 Tables\Actions\ActionGroup::make([
@@ -292,6 +418,44 @@ class ProductResource extends Resource
     public static function getRelations(): array
     {
         return [];
+    }
+
+    /**
+     * One price, moved.
+     *
+     * Percent and amount move what is there; "set" ignores the old price
+     * altogether. Rounding is applied last, and the endings (.90, .99) go to
+     * whichever whole manat leaves that ending closest to the figure — which
+     * is how a shop writes a price, not how a calculator does. Nothing goes
+     * below zero: a free box is not a price change, it is a mistake.
+     */
+    public static function repriced(float $old, string $how, float $value, string $round): float
+    {
+        $fresh = match ($how) {
+            'amount' => $old + $value,
+            'set' => $value,
+            default => $old * (1 + $value / 100),
+        };
+
+        if ($round === '.90' || $round === '.99') {
+            $tail = $round === '.90' ? 0.90 : 0.99;
+            // The whole manat below the figure once the ending is allowed for:
+            // floor() on the figure itself lands above it whenever the pennies
+            // are under the ending, which put 5.39 up at 5.99 instead of 4.99.
+            $down = floor($fresh - $tail) + $tail;
+            $up = $down + 1;
+            $fresh = abs($fresh - $down) <= abs($up - $fresh) ? $down : $up;
+            $fresh = max($tail, $fresh);
+        } else {
+            $fresh = match ($round) {
+                '0.10' => round($fresh * 10) / 10,
+                '0.50' => round($fresh * 2) / 2,
+                '1' => (float) round($fresh),
+                default => round($fresh, 2),
+            };
+        }
+
+        return max(0.0, round($fresh, 2));
     }
 
     public static function getPages(): array

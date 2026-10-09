@@ -5,6 +5,9 @@ namespace App\Filament\Resources;
 use App\Filament\Concerns\AdminOnly;
 use App\Filament\Resources\CartHandoffResource\Pages;
 use App\Models\CartHandoff;
+use App\Models\User;
+use Filament\Forms;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -54,7 +57,13 @@ class CartHandoffResource extends Resource
                 Tables\Columns\TextColumn::make('created_at')->label('Hazırlanıb')
                     ->dateTime('d.m.Y H:i')->sortable(),
                 Tables\Columns\TextColumn::make('note')->label('Kimin üçün')
-                    ->placeholder('—')->searchable()->wrap()->weight('bold'),
+                    ->placeholder('—')->searchable()->wrap()->weight('bold')
+                    ->state(fn (CartHandoff $row) => $row->forWhom())
+                    // A basket already sitting in somebody's account says so,
+                    // so the owner does not send him a link as well.
+                    ->description(fn (CartHandoff $row) => $row->user_id
+                        ? 'Səbətinə atılıb' . ($row->given_at ? ' · ' . $row->given_at->format('d.m H:i') : '')
+                        : null),
                 Tables\Columns\TextColumn::make('pieces')->label('Ədəd')
                     ->state(fn (CartHandoff $row) => $row->pieces()),
                 Tables\Columns\TextColumn::make('total')->label('Məbləğ')
@@ -78,6 +87,56 @@ class CartHandoffResource extends Resource
                     ->placeholder('—')->visibleFrom('lg'),
             ])
             ->actions([
+                /* Straight into a customer's own basket.
+                   The link below is for somebody the shop only knows from
+                   Instagram; this is for somebody who already has an account.
+                   He is not written to and nothing is reserved — the next
+                   time he opens the shop the box is in his basket, on
+                   whichever telephone he opens it. */
+                Tables\Actions\Action::make('give')
+                    ->label('Səbətinə at')
+                    ->icon('heroicon-o-user-plus')
+                    ->color('success')
+                    ->visible(fn (CartHandoff $row) => $row->isOpen())
+                    ->modalHeading('Səbəti müştəriyə at')
+                    ->modalDescription('Seçdiyiniz müştəri saytı açanda bu qutu onun səbətində olacaq. Onun öz səbətindəki məhsullar silinmir.')
+                    ->modalSubmitActionLabel('At')
+                    ->form([
+                        Forms\Components\Select::make('user_id')
+                            ->label('Müştəri')
+                            ->placeholder('Ad, telefon və ya e-poçt yazın')
+                            ->required()
+                            ->searchable()
+                            ->getSearchResultsUsing(fn (string $search) => User::query()
+                                ->where(fn ($q) => $q
+                                    ->where('name', 'like', '%' . $search . '%')
+                                    ->orWhere('phone', 'like', '%' . $search . '%')
+                                    ->orWhere('email', 'like', '%' . $search . '%'))
+                                ->orderBy('name')->limit(25)
+                                ->get()
+                                ->mapWithKeys(fn (User $u) => [$u->id => trim($u->name . ' — ' . ($u->phone ?: $u->email))])
+                                ->all())
+                            ->getOptionLabelUsing(fn ($value) => ($u = User::find($value))
+                                ? trim($u->name . ' — ' . ($u->phone ?: $u->email))
+                                : null)
+                            ->helperText('Yalnız qeydiyyatdan keçmiş müştərilər. Hesabı yoxdursa, aşağıdakı linki göndərin.'),
+                    ])
+                    ->action(function (CartHandoff $row, array $data) {
+                        $customer = User::find($data['user_id']);
+                        if (! $customer) {
+                            Notification::make()->danger()->title('Müştəri tapılmadı')->send();
+
+                            return;
+                        }
+
+                        $added = $row->giveTo($customer);
+
+                        Notification::make()
+                            ->success()
+                            ->title($customer->name . ' — səbətinə atıldı')
+                            ->body($added . ' sətir əlavə olundu. O, sayta girəndə görəcək.')
+                            ->send();
+                    }),
                 /* The link itself, to copy out of the panel and paste into
                    whichever conversation it belongs to. */
                 Tables\Actions\Action::make('link')

@@ -120,6 +120,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/odenis/cek', [PaymentController::class, 'receipt'])->name('pay.receipt');
         // Paying by card: the customer is sent to the bank's own page.
         Route::post('/odenis/kart', [EpointController::class, 'start'])->name('pay.card');
+        // Google Pay and Apple Pay, in a window on this page rather than away
+        // at the bank's. Throttled: each call opens a payment at the gateway.
+        Route::post('/odenis/cuzdan', [EpointController::class, 'wallet'])
+            ->middleware('throttle:10,1')->name('pay.wallet');
 
         // The order changed after it was paid for, and the difference is owed.
         // Its own page, gated on the change rather than on the order's status.

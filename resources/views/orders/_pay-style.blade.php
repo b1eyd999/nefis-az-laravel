@@ -45,3 +45,21 @@
   .order-drop button{ border:0; background:none; padding:.25rem 0; font-size:.8125rem;
     color:var(--cocoa-soft); text-decoration:underline; text-underline-offset:3px; }
   .order-drop button:hover{ color:var(--red, #b91c1c); }
+
+  /* Google Pay / Apple Pay: the second button under the card one, and the
+     window the gateway's own widget is shown in. */
+  .pay-wallet-btn{ margin-top:.6rem; display:flex; align-items:center; justify-content:center; gap:.6rem; }
+  .pay-wallet-btn[disabled]{ opacity:.6; }
+  .wallet-marks{ font-weight:700; font-size:.78rem; letter-spacing:.06em; opacity:.75; }
+  .pay-wallet-bad{ color:#b91c1c; font-weight:600; }
+  .wallet-sheet{ position:fixed; inset:0; z-index:200; background:rgba(26,17,11,.55);
+    display:flex; align-items:flex-end; justify-content:center; padding:0; }
+  @media (min-width:640px){ .wallet-sheet{ align-items:center; padding:1.5rem; } }
+  .wallet-box{ background:var(--paper, #fff); width:100%; max-width:30rem; border-radius:1rem 1rem 0 0;
+    overflow:hidden; display:flex; flex-direction:column; max-height:92vh; }
+  @media (min-width:640px){ .wallet-box{ border-radius:1rem; max-height:80vh; } }
+  .wallet-top{ display:flex; align-items:center; justify-content:space-between; gap:1rem;
+    padding:.85rem 1rem; border-bottom:1px solid var(--line, #e7d6be); font-weight:700; }
+  .wallet-top button{ border:0; background:none; font-size:1.6rem; line-height:1; padding:0 .25rem;
+    color:var(--cocoa-soft, #7a6353); cursor:pointer; }
+  #wallet-frame{ border:0; width:100%; height:70vh; min-height:22rem; background:#fff; }

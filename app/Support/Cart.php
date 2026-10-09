@@ -208,10 +208,25 @@ class Cart
             return;
         }
 
-        SavedCart::updateOrCreate(
+        $saved = SavedCart::updateOrCreate(
             ['user_id' => $id],
             ['items' => self::raw(), 'rush' => (bool) Session::get(self::RUSH, false)],
         );
+
+        // This session wrote it, so it has already got it: move the mark on,
+        // or the next read would take the session's own basket for a new one
+        // and put it back on top of itself.
+        Session::put(self::FILLED, self::mark($id, $saved));
+    }
+
+    /** Whose basket, and what is in it — the two things a session must notice. */
+    protected static function mark(int $id, ?SavedCart $saved): string
+    {
+        if (! $saved) {
+            return $id . ':none';
+        }
+
+        return $id . ':' . crc32(json_encode($saved->lines()) . '|' . (int) $saved->rush);
     }
 
     /**
@@ -225,15 +240,28 @@ class Cart
     protected static function fillOnce(): void
     {
         $id = auth()->id();
-        if (! $id || Session::get(self::FILLED) === $id) {
+        if (! $id) {
+            return;
+        }
+
+        /* The mark is the customer and what his kept basket holds, not the
+           customer alone. It used to be the customer alone, and that was
+           enough while only he could change it. The shop can now put a basket
+           into his, and with the old mark he would not have seen it until he
+           signed in again — on a telephone where he was already signed in.
+           The hour it was written will not do either: a basket given to
+           somebody in the same second he last touched his own would carry
+           the same stamp and be passed over. What it holds cannot. */
+        $saved = SavedCart::where('user_id', $id)->first();
+        $mark = self::mark($id, $saved);
+        if (Session::get(self::FILLED) === $mark) {
             return;
         }
 
         // Written before the work, not after: everything below reads the
         // basket again, and this is what keeps that from looping.
-        Session::put(self::FILLED, $id);
+        Session::put(self::FILLED, $mark);
 
-        $saved = SavedCart::where('user_id', $id)->first();
         if (! $saved) {
             // Nothing kept yet; what he is carrying becomes what is kept.
             self::keep();

@@ -22,7 +22,7 @@ class CartHandoff extends Model
     /** How long a basket made today is worth opening. */
     public const DAYS = 21;
 
-    protected $fillable = ['token', 'note', 'items', 'rush', 'created_by', 'opened_at', 'order_id', 'expires_at'];
+    protected $fillable = ['token', 'note', 'user_id', 'items', 'rush', 'created_by', 'opened_at', 'order_id', 'given_at', 'expires_at'];
 
     protected function casts(): array
     {
@@ -30,6 +30,7 @@ class CartHandoff extends Model
             'items' => 'array',
             'rush' => 'boolean',
             'opened_at' => 'datetime',
+            'given_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
     }
@@ -55,6 +56,63 @@ class CartHandoff extends Model
     public function maker(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** The customer it was put into, where there is an account to put it into. */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Put this basket into a customer's own.
+     *
+     * Added to what he already has rather than put in its place: he may have
+     * been building something himself, and ten minutes of somebody's work is
+     * worth more than the tidiness of one basket. Each line is given a fresh
+     * id, so taking one out of his basket cannot reach back into this one.
+     *
+     * Nothing is sent and nothing is announced: the next time he opens the
+     * shop, signed in on whichever telephone, the box is simply there.
+     * Returns how many lines went in.
+     */
+    public function giveTo(User $customer): int
+    {
+        $saved = SavedCart::firstOrNew(['user_id' => $customer->id]);
+        $lines = $saved->exists ? $saved->lines() : [];
+        $added = 0;
+
+        foreach ($this->items ?? [] as $item) {
+            if (! is_array($item) || count($lines) >= SavedCart::MOST) {
+                continue;
+            }
+            $item['id'] = (string) Str::uuid();
+            $item['quantity'] = max(1, (int) ($item['quantity'] ?? 1));
+            $lines[] = $item;
+            $added++;
+        }
+
+        $saved->items = $lines;
+        if ($this->rush) {
+            $saved->rush = true;
+        }
+        // Even an unchanged basket has to be stamped: the customer's session
+        // notices a basket given to him by the hour it was last written.
+        $saved->exists && ! $saved->isDirty() ? $saved->touch() : $saved->save();
+
+        $this->forceFill([
+            'user_id' => $customer->id,
+            'given_at' => now(),
+            'note' => $this->note ?: mb_substr($customer->name, 0, 120),
+        ])->save();
+
+        return $added;
+    }
+
+    /** Whose it is, in one line: the account where there is one, else the note. */
+    public function forWhom(): string
+    {
+        return $this->user?->name ?: ($this->note ?: '—');
     }
 
     public function url(): string

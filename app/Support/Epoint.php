@@ -26,6 +26,13 @@ class Epoint
 {
     public const API = 'https://epoint.az/api/1/request';
 
+    /**
+     * The wallet widget: Google Pay on the web, Apple Pay on the web and in
+     * an app. It answers with an address to put in an iframe, and the
+     * customer pays inside it without leaving the shop.
+     */
+    public const WIDGET = 'https://epoint.az/api/1/token/widget';
+
     public const CURRENCY = 'AZN';
 
     /** Answers we are given for a payment. */
@@ -232,6 +239,55 @@ class Epoint
         ])->save();
 
         return $answer['redirect_url'];
+    }
+
+    /**
+     * The address of the wallet widget for this order.
+     *
+     * The same money as start(), asked for differently: instead of sending
+     * the customer to the bank's page, the shop is given a small page of its
+     * own to show in an iframe, where Google Pay and Apple Pay appear if the
+     * telephone has them. The widget takes no redirect addresses — what ends
+     * the payment is the signed callback, exactly as before, and the message
+     * the iframe posts back is only permission to stop waiting on screen.
+     *
+     * The order is stamped the same way a card payment stamps it, so the
+     * callback finds it by the same reference and the shop will not offer to
+     * take the money twice while the bank's answer is on its way.
+     */
+    public static function wallet(Order $order): ?string
+    {
+        if (! self::enabled()) {
+            return null;
+        }
+
+        $reference = self::reference($order);
+
+        $answer = self::post([
+            'public_key' => self::publicKey(),
+            'amount' => number_format($order->total(), 2, '.', ''),
+            'order_id' => $reference,
+            'description' => 'Nefis.az sifariş #' . $order->id,
+        ], self::WIDGET);
+
+        if (($answer['status'] ?? null) !== self::SUCCESS || empty($answer['widget_url'])) {
+            Log::warning('epoint: wallet widget not opened', [
+                'order' => $order->id,
+                'status' => $answer['status'] ?? null,
+                'message' => $answer['message'] ?? null,
+            ]);
+
+            return null;
+        }
+
+        $order->forceFill([
+            'payment_method' => 'card',
+            'epoint_ref' => $reference,
+            'payment_started_at' => now(),
+            'payment_asked_for' => number_format($order->total(), 2, '.', ''),
+        ])->save();
+
+        return $answer['widget_url'];
     }
 
     /**

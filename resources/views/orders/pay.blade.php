@@ -74,7 +74,32 @@
               {{ __('Kartla ödə') }} — {{ \App\Support\Price::format($order->total()) }}
             </button>
           </form>
+          {{-- The same money, without leaving the shop: epoint's wallet widget
+               opens in a window on this page, and on a telephone that has
+               Google Pay or Apple Pay set up the button appears inside it.
+               Nothing here confirms the payment — the signed callback does,
+               exactly as it does for the card page. --}}
+          <button type="button" class="btn btn-ghost btn-block pay-wallet-btn" id="pay-wallet"
+                  data-url="{{ lroute('orders.pay.wallet', $order) }}"
+                  data-wait="{{ __('Açılır…') }}"
+                  data-label="{{ __('Google Pay / Apple Pay') }}">
+            <span class="wallet-marks" aria-hidden="true">G Pay &nbsp;·&nbsp;  Pay</span>
+            {{ __('Google Pay / Apple Pay') }}
+          </button>
+          <p class="pay-note pay-wallet-bad" id="pay-wallet-bad" hidden></p>
           <p class="pay-note">{{ __('Ödəniş epoint.az-ın qorunan səhifəsində aparılır, kart məlumatları bizdə saxlanmır.') }}</p>
+        </div>
+
+        {{-- The window the widget lives in. Empty until it is asked for. --}}
+        <div class="wallet-sheet" id="wallet-sheet" hidden>
+          <div class="wallet-box">
+            <div class="wallet-top">
+              <span>{{ __('Ödəniş') }} — {{ \App\Support\Price::format($order->total()) }}</span>
+              <button type="button" id="wallet-close" aria-label="{{ __('Bağla') }}">×</button>
+            </div>
+            <iframe id="wallet-frame" title="{{ __('Ödəniş') }}" allow="payment *"
+                    referrerpolicy="origin"></iframe>
+          </div>
         </div>
 
         @if($offered)
@@ -173,6 +198,77 @@
         t.value = text; document.body.appendChild(t); t.select();
         try { document.execCommand('copy'); done(); } catch (e) {}
         t.remove();
+      }
+    });
+  }
+
+  /* The wallet window.
+     The address is asked for only when the button is pressed: every call
+     opens a payment at the gateway, and a page that asked for one on load
+     would open one for everybody who merely looked at it. */
+  var walletBtn = document.getElementById('pay-wallet');
+  var sheet = document.getElementById('wallet-sheet');
+  var frame = document.getElementById('wallet-frame');
+  var walletBad = document.getElementById('pay-wallet-bad');
+  if (walletBtn && sheet && frame) {
+    var shut = function(){
+      sheet.hidden = true;
+      frame.src = 'about:blank';
+      document.body.style.overflow = '';
+    };
+    document.getElementById('wallet-close').addEventListener('click', function(){
+      shut();
+      /* He opened a payment and closed it. The shop has already stamped the
+         order as in flight, so send him back to this page, where it says so
+         and offers to wait rather than to pay again. */
+      window.location.reload();
+    });
+
+    walletBtn.addEventListener('click', function(){
+      walletBtn.disabled = true;
+      walletBtn.textContent = walletBtn.dataset.wait;
+      if (walletBad) walletBad.hidden = true;
+
+      fetch(walletBtn.dataset.url, {
+        method: 'POST',
+        headers: {
+          /* Every form on this page carries one; the layout has no meta tag. */
+          'X-CSRF-TOKEN': (document.querySelector('input[name="_token"]') || {}).value || '',
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+      }).then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); })
+        .then(function(a){
+          if (!a.ok || !a.body.url) throw new Error(a.body.error || 'wallet');
+          frame.src = a.body.url;
+          sheet.hidden = false;
+          document.body.style.overflow = 'hidden';
+          walletBtn.textContent = walletBtn.dataset.label;
+          walletBtn.disabled = false;
+        })
+        .catch(function(e){
+          walletBtn.textContent = walletBtn.dataset.label;
+          walletBtn.disabled = false;
+          if (walletBad) {
+            walletBad.textContent = (e && e.message && e.message !== 'wallet')
+              ? e.message
+              : @json(__('Google Pay indi işləmir. Kartla ödəyin və ya bir az sonra yoxlayın.'));
+            walletBad.hidden = false;
+          }
+        });
+    });
+
+    /* What the widget says when it is finished. It is a hint, not a receipt:
+       the order moves when the signed callback arrives, so all this does is
+       stop the customer staring at a finished window. Messages from anywhere
+       but the gateway are ignored. */
+    window.addEventListener('message', function(event){
+      if (!/(^|\.)epoint\.az$/.test((function(){ try { return new URL(event.origin).hostname; } catch (e) { return ''; } })())) return;
+      var said = event.data;
+      if (said && (said.status === 'success' || said.status === 'error')) {
+        shut();
+        window.location.reload();
       }
     });
   }

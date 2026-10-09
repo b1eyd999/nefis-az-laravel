@@ -205,12 +205,38 @@
   .pw-eye.on .shut{ display:block; }
 
   /* ---------- header ---------- */
+  /* The bar does not switch states, it follows the page. --sc is how far the
+     visitor has scrolled into the first 140 px, 0 to 1, written by the script
+     at the foot of the layout; everything below is a function of it, so the
+     bar thickens, clouds over and settles its shadow in step with the finger
+     instead of snapping at one pixel. The hard hairline underneath is gone:
+     what ends the bar now is a short gradient the content melts into. */
   header{
-    position:sticky; top:0; z-index:50; padding:1.25rem 0;
-    transition:background .4s, box-shadow .4s, padding .4s, backdrop-filter .4s;
-    background:var(--header-bg); backdrop-filter:blur(12px); box-shadow:0 1px 0 var(--line);
+    --sc:0;
+    position:sticky; top:0; z-index:50; isolation:isolate;
+    padding:calc(1.25rem - .40rem * var(--sc)) 0;
+    background:transparent;
+    backdrop-filter:blur(calc(4px + 12px * var(--sc))) saturate(calc(100% + 55% * var(--sc)));
+    -webkit-backdrop-filter:blur(calc(4px + 12px * var(--sc))) saturate(calc(100% + 55% * var(--sc)));
+    box-shadow:0 calc(9px * var(--sc)) calc(26px * var(--sc)) rgba(58,38,23,calc(.09 * var(--sc)));
   }
-  header.scrolled{ padding:.85rem 0; }
+  header::before{
+    content:''; position:absolute; inset:0; z-index:-1; pointer-events:none;
+    background:var(--header-bg); opacity:calc(.5 + .5 * var(--sc));
+  }
+  /* The meniscus: the bar's own colour, fading out over a centimetre, so the
+     page slides under it instead of being cut off by a line. */
+  header::after{
+    content:''; position:absolute; left:0; right:0; top:100%; height:1.5rem; z-index:-1;
+    pointer-events:none; opacity:var(--sc);
+    background:linear-gradient(to bottom, var(--header-bg), transparent);
+  }
+  header .brand img{ height:calc(5.9rem - 1.35rem * var(--sc)); }
+  /* Nothing to animate when the visitor has asked for stillness: the bar
+     still follows the scroll, which is the page moving, not an effect. */
+  @media (prefers-reduced-motion: reduce){
+    header{ backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+  }
   header .wrap{ display:flex; align-items:center; justify-content:space-between; gap:1rem; }
   /* The mark is on every page, so it is the one place where a little
      movement earns its keep: it arrives with the page, a slow gleam crosses
@@ -723,7 +749,11 @@
     position:relative; border-radius:var(--radius); overflow:hidden; background:var(--paper); border:1px solid var(--line);
     box-shadow:var(--shadow-sm); aspect-ratio:1/1; display:flex; align-items:center; justify-content:center;
   }
-  .stage canvas{ max-width:100%; max-height:100%; }
+  /* Both sides given, never inferred: the frame is cut to the view's own
+     shape in sizeCanvas(), so filling it is exactly right. Left to work it
+     out from max-width and max-height alone, Safari sized the two axes
+     separately and stretched the picture to the frame. */
+  .stage canvas{ width:100%; height:100%; display:block; }
   /* The shop's mark sits under every preview, faint enough to stay out of
      the way and dark enough to survive a screenshot. */
   .preview-mark{ position:absolute; left:50%; bottom:.5rem; transform:translateX(-50%); height:4.4rem; width:auto;
@@ -882,6 +912,29 @@
   .upload-box:hover .cam-ico{ transform:translateY(-2px) scale(1.06); }
   @media (prefers-reduced-motion: reduce){ .cam-lens, .cam-flash{ animation:none; } }
   .upload-box .upload-label{ overflow-wrap:anywhere; }
+  .upload-box .uc-thumb, .upload-box .uc-change{ display:none; }
+  /* Once a photograph is in, the target has done its job: the big dashed
+     panel and the drawing above it fold into one line, so the fields below
+     are on the screen instead of a page further down. The line is still the
+     same label, so tapping it chooses another picture. */
+  .slot-block.has-photo .photo-guide{ display:none; }
+  .slot-block.has-photo .upload-box{
+    display:flex; align-items:center; gap:.7rem; text-align:left;
+    padding:.55rem .7rem; border-style:solid; border-width:1px; background:var(--paper);
+  }
+  .slot-block.has-photo .upload-box .ico{ display:none; }
+  .slot-block.has-photo .upload-box .uc-thumb{
+    display:block; width:2.75rem; height:2.75rem; flex:none; object-fit:cover;
+    border-radius:.5rem; background:var(--cream-2);
+  }
+  .slot-block.has-photo .upload-box .upload-label{
+    flex:1; min-width:0; font-size:.8125rem; color:var(--cocoa-soft);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .slot-block.has-photo .upload-box .uc-change{
+    display:inline; flex:none; font-size:.8125rem; font-weight:600; color:var(--gold-deep);
+    text-decoration:underline; text-underline-offset:2px;
+  }
   .range-row{ display:flex; align-items:center; gap:.75rem; }
   .range-row input[type=range]{ flex:1; padding:0; }
   .range-row .lbl{ font-size:.8125rem; color:var(--cocoa-soft); width:5rem; flex:none; }

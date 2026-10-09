@@ -370,14 +370,28 @@
 (function(){
   "use strict";
 
-  /* header shrink on scroll */
+  /* The bar follows the scroll rather than switching at one pixel: --sc is
+     how far into the first 140 px the page has come, 0 to 1, and the
+     stylesheet reads padding, blur, background and shadow off it. Written
+     once per frame, so a fast flick does not queue up a hundred writes. */
   var header = document.getElementById("site-header");
+  var FADE = 140;
 
   var floatCta = document.getElementById("float-cta");
+  var lastSc = -1;
   var onScroll = function(){
-    if (window.scrollY > 24) header.classList.add("scrolled");
-    else header.classList.remove("scrolled");
-    if (window.scrollY > window.innerHeight * 0.6) floatCta.classList.add("show");
+    var y = window.scrollY || 0;
+    /* Two decimals is finer than a screen can show, and comparing against the
+       last one keeps a slow drag from rewriting the style attribute on every
+       pixel. One custom property, no reading back, so nothing is measured
+       twice and there is no frame to wait for. */
+    var sc = Math.round(Math.max(0, Math.min(1, y / FADE)) * 100) / 100;
+    if (sc !== lastSc) {
+      lastSc = sc;
+      header.style.setProperty("--sc", sc);
+      header.classList.toggle("scrolled", sc > 0.15);
+    }
+    if (y > window.innerHeight * 0.6) floatCta.classList.add("show");
     else floatCta.classList.remove("show");
   };
   document.addEventListener("scroll", onScroll, { passive:true });

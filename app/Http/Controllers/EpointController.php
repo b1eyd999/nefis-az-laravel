@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Support\Epoint;
 use App\Support\Telegram;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -49,6 +50,33 @@ class EpointController extends Controller
         }
 
         return redirect()->away($url);
+    }
+
+    /**
+     * The same payment, inside the shop: an address for the wallet widget.
+     *
+     * Answered as JSON because the page opens it in an iframe rather than
+     * leaving for it. Nothing here confirms anything — the signed callback
+     * still does that, and until it arrives the order shows as waiting.
+     */
+    public function wallet(Request $request, Order $order): JsonResponse
+    {
+        abort_unless($order->user_id === $request->user()->id, 403);
+        abort_unless(Epoint::enabled(), 404);
+
+        if (! $order->awaitsPayment() || $order->paymentInFlight()) {
+            return response()->json(['error' => __('Bu sifariş üçün ödəniş artıq başlayıb.')], 409);
+        }
+
+        $url = Epoint::wallet($order);
+
+        if (! $url) {
+            return response()->json([
+                'error' => __('Google Pay indi işləmir. Kartla ödəyin və ya bir az sonra yoxlayın.'),
+            ], 502);
+        }
+
+        return response()->json(['url' => $url]);
     }
 
     /**

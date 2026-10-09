@@ -490,9 +490,15 @@
             <label>{{ $photoNo }}. {{ $slot->label ? __($slot->tr('label')) : __('Şəkil') }}</label>
             {{-- Drawn, not described: what the shot has to look like. --}}
             @include('partials.photo-guide', ['small' => true])
+            {{-- Before a photograph: a wide dashed target that is easy to hit.
+                 After one: the same label folded into a single line — the
+                 picture itself, its name, and the word that says tapping it
+                 again puts another one in its place. --}}
             <label class="upload-box" for="photo-input-{{ $index }}">
               <div class="ico">@include('partials.camera-icon')</div>
+              <img class="uc-thumb" alt="" hidden>
               <div class="upload-label">{{ __('Şəkil seçmək üçün klikləyin') }}</div>
+              <span class="uc-change">{{ __('Dəyiş') }}</span>
             </label>
             <input type="hidden" name="photo_frames[{{ $index }}]" class="photo-frame">
             <input type="file" class="photo-input" id="photo-input-{{ $index }}" name="photos[{{ $index }}]"
@@ -1178,6 +1184,7 @@
      transform set in draw() is the single place they become pixels. */
   var PREVIEW_CAP = window.innerWidth < 700 ? 900 : 1400;
   var drawScale = 1, logicalW = 0, logicalH = 0;
+  var stageBox = canvas.parentNode;
 
   function sizeCanvas(w, h){
     logicalW = w;
@@ -1185,6 +1192,16 @@
     drawScale = Math.min(1, PREVIEW_CAP / Math.max(w, h));
     canvas.width = Math.max(1, Math.round(w * drawScale));
     canvas.height = Math.max(1, Math.round(h * drawScale));
+    /* The frame takes the shape of the view inside it.
+       It used to be set once, from the first scene, and never again — so the
+       flat view of a box (969 x 1895) was being shown in a frame cut for a
+       mockup (1600 x 2000). The canvas is sized in both directions by the
+       stylesheet, and Safari, given a frame of one shape and a picture of
+       another, fills the frame: on an iPhone the design came out half again
+       too wide, and the faces on it with it. Chrome letterboxed instead, so
+       nothing looked wrong here. Matching the frame to the view leaves
+       neither browser anything to decide. */
+    if (stageBox) stageBox.style.aspectRatio = w + ' / ' + h;
   }
   var addBtn = document.getElementById('add-to-cart-btn');
   var addHint = document.getElementById('add-hint');
@@ -1780,6 +1797,32 @@
     var fixBg = block.querySelector('.fix-bg');
     var labelWas = label.textContent;
     var hintWas = hint ? hint.textContent : '';
+    var thumb = block.querySelector('.uc-thumb');
+
+    /* The chosen photograph, small enough to sit on the folded line.
+       Drawn down to 96 px first: a data URL of the picture itself would be
+       several megabytes of base64, which is the thing that made iOS throw
+       this page away in the first place. */
+    function showChosen(pic){
+      block.classList.add('has-photo');
+      if (!thumb || !pic) return;
+      try {
+        var c = document.createElement('canvas');
+        var w = pic.naturalWidth || pic.width, h = pic.naturalHeight || pic.height;
+        if (!w || !h) return;
+        var s = 96 / Math.max(w, h);
+        c.width = Math.max(1, Math.round(w * s));
+        c.height = Math.max(1, Math.round(h * s));
+        c.getContext('2d').drawImage(pic, 0, 0, c.width, c.height);
+        thumb.src = c.toDataURL('image/jpeg', 0.7);
+        thumb.hidden = false;
+      } catch (e) { /* a thumbnail is a convenience; the line reads without it */ }
+    }
+
+    function forgetChosen(){
+      block.classList.remove('has-photo');
+      if (thumb) { thumb.hidden = true; thumb.removeAttribute('src'); }
+    }
 
     /* A file the browser cannot open: say so and take it out — or the box
        shows its name, the preview stays empty, the hint asks for a photo that
@@ -1789,6 +1832,7 @@
       input.value = '';
       photos[index].img = null;
       label.textContent = labelWas;
+      forgetChosen();
       if (hint){ hint.hidden = false; hint.textContent = @json(__('Bu fayl açılmadı. JPG və ya PNG şəkil seçin.')); }
       addBtn.disabled = true;
       markAdd();
@@ -1907,6 +1951,7 @@
          about the printing changes. */
       window.NefisPhoto.load(file, PREVIEW_MAX).then(function(shown){
         photos[index].img = shown;
+        showChosen(shown);
         applyAutoFraming(index, shown);
         zoomRow.hidden = false;
         rotateRow.hidden = false;
