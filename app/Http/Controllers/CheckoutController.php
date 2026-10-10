@@ -43,8 +43,13 @@ class CheckoutController extends Controller
         Analytics::beginCheckout($itemsTotal);
 
         $rushFee = DeliveryTime::rushFee();
+        // Whether this basket already carries its own delivery, and from what
+        // it would. Both go to the page: one to strike the charge out, the
+        // other to say how little is missing.
+        $freeFrom = DeliveryMethod::freeFrom();
+        $deliveryFree = DeliveryMethod::freeOn((float) $itemsTotal);
 
-        return view('checkout.index', compact('items', 'itemsTotal', 'methods', 'rushFee'));
+        return view('checkout.index', compact('items', 'itemsTotal', 'methods', 'rushFee', 'freeFrom', 'deliveryFree'));
     }
 
     /**
@@ -113,6 +118,12 @@ class CheckoutController extends Controller
             'promo_code' => $discount > 0 ? $promo->code : null,
             'promo_percent' => $discount > 0 ? $promo->percent : null,
             'discount' => $discount,
+            /* A basket big enough travels on us. Worked out here from the
+               goods, like the discount, so a figure altered on the page
+               cannot claim it — and written as the same flag the owner sets
+               by hand, so the method and its price stay on the order and the
+               courier run can still be seen to have been worth something. */
+            'free_delivery' => DeliveryMethod::freeOn((float) $goods),
             'user_id' => $request->user()->id,
             'locale' => \App\Support\Locale::current(),
             'status' => $payable ? 'awaiting_payment' : 'pending',

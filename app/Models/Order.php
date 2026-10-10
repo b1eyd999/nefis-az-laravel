@@ -48,8 +48,11 @@ class Order extends Model
         'delivery_type',
         'delivery_name',
         'delivery_price',
-        // The owner's own decision, taken after the order exists; the
-        // checkout never offers it and never sets it.
+        /* Set two ways, and they mean the same thing on the order: the
+           checkout sets it when the basket reaches the sum the owner gives
+           the delivery away from, and the owner sets it by hand on a single
+           order afterwards. Either way the method and its price stay — only
+           what the customer is charged for it changes. */
         'free_delivery',
         'rush_fee',
         'delivery_date',

@@ -23,6 +23,16 @@ class Cart
      * A Polaroid letter ordered on its own is a line with 'kind' => 'letter' and no product;
      * a live photo ordered on its own, 'kind' => 'live'.
      */
+    /**
+     * The most of one design a customer may put in the basket by himself.
+     *
+     * Not a shelf count — every box is made by hand — but a sanity line: a
+     * mistyped number should not become a four-hundred-box order the owner
+     * then has to talk his way out of. Anyone who really wants more is sent
+     * to «Şirkətlər üçün», where the number is what the price turns on.
+     */
+    public const MOST = 50;
+
     /** Whether the customer asked for his order to be made before the others. */
     protected const RUSH = 'cart_rush';
 
@@ -151,6 +161,28 @@ class Cart
         return (float) ($product?->price ?? 0) + (float) ($item['chocolate']['price'] ?? 0)
             + (float) ($item['wrapping']['price'] ?? 0) + (float) ($item['letter']['price'] ?? 0)
             + (float) ($item['ar']['price'] ?? 0);
+    }
+
+    /**
+     * How many of one line the customer wants.
+     *
+     * Only the number changes: the photographs, the words, the chocolate and
+     * the wrapping all belong to that one design, and five of it are five of
+     * the same thing. Wanting a different design is a second line.
+     */
+    public static function setQuantity(string $id, int $quantity): void
+    {
+        $quantity = max(1, min(self::MOST, $quantity));
+        $items = self::raw();
+        foreach ($items as $i => $item) {
+            if (($item['id'] ?? null) === $id) {
+                $items[$i]['quantity'] = $quantity;
+                Session::put(self::KEY, $items);
+                self::keep();
+
+                return;
+            }
+        }
     }
 
     public static function remove(string $id): void

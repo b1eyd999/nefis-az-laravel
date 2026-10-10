@@ -235,6 +235,28 @@ class CartController extends Controller
         return $names;
     }
 
+    /**
+     * More or fewer of one line.
+     *
+     * Until now the basket printed «1 ədəd» and that was that: wanting two
+     * of the same box meant going back through the whole design again. The
+     * number is read here and nowhere else, so a figure typed into the page
+     * cannot ask for four hundred boxes.
+     */
+    public function quantity(Request $request, string $id): RedirectResponse
+    {
+        $data = $request->validate([
+            'quantity' => ['required', 'integer', 'min:1', 'max:' . Cart::MOST],
+        ], [
+            'quantity.max' => __('Bir dizayndan ən çox :most ədəd sifariş etmək olar. Daha çoxu üçün bizə yazın.',
+                ['most' => Cart::MOST]),
+        ]);
+
+        Cart::setQuantity($id, (int) $data['quantity']);
+
+        return back()->with('status', __('Say dəyişdirildi.'));
+    }
+
     public function remove(string $id): RedirectResponse
     {
         Cart::remove($id);

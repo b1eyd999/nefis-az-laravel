@@ -87,12 +87,29 @@
               <h3>{{ $isLive ? __('Canlı şəkil') : ($isLetter ? __('Polaroid məktub') : $item['product']->name) }}</h3>
               <p>
                 @if($texts) "{{ implode('" · "', $texts) }}" &middot; @endif
-                {{ __(':count ədəd', ['count' => $item['quantity']]) }}
                 @php $unit = \App\Support\Cart::unitPrice($item, $item['product']); @endphp
                 @if($unit > 0)
-                  &middot; {{ \App\Support\Price::format($unit * $item['quantity']) }}
+                  {{ \App\Support\Price::format($unit) }} &times; {{ $item['quantity'] }}
+                  &middot; <b>{{ \App\Support\Price::format($unit * $item['quantity']) }}</b>
+                @else
+                  {{ __(':count ədəd', ['count' => $item['quantity']]) }}
                 @endif
               </p>
+
+              {{-- How many of this one. Three buttons rather than a text box:
+                   on a telephone a number field opens a keyboard over the
+                   basket, and the figure is read again on the server. --}}
+              <form method="POST" action="{{ lroute('cart.quantity', $item['id']) }}" class="qty">
+                @csrf
+                @method('PATCH')
+                <button type="submit" name="quantity" value="{{ max(1, $item['quantity'] - 1) }}"
+                        aria-label="{{ __('Bir az') }}"
+                        @disabled($item['quantity'] <= 1)>&minus;</button>
+                <span aria-live="polite">{{ $item['quantity'] }}</span>
+                <button type="submit" name="quantity" value="{{ min(\App\Support\Cart::MOST, $item['quantity'] + 1) }}"
+                        aria-label="{{ __('Bir çox') }}"
+                        @disabled($item['quantity'] >= \App\Support\Cart::MOST)>+</button>
+              </form>
               @if(! empty($item['chocolate']))
                 <p style="margin-top:.2rem;">🍫 {{ $item['chocolate']['name'] }} &middot; {{ \App\Support\Price::format($item['chocolate']['price']) }}</p>
               @endif
@@ -140,6 +157,18 @@
           <p style="display:flex; justify-content:space-between; gap:1rem; font-size:.875rem; color:var(--flame-2); font-weight:600; margin:.35rem 0 .75rem;">
             <span>⚡ {{ __('Təcili hazırlansın') }}</span><span>+{{ \App\Support\Price::format($rush) }}</span>
           </p>
+        @endif
+
+        {{-- Said here rather than only at the checkout, because this is the
+             page where the basket can still be added to. --}}
+        @php $freeFrom = \App\Models\DeliveryMethod::freeFrom(); @endphp
+        @if($freeFrom && $total > 0)
+          @if(\App\Models\DeliveryMethod::freeOn($total))
+            <p class="dlv-free-cart">🎁 {{ __('Çatdırılma bizdən.') }}</p>
+          @else
+            <p class="dlv-free-cart soon">{{ __('Daha :left — və çatdırılma bizdən.', [
+              'left' => \App\Support\Price::format($freeFrom - $total)]) }}</p>
+          @endif
         @endif
         <a href="{{ lroute('checkout.index') }}" class="btn btn-primary btn-block">{{ __('Sifarişi Tamamla') }}</a>
         {{-- The cart keeps what is in it: one tap back to the designs. --}}

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\DeliveryMethod;
 use App\Models\Setting;
 use App\Models\User;
 use App\Support\ChatBot;
@@ -77,6 +78,7 @@ class SiteSettings extends Page implements HasActions, HasForms
             'delivery_lead_days' => (int) Setting::get(Setting::DELIVERY_LEAD_DAYS),
             'delivery_slots' => Setting::get(Setting::DELIVERY_SLOTS),
             'rush_fee' => DeliveryTime::rushFee(),
+            'free_delivery_from' => DeliveryMethod::freeFrom(),
             'chocolate_min_g' => (int) Setting::get(Setting::CHOCOLATE_MIN_G),
             'chocolate_max_g' => (int) Setting::get(Setting::CHOCOLATE_MAX_G),
             'notify_email' => Setting::get(Setting::NOTIFY_EMAIL) === '1',
@@ -485,6 +487,13 @@ class SiteSettings extends Page implements HasActions, HasForms
                             ->label('Vaxt aralıqları')
                             ->rows(3)
                             ->helperText('Hər sətirdə bir aralıq, məs. "10:00 — 14:00".'),
+                        Forms\Components\TextInput::make('free_delivery_from')
+                            ->label('Bu məbləğdən yuxarı çatdırılma bizdən')
+                            ->numeric()->minValue(0)->step(0.01)->suffix('₼')
+                            ->helperText('Məhsulların cəmi bu məbləğə çatanda çatdırılma pulsuz olur — səbətdə və '
+                                . 'sifariş səhifəsində müştəriyə yazılır. 0 yazsanız, heç bir sifarişdə pulsuz olmur. '
+                                . 'Bir sifarişdə çatdırılmanı əl ilə bağışlamaq isə ayrı şeydir, sifarişin öz '
+                                . 'səhifəsindədir.'),
                     ])
                     ->columns(2),
                 Forms\Components\Section::make('Şokolad plitkaları')
@@ -652,6 +661,7 @@ class SiteSettings extends Page implements HasActions, HasForms
         Setting::put(Setting::DELIVERY_LEAD_DAYS, max(0, (int) ($data['delivery_lead_days'] ?? 2)));
         Setting::put(Setting::DELIVERY_SLOTS, trim((string) ($data['delivery_slots'] ?? '')));
         Setting::put(Setting::RUSH_FEE, max(0, round((float) ($data['rush_fee'] ?? 0), 2)));
+        Setting::put(Setting::FREE_DELIVERY_FROM, max(0, round((float) ($data['free_delivery_from'] ?? 0), 2)));
         Setting::put(Setting::CHOCOLATE_MIN_G, max(1, (int) ($data['chocolate_min_g'] ?? 90)));
         Setting::put(Setting::CHOCOLATE_MAX_G, max((int) ($data['chocolate_min_g'] ?? 90), (int) ($data['chocolate_max_g'] ?? 105)));
         Setting::put(Setting::NOTIFY_EMAIL, ! empty($data['notify_email']));

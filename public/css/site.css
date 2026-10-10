@@ -732,7 +732,26 @@
   .cart-row .info h3{ font-size:1.0625rem; }
   .cart-row .info p{ font-size:.8125rem; color:var(--cocoa-soft); margin-top:.2rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .cart-row .remove-btn{ font-size:.8125rem; color:var(--terracotta); font-weight:600; flex:none; }
+  /* Fewer / more of one line. Thumb-sized buttons, so a finger hits them. */
+  .cart-row .qty{ display:flex; align-items:center; gap:.1rem; margin-top:.5rem; }
+  .cart-row .qty button{
+    width:2rem; height:2rem; border:1px solid var(--line); background:var(--paper);
+    border-radius:.5rem; font-size:1.0625rem; line-height:1; color:var(--cocoa);
+    display:grid; place-items:center; cursor:pointer; transition:background .15s, border-color .15s;
+  }
+  .cart-row .qty button:hover:not(:disabled){ background:var(--cream); border-color:var(--gold-deep); }
+  .cart-row .qty button:disabled{ opacity:.35; cursor:default; }
+  .cart-row .qty span{
+    min-width:2.25rem; text-align:center; font-weight:700; font-size:.9375rem;
+    font-variant-numeric:tabular-nums;
+  }
   .cart-summary{ background:var(--paper); border:1px solid var(--line); border-radius:var(--radius-sm); padding:1.5rem; }
+  /* How near the basket is to carrying its own delivery. */
+  .dlv-free-cart{
+    margin:.35rem 0 .9rem; padding:.55rem .75rem; border-radius:.7rem; font-size:.875rem; font-weight:600;
+    background:rgba(198,154,74,.12); border:1px solid rgba(198,154,74,.35); color:var(--gold-deep);
+  }
+  .dlv-free-cart.soon{ background:none; border:0; padding:0; font-weight:500; color:var(--cocoa-soft); font-size:.8125rem; }
   .cart-empty{ text-align:center; padding:4rem 1rem; color:var(--cocoa-soft); }
   .cart-empty .ico{ font-size:3rem; margin-bottom:1rem; }
 

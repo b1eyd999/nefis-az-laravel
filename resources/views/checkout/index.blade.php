@@ -120,6 +120,12 @@
   .map-hint{ font-size:.8125rem; color:var(--cocoa-soft); margin-top:.45rem; }
   .map-hint.ok{ color:var(--gold-deep); }
   .map-hint.err{ color:var(--red, #c0392b); }
+  .dlv-free{
+    margin:0 0 .7rem; padding:.6rem .8rem; border-radius:.7rem; font-size:.875rem; font-weight:600;
+    background:rgba(198,154,74,.12); border:1px solid rgba(198,154,74,.35); color:var(--gold-deep);
+  }
+  .dlv-free-soon{ margin:0 0 .7rem; font-size:.8125rem; color:var(--cocoa-soft); }
+  .dlv-top s{ opacity:.55; font-weight:400; margin-right:.25rem; }
   .send-error{ margin:.7rem 0 0; text-align:center; font-weight:600; font-size:.9375rem; color:#c0392b; }
   .field-bad{ outline:2px solid #c0392b; outline-offset:4px; border-radius:.9rem; }
   @media (max-width:520px){ .map-btn span{ display:none; } .map-box{ height:17rem; } }
@@ -138,6 +144,10 @@
   var rushBox = document.querySelector('input[name="rush"]');
   var rushRow = document.getElementById('sum-rush-row');
   var rushFee = {{ (float) ($rushFee ?? 0) }};
+  // The goods in this basket already reach the sum the shop carries the
+  // delivery from. The basket cannot change on this page, so it is a fact,
+  // not something to work out again as the customer clicks.
+  var deliveryFree = {{ ($deliveryFree ?? false) ? 'true' : 'false' }};
   function fmt(v){ v = Math.round(v * 100) / 100; return (v % 1 === 0 ? v.toFixed(0) : v.toFixed(2)) + ' ₼'; }
   function update(){
     var picked = radios.filter(function(r){ return r.checked; })[0];
@@ -156,8 +166,13 @@
       g.querySelectorAll('input, select').forEach(function(el){ el.disabled = !on; el.required = on && !el.hasAttribute('data-optional'); });
     });
     var price = picked ? parseFloat(picked.dataset.price) || 0 : 0;
+    // The basket is big enough and the shop carries it. Decided on the
+    // server as well, from the same figure: this only shows the answer.
+    if (deliveryFree) price = 0;
     var dlvCell = document.getElementById('sum-delivery');
-    if (dlvCell) dlvCell.textContent = picked ? (price > 0 ? fmt(price) : @json(__('Pulsuz'))) : @json(__('seçilməyib'));
+    if (dlvCell) dlvCell.textContent = picked
+      ? (price > 0 ? fmt(price) : (deliveryFree ? @json(__('Bizdən hədiyyə')) : @json(__('Pulsuz'))))
+      : @json(__('seçilməyib'));
     var rush = rushBox && rushBox.checked ? rushFee : 0;
     if (rushRow) rushRow.hidden = rush === 0;
     var total = items - discount + price + rush;
@@ -573,6 +588,17 @@
           {{-- How it reaches the customer; each way asks for what it needs. --}}
           <div class="field">
             <label>{{ __('Çatdırılma üsulu') }}</label>
+            @if($deliveryFree ?? false)
+              {{-- Said before the prices rather than after: the customer has
+                   already earned this, and the struck-out figures below only
+                   make sense once he knows why. --}}
+              <p class="dlv-free">🎁 {{ __('Bu sifarişdə çatdırılma bizdən — hansı üsulu seçsəniz, pulsuzdur.') }}</p>
+            @elseif($freeFrom ?? null)
+              <p class="dlv-free-soon">{{ __(':sum məbləğindən yuxarı sifarişlərdə çatdırılma bizdən. :left qalıb.', [
+                'sum' => \App\Support\Price::format($freeFrom),
+                'left' => \App\Support\Price::format(max(0, $freeFrom - $itemsTotal)),
+              ]) }}</p>
+            @endif
             <div class="dlv-grid">
               @foreach($methods as $m)
                 <label class="dlv-card">
@@ -580,7 +606,11 @@
                          @checked((string) old('delivery_method_id', $methods->count() === 1 ? $m->id : null) === (string) $m->id)>
                   <span class="dlv-top">
                     <b>{{ $m->tr('name') }}</b>
-                    <span>{{ $m->price > 0 ? \App\Support\Price::format($m->price) : __('Pulsuz') }}</span>
+                    @if(($deliveryFree ?? false) && $m->price > 0)
+                      <span><s>{{ \App\Support\Price::format($m->price) }}</s> {{ __('Pulsuz') }}</span>
+                    @else
+                      <span>{{ $m->price > 0 ? \App\Support\Price::format($m->price) : __('Pulsuz') }}</span>
+                    @endif
                   </span>
                   @if($m->description)<span class="dlv-desc">{{ $m->tr('description') }}</span>@endif
                 </label>

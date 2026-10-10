@@ -62,6 +62,7 @@ Route::view('/odenis-ve-qaytarma', 'legal.refund')->name('legal.refund');
 
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart', [CartController::class, 'add'])->name('cart.add');
+Route::patch('/cart/{id}', [CartController::class, 'quantity'])->name('cart.quantity');
 Route::delete('/cart/{id}', [CartController::class, 'remove'])->name('cart.remove');
 
 /* A basket the shop filled for one customer. The address is the whole key —

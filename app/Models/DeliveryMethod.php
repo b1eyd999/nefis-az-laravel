@@ -51,6 +51,32 @@ class DeliveryMethod extends Model
     protected $fillable = [
         'i18n','type', 'name', 'description', 'price', 'is_active', 'sort_order', 'options'];
 
+    /**
+     * The basket from which the shop carries the delivery itself, or null
+     * when the owner is not giving it away at all.
+     */
+    public static function freeFrom(): ?float
+    {
+        $from = (float) Setting::get(Setting::FREE_DELIVERY_FROM);
+
+        return $from > 0 ? $from : null;
+    }
+
+    /**
+     * Whether a basket worth this much travels free.
+     *
+     * The goods decide it, not the bill: counting the delivery in would make
+     * the promise answer itself, and counting the rush fee in would let a
+     * customer buy his way past the threshold with a fee rather than with a
+     * box. The discount is already off by the time this is asked.
+     */
+    public static function freeOn(float $goods): bool
+    {
+        $from = self::freeFrom();
+
+        return $from !== null && $goods + 0.001 >= $from;
+    }
+
     /** The owner's Google Maps key, if they added one; else the map uses OpenStreetMap. */
     public static function googleMapsKey(): ?string
     {

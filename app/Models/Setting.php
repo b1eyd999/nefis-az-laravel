@@ -206,6 +206,15 @@ class Setting extends Model
     /** Whether a customer is written to by e-mail when his order moves on. */
     public const NOTIFY_EMAIL = 'notify_customer_email';
 
+    /**
+     * The basket from which the shop carries the delivery itself, in manats.
+     *
+     * Empty or 0 and nothing is given away — the owner can still waive the
+     * delivery on one order by hand, which is a different thing: that is his
+     * decision after the fact, this is a promise the checkout makes before.
+     */
+    public const FREE_DELIVERY_FROM = 'free_delivery_from';
+
     /** What each setting is until the owner changes it. */
     /**
      * The moment the books start from. Set when the owner zeroes the
@@ -240,6 +249,7 @@ class Setting extends Model
 14:00–18:00
 18:00–21:00",
         self::NOTIFY_EMAIL => '1',
+        self::FREE_DELIVERY_FROM => '0',
         self::CHAT_ENABLED => '0',
         self::SITE_LANGUAGES => 'az',
         self::MAINTENANCE => '0',
