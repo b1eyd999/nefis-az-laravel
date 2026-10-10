@@ -78,27 +78,11 @@ class CartHandoff extends Model
      */
     public function giveTo(User $customer): int
     {
-        $saved = SavedCart::firstOrNew(['user_id' => $customer->id]);
-        $lines = $saved->exists ? $saved->lines() : [];
-        $added = 0;
+        $added = SavedCart::give($customer, (array) ($this->items ?? []));
 
-        foreach ($this->items ?? [] as $item) {
-            if (! is_array($item) || count($lines) >= SavedCart::MOST) {
-                continue;
-            }
-            $item['id'] = (string) Str::uuid();
-            $item['quantity'] = max(1, (int) ($item['quantity'] ?? 1));
-            $lines[] = $item;
-            $added++;
-        }
-
-        $saved->items = $lines;
         if ($this->rush) {
-            $saved->rush = true;
+            SavedCart::where('user_id', $customer->id)->update(['rush' => true]);
         }
-        // Even an unchanged basket has to be stamped: the customer's session
-        // notices a basket given to him by the hour it was last written.
-        $saved->exists && ! $saved->isDirty() ? $saved->touch() : $saved->save();
 
         $this->forceFill([
             'user_id' => $customer->id,

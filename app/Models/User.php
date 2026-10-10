@@ -114,6 +114,12 @@ class User extends Authenticatable implements FilamentUser
      * in the query, and the last nine digits are compared — so +994 55 123
      * 45 67, 0551234567 and 551234567 are all one number.
      */
+    /** What he is carrying between sessions, where he has anything. */
+    public function savedCart(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(SavedCart::class);
+    }
+
     public function scopeSamePhone($query, ?string $value)
     {
         $key = Contact::key($value);

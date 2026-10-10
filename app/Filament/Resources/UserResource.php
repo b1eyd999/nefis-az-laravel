@@ -5,8 +5,13 @@ namespace App\Filament\Resources;
 use App\Filament\Concerns\AdminOnly;
 use App\Filament\Resources\UserResource\Pages;
 use App\Filament\Resources\UserResource\RelationManagers;
+use App\Models\Chocolate;
+use App\Models\Product;
+use App\Models\SavedCart;
 use App\Models\User;
+use App\Models\Wrapping;
 use App\Support\Contact;
+use App\Support\Price;
 use Closure;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -157,6 +162,14 @@ class UserResource extends Resource
                     ->label('Sifariş')
                     ->counts('orders')
                     ->sortable(),
+                /* What is sitting in his basket right now — the thing the
+                   owner wants to know before he puts anything else in it. */
+                Tables\Columns\TextColumn::make('basket')
+                    ->label('Səbət')
+                    ->state(fn (User $u) => ($n = count($u->savedCart?->lines() ?? [])) ? $n : '—')
+                    ->badge()
+                    ->color(fn ($state) => $state === '—' ? 'gray' : 'success')
+                    ->visibleFrom('md'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Qeydiyyat')
                     ->dateTime('d.m.Y')
@@ -216,6 +229,103 @@ class UserResource extends Resource
                             // Shown in full on purpose: he has to send it on.
                             ->body($u->name . ': ' . $data['password'])
                             ->persistent()
+                            ->send();
+                    }),
+                /* A box into somebody's basket, from here.
+                   «Hazır səbətlər» is the long way round: the owner builds
+                   the box on the site and hands over a link. This is for the
+                   short one — a customer who has signed up and is waiting on
+                   the telephone while the owner drops a design into his
+                   basket. He opens the shop and it is there. */
+                Tables\Actions\Action::make('basket')
+                    ->label('Səbətə at')
+                    ->icon('heroicon-o-shopping-bag')
+                    ->color('success')
+                    ->modalHeading(fn (User $u) => $u->name . ' — səbətinə məhsul at')
+                    ->modalDescription('Məhsul onun səbətinə əlavə olunur; səbətindəki digər məhsullar silinmir. '
+                        . 'Xəbərdarlıq getmir — sayta girəndə görəcək.')
+                    ->modalSubmitActionLabel('Səbətə at')
+                    ->form([
+                        Forms\Components\Select::make('product_id')
+                            ->label('Dizayn')
+                            ->placeholder('Dizaynın adını yazın')
+                            ->required()
+                            ->searchable()
+                            ->live()
+                            ->getSearchResultsUsing(fn (string $search) => Product::query()
+                                ->where('is_active', true)
+                                ->where('name', 'like', '%' . $search . '%')
+                                ->orderBy('name')->limit(25)
+                                ->pluck('name', 'id')->all())
+                            ->getOptionLabelUsing(fn ($value) => Product::find($value)?->name)
+                            ->options(fn () => Product::where('is_active', true)
+                                ->orderBy('sort_order')->orderBy('name')->limit(25)
+                                ->pluck('name', 'id')->all()),
+                        Forms\Components\Select::make('chocolate_id')
+                            ->label('İçindəki şokolad')
+                            ->placeholder('Seçilməsin — müştəri özü seçsin')
+                            ->options(fn () => Chocolate::shown()->get()
+                                ->map->toCustomer()->sortBy('price')
+                                ->mapWithKeys(fn ($c) => [$c['id'] => $c['name'] . ' — ' . Price::format($c['price'])])
+                                ->all())
+                            ->searchable()
+                            ->live(),
+                        Forms\Components\TextInput::make('quantity')
+                            ->label('Ədəd')
+                            ->numeric()->default(1)->minValue(1)->maxValue(SavedCart::MOST)
+                            ->required()
+                            ->live(debounce: 400),
+                        /* What he will see in his basket, worked out the way
+                           the basket works it out, before anything is put in. */
+                        Forms\Components\Placeholder::make('sum')
+                            ->label('Səbətində görünəcək')
+                            ->content(function (Forms\Get $get) {
+                                $product = Product::find($get('product_id'));
+                                if (! $product) {
+                                    return new \Illuminate\Support\HtmlString('<span style="opacity:.7">Dizayn seçin.</span>');
+                                }
+                                $bar = $get('chocolate_id') ? Chocolate::find($get('chocolate_id')) : null;
+                                $one = (float) $product->price + ($bar ? (float) $bar->price() : 0);
+                                $n = max(1, (int) $get('quantity'));
+
+                                return new \Illuminate\Support\HtmlString(
+                                    e($product->name) . ' · ' . $n . ' ədəd — <b>' . e(Price::format($one * $n)) . '</b>'
+                                    . ($bar ? '' : '<br><span style="opacity:.75">Şokolad seçilməyib: qutu tək gedəcək.</span>')
+                                    . ($product->photoSlots()->count()
+                                        ? '<br><span style="opacity:.75">Bu dizayn şəkil istəyir. Buradan şəkilsiz düşür — '
+                                          . 'şəkil lazımdırsa, saytda yığıb «Hazır səbət» göndərin.</span>'
+                                        : '')
+                                );
+                            }),
+                    ])
+                    ->action(function (User $u, array $data) {
+                        $product = Product::find($data['product_id']);
+                        if (! $product) {
+                            Notification::make()->danger()->title('Dizayn tapılmadı')->send();
+
+                            return;
+                        }
+
+                        $bar = $data['chocolate_id'] ? Chocolate::find($data['chocolate_id']) : null;
+
+                        $added = SavedCart::give($u, [SavedCart::line(
+                            $product->id,
+                            (int) $data['quantity'],
+                            $bar?->toCustomer(),
+                        )]);
+
+                        if (! $added) {
+                            Notification::make()->warning()
+                                ->title('Səbət doludur')
+                                ->body('Bir səbətdə ən çoxu ' . SavedCart::MOST . ' sətir olur.')
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()->success()
+                            ->title($u->name . ' — səbətinə atıldı')
+                            ->body($product->name . ' · ' . $data['quantity'] . ' ədəd. O, sayta girəndə görəcək.')
                             ->send();
                     }),
                 Tables\Actions\EditAction::make()->label('Bax'),
