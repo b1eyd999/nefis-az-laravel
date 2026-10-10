@@ -238,6 +238,25 @@ class Setting extends Model
     public const AFTER_SALE_DAYS = 'after_sale_days';
 
     /**
+     * A copy of the database each night, and how many copies to keep.
+     *
+     * Everything the shop knows sits in one database on a shared host, and
+     * there was no copy of it anywhere.
+     */
+    public const BACKUP = 'backup';
+
+    public const BACKUP_KEEP = 'backup_keep';
+
+    /**
+     * The one message that tells the owner the day without being asked: what
+     * goes out today, what is already late, what is owed, what is waiting.
+     * Sent to the same Telegram chat as the orders.
+     */
+    public const MORNING_NOTE = 'morning_note';
+
+    public const MORNING_NOTE_AT = 'morning_note_at';
+
+    /**
      * The basket from which the shop carries the delivery itself, in manats.
      *
      * Empty or 0 and nothing is given away — the owner can still waive the
@@ -282,6 +301,10 @@ class Setting extends Model
         self::NOTIFY_EMAIL => '1',
         self::FREE_DELIVERY_FROM => '0',
         self::PAYMENT_REMIND_AFTER => '3',
+        self::MORNING_NOTE => '1',
+        self::BACKUP => '1',
+        self::BACKUP_KEEP => '14',
+        self::MORNING_NOTE_AT => '09:00',
         self::AFTER_SALE => '1',
         self::AFTER_SALE_AFTER => '24',
         self::AFTER_SALE_PERCENT => '10',

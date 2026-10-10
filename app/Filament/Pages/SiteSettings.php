@@ -83,6 +83,8 @@ class SiteSettings extends Page implements HasActions, HasForms
             'chocolate_max_g' => (int) Setting::get(Setting::CHOCOLATE_MAX_G),
             'notify_email' => Setting::get(Setting::NOTIFY_EMAIL) === '1',
             'payment_remind_after' => (int) Setting::get(Setting::PAYMENT_REMIND_AFTER),
+            'morning_note' => Setting::get(Setting::MORNING_NOTE) === '1',
+            'morning_note_at' => Setting::get(Setting::MORNING_NOTE_AT),
             'after_sale' => Setting::get(Setting::AFTER_SALE) === '1',
             'after_sale_after' => (int) Setting::get(Setting::AFTER_SALE_AFTER),
             'after_sale_percent' => (float) Setting::get(Setting::AFTER_SALE_PERCENT),
@@ -555,6 +557,17 @@ class SiteSettings extends Page implements HasActions, HasForms
                             ->numeric()->minValue(0)->maxValue(365)->suffix('gün')
                             ->visible(fn (Forms\Get $get) => (bool) $get('after_sale'))
                             ->helperText('0 yazsanız, kodun vaxtı bitmir.'),
+                        Forms\Components\Toggle::make('morning_note')
+                            ->label('Səhər Telegram-a günün xülasəsi gəlsin')
+                            ->helperText('Bir mesaj: bu gün neçə çatdırılma var, nə qədəri gecikir, nə qədər pul '
+                                . 'gözlənilir, oxunmamış rəy və mesaj var. Sifarişlərin getdiyi çata gəlir.')
+                            ->live(),
+                        Forms\Components\TextInput::make('morning_note_at')
+                            ->label('Saat neçədə')
+                            ->placeholder('09:00')
+                            ->visible(fn (Forms\Get $get) => (bool) $get('morning_note'))
+                            ->helperText('SS:DD şəklində, Bakı vaxtı ilə.')
+                            ->rule('regex:/^([01][0-9]|2[0-3]):[0-5][0-9]$/'),
                     ])
                     ->columns(2),
                 Forms\Components\Section::make('Telegram bildirişləri')
@@ -704,6 +717,9 @@ class SiteSettings extends Page implements HasActions, HasForms
         Setting::put(Setting::CHOCOLATE_MAX_G, max((int) ($data['chocolate_min_g'] ?? 90), (int) ($data['chocolate_max_g'] ?? 105)));
         Setting::put(Setting::NOTIFY_EMAIL, ! empty($data['notify_email']));
         Setting::put(Setting::PAYMENT_REMIND_AFTER, max(0, (int) ($data['payment_remind_after'] ?? 0)));
+        Setting::put(Setting::MORNING_NOTE, ! empty($data['morning_note']));
+        Setting::put(Setting::MORNING_NOTE_AT, preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', (string) ($data['morning_note_at'] ?? ''))
+            ? $data['morning_note_at'] : '09:00');
         Setting::put(Setting::AFTER_SALE, ! empty($data['after_sale']));
         Setting::put(Setting::AFTER_SALE_AFTER, max(0, (int) ($data['after_sale_after'] ?? 24)));
         Setting::put(Setting::AFTER_SALE_PERCENT, max(0, min(100, round((float) ($data['after_sale_percent'] ?? 0), 2))));

@@ -32,3 +32,6 @@ Thumbs.db
 /public/_qa_*.html
 /.claude
 .local-dev-account.md
+
+# A copy of the whole database. Never in the repository — it is public.
+/storage/app/private/backups

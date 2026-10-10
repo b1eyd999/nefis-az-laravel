@@ -43,6 +43,27 @@ class Scheduler
     }
 
     /**
+     * When the owner wants the morning note, as HH:MM.
+     *
+     * Read here rather than in routes/console.php, because that file is
+     * loaded on every console boot — including the very first `migrate`,
+     * when there is no settings table yet to ask. Asked badly, it took the
+     * whole console down with "no such table: settings".
+     */
+    public static function morningAt(): string
+    {
+        $default = '09:00';
+
+        try {
+            $at = (string) Setting::get(Setting::MORNING_NOTE_AT);
+        } catch (\Throwable) {
+            return $default;
+        }
+
+        return preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $at) ? $at : $default;
+    }
+
+    /**
      * The line to paste into cPanel → Cron Jobs, built from this very
      * installation: its own PHP version and its own path, so it cannot be
      * copied wrong. cPanel's own help on that page names the binary this way.

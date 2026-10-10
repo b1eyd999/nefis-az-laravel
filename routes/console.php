@@ -31,6 +31,18 @@ Schedule::command('orders:expire-unpaid')->hourly();
    does not matter and a letter at four in the morning reads as a machine. */
 Schedule::command('orders:thank')->dailyAt('11:00');
 
+/* The day, on the owner's telephone: what goes out today, what is already
+   late, what is owed, what is waiting to be read. The hour is his, written
+   in the admin — and read through Scheduler, which survives being asked
+   before the settings table exists (the first `migrate` on a new database
+   loads this file too). */
+Schedule::command('shop:morning')->dailyAt(\App\Support\Scheduler::morningAt());
+
+/* A copy of the database, before the day starts and after the night's own
+   jobs have run. Everything the shop knows is in one database on a shared
+   host, and there was no copy of it anywhere. */
+Schedule::command('db:backup')->dailyAt('03:40');
+
 /* The photographs of boxes nobody ordered. A customer uploads his picture,
    changes his mind and leaves, and nothing ever points at that file again —
    so it is swept, but only after a month and only when no order, basket or
