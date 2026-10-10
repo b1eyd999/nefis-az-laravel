@@ -4,14 +4,14 @@
 @section('meta_description', __('Ad günü, sevgiliyə, 8 Mart və hər münasibətə fərdi hədiyyə: öz şəkliniz və sözlərinizlə şokolad qutusu. Onlayn sifariş, Bakıda və bütün Azərbaycanda çatdırılma.'))
 
 @php
-  // The questions on the home page, shown below and given to search engines as an FAQ.
-  $faq = [
-    ['q' => __('Necə sifariş verə bilərəm?'), 'a' => __('Kolleksiyadan dizayn seçin, şəklinizi yükləyin, səbətə əlavə edib qeydiyyatdan keçərək sifarişi tamamlayın.')],
-    ['q' => __('Hansı şokolad növləri mövcuddur?'), 'a' => __('Kinder, Milka, Alionka və digər premium brendlərin dizaynında qutular təklif edirik.')],
-    ['q' => __('Çatdırılma nə qədər vaxt aparır?'), 'a' => __('Sifariş adətən 1-3 iş günü ərzində hazırlanıb çatdırılır.')],
-    ['q' => __('Bakı xaricinə çatdırılma varmı?'), 'a' => __('Bəli, Azərbaycan daxilində bütün bölgələrə çatdırılma mövcuddur.')],
-    ['q' => __('Fərdi sifarişi geri qaytara bilərəmmi?'), 'a' => __('Fərdi hazırlanan məhsullar üçün geri qaytarma tətbiq olunmur, lakin çatdırılma zamanı zədə aşkar olarsa əvəz edilir.')],
-  ];
+  /* The questions, and the three steps below, come from the one list the
+     owner edits in the admin — the same list the /suallar and /nece-isleyir
+     pages show. They used to be written here, and one answer went on telling
+     visitors an order needed signing up long after the checkout had stopped
+     asking. */
+  $faq = \App\Support\Info::faq();
+  $steps = \App\Support\Info::steps();
+  $info = \App\Support\Info::all();
 @endphp
 
 @push('jsonld')
@@ -138,28 +138,22 @@
   <section id="how" class="tinted">
     <div class="wrap">
       <div class="section-head center">
-        <span class="eyebrow" style="justify-content:center;">{{ __('Necə İşləyir') }}</span>
-        <h2>{{ __('Üç Addımda Fərdi Hədiyyə') }}</h2>
-        <p class="lede" style="margin-inline:auto;">{{ __('Hər addım diqqətlə düşünülüb ki, xatirəniz ən nəfis formada sizə qaytarılsın.') }}</p>
+        <span class="eyebrow" style="justify-content:center;">{{ __($info['how_eyebrow']) }}</span>
+        <h2>{{ __($info['how_title']) }}</h2>
+        <p class="lede" style="margin-inline:auto;">{{ __($info['how_lede']) }}</p>
       </div>
       <div class="steps">
-        <div class="step reveal">
-          <div class="step-line"></div>
-          <div class="num">1</div>
-          <h3>{{ __('Dizaynı Seçin') }}</h3>
-          <p>{{ __('Kolleksiyadan xoşunuza gələn qutu dizaynını seçin.') }}</p>
-        </div>
-        <div class="step reveal">
-          <div class="step-line"></div>
-          <div class="num">2</div>
-          <h3>{{ __('Şəklinizi Yükləyin') }}</h3>
-          <p>{{ __('Öz şəklinizi və istədiyiniz mətni əlavə edib canlı önizləmə görün.') }}</p>
-        </div>
-        <div class="step reveal">
-          <div class="num">3</div>
-          <h3>{{ __('Sifariş Verin') }}</h3>
-          <p>{{ __('Sifarişinizi göndərin, biz sizinlə əlaqə saxlayıb təsdiqləyək.') }}</p>
-        </div>
+        @foreach($steps as $i => $step)
+          <div class="step reveal">
+            @unless($loop->last)<div class="step-line"></div>@endunless
+            <div class="num">{{ $i + 1 }}</div>
+            <h3>{{ $step['title'] }}</h3>
+            <p>{{ $step['text'] }}</p>
+          </div>
+        @endforeach
+      </div>
+      <div class="section-foot center">
+        <a href="{{ lroute('info.how') }}" class="btn btn-ghost">{{ __('Ətraflı: necə işləyir') }}</a>
       </div>
     </div>
   </section>
@@ -215,16 +209,22 @@
   <section id="faq" class="tinted">
     <div class="wrap">
       <div class="section-head center reveal">
-        <span class="eyebrow" style="justify-content:center;">{{ __('Suallar') }}</span>
-        <h2>{{ __('Tez-tez Soruşulan Suallar') }}</h2>
+        <span class="eyebrow" style="justify-content:center;">{{ __($info['faq_eyebrow']) }}</span>
+        <h2>{{ __($info['faq_title']) }}</h2>
       </div>
       <div class="faq-list reveal">
-        @foreach($faq as $i => $f)
+        {{-- Five here, the rest on the page of their own: the front page is
+             not the place to read eight answers. --}}
+        @foreach(array_slice($faq, 0, 5) as $i => $f)
           <details class="faq-item" @if($i === 0) open @endif>
             <summary>{{ $f['q'] }}<span class="plus"></span></summary>
             <div class="faq-a">{{ $f['a'] }}</div>
           </details>
         @endforeach
+      </div>
+      <div class="section-foot center">
+        <a href="{{ lroute('info.faq') }}" class="btn btn-ghost">{{ __('Bütün suallar') }}</a>
+        <a href="{{ lroute('info.contact') }}" class="btn btn-ghost">{{ __('Bizə yazın') }}</a>
       </div>
     </div>
   </section>

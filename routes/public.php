@@ -17,6 +17,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CorporateController;
 use App\Http\Controllers\EpointController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\InfoController;
 use App\Http\Controllers\LetterController;
 use App\Http\Controllers\LivePhotoController;
 use App\Http\Controllers\OrderController;
@@ -53,6 +54,17 @@ Route::get('/xonca', [XoncaController::class, 'index'])->name('xonca.index');
    is far more than a customer needs and keeps the disk out of a stranger's
    hands. */
 Route::post('/canli-sekil', [LivePhotoController::class, 'store'])->middleware('throttle:10,60')->name('live.store');
+
+/* The three pages that answer a visitor before he buys: how it works, what
+   people ask, and how to reach a person. They were sections of the front
+   page, reachable by «#how» and «#faq» alone — nothing to send anybody and
+   nothing a search engine could land on. The front page now reads its own
+   two sections from the same place the owner edits (App\Support\Info). */
+Route::get('/nece-isleyir', [InfoController::class, 'how'])->name('info.how');
+Route::get('/suallar', [InfoController::class, 'faq'])->name('info.faq');
+Route::get('/elaqe', [InfoController::class, 'contact'])->name('info.contact');
+Route::post('/elaqe', [InfoController::class, 'write'])
+    ->middleware('throttle:10,60')->name('info.contact.write');
 
 // The shop's own rules: how an order works, what we know about a customer,
 // and when money comes back. Plain pages, one per subject.

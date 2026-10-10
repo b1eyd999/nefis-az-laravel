@@ -286,6 +286,31 @@ class Telegram
         self::send(implode("\n", $lines));
     }
 
+    /** Somebody wrote from the contact page. */
+    public static function contact(\App\Models\ContactMessage $message): void
+    {
+        $lines = [
+            '✉️ <b>Saytdan mesaj</b>',
+            '',
+            '<b>' . e($message->name) . '</b>',
+            '📞 ' . e($message->phone),
+        ];
+
+        if ($message->email) {
+            $lines[] = '✉️ ' . e($message->email);
+        }
+        if ($message->about) {
+            $lines[] = '🔖 ' . e($message->about);
+        }
+
+        $lines[] = '';
+        $lines[] = e($message->message);
+        $lines[] = '';
+        $lines[] = url('/admin/contact-messages/' . $message->id . '/edit');
+
+        self::send(implode("\n", $lines));
+    }
+
     public static function order(Order $order): void
     {
         $order->loadMissing(['items', 'user']);

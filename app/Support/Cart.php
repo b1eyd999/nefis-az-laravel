@@ -30,8 +30,12 @@ class Cart
      * mistyped number should not become a four-hundred-box order the owner
      * then has to talk his way out of. Anyone who really wants more is sent
      * to «Şirkətlər üçün», where the number is what the price turns on.
+     *
+     * Twenty because that is the figure the shop's own terms have promised
+     * all along; the stepper was built to that rather than the terms edited
+     * to the stepper.
      */
-    public const MOST = 50;
+    public const MOST = 20;
 
     /** Whether the customer asked for his order to be made before the others. */
     protected const RUSH = 'cart_rush';

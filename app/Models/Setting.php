@@ -103,6 +103,12 @@ class Setting extends Model
     /** JSON: the live photo page's wording (see App\Support\LivePage::DEFAULTS). */
     public const LIVE_PAGE = 'live_page';
 
+    /**
+     * JSON: the three pages that answer a visitor before he buys — how it
+     * works, the questions, and how to reach a person (see App\Support\Info).
+     */
+    public const INFO_PAGES = 'info_pages';
+
     /** Live photos (AR) sold to customers: on sale or not, and the price. */
     public const AR_ENABLED = 'ar_enabled';
 

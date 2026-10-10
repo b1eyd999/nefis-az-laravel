@@ -160,8 +160,9 @@
           <span class="nav-top is-shut" aria-disabled="true">{{ \App\Support\Menu::title($item) }}@if($item['badge'])<i class="ni-badge">{{ __($item['badge']) }}</i>@endif</span>
         @endif
       @endforeach
-      <a href="{{ lroute('home') }}#how">{{ __('Necə İşləyir') }}</a>
-      <a href="{{ lroute('home') }}#faq">{{ __('Suallar') }}</a>
+      <a href="{{ lroute('info.how') }}">{{ __('Necə İşləyir') }}</a>
+      <a href="{{ lroute('info.faq') }}">{{ __('Suallar') }}</a>
+      <a href="{{ lroute('info.contact') }}">{{ __('Əlaqə') }}</a>
     </nav>
     <div class="header-actions">
       <button type="button" class="icon-btn theme-btn" id="theme-toggle" aria-label="{{ __('Qaranlıq rejim') }}" title="{{ __('Qaranlıq / işıqlı rejim') }}">
@@ -256,8 +257,9 @@
   @endif
   <div class="mn-group">
     <span class="mn-head">{{ __('Məlumat') }}</span>
-    <a href="{{ lroute('home') }}#how">{{ __('Necə İşləyir') }}</a>
-    <a href="{{ lroute('home') }}#faq">{{ __('Suallar') }}</a>
+    <a href="{{ lroute('info.how') }}">{{ __('Necə İşləyir') }}</a>
+    <a href="{{ lroute('info.faq') }}">{{ __('Suallar') }}</a>
+    <a href="{{ lroute('info.contact') }}">{{ __('Əlaqə') }}</a>
   </div>
   <div class="mn-group">
     <span class="mn-head">{{ __('Hesab') }}</span>
@@ -305,8 +307,12 @@
       <div class="footer-col">
         <h3>{{ __('Naviqasiya') }}</h3>
         @foreach($navMenu as $item)@if($item['link'])<a href="{{ lroute($item['route']) }}">{{ \App\Support\Menu::title($item) }}</a>@else<span class="is-shut">{{ \App\Support\Menu::title($item) }}</span>@endif @endforeach
-        <a href="{{ lroute('home') }}#how">{{ __('Necə İşləyir') }}</a>
-        <a href="{{ lroute('home') }}#faq">{{ __('Suallar') }}</a>
+        {{-- Pages, not anchors. These used to be «/#how» and «/#faq», which
+             from any other page took the visitor to the front page and left
+             him to find the section himself. --}}
+        <a href="{{ lroute('info.how') }}">{{ __('Necə İşləyir') }}</a>
+        <a href="{{ lroute('info.faq') }}">{{ __('Suallar') }}</a>
+        <a href="{{ lroute('info.contact') }}">{{ __('Əlaqə') }}</a>
       </div>
       @if($navGifts->isNotEmpty())
         <div class="footer-col">
@@ -324,6 +330,7 @@
           <a href="{{ \App\Support\Contact::whatsapp() }}" target="_blank" rel="noopener">WhatsApp</a>
         @endif
         <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener">Instagram</a>
+        <a href="{{ lroute('info.contact') }}">{{ __('Əlaqə səhifəsi') }}</a>
         @if(\App\Support\Contact::hours())
           <span class="f-hours">{{ __(\App\Support\Contact::hours()) }}</span>
         @endif

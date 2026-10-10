@@ -48,6 +48,14 @@ class SitemapController extends Controller
             $this->add(fn () => [route($name('home')), $newest]);
             $this->add(fn () => [route($name('designs.index')), $newest]);
 
+            /* The three pages that answer a visitor before he buys. They are
+               the ones people search for in words — "how does it work", "do
+               you deliver outside Baku", "what is your number" — so they
+               belong in the index however little they change. */
+            $this->add(fn () => [route($name('info.how'))]);
+            $this->add(fn () => [route($name('info.faq'))]);
+            $this->add(fn () => [route($name('info.contact'))]);
+
             if ($gifts->isNotEmpty()) {
                 $this->add(fn () => [GiftPage::hubUrl($locale), $this->newest($gifts)]);
                 foreach ($gifts as $page) {

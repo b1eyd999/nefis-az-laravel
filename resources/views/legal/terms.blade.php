@@ -23,11 +23,11 @@
     <p>{{ __('«Lokasiya» dizaynlarında seçdiyiniz yerin küçələri çap olunur. Xəritə məlumatları OpenStreetMap-dəndir və ODbL lisenziyası ilə paylaşılır; bu qeyd həm saytda, həm də qutunun üzərində göstərilir.') }}</p>
 
     <h2>{{ __('Sifariş necə verilir') }}</h2>
-    <p>{{ __('Sifariş vermək üçün hesab lazımdır: ad, e-poçt, Azərbaycan nömrəsi və şifrə. Bir nömrə ilə bir hesab açılır.') }}</p>
+    <p>{{ __('Sifariş vermək üçün əvvəlcədən hesab açmağa ehtiyac yoxdur: ad, e-poçt və Azərbaycan nömrəsi kifayətdir. Hesabı sifarişlə birlikdə sizin üçün biz açırıq, şifrəni sonra özünüz seçirsiniz. Bir nömrə ilə bir hesab olur.') }}</p>
     <ul>
       <li>{{ __('Dizaynı seçirsiniz, şəklinizi yükləyir və yazıları yazırsınız. Hər yazı sahəsinin öz simvol həddi var və nə yazılıbsa, o da çap olunur.') }}</li>
       <li>{{ __('Saytda aktiv şokolad varsa, qutunun içinə şokolad seçmək məcburidir.') }}</li>
-      <li>{{ __('Bir dizaynı 1-dən 20 ədədə qədər sifariş etmək olar.') }}</li>
+      <li>{{ __('Bir dizaynı 1-dən :most ədədə qədər sifariş etmək olar — səbətdə sayı dəyişə bilərsiniz.', ['most' => \App\Support\Cart::MOST]) }}</li>
       <li>{{ __('Son səhifədə çatdırılma üsulunu, ünvanı, günü, vaxt aralığını və telefonu yazırsınız.') }}</li>
     </ul>
     <p>{{ __('Yekun məbləği sifarişi göndərməzdən əvvəl görürsünüz. Sifariş göndəriləndən sonra ödəniş səhifəsinə keçirsiniz.') }}</p>
