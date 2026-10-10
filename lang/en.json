@@ -76,6 +76,7 @@
     "Bir neçə saat ərzində hazır olur, növbədənkənar.": "Ready within a few hours, ahead of the queue.",
     "Bir çox": "One more",
     "Bir ədədin qiyməti kiçikdir": "One of them costs little",
+    "Bir ədədin qiyməti sifarişin sayından asılıdır. Dizayn və çap qiymətin içindədir; Bakıya çatdırılma bizdəndir.": "The price of one piece depends on the number. Design and printing are in the price; delivery inside Baku is on us.",
     "Bir-iki cümlə yazsanız, bizə çox kömək edərdi: qutu necə çıxdı, şəkil necə göründü, nə vaxt çatdı. Öz çəkdiyiniz şəkli də əlavə edə bilərsiniz.": "A sentence or two would help us a great deal: how the box came out, how the photograph looked, when it arrived. You can add your own photograph too.",
     "Birini seçin, şəklinizi yükləyin və sözlərinizi yazın, qutunun necə görünəcəyini dərhal görəcəksiniz.": "Pick one, upload your photo and write your words, you will see the box straight away.",
     "Bizdən hədiyyə": "On us",
@@ -462,6 +463,7 @@
     "Qeydiyyatdan keçin": "Sign up",
     "Qiymət": "Price",
     "Qiymət sorğu ilə": "Price on request",
+    "Qiymət — sayına görə": "The price, by the number",
     "Qonaq onu cibinə qoyur, evdə açır — və markanız bir daha yadına düşür.": "The guest puts it in a pocket, opens it at home — and remembers your name again.",
     "Qonaqlara və əməkdaşlara.": "For guests and for the staff.",
     "Quraşdır": "Install",
@@ -509,6 +511,7 @@
     "Saytda hansı adla görünsün?": "What name should show on the site?",
     "Saytdakı bütün dizaynlar, onların şəkilləri, mətnlər və saytın özü Nefis Şokolad Evinə məxsusdur və müəllif hüququ ilə qorunur. Dizaynlar bizim öz işimizdir.": "Every design on this site, its pictures, the texts and the site itself belong to Nefis Şokolad Evi and are protected by copyright. The designs are our own work.",
     "Sayı xonçanın ölçüsündən asılıdır": "How many depends on the size of the tray",
+    "Sayı yazın — qiyməti dərhal görün": "Type the number and see the price at once",
     "Sevgi ilə hazırlanıb": "Made with love",
     "Sevginizi göstərmək üçün ikinizin şəkli ilə xüsusi dizayn.": "A special design with a photo of the two of you.",
     "Seçdiyiniz qablaşdırma artıq yoxdur, başqasını seçin.": "That wrapping is gone, please choose another.",
@@ -675,6 +678,7 @@
     "Zəng edin, WhatsApp-a yazın, Instagram-dan mesaj atın — necə rahatdırsa. Sifarişlə bağlı suallara iş saatları ərzində bir neçə dəqiqədə cavab veririk.": "Ring us, write on WhatsApp, message us on Instagram — whichever suits you. Questions about orders are answered within minutes during opening hours.",
     "aşağıdan": "below",
     "baxın.": ".",
+    "bir ədəd": "piece",
     "canlı şəkil": "live photo",
     "dinlə ↗": "listen ↗",
     "dizaynında fərdi şokolad qutusu: şəklinizi və sözlərinizi əlavə edin, önizləməni dərhal görün": "— a chocolate box with your own photo: add the picture and the words and see it right away",
@@ -880,5 +884,6 @@
     "Əvvəlki görünüş": "Previous view",
     "Əvvəlki slayd": "Previous slide",
     "ədəd": "pcs",
+    "ədəddən": "pieces and up",
     "əlavə edirik, telefonu şəklə tutanda videonuz oynayır.": "— hold a phone over the picture and your video plays."
 }

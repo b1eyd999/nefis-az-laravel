@@ -52,6 +52,18 @@ class CorporatePage
         'designer_field' => 'Hazır dizayn faylı',
         'designer_formats' => 'PDF, AI, EPS, PNG, JPG və ya ZIP. 20 MB-a qədər.',
 
+        /* What a company actually pays, by the number it orders. The page
+           has always said «say artdıqca bir ədədin qiyməti aşağı düşür» and
+           then named no figure at all, so every enquiry began with somebody
+           asking what it costs. The ladder is the owner's own and starts
+           empty: a price invented here would be a price on a live page. */
+        'ladder_title' => 'Qiymət — sayına görə',
+        'ladder_note' => 'Bir ədədin qiyməti sifarişin sayından asılıdır. Dizayn və çap qiymətin içindədir; '
+            . 'Bakıya çatdırılma bizdəndir.',
+        'ladder_from_label' => 'ədəddən',
+        'ladder_per_label' => 'bir ədəd',
+        'ladder_pick' => 'Sayı yazın — qiyməti dərhal görün',
+
         'whom_title' => 'Kimlər sifariş edir',
         'try_title' => 'Loqonuzu yoxlayın',
         'try_note' => 'Loqonuzu yükləyin, qutunun rəngini seçin — necə görünəcəyini elə burada görürsünüz. '
@@ -153,6 +165,11 @@ class CorporatePage
             ARRAY_FILTER_USE_BOTH
         ));
 
+        /* The price ladder has no sensible default: a figure put here would
+           go live as the shop's own price. Empty, the page simply does not
+           show the block and the enquiry works as it always has. */
+        $page['ladder'] = self::ladderRows($saved['ladder'] ?? null);
+
         $page['whom'] = self::rows($saved['whom'] ?? null, self::WHOM, ['title']);
         $page['perks'] = self::rows($saved['perks'] ?? null, self::PERKS, ['title']);
         $page['colors'] = self::rows($saved['colors'] ?? null, self::COLORS, ['name', 'hex']);
@@ -175,6 +192,76 @@ class CorporatePage
     public static function minimum(): int
     {
         return max(1, (int) (self::all()['min_qty'] ?? 100));
+    }
+
+    /**
+     * The price ladder, smallest number first.
+     *
+     * @return array<int, array{from: int, price: float}>
+     */
+    public static function ladder(): array
+    {
+        return self::all()['ladder'];
+    }
+
+    /**
+     * What one piece costs at this number, or null while the owner has named
+     * no prices.
+     *
+     * The highest step the number reaches — so 250 pieces against steps of
+     * 100, 300 and 500 is priced at the 100 step, not at the 300 one. The
+     * other reading would quote a discount nobody has earned.
+     */
+    public static function unitPriceFor(int $quantity): ?float
+    {
+        $price = null;
+        foreach (self::ladder() as $step) {
+            if ($quantity >= $step['from']) {
+                $price = $step['price'];
+            }
+        }
+
+        return $price;
+    }
+
+    /** What the whole order comes to at that number, or null. */
+    public static function totalFor(int $quantity): ?float
+    {
+        $unit = self::unitPriceFor($quantity);
+
+        return $unit === null ? null : round($unit * $quantity, 2);
+    }
+
+    /**
+     * The ladder as the owner saved it: whole numbers, real prices, in order,
+     * and one step per starting number.
+     *
+     * @return array<int, array{from: int, price: float}>
+     */
+    public static function ladderRows(mixed $saved): array
+    {
+        if (! is_array($saved)) {
+            return [];
+        }
+
+        $steps = [];
+        foreach ($saved as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            $from = (int) ($row['from'] ?? 0);
+            $price = round((float) ($row['price'] ?? 0), 2);
+            if ($from < 1 || $price <= 0) {
+                continue;
+            }
+            // Two steps from the same number: the last one wins, which is
+            // what the owner sees himself doing as he edits the list.
+            $steps[$from] = ['from' => $from, 'price' => $price];
+        }
+
+        ksort($steps);
+
+        return array_values($steps);
     }
 
     /**

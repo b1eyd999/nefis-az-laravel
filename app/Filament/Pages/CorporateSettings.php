@@ -87,6 +87,37 @@ class CorporateSettings extends Page implements HasForms
                             ->maxLength(300)->placeholder(CorporatePage::DEFAULTS['min_qty_note'])->columnSpanFull(),
                     ])->columns(2),
 
+                Forms\Components\Section::make('Qiymət — sayına görə')
+                    ->description('Səhifə indiyə qədər yalnız «say artdıqca bir ədədin qiyməti aşağı düşür» yazırdı '
+                        . 'və heç bir rəqəm göstərmirdi — ona görə hər müraciət «neçəyədir?» sualı ilə başlayırdı. '
+                        . 'Pillələri siz yazırsınız. Siyahı boş qalsa, səhifədə bu bölmə görünmür və hər şey '
+                        . 'əvvəlki kimi işləyir.')
+                    ->schema([
+                        $text('ladder_title', 'Bölmənin başlığı', 80),
+                        $text('ladder_per_label', '«Bir ədəd» yazısı', 40),
+                        Forms\Components\Textarea::make('ladder_note')->label('Bölmənin altındakı izah')->rows(2)
+                            ->maxLength(300)->placeholder(CorporatePage::DEFAULTS['ladder_note'])->columnSpanFull(),
+                        Forms\Components\Repeater::make('ladder')
+                            ->label('Pillələr')
+                            ->helperText('Hər pillə: bu saydan başlayaraq bir ədədin qiyməti. Məs. 100 ədəddən 1.80 ₼, '
+                                . '300 ədəddən 1.55 ₼. 250 ədəd sifariş edən 100-lük pillə ilə hesablanır — '
+                                . 'çatmadığı endirim verilmir. Sıralamağa ehtiyac yoxdur, özü düzür.')
+                            ->schema([
+                                Forms\Components\TextInput::make('from')->label('Bu saydan')
+                                    ->numeric()->minValue(1)->maxValue(1000000)->required()->suffix('ədəd'),
+                                Forms\Components\TextInput::make('price')->label('Bir ədədin qiyməti')
+                                    ->numeric()->minValue(0.01)->step(0.01)->required()->suffix('₼'),
+                            ])
+                            ->columns(2)
+                            ->reorderable(false)
+                            ->itemLabel(fn (array $state) => filled($state['from'] ?? null)
+                                ? $state['from'] . '+ ədəd — ' . ($state['price'] ?? '?') . ' ₼'
+                                : 'Yeni pillə')
+                            ->addActionLabel('Pillə əlavə et')
+                            ->defaultItems(0)
+                            ->columnSpanFull(),
+                    ])->columns(2),
+
                 Forms\Components\Section::make('Qutunun iki tərəfi')
                     ->schema([
                         $text('faces_title', 'Bölmənin başlığı', 80),
@@ -219,6 +250,10 @@ class CorporateSettings extends Page implements HasForms
 
         // The lists as the owner arranged them, empty rows dropped so a half
         // -filled one cannot leave a blank card on the page.
+        // The ladder has rules of its own — whole numbers, real prices, in
+        // order — so it is cleaned where those rules live.
+        $page['ladder'] = CorporatePage::ladderRows($data['ladder'] ?? null);
+
         foreach (['whom' => ['title'], 'perks' => ['title'], 'colors' => ['name', 'hex'], 'gallery' => ['image']] as $list => $required) {
             $rows = array_values((array) ($data[$list] ?? []));
             $page[$list] = array_values(array_filter($rows, function ($row) use ($required) {

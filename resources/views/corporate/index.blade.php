@@ -18,6 +18,23 @@
   .co-fact b{ display:block; font-size:1.05rem; letter-spacing:-.02em; }
   .co-fact span{ font-size:.75rem; color:var(--cocoa-soft); text-transform:uppercase; letter-spacing:.05em; }
 
+  /* what it costs, by the number */
+  .co-ladder{ margin-top:1.6rem; }
+  .co-ladder > b{ display:block; font-size:1rem; margin-bottom:.7rem; }
+  .co-ladder .slot-hint{ margin-top:.7rem; }
+  .co-steps{ display:flex; flex-wrap:wrap; gap:.5rem; }
+  .co-step{
+    display:flex; align-items:baseline; gap:.3rem; padding:.55rem .8rem;
+    border:1px solid var(--line); border-radius:.8rem; background:var(--paper);
+  }
+  .co-step span{ font-size:.75rem; color:var(--cocoa-soft); }
+  .co-step b{ font-size:1.0625rem; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+  .co-step i{ font-style:normal; font-size:.6875rem; color:var(--cocoa-soft); }
+  .co-quote{
+    display:block; margin-top:.35rem; font-size:.8125rem; font-weight:600;
+    color:var(--gold-deep); font-variant-numeric:tabular-nums;
+  }
+
   /* the two faces, side by side, at the size they are printed */
   .co-faces{ display:flex; gap:1.2rem; justify-content:center; align-items:flex-start; }
   .co-face{ flex:0 1 13rem; }
@@ -119,6 +136,26 @@
         </div>
 
         <p class="slot-hint" style="margin-top:1rem;">{{ __($page['min_qty_note']) }}</p>
+
+        {{-- The price, by the number. The page used to say only that a bigger
+             order costs less each and then name no figure at all, so every
+             enquiry began with somebody asking what it costs. Shown only once
+             the owner has written his own steps. --}}
+        @if($page['ladder'])
+          <div class="co-ladder">
+            <b>{{ __($page['ladder_title']) }}</b>
+            <div class="co-steps">
+              @foreach($page['ladder'] as $step)
+                <div class="co-step">
+                  <span>{{ $step['from'] }}+ {{ __('ədəd') }}</span>
+                  <b>{{ \App\Support\Price::format($step['price']) }}</b>
+                  <i>/ {{ __($page['ladder_per_label']) }}</i>
+                </div>
+              @endforeach
+            </div>
+            <p class="slot-hint">{{ __($page['ladder_note']) }}</p>
+          </div>
+        @endif
 
         <a class="btn btn-primary" href="#muraciet" style="margin-top:1.4rem;">{{ __($page['form_button']) }}</a>
       </div>
@@ -299,8 +336,15 @@
       <label><span>{{ __('E-poçt') }}</span>
         <input type="email" name="email" value="{{ old('email') }}" maxlength="150"></label>
       <label><span>{{ __('Neçə ədəd') }} *</span>
-        <input type="number" name="quantity" value="{{ old('quantity', $page['min_qty']) }}"
-               min="{{ $page['min_qty'] }}" step="1" required inputmode="numeric"></label>
+        <input type="number" name="quantity" id="co-qty" value="{{ old('quantity', $page['min_qty']) }}"
+               min="{{ $page['min_qty'] }}" step="1" required inputmode="numeric">
+        {{-- What that number costs, worked out as he types it. The figures
+             come from the owner's own ladder and the server quotes the same
+             ones back in the Telegram notice. --}}
+        @if($page['ladder'])
+          <small class="co-quote" id="co-quote" aria-live="polite"></small>
+        @endif
+      </label>
       <label><span>{{ __('Loqo') }}</span>
         <input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml"></label>
       <label class="full"><span>{{ __('Şüar') }}</span>
@@ -356,6 +400,49 @@
 @endsection
 
 @section('page_script')
+@if($page['ladder'])
+<script>
+/* What the number he has typed costs, worked out as he types it.
+   The steps are the owner's own, and the server quotes the same ones back in
+   the notice it sends itself — this only saves him asking. */
+(function () {
+  var steps = @json($page['ladder']);
+  var box = document.getElementById('co-qty');
+  var out = document.getElementById('co-quote');
+  if (!box || !out || !steps.length) return;
+
+  var least = steps[0].from;
+
+  function money(value) {
+    // The shop writes 7 ₼ and 7.50 ₼, never 7.00 ₼.
+    var rounded = Math.round(value * 100) / 100;
+    return (rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(2)) + ' ₼';
+  }
+
+  function show() {
+    var many = parseInt(box.value, 10);
+    if (!many || many < least) {
+      // Below the first step there is no price to name, so the line says
+      // where the prices start rather than going blank.
+      out.textContent = least + '+ ' + @json(__('ədəddən'));
+      return;
+    }
+    /* The highest step the number reaches — 250 against steps of 100 and 300
+       is priced at 100, not at 300. The other reading would quote a discount
+       nobody has earned. */
+    var unit = null;
+    for (var i = 0; i < steps.length; i++) {
+      if (many >= steps[i].from) unit = steps[i].price;
+    }
+    if (unit === null) return;
+    out.textContent = money(unit) + ' × ' + many + ' = ' + money(unit * many);
+  }
+
+  box.addEventListener('input', show);
+  show();
+})();
+</script>
+@endif
 {{-- The same warper the shop's own mockups are drawn with, so a logo sits on
      this box exactly as a design sits on a chocolate box. --}}
 <script src="{{ asset('js/scene-render.js') }}?v={{ \App\Support\Assets::version('js/scene-render.js') }}"></script>

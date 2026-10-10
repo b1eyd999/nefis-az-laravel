@@ -6,6 +6,7 @@ use App\Models\CorporateRequest;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Setting;
+use App\Support\CorporatePage;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -259,7 +260,13 @@ class Telegram
             '🏢 <b>Şirkət müraciəti</b>',
             '',
             '<b>' . e($request->company) . '</b>',
-            '📦 ' . $request->quantity . ' ədəd',
+            // What that number comes to on the owner's own ladder, so he
+            // knows the figure the page quoted before he rings back.
+            '📦 ' . $request->quantity . ' ədəd'
+                . (($total = CorporatePage::totalFor((int) $request->quantity)) !== null
+                    ? ' — ' . \App\Support\Price::format(CorporatePage::unitPriceFor((int) $request->quantity))
+                        . '/əd, cəmi ' . \App\Support\Price::format($total)
+                    : ''),
             '📞 ' . e($request->phone) . ($request->person ? ' · ' . e($request->person) : ''),
         ];
 
