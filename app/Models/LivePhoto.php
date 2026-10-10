@@ -64,14 +64,18 @@ class LivePhoto extends Model
         $live = static::create([
             'title' => 'Sifariş #' . $item->order_id . ', ' . ($item->product_name ?? 'Canlı şəkil'),
             'target_image' => '',
-            'video_path' => $ar['video'],
+            // A live photo the shop added for a customer has no video yet:
+            // he sends it afterwards and the owner attaches it in «Canlı
+            // şəkillər». The column has always been nullable; reading the key
+            // outright is what used to stop such an order being placed.
+            'video_path' => $ar['video'] ?? null,
             'order_item_id' => $item->id,
             'is_active' => true,
         ]);
 
         $dir = 'live/' . $live->id . '/';
         $moves = [];
-        foreach (['target_image' => $image, 'target_mind' => $ar['mind'] ?? null, 'video_path' => $ar['video']] as $column => $path) {
+        foreach (['target_image' => $image, 'target_mind' => $ar['mind'] ?? null, 'video_path' => $ar['video'] ?? null] as $column => $path) {
             if ($path && $disk->exists($path)) {
                 $to = $dir . basename($path);
                 $disk->move($path, $to);

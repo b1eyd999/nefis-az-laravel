@@ -11,6 +11,8 @@ use App\Models\SavedCart;
 use App\Models\User;
 use App\Models\Wrapping;
 use App\Support\Contact;
+use App\Support\Letter;
+use App\Support\LiveMaterials;
 use App\Support\Price;
 use Closure;
 use Filament\Forms;
@@ -270,6 +272,25 @@ class UserResource extends Resource
                                 ->all())
                             ->searchable()
                             ->live(),
+                        Forms\Components\Select::make('wrapping_id')
+                            ->label('Qablaşdırma')
+                            ->placeholder('Yoxdur')
+                            ->options(fn () => Wrapping::shown()->get()
+                                ->map->toCustomer()
+                                ->mapWithKeys(fn ($w) => [$w['id'] => $w['name'] . ' — ' . Price::format($w['price'])])
+                                ->all())
+                            ->searchable()
+                            ->live(),
+                        Forms\Components\Toggle::make('letter')
+                            ->label('Polaroid məktub (+' . Price::format(Letter::price()) . ')')
+                            ->helperText('Mətni və şəkli sonra özünüz yazırsınız — səbətdə yalnız xidmət və qiyməti görünür.')
+                            ->visible(fn () => Letter::enabled())
+                            ->live(),
+                        Forms\Components\Toggle::make('ar')
+                            ->label('Canlı şəkil — qutunun canlanması (+' . Price::format(LiveMaterials::price()) . ')')
+                            ->helperText('Videonu müştəri sonra göndərir, siz «Canlı şəkillər» bölməsində qoşursunuz.')
+                            ->visible(fn () => LiveMaterials::enabled())
+                            ->live(),
                         Forms\Components\TextInput::make('quantity')
                             ->label('Ədəd')
                             ->numeric()->default(1)->minValue(1)->maxValue(SavedCart::MOST)
@@ -285,11 +306,22 @@ class UserResource extends Resource
                                     return new \Illuminate\Support\HtmlString('<span style="opacity:.7">Dizayn seçin.</span>');
                                 }
                                 $bar = $get('chocolate_id') ? Chocolate::find($get('chocolate_id')) : null;
-                                $one = (float) $product->price + ($bar ? (float) $bar->price() : 0);
+                                $wrap = $get('wrapping_id') ? Wrapping::find($get('wrapping_id')) : null;
+                                $one = (float) $product->price
+                                    + ($bar ? (float) $bar->price() : 0)
+                                    + ($wrap ? (float) $wrap->price : 0)
+                                    + ($get('letter') ? Letter::price() : 0)
+                                    + ($get('ar') ? LiveMaterials::price() : 0);
                                 $n = max(1, (int) $get('quantity'));
+                                $extras = array_filter([
+                                    $wrap?->tr('name'),
+                                    $get('letter') ? 'polaroid məktub' : null,
+                                    $get('ar') ? 'canlı şəkil' : null,
+                                ]);
 
                                 return new \Illuminate\Support\HtmlString(
                                     e($product->name) . ' · ' . $n . ' ədəd — <b>' . e(Price::format($one * $n)) . '</b>'
+                                    . ($extras ? '<br><span style="opacity:.75">' . e(implode(' · ', $extras)) . '</span>' : '')
                                     . ($bar ? '' : '<br><span style="opacity:.75">Şokolad seçilməyib: qutu tək gedəcək.</span>')
                                     . ($product->photoSlots()->count()
                                         ? '<br><span style="opacity:.75">Bu dizayn şəkil istəyir. Buradan şəkilsiz düşür — '
@@ -307,11 +339,20 @@ class UserResource extends Resource
                         }
 
                         $bar = $data['chocolate_id'] ? Chocolate::find($data['chocolate_id']) : null;
+                        $wrap = ($data['wrapping_id'] ?? null) ? Wrapping::find($data['wrapping_id']) : null;
 
+                        /* The letter's words and the live photo's video are not
+                           here: the customer sends them afterwards. What goes
+                           into the basket is the service and its price, so he
+                           sees what he is paying for; the owner attaches the
+                           rest from «Polaroid məktub» and «Canlı şəkillər». */
                         $added = SavedCart::give($u, [SavedCart::line(
                             $product->id,
                             (int) $data['quantity'],
                             $bar?->toCustomer(),
+                            $wrap?->toCustomer(),
+                            empty($data['letter']) ? null : ['text' => null, 'photo' => null, 'price' => Letter::price()],
+                            empty($data['ar']) ? null : ['video' => null, 'image' => null, 'mind' => null, 'price' => LiveMaterials::price()],
                         )]);
 
                         if (! $added) {
@@ -323,9 +364,17 @@ class UserResource extends Resource
                             return;
                         }
 
+                        $extras = array_filter([
+                            $wrap?->tr('name'),
+                            empty($data['letter']) ? null : 'polaroid məktub',
+                            empty($data['ar']) ? null : 'canlı şəkil',
+                        ]);
+
                         Notification::make()->success()
                             ->title($u->name . ' — səbətinə atıldı')
-                            ->body($product->name . ' · ' . $data['quantity'] . ' ədəd. O, sayta girəndə görəcək.')
+                            ->body($product->name . ' · ' . $data['quantity'] . ' ədəd'
+                                . ($extras ? ' · ' . implode(' · ', $extras) : '')
+                                . '. O, sayta girəndə görəcək.')
                             ->send();
                     }),
                 Tables\Actions\EditAction::make()->label('Bax'),

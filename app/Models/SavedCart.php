@@ -79,8 +79,14 @@ class SavedCart extends Model
      * behaves like one built by a customer: nothing downstream has to ask
      * whether a field exists before reading it.
      */
-    public static function line(int $productId, int $quantity = 1, ?array $chocolate = null, ?array $wrapping = null): array
-    {
+    public static function line(
+        int $productId,
+        int $quantity = 1,
+        ?array $chocolate = null,
+        ?array $wrapping = null,
+        ?array $letter = null,
+        ?array $ar = null,
+    ): array {
         return [
             'product_id' => $productId,
             'quantity' => max(1, $quantity),
@@ -93,8 +99,8 @@ class SavedCart extends Model
             'spot' => null,
             'chocolate' => $chocolate,
             'wrapping' => $wrapping,
-            'letter' => null,
-            'ar' => null,
+            'letter' => $letter,
+            'ar' => $ar,
             'spotify' => null,
         ];
     }
