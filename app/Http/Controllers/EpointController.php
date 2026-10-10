@@ -113,11 +113,17 @@ class EpointController extends Controller
 
         $body = Epoint::decode($data);
 
-        // Money owed over a change made after the order was paid for settles
-        // on its own row, not on the order. It is looked up by the exact
-        // reference, so it can never be confused with a payment for the order
-        // itself — and the "already paid" guard below never sees it.
-        $adjustment = \App\Models\OrderAdjustment::where('epoint_ref', (string) ($body['order_id'] ?? ''))->first();
+        /* Money owed over a change made after the order was paid for settles
+           on its own row, not on the order.
+
+           Which row is read out of the reference — <order>-d<adjustment>- —
+           and not by matching the stored reference. The stored one is
+           rewritten on every retry, so the bank's answer about an earlier
+           attempt matched nothing and the money landed on the order instead
+           of on the extra. The reference has always carried the id. */
+        $reference = (string) ($body['order_id'] ?? '');
+        $adjustment = \App\Models\OrderAdjustment::find(Epoint::adjustmentIdFrom($reference))
+            ?? \App\Models\OrderAdjustment::where('epoint_ref', $reference)->first();
         if ($adjustment) {
             return $this->adjustmentResult($adjustment, $body);
         }

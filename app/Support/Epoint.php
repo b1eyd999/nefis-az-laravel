@@ -133,6 +133,25 @@ class Epoint
     }
 
     /**
+     * Which extra payment a reference belongs to, read out of the reference.
+     *
+     * The shape is <order>-d<adjustment>-<stamp>, and it has carried the
+     * adjustment's own id all along. The callback used to find the row by
+     * matching the stored reference exactly, and a reference is overwritten
+     * every time the customer tries again — so the bank's word about the
+     * first attempt no longer matched anything, fell through to the order,
+     * and the money for an extra was credited to the order itself.
+     */
+    public static function adjustmentIdFrom(?string $reference): ?int
+    {
+        if (! preg_match('/^\d+-d(\d+)-/', (string) $reference, $m)) {
+            return null;
+        }
+
+        return (int) $m[1] > 0 ? (int) $m[1] : null;
+    }
+
+    /**
      * Asks the gateway for a page worth just the difference.
      *
      * The order's own payment is never touched by this: the amount, the

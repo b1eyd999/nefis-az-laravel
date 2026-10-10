@@ -61,17 +61,49 @@ class PromoCode extends Model
         return $code === '' ? null : self::where('code', $code)->first();
     }
 
+    /**
+     * Orders that are still able to spend this code.
+     *
+     * A code is only counted as spent when the money lands, so between the
+     * order being written and the payment arriving it is spoken for but not
+     * yet counted. A single-use code could be put on five unpaid orders and
+     * every one of them paid afterwards; each payment then found the cap
+     * still unreached. These are the orders that have a claim on it.
+     *
+     * Every order carrying the code counts, whatever stage it has reached,
+     * unless it was called off or refunded — an order the owner is confirming
+     * by hand sits at «Gözləmədə» and will spend the code the moment he ticks
+     * the payment off, so it holds a claim too.
+     */
+    public static function liveClaims(string $code): int
+    {
+        return Order::where('promo_code', $code)
+            ->whereNull('payment_confirmed_at')
+            ->whereNotIn('status', Order::OFF_THE_BOOKS)
+            ->count();
+    }
+
+    /** Spent, plus spoken for. */
+    public function claimed(): int
+    {
+        return (int) $this->used_count + self::liveClaims((string) $this->code);
+    }
+
     public function scopeUsable(Builder $query): Builder
     {
         return $query->where('is_active', true)
             ->where(fn ($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
             ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>=', now()))
-            ->where(fn ($q) => $q->whereNull('max_uses')->orWhereColumn('used_count', '<', 'max_uses'));
+            // The same arithmetic as claimed(), done where the rows are.
+            ->where(fn ($q) => $q->whereNull('max_uses')->orWhereRaw(
+                '(used_count + (select count(*) from orders where orders.promo_code = promo_codes.code '
+                . 'and orders.payment_confirmed_at is null and orders.status not in (?, ?))) < max_uses',
+                Order::OFF_THE_BOOKS));
     }
 
     public function hasRunOut(): bool
     {
-        return $this->max_uses !== null && $this->used_count >= $this->max_uses;
+        return $this->max_uses !== null && $this->claimed() >= $this->max_uses;
     }
 
     public function hasExpired(): bool

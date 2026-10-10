@@ -166,20 +166,36 @@ class PromoCodeTest extends TestCase
         $box = $this->box(20);
 
         // Someone places an order and walks away from the payment page.
-        $this->order(User::factory()->create(), $box, 'BIR');
+        // Nothing is spent yet — the count only moves when the money lands —
+        // but the single use is spoken for, and this test used to assert the
+        // opposite: that the code was still free for the next customer. It
+        // was not. Both of them could pay, and each payment found the cap
+        // still unreached.
+        $first = $this->order(User::factory()->create(), $box, 'BIR');
         $this->assertSame(0, $promo->fresh()->used_count);
-        $this->assertTrue($promo->fresh()->isUsable(), 'the code is still good for somebody else');
+        $this->assertSame(1, $promo->fresh()->claimed(), 'one unpaid order is holding it');
+        $this->assertFalse($promo->fresh()->isUsable());
 
-        // Someone else pays.
         $second = $this->order(User::factory()->create(), $box, 'BIR');
-        $second->forceFill(['status' => 'confirmed', 'payment_confirmed_at' => now()])->save();
+        $this->assertNull($second->promo_code, 'the second customer is not given it');
+        $this->assertSame(0.0, round((float) $second->discount, 2));
 
+        // The first one pays, and the claim becomes a use.
+        $first->forceFill(['status' => 'confirmed', 'payment_confirmed_at' => now()])->save();
         $this->assertSame(1, $promo->fresh()->used_count);
+        $this->assertSame(1, $promo->fresh()->claimed(), 'spent once, held by nobody');
         $this->assertFalse($promo->fresh()->isUsable());
 
         // And confirming the same order again does not spend it twice.
-        $second->forceFill(['status' => 'ready'])->save();
+        $first->forceFill(['status' => 'ready'])->save();
         $this->assertSame(1, $promo->fresh()->used_count);
+
+        // Giving the order up hands the use back.
+        $third = PromoCode::create(['code' => 'IKI', 'percent' => 10, 'max_uses' => 1]);
+        $dropped = $this->order(User::factory()->create(), $box, 'IKI');
+        $this->assertFalse($third->fresh()->isUsable());
+        $dropped->forceFill(['status' => 'cancelled'])->save();
+        $this->assertTrue($third->fresh()->isUsable(), 'a cancelled order releases its claim');
     }
 
     public function test_the_discount_never_outlives_the_goods_it_came_off(): void
