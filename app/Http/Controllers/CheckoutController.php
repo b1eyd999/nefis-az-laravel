@@ -15,6 +15,7 @@ use App\Support\Analytics;
 use App\Support\Cart;
 use App\Support\DeliveryTime;
 use App\Support\Epoint;
+use App\Support\GuestCheckout;
 use App\Support\Telegram;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,6 +42,13 @@ class CheckoutController extends Controller
         $itemsTotal = $items->sum(fn (array $i) => Cart::unitPrice($i, $i['product']) * $i['quantity']);
         $methods = DeliveryMethod::shown()->get();
         Analytics::beginCheckout($itemsTotal);
+
+        /* A guest may order from here, but one who would rather sign in
+           first should come back to this page and not to the front one. The
+           door itself has no way of knowing where he was. */
+        if (! auth()->check()) {
+            redirect()->setIntendedUrl(url()->full());
+        }
 
         $rushFee = DeliveryTime::rushFee();
         // Whether this basket already carries its own delivery, and from what
@@ -98,6 +106,12 @@ class CheckoutController extends Controller
 
         $delivery = $this->validateDelivery($request);
 
+        /* Who is ordering. A customer who has signed in is himself; a guest
+           gets an account made out of the name, number and e-mail he has
+           just typed, and is signed into it. Done after the delivery is
+           checked, so a half-filled form never leaves an account behind. */
+        $customer = GuestCheckout::who($request);
+
         // Two ways to pay: a transfer to one of the owner's accounts, or a
         // card through ePoint. Either one means the order waits for money and
         // the customer goes to the payment page. With neither — the owner has
@@ -124,7 +138,7 @@ class CheckoutController extends Controller
                by hand, so the method and its price stay on the order and the
                courier run can still be seen to have been worth something. */
             'free_delivery' => DeliveryMethod::freeOn((float) $goods),
-            'user_id' => $request->user()->id,
+            'user_id' => $customer->id,
             'locale' => \App\Support\Locale::current(),
             'status' => $payable ? 'awaiting_payment' : 'pending',
             'payment_account_id' => $account?->id,

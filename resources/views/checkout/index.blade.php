@@ -120,6 +120,16 @@
   .map-hint{ font-size:.8125rem; color:var(--cocoa-soft); margin-top:.45rem; }
   .map-hint.ok{ color:var(--gold-deep); }
   .map-hint.err{ color:var(--red, #c0392b); }
+  /* The guest's own three fields, set apart so it reads as one step. */
+  .guest-box{
+    border:1px solid var(--line); border-radius:var(--radius-sm); padding:1.1rem 1.1rem .35rem;
+    margin-bottom:1.4rem; background:rgba(198,154,74,.05);
+  }
+  .guest-head{ display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:.5rem; margin-bottom:.9rem; }
+  .guest-head b{ font-size:1rem; }
+  .guest-head a{ font-size:.8125rem; color:var(--gold-deep); font-weight:600; text-decoration:underline; }
+  .guest-note{ font-size:.75rem; color:var(--cocoa-soft); margin-top:.35rem; line-height:1.5; }
+  .guest-bad{ font-size:.8125rem; color:#c0392b; font-weight:600; margin-top:.3rem; }
   .dlv-free{
     margin:0 0 .7rem; padding:.6rem .8rem; border-radius:.7rem; font-size:.875rem; font-weight:600;
     background:rgba(198,154,74,.12); border:1px solid rgba(198,154,74,.35); color:var(--gold-deep);
@@ -446,6 +456,9 @@
     recipient_name: @json(__('Alıcının adını yazın.')),
     postal_index: @json(__('Poçt şöbəsinin indeksini yazın.')),
     recipient_phone: @json(__('Alıcının telefonunu yazın.')),
+    guest_name: @json(__('Adınızı yazın.')),
+    guest_email: @json(__('E-poçtunuzu yazın — sifariş haqqında oraya yazacağıq.')),
+    guest_phone: @json(__('Əlaqə nömrənizi yazın.')),
     note: @json(__('Bu xananı doldurun.'))
   };
   var ANY = @json(__('Bu xananı doldurun.'));
@@ -584,6 +597,39 @@
     <div class="auth-card">
       <form method="POST" action="{{ lroute('checkout.store') }}" id="checkout-form">
         @csrf
+
+        {{-- Nobody is signed in. The three things the order needs anyway are
+             asked for here, and the account is made out of them — no password
+             invented before anything has been bought. Somebody who already
+             has an account has the door right beside it. --}}
+        @guest
+          <div class="guest-box">
+            <div class="guest-head">
+              <b>{{ __('Sifariş üçün məlumatlarınız') }}</b>
+              <a href="{{ lroute('login') }}">{{ __('Hesabınız var? Daxil olun') }}</a>
+            </div>
+            <div class="field">
+              <label for="guest_name">{{ __('Ad və soyad') }}</label>
+              <input type="text" id="guest_name" name="guest_name" value="{{ old('guest_name') }}"
+                     required autocomplete="name" maxlength="255" placeholder="{{ __('Məs. Aysel Məmmədova') }}">
+              @error('guest_name')<p class="guest-bad">{{ $message }}</p>@enderror
+            </div>
+            <div class="field">
+              <label for="guest_email">{{ __('E-poçt') }}</label>
+              <input type="email" id="guest_email" name="guest_email" value="{{ old('guest_email') }}"
+                     required autocomplete="email" maxlength="255" placeholder="ad@mail.com">
+              @error('guest_email')<p class="guest-bad">{{ $message }}</p>@enderror
+              <p class="guest-note">{{ __('Sifarişiniz haqqında buraya yazırıq. Hesabınızı da bu e-poçtla açırıq — şifrəni sonra özünüz seçirsiniz.') }}</p>
+            </div>
+            <div class="field">
+              <label for="guest_phone">{{ __('Əlaqə nömrəsi') }}</label>
+              <input type="tel" id="guest_phone" name="guest_phone" value="{{ old('guest_phone') }}"
+                     required autocomplete="tel" maxlength="30" placeholder="{{ __('+994 XX XXX XX XX') }}">
+              @error('guest_phone')<p class="guest-bad">{{ $message }}</p>@enderror
+            </div>
+          </div>
+        @endguest
+
         @if($methods->isNotEmpty())
           {{-- How it reaches the customer; each way asks for what it needs. --}}
           <div class="field">
@@ -621,7 +667,7 @@
           <div class="dlv-fields" data-for="post" hidden>
             <div class="field">
               <label for="recipient_name">{{ __('Ad və soyad') }}</label>
-              <input type="text" id="recipient_name" name="recipient_name" value="{{ old('recipient_name', auth()->user()->name) }}" placeholder="{{ __('Məs. Aysel Məmmədova') }}">
+              <input type="text" id="recipient_name" name="recipient_name" value="{{ old('recipient_name', auth()->user()?->name) }}" placeholder="{{ __('Məs. Aysel Məmmədova') }}">
             </div>
             <div class="field">
               <label for="postal_index">{{ __('Poçt şöbəsinin indeksi') }}</label>
@@ -736,7 +782,7 @@
 
         <div class="field">
           <label for="contact_phone">{{ __('Telefon nömrəsi') }}</label>
-          <input type="tel" id="contact_phone" name="contact_phone" value="{{ old('contact_phone', auth()->user()->phone) }}" required placeholder="{{ __('+994 XX XXX XX XX') }}">
+          <input type="tel" id="contact_phone" name="contact_phone" value="{{ old('contact_phone', auth()->user()?->phone) }}" required placeholder="{{ __('+994 XX XXX XX XX') }}">
         </div>
         <div class="field">
           <label for="note">{{ __('Əlavə Qeyd (istəyə bağlı)') }}</label>

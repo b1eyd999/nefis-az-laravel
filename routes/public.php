@@ -65,6 +65,21 @@ Route::post('/cart', [CartController::class, 'add'])->name('cart.add');
 Route::patch('/cart/{id}', [CartController::class, 'quantity'])->name('cart.quantity');
 Route::delete('/cart/{id}', [CartController::class, 'remove'])->name('cart.remove');
 
+/* Ordering without an account.
+   The shop lost people here: a visitor who had chosen a box, put his
+   photograph on it and written his words was then asked to invent a password
+   before he could pay. The page asks instead for his name, his number and
+   his e-mail — what the order needs anyway — and makes the account out of
+   those (see App\Support\GuestCheckout). Everything after this point still
+   belongs to somebody, so the payment page stays behind the door. */
+Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+Route::post('/checkout', [CheckoutController::class, 'store'])
+    ->middleware('throttle:20,10')->name('checkout.store');
+// Does this code work, and what does it take off? Only what the customer
+// is shown — the charge itself is worked out again when the order is sent.
+Route::post('/promokod', [CheckoutController::class, 'promo'])
+    ->middleware('throttle:20,1')->name('checkout.promo');
+
 /* A basket the shop filled for one customer. The address is the whole key —
    whoever holds it holds the basket — so the token is long and random, and
    the road is slowed down against anyone trying tokens one after another. */
@@ -96,12 +111,6 @@ Route::middleware('auth')->group(function () {
     // The owner turns the basket he has just built into a link to send.
     Route::post('/hazir-sebet', [CartHandoffController::class, 'store'])->name('cart.handoff.store');
 
-    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
-    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
-    // Does this code work, and what does it take off? Only what the customer
-    // is shown — the charge itself is worked out again when the order is sent.
-    Route::post('/promokod', [CheckoutController::class, 'promo'])
-        ->middleware('throttle:20,1')->name('checkout.promo');
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
 
     /* The customer's own page. Until now he could sign in and look at his
