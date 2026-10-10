@@ -153,6 +153,12 @@ class Setting extends Model
     /** The secret in the address Telegram calls when a courier taps a message. */
     public const TELEGRAM_HOOK_SECRET = 'telegram_hook_secret';
 
+    /** A letter at the shop's mailbox, read out in Telegram as well. */
+    public const MAIL_TELEGRAM = 'mail_telegram';
+
+    /** Which chat hears about it; blank means the one the orders go to. */
+    public const MAIL_TELEGRAM_CHAT = 'mail_telegram_chat';
+
     /** The weight of bar the boxes take — the owner widens or narrows it. */
     public const CHOCOLATE_MIN_G = 'chocolate_min_grams';
 
@@ -238,6 +244,8 @@ class Setting extends Model
         self::SITE_LANGUAGES => 'az',
         self::MAINTENANCE => '0',
         self::SALE_TOASTS => '1',
+        self::MAIL_TELEGRAM => '0',
+        self::MAIL_TELEGRAM_CHAT => '',
         self::EPOINT_ENABLED => '0',
         self::EPOINT_WALLET => '0',
         self::GEOAPIFY_KEY => '',

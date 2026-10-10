@@ -46,5 +46,12 @@ deployment:
     # Chocolate bars and their prices (promotions included) from Araz Market.
     # A failure only reports; the bars keep their last prices.
     - cd $APPPATH && $PHPBIN artisan chocolates:sync 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
+    # The mail pipe, with the hosting's own PHP written into its first line:
+    # cPanel runs a piped program directly, so it has to say what runs it, and
+    # hard-coding a path in the repository breaks the day PHP moves. Built from
+    # mailpipe.php on every deploy, so the two cannot drift apart.
+    - printf '#!%s -q\n' "$PHPBIN" > $APPPATH/mailpipe
+    - cat $APPPATH/mailpipe.php >> $APPPATH/mailpipe
+    - /bin/chmod 755 $APPPATH/mailpipe
     # Customers' live-photo videos that could not reach Yandex Disk yet.
     - cd $APPPATH && $PHPBIN artisan live:push 2>&1 | tee -a $APPPATH/storage/logs/deploy.log

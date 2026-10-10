@@ -10,6 +10,7 @@ use App\Support\CustomerNotice;
 use App\Support\DeliveryTime;
 use App\Support\Epoint;
 use App\Support\Scheduler;
+use App\Support\MailToTelegram;
 use App\Support\Telegram;
 use App\Support\Seo;
 use Filament\Actions;
@@ -86,6 +87,8 @@ class SiteSettings extends Page implements HasActions, HasForms
             'telegram_courier_chat' => Telegram::courierChat(),
             'telegram_signup_token' => Setting::get(Setting::TELEGRAM_SIGNUP_TOKEN) ? Telegram::signupToken() : null,
             'telegram_signup_chat' => Telegram::signupChat(),
+            'mail_telegram' => Setting::get(Setting::MAIL_TELEGRAM) === '1',
+            'mail_telegram_chat' => Setting::get(Setting::MAIL_TELEGRAM_CHAT),
             'chat_enabled' => Setting::get(Setting::CHAT_ENABLED) === '1',
             'chat_token' => ChatBot::token(),
             'chat_chat' => ChatBot::chat(),
@@ -202,6 +205,28 @@ class SiteSettings extends Page implements HasActions, HasForms
                     ChatBot::token(),
                 ) ? Notification::make()->success()->title('Göndərildi')->send()
                   : Notification::make()->danger()->title('Getmədi')->send()),
+            /* The card as a letter would make it, so the owner can see where
+               it lands before trusting the mailbox to it. */
+            Actions\Action::make('testMail')
+                ->label('Poçt → Telegram: test')
+                ->icon('heroicon-o-envelope')
+                ->color('gray')
+                ->visible(fn () => MailToTelegram::on())
+                ->action(function () {
+                    $card = MailToTelegram::card(MailToTelegram::read(
+                        "From: =?UTF-8?B?QXlnw7xuIE3JmWxpa292YQ==?= <aygun@example.com>\n"
+                        . "Subject: =?UTF-8?B?U2lmYXJpxZ8gaGFxcsSxbmRh?=\n"
+                        . "Date: " . now()->toRfc2822String() . "\n"
+                        . "Content-Type: text/plain; charset=UTF-8\n\n"
+                        . "Salam! Bu, yoxlama məktubudur — poçta gələn məktublar indi buraya da düşür.\n"
+                    ));
+
+                    Telegram::send($card, MailToTelegram::chat())
+                        ? Notification::make()->success()->title('Göndərildi')
+                            ->body('Telegram-a baxın: məktub kartı belə görünəcək.')->send()
+                        : Notification::make()->danger()->title('Getmədi')
+                            ->body('Token və ya chat yazılmayıb.')->send();
+                }),
             Actions\Action::make('testCourier')
                 ->label('Kuryerə test mesajı')
                 ->icon('heroicon-o-paper-airplane')
@@ -520,6 +545,20 @@ class SiteSettings extends Page implements HasActions, HasForms
                             ->placeholder('123456789')
                             ->helperText('Mesajların gedəcəyi söhbət. Aşağıdakı düymə özü tapır.')
                             ->maxLength(40),
+                    Forms\Components\Toggle::make('mail_telegram')
+                        ->label('Poçta gələn məktublar da Telegram-a düşsün')
+                        ->helperText(new \Illuminate\Support\HtmlString(
+                            'Məktub poçt qutusunda qalır — bu, əlavə bildirişdir. İşə düşməsi üçün cPanel-də bir dəfə '
+                            . 'yönləndirmə qurmaq lazımdır: <b>Email → Forwarders → Add Forwarder</b>, ünvanı seçin, '
+                            . '<b>Pipe to a Program</b> variantını işarələyin və bura yazın:<br>'
+                            . '<code style="user-select:all">nefis-laravel/mailpipe</code><br>'
+                            . 'Bu fayl hər deploy-da özü yazılır, sizin əlinizlə heç nə yükləmək lazım deyil.'
+                        ))
+                        ->columnSpanFull(),
+                    Forms\Components\TextInput::make('mail_telegram_chat')
+                        ->label('Məktublar üçün ayrıca chat (istəyə görə)')
+                        ->helperText('Boş qalsa, məktublar sifarişlərlə eyni söhbətə gəlir.')
+                        ->rule('regex:/^-?\d*$/'),
                     ])
                     ->columns(2)
                     ->collapsible(),
@@ -623,6 +662,8 @@ class SiteSettings extends Page implements HasActions, HasForms
         Setting::put(Setting::TELEGRAM_COURIER_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['telegram_courier_chat'] ?? '')));
         Telegram::saveSignupToken($data['telegram_signup_token'] ?? '');
         Setting::put(Setting::TELEGRAM_SIGNUP_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['telegram_signup_chat'] ?? '')));
+        Setting::put(Setting::MAIL_TELEGRAM, ! empty($data['mail_telegram']));
+        Setting::put(Setting::MAIL_TELEGRAM_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['mail_telegram_chat'] ?? '')));
         ChatBot::saveToken($data['chat_token'] ?? '');
         Setting::put(Setting::CHAT_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['chat_chat'] ?? '')));
         Setting::put(Setting::CHAT_ENABLED, ! empty($data['chat_enabled']));
