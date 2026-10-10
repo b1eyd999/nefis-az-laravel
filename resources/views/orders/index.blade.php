@@ -155,6 +155,13 @@
                 @endif
               </div>
             @endforeach
+            {{-- In his hands, and he has not said anything about it yet. --}}
+            @if(\App\Models\Review::invited($order, auth()->user()))
+              <a href="{{ lroute('orders.review', $order) }}" class="btn btn-ghost" style="margin-top:.75rem;">
+                ⭐ {{ __('Rəy yazın') }}
+              </a>
+            @endif
+
             <p style="font-size:.8125rem; color:var(--cocoa-soft); margin-top:.75rem;">{{ $order->created_at->format('d.m.Y H:i') }}</p>
           </div>
         @endforeach

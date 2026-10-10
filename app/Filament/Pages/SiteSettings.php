@@ -82,6 +82,11 @@ class SiteSettings extends Page implements HasActions, HasForms
             'chocolate_min_g' => (int) Setting::get(Setting::CHOCOLATE_MIN_G),
             'chocolate_max_g' => (int) Setting::get(Setting::CHOCOLATE_MAX_G),
             'notify_email' => Setting::get(Setting::NOTIFY_EMAIL) === '1',
+            'payment_remind_after' => (int) Setting::get(Setting::PAYMENT_REMIND_AFTER),
+            'after_sale' => Setting::get(Setting::AFTER_SALE) === '1',
+            'after_sale_after' => (int) Setting::get(Setting::AFTER_SALE_AFTER),
+            'after_sale_percent' => (float) Setting::get(Setting::AFTER_SALE_PERCENT),
+            'after_sale_days' => (int) Setting::get(Setting::AFTER_SALE_DAYS),
             'sale_toasts' => Setting::get(Setting::SALE_TOASTS) === '1',
             'telegram_token' => Telegram::token(),
             'telegram_chat' => Telegram::chat(),
@@ -519,6 +524,39 @@ class SiteSettings extends Page implements HasActions, HasForms
                             ->helperText('Sağ aşağı küncdə son sifarişlər növbə ilə göstərilir: ad və soyadın ilk hərfi, '
                                 . 'neçə qutu və hansı dizayn. Səbət və ödəniş səhifələrində görünmür.'),
                     ]),
+                Forms\Components\Section::make('Özü gedən məktublar')
+                    ->description('İki məktub, heç kim heç nə basmadan. Hər ikisi hər sifariş üçün yalnız bir dəfə gedir. '
+                        . 'Bunların işləməsi üçün "Avtomatik işlər" (cron) qurulmalıdır — aşağıda yazılıb.')
+                    ->schema([
+                        Forms\Components\TextInput::make('payment_remind_after')
+                            ->label('Ödəməyənə neçə saatdan sonra xatırladaq')
+                            ->numeric()->minValue(0)->maxValue(72)->suffix('saat')
+                            ->helperText('Sifariş verib ödəniş səhifəsindən çıxan müştəriyə bir məktub gedir: '
+                                . 'sifarişin yerində olduğu, məbləğ və linki. 0 yazsanız, heç bir xatırlatma getmir. '
+                                . 'Sifarişin özü ləğv olunan saatdan əvvəl olmalıdır (yuxarıda "Ödənişi gözləmə müddəti").'),
+                        Forms\Components\Toggle::make('after_sale')
+                            ->label('Çatdırılmadan sonra təşəkkür məktubu getsin')
+                            ->helperText('Təşəkkür, rəy üçün dəvət və növbəti sifarişə kod — bir məktubda.')
+                            ->live(),
+                        Forms\Components\TextInput::make('after_sale_after')
+                            ->label('Çatdırılmadan neçə saat sonra')
+                            ->numeric()->minValue(0)->maxValue(168)->suffix('saat')
+                            ->visible(fn (Forms\Get $get) => (bool) $get('after_sale'))
+                            ->helperText('Bir gün yaxşı işləyir: axşam verilən qutu həmin axşam hədiyyə olunur, '
+                                . 'məktub isə hədiyyədən əvvəl çatmamalıdır.'),
+                        Forms\Components\TextInput::make('after_sale_percent')
+                            ->label('Kod nə qədər endirim edir')
+                            ->numeric()->minValue(0)->maxValue(100)->suffix('%')
+                            ->visible(fn (Forms\Get $get) => (bool) $get('after_sale'))
+                            ->helperText('Hər müştəriyə öz kodu yaranır: bir dəfəlik, yalnız onun üçün. '
+                                . '0 yazsanız, məktub kodsuz gedir — rəy dəvəti yerində qalır.'),
+                        Forms\Components\TextInput::make('after_sale_days')
+                            ->label('Kod neçə gün işləyir')
+                            ->numeric()->minValue(0)->maxValue(365)->suffix('gün')
+                            ->visible(fn (Forms\Get $get) => (bool) $get('after_sale'))
+                            ->helperText('0 yazsanız, kodun vaxtı bitmir.'),
+                    ])
+                    ->columns(2),
                 Forms\Components\Section::make('Telegram bildirişləri')
                     ->description('Sifariş gələn kimi Telegram-a mesaj gəlir. Bot sizindir: Telegram-da @BotFather-ə "/newbot" yazıb bot yaradın, verdiyi tokeni bura yapışdırın, sonra öz botunuza "/start" yazıb "Chat-ı tap" düyməsini basın.')
                     ->schema([
@@ -665,6 +703,11 @@ class SiteSettings extends Page implements HasActions, HasForms
         Setting::put(Setting::CHOCOLATE_MIN_G, max(1, (int) ($data['chocolate_min_g'] ?? 90)));
         Setting::put(Setting::CHOCOLATE_MAX_G, max((int) ($data['chocolate_min_g'] ?? 90), (int) ($data['chocolate_max_g'] ?? 105)));
         Setting::put(Setting::NOTIFY_EMAIL, ! empty($data['notify_email']));
+        Setting::put(Setting::PAYMENT_REMIND_AFTER, max(0, (int) ($data['payment_remind_after'] ?? 0)));
+        Setting::put(Setting::AFTER_SALE, ! empty($data['after_sale']));
+        Setting::put(Setting::AFTER_SALE_AFTER, max(0, (int) ($data['after_sale_after'] ?? 24)));
+        Setting::put(Setting::AFTER_SALE_PERCENT, max(0, min(100, round((float) ($data['after_sale_percent'] ?? 0), 2))));
+        Setting::put(Setting::AFTER_SALE_DAYS, max(0, (int) ($data['after_sale_days'] ?? 0)));
         Setting::put(Setting::SALE_TOASTS, ! empty($data['sale_toasts']));
         Telegram::saveToken($data['telegram_token'] ?? '');
         Setting::put(Setting::TELEGRAM_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['telegram_chat'] ?? '')));

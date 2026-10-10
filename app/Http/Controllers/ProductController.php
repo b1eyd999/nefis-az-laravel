@@ -123,7 +123,17 @@ class ProductController extends Controller
         // Gift wraps, cheapest first; the page groups them by price.
         $wrappings = Wrapping::shown()->get()->map->toCustomer()->values();
 
-        return view('products.customize', compact('product', 'viewData', 'chocolates', 'wrappings', 'gifts', 'related'));
+        /* What people who bought this design said about it. Only this design:
+           the shop's own average belongs on the reviews page, and claiming it
+           for every box would say the same thing on all of them. */
+        $standing = \App\Models\Review::standing($product->id);
+        $reviews = $standing['count'] > 0
+            ? \App\Models\Review::shown()->where('product_id', $product->id)
+                ->with('user')->latest('approved_at')->take(3)->get()
+            : collect();
+
+        return view('products.customize', compact('product', 'viewData', 'chocolates', 'wrappings',
+            'gifts', 'related', 'standing', 'reviews'));
     }
 
     /**

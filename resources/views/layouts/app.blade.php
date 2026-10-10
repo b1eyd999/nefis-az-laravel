@@ -259,6 +259,7 @@
     <span class="mn-head">{{ __('Məlumat') }}</span>
     <a href="{{ lroute('info.how') }}">{{ __('Necə İşləyir') }}</a>
     <a href="{{ lroute('info.faq') }}">{{ __('Suallar') }}</a>
+    <a href="{{ lroute('reviews.index') }}">{{ __('Rəylər') }}</a>
     <a href="{{ lroute('info.contact') }}">{{ __('Əlaqə') }}</a>
   </div>
   <div class="mn-group">
@@ -312,6 +313,7 @@
              him to find the section himself. --}}
         <a href="{{ lroute('info.how') }}">{{ __('Necə İşləyir') }}</a>
         <a href="{{ lroute('info.faq') }}">{{ __('Suallar') }}</a>
+        <a href="{{ lroute('reviews.index') }}">{{ __('Rəylər') }}</a>
         <a href="{{ lroute('info.contact') }}">{{ __('Əlaqə') }}</a>
       </div>
       @if($navGifts->isNotEmpty())

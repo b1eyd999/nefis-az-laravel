@@ -213,6 +213,31 @@ class Setting extends Model
     public const NOTIFY_EMAIL = 'notify_customer_email';
 
     /**
+     * How many hours after an order is written the shop reminds somebody who
+     * never paid. 0 switches the reminder off.
+     *
+     * One letter per order, ever — a reminder sent every hour is a reason to
+     * block the sender.
+     */
+    public const PAYMENT_REMIND_AFTER = 'payment_remind_after';
+
+    /**
+     * The letter that follows a handover: thank you, how was it, and a code
+     * off the next box.
+     *
+     * Switched on or off; how long after the handover it goes; what the code
+     * takes off and how long it lasts. A percent of 0 sends the letter
+     * without a code — still worth sending for the review it asks for.
+     */
+    public const AFTER_SALE = 'after_sale';
+
+    public const AFTER_SALE_AFTER = 'after_sale_after';
+
+    public const AFTER_SALE_PERCENT = 'after_sale_percent';
+
+    public const AFTER_SALE_DAYS = 'after_sale_days';
+
+    /**
      * The basket from which the shop carries the delivery itself, in manats.
      *
      * Empty or 0 and nothing is given away — the owner can still waive the
@@ -256,6 +281,11 @@ class Setting extends Model
 18:00–21:00",
         self::NOTIFY_EMAIL => '1',
         self::FREE_DELIVERY_FROM => '0',
+        self::PAYMENT_REMIND_AFTER => '3',
+        self::AFTER_SALE => '1',
+        self::AFTER_SALE_AFTER => '24',
+        self::AFTER_SALE_PERCENT => '10',
+        self::AFTER_SALE_DAYS => '30',
         self::CHAT_ENABLED => '0',
         self::SITE_LANGUAGES => 'az',
         self::MAINTENANCE => '0',

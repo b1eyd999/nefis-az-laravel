@@ -982,6 +982,33 @@
   </section>
 @endif
 
+{{-- What people who bought this very design said about it. --}}
+@if($standing['count'] > 0)
+  <section>
+    <div class="wrap-narrow">
+      <div class="section-head">
+        <span class="eyebrow">{{ __('Rəylər') }}</span>
+        <h2>{{ __('Bu dizaynı alanlar nə deyir') }}</h2>
+        <p class="rv-line">
+          @include('partials.stars', ['of' => $standing['average']])
+          <b>{{ number_format($standing['average'], 1) }}</b>
+          <span>{{ trans_choice('{1} :count rəy|[2,*] :count rəy', $standing['count'], ['count' => $standing['count']]) }}</span>
+        </p>
+      </div>
+      <div class="rv-list">
+        @foreach($reviews as $review)
+          @include('reviews.one', ['review' => $review])
+        @endforeach
+      </div>
+      @if($standing['count'] > $reviews->count())
+        <div class="section-foot">
+          <a href="{{ lroute('reviews.index') }}" class="btn btn-ghost">{{ __('Bütün rəylər') }}</a>
+        </div>
+      @endif
+    </div>
+  </section>
+@endif
+
 @if($related->isNotEmpty())
   <section class="tinted">
     <div class="wrap">

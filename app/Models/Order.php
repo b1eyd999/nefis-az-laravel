@@ -107,6 +107,9 @@ class Order extends Model
             'courier_taken_at' => 'datetime',
             'on_the_way_at' => 'datetime',
             'delivered_at' => 'datetime',
+            // The two letters the shop sends by itself, each once per order.
+            'payment_reminded_at' => 'datetime',
+            'thanked_at' => 'datetime',
             'receipt_at' => 'datetime',
             'payment_confirmed_at' => 'datetime',
             'payment_started_at' => 'datetime',

@@ -24,6 +24,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PwaController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\WrappingController;
 use App\Http\Controllers\XoncaController;
 use Illuminate\Support\Facades\Route;
@@ -65,6 +66,11 @@ Route::get('/suallar', [InfoController::class, 'faq'])->name('info.faq');
 Route::get('/elaqe', [InfoController::class, 'contact'])->name('info.contact');
 Route::post('/elaqe', [InfoController::class, 'write'])
     ->middleware('throttle:10,60')->name('info.contact.write');
+
+/* What customers say. The page is open to anybody; writing one is not —
+   a review belongs to an order that was handed over, which is what makes
+   every review here a review by somebody who really bought something. */
+Route::get('/reyler', [ReviewController::class, 'index'])->name('reviews.index');
 
 // The shop's own rules: how an order works, what we know about a customer,
 // and when money comes back. Plain pages, one per subject.
@@ -150,6 +156,11 @@ Route::middleware('auth')->group(function () {
         // the bank page he shut at once. After two minutes he may say so.
         Route::post('/odenis/gozleme', [EpointController::class, 'stopWaiting'])
             ->middleware('throttle:10,1')->name('pay.wait.stop');
+
+        // Once it is in his hands, he may say how it went. One per order.
+        Route::get('/rey', [ReviewController::class, 'create'])->name('review');
+        Route::post('/rey', [ReviewController::class, 'store'])
+            ->middleware('throttle:10,60')->name('review.store');
 
         // The order changed after it was paid for, and the difference is owed.
         // Its own page, gated on the change rather than on the order's status.

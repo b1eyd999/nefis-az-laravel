@@ -286,6 +286,39 @@ class Telegram
         self::send(implode("\n", $lines));
     }
 
+    /**
+     * A customer has written a review.
+     *
+     * Sent whatever the stars say: four and five are worth seeing at once,
+     * and one and two are worth seeing even sooner.
+     */
+    public static function review(\App\Models\Review $review): void
+    {
+        $review->loadMissing(['user', 'product']);
+
+        $lines = [
+            str_repeat('⭐', max(1, (int) $review->stars)) . ' <b>' . $review->stars . '/5</b>'
+                . ' — ' . __('sifariş') . ' #' . $review->order_id,
+            '',
+            '<b>' . e((string) $review->user?->name) . '</b>'
+                . ($review->product ? ' · ' . e($review->product->name) : ''),
+        ];
+
+        if (filled($review->body)) {
+            $lines[] = '';
+            $lines[] = e((string) $review->body);
+        }
+        if ($review->photoUrl()) {
+            $lines[] = '';
+            $lines[] = '📷 ' . e($review->photoUrl());
+        }
+
+        $lines[] = '';
+        $lines[] = url('/admin/reviews/' . $review->id . '/edit');
+
+        self::send(implode("\n", $lines));
+    }
+
     /** Somebody wrote from the contact page. */
     public static function contact(\App\Models\ContactMessage $message): void
     {

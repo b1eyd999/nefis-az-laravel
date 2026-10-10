@@ -83,6 +83,18 @@ class CustomerNotice
             $order->awaitsPayment() ? ['order' => $order->id] : []);
     }
 
+    /** Where he says how it went, in the language he ordered in. */
+    public static function reviewLink(Order $order): string
+    {
+        return self::routed($order, 'orders.review', ['order' => $order->id]);
+    }
+
+    /** And back to the catalogue, in that same language. */
+    public static function designsLink(Order $order): string
+    {
+        return self::routed($order, 'designs.index');
+    }
+
     /** The page where money owed over a change is paid. */
     public static function adjustmentLink(OrderAdjustment $adjustment): string
     {

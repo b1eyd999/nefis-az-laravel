@@ -178,6 +178,30 @@ class Seo
         ];
     }
 
+    /**
+     * How the shop stands, from its own reviews.
+     *
+     * Said about the shop itself rather than about a product, because that
+     * is what the reviews are about: a customer rates the box he was sent,
+     * the handover and the shop, not a line in a catalogue. Only approved
+     * reviews are counted, so the figure is the one on the page.
+     */
+    public static function rating(float $average, int $count): array
+    {
+        return [
+            '@type' => 'Organization',
+            'name' => 'Nefis.az',
+            'url' => url('/'),
+            'aggregateRating' => [
+                '@type' => 'AggregateRating',
+                'ratingValue' => (string) $average,
+                'reviewCount' => $count,
+                'bestRating' => '5',
+                'worstRating' => '1',
+            ],
+        ];
+    }
+
     /** @param array<int, array{q: string, a: string}> $questions */
     public static function faq(array $questions): array
     {
