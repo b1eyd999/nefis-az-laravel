@@ -28,8 +28,13 @@ class ChatController extends Controller
             // Words, a screenshot, or both: one of them has to be there.
             'body' => ['required_without:image', 'nullable', 'string', 'max:1000'],
             'image' => ['nullable', 'image', 'max:5120'],
-            'name' => ['nullable', 'string', 'max:120'],
-            'phone' => ['nullable', 'string', 'max:40'],
+            /* A visitor the shop does not know says who he is first. A
+               message with no name and no number reached the owner's
+               Telegram as a picture with nobody behind it, and by then he
+               had locked his phone — there was nothing to answer. Somebody
+               signed in is never asked: his account carries both. */
+            'name' => [$request->user() ? 'nullable' : 'required', 'string', 'min:2', 'max:120'],
+            'phone' => [$request->user() ? 'nullable' : 'required', 'string', 'min:9', 'max:40'],
             'page' => ['nullable', 'string', 'max:255'],
         ]);
 

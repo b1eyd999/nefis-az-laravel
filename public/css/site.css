@@ -1640,3 +1640,20 @@
   /* The chat bubble steps up out of its way rather than sitting on it. */
   body.has-buy-bar .float-stack{ bottom:5.25rem; }
   @media (min-width:900px){ .buy-bar{ display:none; } }
+
+  /* ---------- who is writing in the chat ---------- */
+  /* Asked once of a visitor the shop does not know, because a message with
+     no name and no number cannot be answered. */
+  .chat-hello{ padding:1rem 1rem 1.1rem; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:.6rem; }
+  .chat-hello[hidden]{ display:none; }
+  .chat-hello > p{ margin:0; font-size:.8125rem; line-height:1.5; color:var(--cocoa-soft); }
+  .chat-hello-f{ display:flex; flex-direction:column; gap:.25rem; }
+  .chat-hello-f span{ font-size:.75rem; font-weight:600; color:var(--cocoa-soft); }
+  .chat-hello-f input{
+    width:100%; padding:.7rem .8rem; border:1px solid var(--line); border-radius:.7rem;
+    background:var(--paper); color:var(--cocoa); font: inherit; font-size:.9375rem;
+  }
+  .chat-hello-f input:focus{ outline:2px solid var(--gold); outline-offset:1px; }
+  .chat-hello .btn{ margin-top:.15rem; }
+  .chat-hello-bad{ margin:0; font-size:.8125rem; font-weight:600; color:#c0392b; }
+  .chat-hello-bad[hidden]{ display:none; }

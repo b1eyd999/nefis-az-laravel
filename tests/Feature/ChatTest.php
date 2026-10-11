@@ -43,7 +43,8 @@ class ChatTest extends TestCase
         $this->openTheChat();
         Http::fake(['api.telegram.org/*' => Http::response(['ok' => true, 'result' => ['message_id' => 77]])]);
 
-        $this->postJson(route('chat.send'), ['body' => 'Salam, qutu neçəyədir?', 'page' => '/dizaynlar'])
+        $this->postJson(route('chat.send'), ['body' => 'Salam, qutu neçəyədir?', 'page' => '/dizaynlar',
+            'name' => 'Aygün', 'phone' => '+994 55 555 55 55'])
             ->assertOk()->assertJson(['ok' => true]);
 
         $written = ChatMessage::sole();
@@ -64,6 +65,7 @@ class ChatTest extends TestCase
 
         $this->post(route('chat.send'), [
             'body' => 'Belə olsun',
+            'name' => 'Aygün', 'phone' => '+994 55 555 55 55',
             'image' => UploadedFile::fake()->image('ekran.png', 400, 300),
         ])->assertOk();
 
@@ -78,7 +80,8 @@ class ChatTest extends TestCase
         $this->openTheChat();
         Http::fake(['api.telegram.org/*' => Http::response(['ok' => true, 'result' => ['message_id' => 12]])]);
 
-        $this->postJson(route('chat.send'), ['body' => 'Sabaha hazır olar?'])->assertOk();
+        $this->postJson(route('chat.send'), ['body' => 'Sabaha hazır olar?',
+            'name' => 'Aygün', 'phone' => '+994 55 555 55 55'])->assertOk();
         $asked = ChatMessage::sole();
 
         // Telegram knocks with what the shop replied.
@@ -121,5 +124,54 @@ class ChatTest extends TestCase
     {
         $this->postJson(route('chat.send'), ['body' => 'Salam'])->assertNotFound();
         $this->assertSame(0, ChatMessage::count());
+    }
+
+    /**
+     * A stranger says who he is before he writes.
+     *
+     * The message used to reach the owner's Telegram with no name and no
+     * number: nothing to answer, and by then the visitor had locked his
+     * phone.
+     */
+    public function test_a_guest_must_say_who_he_is(): void
+    {
+        $this->openTheChat();
+
+        $this->postJson(route('chat.send'), ['body' => 'Salam'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['name', 'phone']);
+
+        $this->postJson(route('chat.send'), ['body' => 'Salam', 'name' => 'Aygün', 'phone' => '123'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('phone');
+
+        $this->assertSame(0, ChatMessage::count());
+    }
+
+    /** Somebody signed in is never asked: his account carries both. */
+    public function test_a_signed_in_customer_is_not_asked(): void
+    {
+        $this->openTheChat();
+        $user = \App\Models\User::factory()->create(['name' => 'Aysel', 'phone' => '+994 50 111 22 33']);
+
+        $this->actingAs($user)->postJson(route('chat.send'), ['body' => 'Salam'])->assertOk();
+
+        $written = ChatMessage::sole();
+        $this->assertSame('Aysel', $written->name);
+        $this->assertSame('+994 50 111 22 33', $written->phone);
+    }
+
+    /** And the window asks for it before it will take a word. */
+    public function test_the_window_asks_a_stranger_first(): void
+    {
+        $this->openTheChat();
+
+        $page = $this->get('/')->assertOk();
+        $page->assertSee('id="chat-hello"', false);
+        $page->assertSee('id="chat-name"', false);
+        $page->assertSee('id="chat-phone"', false);
+        // The window will not take a word until he has said who he is.
+        $page->assertSee('id="chat-form"', false);
+        $this->assertMatchesRegularExpression('/<form class="chat-form" id="chat-form"\s+hidden/', $page->getContent());
     }
 }

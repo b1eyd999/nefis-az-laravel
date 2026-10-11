@@ -36,11 +36,32 @@
       <button type="button" class="chat-close" id="chat-close" aria-label="{{ __('Bağla') }}">✕</button>
     </div>
 
+    @guest
+      {{-- Who is writing. A message with no name and no number cannot be
+           answered: it reached the owner's Telegram as a picture headed
+           «Saytdan mesaj» with nobody behind it, and by then the visitor had
+           locked his phone. Asked once — it is remembered — and only of
+           somebody the shop does not already know. --}}
+      <div class="chat-hello" id="chat-hello">
+        <p>{{ __('Cavab verə bilməyimiz üçün adınızı və nömrənizi yazın.') }}</p>
+        <label class="chat-hello-f">
+          <span>{{ __('Adınız') }}</span>
+          <input type="text" id="chat-name" maxlength="120" autocomplete="name" placeholder="{{ __('Məs. Aygün') }}">
+        </label>
+        <label class="chat-hello-f">
+          <span>{{ __('Telefon') }}</span>
+          <input type="tel" id="chat-phone" maxlength="40" autocomplete="tel" placeholder="{{ __('+994 XX XXX XX XX') }}">
+        </label>
+        <button type="button" class="btn btn-primary btn-block" id="chat-hello-go">{{ __('Davam et') }}</button>
+        <p class="chat-hello-bad" id="chat-hello-bad" hidden></p>
+      </div>
+    @endguest
+
     <div class="chat-log" id="chat-log">
       <div class="chat-line shop"><span>{{ __('Salam! Nə soruşmaq istəyirsiniz? İstəsəniz ekran şəkli də göndərə bilərsiniz.') }}</span></div>
     </div>
 
-    <form class="chat-form" id="chat-form">
+    <form class="chat-form" id="chat-form" @guest hidden @endguest>
       @csrf
       <div class="chat-shot" id="chat-shot" hidden>
         <img id="chat-shot-img" alt="">
@@ -231,6 +252,59 @@
     if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); form.requestSubmit(); }
   });
 
+  /* Who is writing, asked once and kept. The shop needs a name and a number
+     to be able to answer at all; a signed-in customer is never asked,
+     because his account already carries both. */
+  var who = { name: '', phone: '' };
+  var hello = document.getElementById('chat-hello');
+  (function(){
+    if (!hello) return;                      // he is signed in
+    var nameEl = document.getElementById('chat-name');
+    var phoneEl = document.getElementById('chat-phone');
+    var go = document.getElementById('chat-hello-go');
+    var bad = document.getElementById('chat-hello-bad');
+
+    try {
+      var kept = JSON.parse(localStorage.getItem('nefis-chat-who') || 'null');
+      if (kept && kept.name && kept.phone) { who = kept; }
+    } catch (err) {}
+
+    function open(){
+      who.name = who.name || '';
+      hello.hidden = true;
+      form.hidden = false;
+      if (text) text.focus();
+    }
+
+    if (who.name && who.phone) { open(); return; }
+
+    go.addEventListener('click', function(){
+      var n = nameEl.value.trim();
+      // Nine digits is the shortest an Azerbaijani number can be; the shop
+      // dials it, so a half-typed one is no better than none.
+      var p = phoneEl.value.trim();
+      var digits = p.replace(/\D/g, '');
+      if (n.length < 2) {
+        bad.textContent = @json(__('Adınızı yazın.')); bad.hidden = false; nameEl.focus();
+
+        return;
+      }
+      if (digits.length < 9) {
+        bad.textContent = @json(__('Nömrəni tam yazın — zəng edə bilək.')); bad.hidden = false; phoneEl.focus();
+
+        return;
+      }
+      bad.hidden = true;
+      who = { name: n, phone: p };
+      try { localStorage.setItem('nefis-chat-who', JSON.stringify(who)); } catch (err) {}
+      open();
+    });
+
+    [nameEl, phoneEl].forEach(function(el){
+      el.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); go.click(); } });
+    });
+  })();
+
   form.addEventListener('submit', function(e){
     e.preventDefault();
     var body = text.value.trim();
@@ -240,6 +314,9 @@
     data.append('_token', token);
     data.append('body', body);
     data.append('page', location.pathname);
+    // So the owner can answer: it travels with every line, not only the first.
+    if (who.name) data.append('name', who.name);
+    if (who.phone) data.append('phone', who.phone);
     if (picked) data.append('image', picked);
 
     var mine = { side:'me', body: body, image: picked ? shotImg.src : null, at:'' };
