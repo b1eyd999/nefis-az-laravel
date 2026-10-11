@@ -69,8 +69,13 @@ class DashboardTest extends TestCase
         Material::create(['name' => 'Yapışqan', 'unit' => 'qutucuq', 'pack_price' => 5, 'pack_size' => 10,
             'per_box' => 0.1, 'stock' => 0, 'low_stock' => 2, 'is_active' => true]);
 
+        /* The widget shows the five thinnest shelves first, and the real
+           materials (paper, ink, wrapping, glue) are all at or below zero in
+           a fresh test database — so the two this test invents sit on the
+           second page unless it asks for more rows. */
         Livewire::test(StockLeft::class)
-            ->assertSee('Karton qutu')                 // 6 left, under its own low mark: shown first
+            ->set('tableRecordsPerPage', 25)
+            ->assertSee('Karton qutu')                 // 6 left, under its own low mark
             ->assertSee('Lent')
             ->assertSee('6 ədəd')
             ->assertSee('bitib')                       // nothing left reads as a word, not as "0"

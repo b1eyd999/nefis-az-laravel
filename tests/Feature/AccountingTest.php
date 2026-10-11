@@ -33,6 +33,16 @@ class AccountingTest extends TestCase
         return Material::where('name', 'Yapışqan')->firstOrFail();
     }
 
+    private function ink(): Material
+    {
+        return Material::where('name', 'Çap boyası')->firstOrFail();
+    }
+
+    private function wrap(): Material
+    {
+        return Material::where('name', 'Bükmə kağızı')->firstOrFail();
+    }
+
     /** A customer orders `$boxes` boxes at 4 ₼ with a bar the owner buys for 2.69 ₼ and sells for 4.04 ₼. */
     private function order(int $boxes): Order
     {
@@ -53,23 +63,33 @@ class AccountingTest extends TestCase
         return Order::latest('id')->firstOrFail();
     }
 
-    public function test_one_box_costs_a_sheet_of_paper_and_a_fiftieth_of_the_glue(): void
+    /**
+     * What a box costs in materials, as the owner actually buys them.
+     *
+     * These were guesses until 2026-10-11 — paper at 9.80 ₼ and glue, and
+     * nothing else — so the books reported 0.212 ₼ against a real 0.417 ₼ and
+     * every profit figure was flattering by the difference.
+     */
+    public function test_one_box_costs_paper_ink_wrapping_and_glue(): void
     {
-        // 9.80 ₼ for 50 sheets, 0.80 ₼ of glue for about 50 boxes.
-        $this->assertEqualsWithDelta(0.196, $this->paper()->costPerBox(), 0.0001);
+        // 14 ₼ for 50 sheets; a 210 ₼ set of ink prints about 2 000 boxes;
+        // 8 ₼ for 500 wrapping sheets; 0.80 ₼ of glue to about 50 boxes.
+        $this->assertEqualsWithDelta(0.280, $this->paper()->costPerBox(), 0.0001);
+        $this->assertEqualsWithDelta(0.105, $this->ink()->costPerBox(), 0.0001);
+        $this->assertEqualsWithDelta(0.016, $this->wrap()->costPerBox(), 0.0001);
         $this->assertEqualsWithDelta(0.016, $this->glue()->costPerBox(), 0.0001);
-        $this->assertEqualsWithDelta(0.212, Material::costOfOneBox(), 0.0001);
+        $this->assertEqualsWithDelta(0.417, Material::costOfOneBox(), 0.0001);
     }
 
     public function test_orders_take_materials_out_of_stock_and_cancelling_puts_them_back(): void
     {
-        Accounting::purchase($this->paper(), 2, 9.80);
+        Accounting::purchase($this->paper(), 2, 14.00);
         $this->assertSame(100.0, $this->paper()->fresh()->stock);
 
         $order = $this->order(3);
         $this->assertSame(97.0, $this->paper()->fresh()->stock);
         $this->assertSame(-3.0, $this->glue()->fresh()->stock, 'no glue bought yet: the shortfall shows');
-        $this->assertEqualsWithDelta(0.64, $order->materials_cost, 0.001);   // 3 × 0.212
+        $this->assertEqualsWithDelta(1.25, $order->materials_cost, 0.001);   // 3 × 0.417
         $this->assertSame(2.69, $order->items->first()->chocolate_cost);
 
         $order->update(['status' => 'cancelled']);
@@ -81,7 +101,7 @@ class AccountingTest extends TestCase
 
     public function test_the_books_show_the_real_profit_shared_in_three(): void
     {
-        Accounting::purchase($this->paper(), 1, 9.80);
+        Accounting::purchase($this->paper(), 1, 14.00);
         $order = $this->order(2);                       // 2 × (4 + 4.04 bar) + 5 delivery
         $cancelled = $this->order(1);
         $cancelled->update(['status' => 'cancelled']);
@@ -93,13 +113,13 @@ class AccountingTest extends TestCase
         $this->assertSame(1, $r['orders']);
         $this->assertEqualsWithDelta(2 * (4 + $bar->price()) + 5, $r['revenue'], 0.001);
         $this->assertEqualsWithDelta(2 * 2.69, $r['chocolate'], 0.001);
-        $this->assertEqualsWithDelta(0.42, $r['materials'], 0.001);
+        $this->assertEqualsWithDelta(0.83, $r['materials'], 0.001);   // 2 × 0.417
         $this->assertSame(3.0, $r['expenses']);
-        $net = $r['revenue'] - 5.38 - 0.42 - 3;
+        $net = $r['revenue'] - 5.38 - 0.83 - 3;
         $this->assertEqualsWithDelta($net, $r['net'], 0.01);
         $this->assertCount(3, $r['shares']);
         $this->assertEqualsWithDelta($net, array_sum(array_column($r['shares'], 'amount')), 0.02);
-        $this->assertEqualsWithDelta($r['revenue'] - 5.38 - 9.80 - 3, $r['cash'], 0.01);
+        $this->assertEqualsWithDelta($r['revenue'] - 5.38 - 14.00 - 3, $r['cash'], 0.01);
     }
 
     /**
@@ -210,7 +230,7 @@ class AccountingTest extends TestCase
         foreach (['/admin/balance', '/admin/materials', '/admin/expenses', '/admin/settings'] as $url) {
             $this->get($url)->assertOk();
         }
-        $this->get('/admin/materials')->assertSee(['Qutu kağızı', 'Yapışqan', '0.21 ₼']);
+        $this->get('/admin/materials')->assertSee(['Qutu kağızı', 'Çap boyası', 'Yapışqan', '0.28 ₼']);
 
         // Buying stock from the list.
         Livewire::test(ListMaterials::class)
