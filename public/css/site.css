@@ -1617,3 +1617,8 @@
     display:block; margin-top:.2rem; font-size:.9375rem; font-weight:700;
     color:var(--gold-deep); font-variant-numeric:tabular-nums;
   }
+
+  /* The reason a field was refused, beside that field. */
+  .field-why{
+    margin:.45rem 0 0; font-size:.8125rem; font-weight:600; line-height:1.45; color:#c0392b;
+  }

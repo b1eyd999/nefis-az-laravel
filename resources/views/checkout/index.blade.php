@@ -463,6 +463,12 @@
   };
   var ANY = @json(__('Bu xananı doldurun.'));
 
+  /* The words go WHERE the field is, not at the bottom of the form.
+     The page used to scroll up to the broken field, draw a red outline
+     round it and say nothing — the sentence stayed under the submit button,
+     now off-screen — and four seconds later the outline faded and the form
+     looked exactly as it had before he tapped anything. He had been told
+     nothing at all, twice. */
   function complain(field, text){
     if (sendError) {
       sendError.textContent = text;
@@ -470,11 +476,34 @@
     }
     var block = field.closest('.field, .dlv-fields, .dlv-list, .slots') || field.parentElement;
     document.querySelectorAll('.field-bad').forEach(function(b){ b.classList.remove('field-bad'); });
-    if (block) {
-      block.classList.add('field-bad');
-      block.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(function(){ block.classList.remove('field-bad'); }, 4000);
-    }
+    document.querySelectorAll('.field-why').forEach(function(n){ n.remove(); });
+    if (! block) return;
+
+    block.classList.add('field-bad');
+
+    var why = document.createElement('p');
+    why.className = 'field-why';
+    why.setAttribute('role', 'alert');
+    why.textContent = text;
+    block.appendChild(why);
+
+    block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    /* It stays until he does something about it. A message that removes
+       itself on a timer is a message he may never have read — on a phone
+       the scroll itself can take most of those four seconds. */
+    var clear = function(){
+      block.classList.remove('field-bad');
+      if (why.parentNode) why.remove();
+      block.removeEventListener('input', clear);
+      block.removeEventListener('change', clear);
+      block.removeEventListener('click', clear);
+    };
+    block.addEventListener('input', clear);
+    block.addEventListener('change', clear);
+    // Pickers and map pins write their value by hand and fire nothing, so a
+    // tap anywhere in the block counts as "he is dealing with it".
+    block.addEventListener('click', clear);
   }
 
   /* Every refusal is answered here, not only the ones on hidden controls:
