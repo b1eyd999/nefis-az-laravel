@@ -9,7 +9,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 
 /**
  * Paying by card.
@@ -40,8 +42,11 @@ class EpointController extends Controller
 
         $url = Epoint::start(
             $order,
-            route('epoint.done', ['order' => $order->id]),
-            route('epoint.failed', ['order' => $order->id]),
+            /* Signed and good for a day: the bank's own page, a 3-D Secure
+               step and a hunt for the card can take him well out of the
+               session he started in. */
+            URL::temporarySignedRoute('epoint.done', now()->addDay(), ['order' => $order->id]),
+            URL::temporarySignedRoute('epoint.failed', now()->addDay(), ['order' => $order->id]),
         );
 
         if (! $url) {
@@ -268,7 +273,7 @@ class EpointController extends Controller
     /** Where the bank sends the customer back. Neither of these decides anything. */
     public function done(Request $request, Order $order): RedirectResponse
     {
-        abort_unless($order->user_id === $request->user()->id, 403);
+        self::letHimIn($request, $order);
         // These two addresses carry no language of their own; the order remembers his.
         app()->setLocale(\App\Support\CustomerNotice::locale($order));
 
@@ -279,10 +284,38 @@ class EpointController extends Controller
 
     public function failed(Request $request, Order $order): RedirectResponse
     {
-        abort_unless($order->user_id === $request->user()->id, 403);
+        self::letHimIn($request, $order);
         app()->setLocale(\App\Support\CustomerNotice::locale($order));
+
+        /* He cancelled at the bank, so the shop is not waiting for anything.
+           The mark stayed on, and the page then said both "we are waiting for
+           the bank" and "you may try again" with nothing at all to tap — the
+           way out only appeared two minutes later. Nothing is lost by
+           clearing it: only the signed callback ever confirms a payment, and
+           it finds the order by its own reference. */
+        if ($order->payment_confirmed_at === null) {
+            $order->forceFill(['payment_started_at' => null])->saveQuietly();
+        }
 
         return redirect(lroute('orders.pay', $order))
             ->with('error', __('Ödəniş baş tutmadı. Yenidən cəhd edə bilərsiniz.'));
+    }
+
+    /**
+     * The customer coming back from the bank, on his own order.
+     *
+     * The address was signed when the payment started, so arriving here at
+     * all is proof the shop sent him; the session he left with may well be
+     * gone, since a 3-D Secure step can land him in a different browser.
+     */
+    private static function letHimIn(Request $request, Order $order): void
+    {
+        $customer = $order->user;
+        abort_unless($customer !== null, 404);
+
+        if ($request->user()?->id !== $customer->id) {
+            Auth::login($customer);
+            $request->session()->regenerate();
+        }
     }
 }

@@ -78,10 +78,18 @@ Route::get('/acar/{order}/{door}', [OrderKeyController::class, 'open'])
     ->name('orders.key');
 
 Route::post('/epoint/result', [EpointController::class, 'result'])->name('epoint.result');
+/* Where the bank drops the customer afterwards. These were behind `auth`,
+   and the round trip through 3-D Secure can take him into a different
+   browser from the Instagram webview he started in — so a man who had just
+   paid was shown a sign-in form for an account whose password he was never
+   given. We build these two addresses ourselves when the payment starts, so
+   we sign them: the signature proves the shop sent him, and nothing has to
+   be guessed or remembered. They still decide nothing — only the signed
+   callback confirms a payment. */
 Route::get('/epoint/ugurlu/{order}', [EpointController::class, 'done'])
-    ->whereNumber('order')->middleware('auth')->name('epoint.done');
+    ->whereNumber('order')->middleware('signed')->name('epoint.done');
 Route::get('/epoint/xeta/{order}', [EpointController::class, 'failed'])
-    ->whereNumber('order')->middleware('auth')->name('epoint.failed');
+    ->whereNumber('order')->middleware('signed')->name('epoint.failed');
 
 // A courier taps "I'll take it" in the group and Telegram calls this address.
 Route::post('/telegram/kuryer/{secret}', [TelegramController::class, 'courier'])

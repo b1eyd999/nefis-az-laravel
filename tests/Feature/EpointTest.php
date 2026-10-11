@@ -449,12 +449,71 @@ class EpointTest extends TestCase
         $order = $this->order($user);
         $order->forceFill(['locale' => 'ru'])->save();
 
-        $this->actingAs($user)->get(route('epoint.done', $order))
+        /* The two addresses are signed when the payment starts, because
+           the bank can land him in a different browser from the one he
+           left: he used to be shown a sign-in form for an account whose
+           password he was never given, having just paid. */
+        $done = \Illuminate\Support\Facades\URL::temporarySignedRoute('epoint.done', now()->addDay(), ['order' => $order->id]);
+        $failed = \Illuminate\Support\Facades\URL::temporarySignedRoute('epoint.failed', now()->addDay(), ['order' => $order->id]);
+
+        $this->get($done)
             ->assertRedirect(route('ru.orders.index'))
             ->assertSessionHas('status', 'Платёж принят. Заказ будет подтверждён, как только придёт подтверждение от банка.');
-        $this->actingAs($user)->get(route('epoint.failed', $order))
+        $this->assertSame($user->id, auth()->id(), 'and he is in his own account, with no password asked');
+
+        $this->get($failed)
             ->assertRedirect(route('ru.orders.pay', $order))
             ->assertSessionHas('error', 'Платёж не прошёл. Можно попробовать снова.');
+    }
+
+    /** A return address nobody signed opens nothing. */
+    public function test_an_unsigned_return_is_refused(): void
+    {
+        $this->switchOn();
+        $order = $this->order(User::factory()->create());
+
+        // The order's own fixture signs somebody in; the point is that the
+        // address itself grants nothing.
+        auth()->logout();
+        $this->get(route('epoint.done', $order))->assertForbidden();
+        $this->get(route('epoint.failed', $order))->assertForbidden();
+        $this->assertFalse(auth()->check(), 'an unsigned address signs nobody in');
+    }
+
+    /**
+     * Cancelling at the bank gives him the card button back at once.
+     *
+     * The waiting mark stayed on, so the page said both that the shop was
+     * waiting for the bank and that he might try again, with nothing to
+     * tap: the way out only appeared two minutes later.
+     */
+    public function test_cancelling_at_the_bank_does_not_leave_him_waiting(): void
+    {
+        $this->switchOn();
+        $order = $this->order(User::factory()->create());
+        $order->forceFill(['payment_started_at' => now()])->save();
+        $this->assertTrue($order->paymentInFlight());
+
+        $this->get(\Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'epoint.failed', now()->addDay(), ['order' => $order->id]
+        ))->assertRedirect();
+
+        $this->assertFalse($order->fresh()->paymentInFlight());
+        $this->get(route('orders.pay', $order))->assertOk();
+    }
+
+    /** A payment that really did go through is left alone. */
+    public function test_a_confirmed_payment_is_not_unmarked(): void
+    {
+        $this->switchOn();
+        $order = $this->order(User::factory()->create());
+        $order->forceFill(['payment_started_at' => now(), 'payment_confirmed_at' => now()])->save();
+
+        $this->get(\Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'epoint.failed', now()->addDay(), ['order' => $order->id]
+        ))->assertRedirect();
+
+        $this->assertNotNull($order->fresh()->payment_started_at);
     }
 
     public function test_the_private_key_is_not_kept_in_the_open(): void
