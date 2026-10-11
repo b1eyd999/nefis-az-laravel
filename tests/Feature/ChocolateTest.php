@@ -195,7 +195,12 @@ class ChocolateTest extends TestCase
         // Milka is a top brand by default (Alpen Gold too, but there is none): first, orange and open.
         $html = $this->get(route('products.customize', $box->slug))->assertOk()->getContent();
         $this->assertSame(['Milka*', 'Alenka', 'Bianca', 'Digər'], $chips($html), 'top brands, then A–Z, the unbranded last');
-        $this->assertMatchesRegularExpression('/class="choc-brand top active"\s*data-brand="Milka"/', $html);
+        /* `has-pick` joins the class list now that a bar is always chosen
+           when the page opens — the customer is no longer made to pick one
+           out of a hundred and sixty before the basket will take the box. */
+        $this->assertMatchesRegularExpression('/class="choc-brand top active[^"]*"\s*data-brand="Milka"/', $html);
+        $this->assertMatchesRegularExpression('/class="choc-brand top active has-pick"/', $html,
+            'the first top brand holds the bar that is chosen for him');
         $this->assertMatchesRegularExpression('/class="choc-group" data-brand="Milka"\s*>/', $html);
         $this->assertMatchesRegularExpression('/class="choc-group" data-brand="Alenka"\s*hidden/', $html);
         $this->assertStringContainsString('Milka <span>2</span>', $html);

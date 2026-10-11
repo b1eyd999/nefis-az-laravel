@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\PhotoSlot;
 use App\Models\Product;
+use App\Support\MapImage;
 
 /**
  * The place a customer puts on a box: where it is, how close in, and in what
@@ -47,6 +48,38 @@ class StreetMap
      *
      * @return array<string, mixed>|null
      */
+    /**
+     * The place he typed, turned into a point.
+     *
+     * The map's own dropdown writes the coordinates when he taps a
+     * suggestion; a customer who types «Sahil» and presses his keyboard's
+     * done key never taps one, and until now the order was refused by two
+     * hidden fields with a message about a photograph the design does not
+     * have. The same geocoder answers the same question here, once, when the
+     * order arrives — and a place that cannot be found is said so beside the
+     * field he typed into rather than silently.
+     */
+    public static function resolveTyped(\Illuminate\Http\Request $request): void
+    {
+        $typed = trim((string) $request->input('map_place'));
+
+        if ($typed === '' || $request->filled('map_lat')) {
+            return;
+        }
+
+        $hit = MapImage::search($typed, \App\Support\Locale::current())[0] ?? null;
+
+        if (! $hit) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'map_place' => __('Bu yer tapılmadı. Yazılışı dəyişin və ya xəritədən seçin.'),
+            ]);
+        }
+
+        // His own words stay on the box; the coordinates are only how the
+        // streets are drawn.
+        $request->merge(['map_lat' => $hit['lat'], 'map_lon' => $hit['lon']]);
+    }
+
     public static function fromRequest(\Illuminate\Http\Request $request, ?PhotoSlot $slot = null): ?array
     {
         if (! $request->filled('map_lat') || ! $request->filled('map_lon')) {

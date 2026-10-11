@@ -80,9 +80,15 @@ class CartController extends Controller
         }
 
         if (StreetMap::wanted($product)) {
-            $rules['map_lat'] = ['required', 'numeric', 'between:-85,85'];
-            $rules['map_lon'] = ['required', 'numeric', 'between:-180,180'];
-            $rules['map_place'] = ['nullable', 'string', 'max:60'];
+            /* Either a point he tapped on the map, or just the name he typed.
+               They used to be required outright, and the only thing that ever
+               filled them was tapping a suggestion in the dropdown — so a
+               customer who typed «Sahil» and pressed his keyboard's done key
+               was refused by two hidden fields, and told to upload a
+               photograph this design does not have. */
+            $rules['map_lat'] = ['required_without:map_place', 'nullable', 'numeric', 'between:-85,85'];
+            $rules['map_lon'] = ['required_without:map_place', 'nullable', 'numeric', 'between:-180,180'];
+            $rules['map_place'] = ['required_without_all:map_lat,map_lon', 'nullable', 'string', 'min:2', 'max:60'];
             $rules['map_zoom'] = ['nullable', 'integer', 'between:' . StreetMap::ZOOM_MIN . ',' . StreetMap::ZOOM_MAX];
             $rules['map_date'] = ['nullable', 'date', 'after:1899-12-31', 'before:' . now()->addYears(2)->toDateString()];
             $rules['map_time'] = ['nullable', 'date_format:H:i'];
@@ -142,6 +148,9 @@ class CartController extends Controller
             'quantity.integer' => __('Say tam ədəd olmalıdır.'),
             'quantity.min' => __('Say 1 ilə 20 arasında olmalıdır.'),
             'quantity.max' => __('Say 1 ilə 20 arasında olmalıdır.'),
+            'map_place.required_without_all' => __('Hansı yerin küçələri olsun? Yeri yazın.'),
+            'map_lat.required_without' => __('Hansı yerin küçələri olsun? Yeri yazın.'),
+            'map_lon.required_without' => __('Hansı yerin küçələri olsun? Yeri yazın.'),
             'chocolate_id.required' => __('Qutunun içinə şokolad seçin.'),
             'chocolate_id.exists' => __('Seçdiyiniz şokolad artıq yoxdur, başqasını seçin.'),
             'wrapping_id.exists' => __('Seçdiyiniz qablaşdırma artıq yoxdur, başqasını seçin.'),
@@ -181,6 +190,14 @@ class CartController extends Controller
         $star = $skySlot ? Sky::fromRequest($request, $skySlot) : null;
 
         $mapSlot = StreetMap::slot($product);
+        /* He may have simply typed the name rather than tapped a suggestion.
+           The shop looks it up with the same geocoder the dropdown uses, so
+           what he typed is enough — and if the place cannot be found he is
+           told that, beside the field, rather than being refused by two
+           hidden ones. */
+        if ($mapSlot && ! $request->filled('map_lat')) {
+            StreetMap::resolveTyped($request);
+        }
         $spot = $mapSlot ? StreetMap::fromRequest($request, $mapSlot) : null;
 
         $texts = [];

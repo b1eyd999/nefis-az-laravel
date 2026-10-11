@@ -634,8 +634,15 @@
             <label>{{ __('Lokasiya') }}</label>
             <p class="slot-hint" style="margin-bottom:.6rem;">{{ __('Yeri yazın — o yerin küçələri qutunun üzərinə düşəcək.') }}</p>
 
+            {{-- The box he types into is the one that is sent. It used to
+                 carry no name at all: the order only knew a place once he
+                 had tapped a suggestion from the dropdown, so a customer who
+                 typed «Sahil» and pressed the keyboard's done key was refused
+                 by two hidden fields he could not see, with a message about a
+                 photograph this design does not have. --}}
             <label for="map-search" class="sky-lbl">{{ __('Yer') }}</label>
-            <input type="text" id="map-search" class="text-input" autocomplete="off"
+            <input type="text" id="map-search" name="map_place" class="text-input" autocomplete="off"
+                   maxlength="60"
                    placeholder="{{ __('Sahil metrosu, Bakı') }}"
                    value="{{ old('map_place') }}">
             <ul class="map-hits" id="map-hits" hidden></ul>
@@ -696,9 +703,11 @@
               </div>
             @endif
 
+            {{-- Filled when he taps a suggestion or drags the map; left empty
+                 when he simply typed the name, and the shop then looks it up
+                 itself. --}}
             <input type="hidden" name="map_lat" id="map-lat" value="{{ old('map_lat') }}">
             <input type="hidden" name="map_lon" id="map-lon" value="{{ old('map_lon') }}">
-            <input type="hidden" name="map_place" id="map-place" value="{{ old('map_place') }}">
             <p class="slot-hint" style="margin-top:.6rem;">{{ \App\Support\StreetMap::creditLong() }}</p>
           </div>
         @endif
@@ -742,11 +751,23 @@
                 return $rank !== false ? sprintf('0%03d', $rank)
                     : ($brand === \App\Support\ChocolateBrand::OTHER ? '2' : '1') . mb_strtolower($brand);
             });
+            /* One bar is chosen already, and the customer changes it only if
+               he wants to. He was being asked which of a hundred and sixty
+               bars goes inside before the basket would take the box — the
+               one decision in the whole order he has no opinion about, and
+               the one that stopped him. The cheapest of the first top brand:
+               the page's own «dan» price is built from the cheapest bar, so
+               this is the figure he was already shown. */
             $picked = $chocolates->firstWhere('id', (int) old('chocolate_id'));
+            $picked ??= $brands->first()?->sortBy('price')->first();
             $openBrand = $picked['brand'] ?? $brands->keys()->first();
           @endphp
           <div class="choc-block" id="choc-block">
             <label>{{ __('Qutunun içindəki şokolad') }}</label>
+            {{-- Said out loud, because a pre-ticked radio deep in a list is
+                 easy to miss: he is told one is already in the box and that
+                 he may change it, rather than being made to choose. --}}
+            <p class="slot-hint" style="margin-bottom:.6rem;">{{ __('Bir şokolad artıq seçilib — istəsəniz dəyişin.') }}</p>
             @if($brands->count() > 1)
               @php
                 /* Thirty brands held half the page and the chocolate itself
@@ -1238,9 +1259,15 @@
     if (!addHint) return;
     addHint.hidden = ! (bad || addBtn.disabled);
     addHint.classList.toggle('bad', ! ! bad);
+    /* Three things can be missing, and saying the wrong one is worse than
+       saying nothing: a map design has no photograph to upload, and the
+       line used to send its customer hunting for a field that is not on
+       the page. */
     addHint.textContent = cutting
       ? @json(__('Şəkil hazırlanır, bir neçə saniyə…'))
-      : @json(__('Əvvəlcə şəklinizi yükləyin — sonra düymə işə düşür.'));
+      : (placeMissing()
+        ? @json(__('Yeri yazın — sonra düymə işə düşür.'))
+        : @json(__('Əvvəlcə şəklinizi yükləyin — sonra düymə işə düşür.')));
   }
   /* Cutting the face out takes seconds on the first photo. The button
      stays shut while it runs: otherwise a customer who taps straight
@@ -1748,10 +1775,19 @@
     });
   }
 
+  /* A map design is ready once the shop knows WHERE — either a point he
+     tapped or dragged, or simply a name he typed, which the shop looks up
+     itself when the order arrives. */
+  function placeMissing(){
+    if (!spot || spot.lat != null) return false;
+    var box = document.getElementById('map-search');
+    return ! (box && box.value.trim().length >= 2);
+  }
+
   function allSlotsFilled(){
     /* A window holding the sky or a place needs nothing uploaded: it fills
-       itself. A place does have to be chosen, though. */
-    if (spot && spot.lat == null) return false;
+       itself. A place does have to be named, though. */
+    if (placeMissing()) return false;
 
     return photos.every(function(p, i){ return SKY_SLOT[i] || MAP_SLOT[i] || p.img !== null; });
   }
@@ -1806,6 +1842,16 @@
   customizeForm.addEventListener('submit', function(e){
     if (e.defaultPrevented || allSlotsFilled()) return;
     e.preventDefault();
+    if (placeMissing()) {
+      // The one field that is missing, shown and focused — the page used to
+      // scroll to the button the customer had just tapped.
+      var box = document.getElementById('map-search');
+      markAdd(true);
+      (document.getElementById('map-block') || box).scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (box) { try { box.focus({ preventScroll: true }); } catch (err) { box.focus(); } }
+
+      return;
+    }
     pointAtEmptySlot(photos.findIndex(function(p){ return p.img === null; }));
   });
 
@@ -2541,7 +2587,8 @@
   var chosen = document.getElementById('map-chosen');
   var latEl = document.getElementById('map-lat');
   var lonEl = document.getElementById('map-lon');
-  var placeEl = document.getElementById('map-place');
+  // The visible box is the field: `pick()` and `push()` both read it.
+  var placeEl = search;
   var zoomEl = document.getElementById('map-zoom');
   var dateEl = document.getElementById('map-date');
   var timeEl = document.getElementById('map-time');
