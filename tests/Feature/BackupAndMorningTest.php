@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Support\Backup;
 use App\Support\Telegram;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -130,6 +131,137 @@ class BackupAndMorningTest extends TestCase
         $this->artisan('db:backup')->assertSuccessful();
 
         $this->assertSame([], Backup::all());
+    }
+
+    /**
+     * The shape of every table is kept, even where the rows are not.
+     *
+     * `migrations` IS restored and it says the sessions and cache tables were
+     * created. Leave their CREATE out and the dump imports perfectly, then
+     * every page dies on "Base table 'sessions' doesn't exist" — and
+     * `artisan migrate` answers "Nothing to migrate", because the restored
+     * migrations table swears it already ran. With no SSH, that is a dead
+     * shop.
+     */
+    public function test_the_skipped_tables_keep_their_shape(): void
+    {
+        Setting::put(Setting::BACKUP, '1');
+        $this->artisan('db:backup')->assertSuccessful();
+
+        $sql = self::read(Backup::all()[0]['path']);
+
+        foreach (['sessions', 'cache', 'cache_locks', 'jobs'] as $table) {
+            $this->assertMatchesRegularExpression('/CREATE TABLE[^;]*["`]' . $table . '["`]/i', $sql,
+                $table . ' must be buildable again');
+            $this->assertStringNotContainsString('INSERT INTO `' . $table . '`', $sql,
+                $table . ' rows are not worth keeping');
+        }
+
+        // And the table that claims they exist is itself kept, rows and all.
+        $this->assertStringContainsString('INSERT INTO `migrations`', $sql);
+    }
+
+    /** A finished dump says so on its last line. */
+    public function test_a_finished_dump_says_so_and_a_half_one_is_not_counted(): void
+    {
+        Setting::put(Setting::BACKUP, '1');
+        $this->artisan('db:backup')->assertSuccessful();
+
+        $newest = Backup::all()[0];
+        $this->assertStringContainsString(Backup::MARKER, self::read($newest['path']));
+        $this->assertTrue(Backup::whole($newest['path']));
+
+        // Something that was being written when the lights went out is not a
+        // backup: it is not listed, cannot be downloaded, and cannot push a
+        // good copy out of the kept slots.
+        $half = Backup::directory() . '/nefis_2026-01-01_000000.sql';
+        file_put_contents($half, "-- Nefis.az
+INSERT INTO `orders` (`id`) VALUES (1)
+");
+        $this->assertFalse(Backup::whole($half));
+
+        $part = Backup::directory() . '/nefis_2026-01-02_000000.sql.part';
+        file_put_contents($part, 'half a dump');
+        $this->assertNotContains('nefis_2026-01-02_000000.sql.part', array_column(Backup::all(), 'name'));
+        $this->assertNull(Backup::find('nefis_2026-01-02_000000.sql.part'));
+
+        @unlink($half);
+        @unlink($part);
+    }
+
+    /**
+     * When the copy cannot be written, the owner is told.
+     *
+     * A backup that quietly stopped working is worse than none, because he
+     * believes he has one.
+     */
+    public function test_a_failed_copy_is_shouted_about(): void
+    {
+        Setting::put(Setting::BACKUP, '1');
+        Telegram::saveToken('123:abc');
+        Setting::put(Setting::TELEGRAM_CHAT, '42');
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true])]);
+
+        // Nowhere to write: the folder's own name is taken by a file.
+        $folder = Backup::directory();
+        foreach (glob($folder . '/*') ?: [] as $leftover) {
+            @unlink($leftover);
+        }
+        $this->assertTrue(@rmdir($folder), 'the folder has to be gone for this test to mean anything');
+        file_put_contents($folder, 'not a folder');
+
+        $this->artisan('db:backup')->assertFailed();
+
+        Http::assertSent(fn ($request) => str_contains((string) ($request->data()['text'] ?? ''), 'Baza kopyası alınmadı'));
+
+        @unlink($folder);
+    }
+
+    /**
+     * A database that will not answer is not an answer of "no".
+     *
+     * Asking whether backups are switched on is itself a database read, and
+     * it used to sit outside the guard — so on the one night the alert
+     * existed for, the job threw before it and died into cron's /dev/null.
+     */
+    public function test_an_unreadable_setting_does_not_stop_the_night(): void
+    {
+        Setting::put(Setting::BACKUP, '1');
+
+        // The settings table is gone and nothing is remembered about it.
+        \Illuminate\Support\Facades\Cache::flush();
+        \Illuminate\Support\Facades\Schema::drop('settings');
+        $this->assertThrows(fn () => Backup::enabled(), \Throwable::class);
+
+        $this->artisan('db:backup')->assertSuccessful();
+
+        $this->assertCount(1, Backup::all(), 'it went ahead rather than reading silence as "no"');
+    }
+
+    /** And the morning note notices when the nightly job stopped running. */
+    public function test_the_morning_note_says_when_the_backups_went_stale(): void
+    {
+        Setting::put(Setting::MORNING_NOTE, '1');
+        Setting::put(Setting::BACKUP, '1');
+        Telegram::saveToken('123:abc');
+        Setting::put(Setting::TELEGRAM_CHAT, '42');
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true])]);
+
+        // Nothing at all.
+        $this->artisan('shop:morning')->assertSuccessful();
+        Http::assertSent(fn ($r) => str_contains((string) ($r->data()['text'] ?? ''), 'heç bir kopyası yoxdur'));
+
+        // One, but from last week.
+        $old = Backup::make('2026-01-01_000000');
+        touch($old, now()->subDays(7)->getTimestamp());
+        $this->artisan('shop:morning')->assertSuccessful();
+        Http::assertSent(fn ($r) => str_contains((string) ($r->data()['text'] ?? ''), 'gecə kopyası alınmır'));
+
+        // And a fresh one says nothing at all.
+        Backup::make();
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true])]);
+        $this->artisan('shop:morning')->assertSuccessful();
+        Http::assertSent(fn ($r) => ! str_contains((string) ($r->data()['text'] ?? ''), 'kopya'));
     }
 
     /** A name off a page is read as a name and nothing else. */

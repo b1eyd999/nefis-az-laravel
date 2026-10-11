@@ -6,6 +6,7 @@ use App\Models\ContactMessage;
 use App\Models\Order;
 use App\Models\Review;
 use App\Models\Setting;
+use App\Support\Backup;
 use App\Support\Price;
 use App\Support\Telegram;
 use Illuminate\Console\Command;
@@ -78,6 +79,16 @@ class MorningNote extends Command
                 . ' — ' . Price::format($newToday->sum(fn (Order $o) => $o->total()));
         }
 
+        /* Whether the database still has a copy of itself.
+           Read off the folder rather than out of the database, and from a
+           job that runs on a different schedule — so it still speaks when
+           `db:backup` is the thing that stopped. A backup that quietly
+           stopped working is worse than none, because the owner believes he
+           has one. */
+        if ($stale = self::backupTrouble()) {
+            $lines[] = '🔴 ' . $stale;
+        }
+
         // The two queues that only exist if somebody looks at them.
         $reviews = Review::waiting()->count();
         $messages = ContactMessage::waiting()->count();
@@ -96,6 +107,40 @@ class MorningNote extends Command
         $this->line('Sent: ' . $today->count() . ' today, ' . $late->count() . ' late.');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * What is wrong with the backups, in one line, or nothing when they are
+     * fine or switched off.
+     *
+     * Deliberately a file check and not a database one: the case worth
+     * catching is the nightly job no longer running at all, and asking the
+     * database whether it was copied would be asking the patient.
+     */
+    private static function backupTrouble(): ?string
+    {
+        if (! Backup::enabled()) {
+            return null;
+        }
+
+        $newest = Backup::all()[0] ?? null;
+
+        if (! $newest) {
+            return 'Bazanın heç bir kopyası yoxdur — «Baza kopyaları» səhifəsinə baxın.';
+        }
+
+        // The job runs at 03:40; by the morning note a copy younger than a
+        // day and a bit should be there.
+        if ($newest['at']->lt(now()->subHours(26))) {
+            return 'Bazanın son kopyası ' . $newest['at']->format('d.m.Y H:i')
+                . ' tarixlidir — gecə kopyası alınmır.';
+        }
+
+        if (! Backup::whole($newest['path'])) {
+            return 'Bazanın son kopyası yarımçıqdır: ' . $newest['name'];
+        }
+
+        return null;
     }
 
     /**
