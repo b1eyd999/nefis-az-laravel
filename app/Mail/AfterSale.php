@@ -21,6 +21,10 @@ use Illuminate\Mail\Mailables\Envelope;
  */
 class AfterSale extends Mailable
 {
+    /** How long the review link keeps working: a fortnight to get round to it. */
+    public const REVIEW_HOURS = 24 * 14;
+
+
     public function __construct(
         public Order $order,
         public ?string $promo = null,
@@ -48,7 +52,7 @@ class AfterSale extends Mailable
             // Only when he may still write one: a letter that invites him to
             // a page that would 404 is worse than one that says nothing.
             'reviewLink' => Review::invited($this->order, $this->order->user)
-                ? CustomerNotice::reviewLink($this->order)
+                ? \App\Support\OrderKey::review($this->order, self::REVIEW_HOURS)
                 : null,
             'designs' => CustomerNotice::designsLink($this->order),
         ]);

@@ -40,7 +40,10 @@ class PaymentReminder extends Mailable
             'order' => $this->order,
             'name' => $this->order->user?->name,
             'hoursLeft' => $this->hoursLeft,
-            'link' => CustomerNotice::link($this->order),
+            /* Signed, so the button works: the customer's account was made
+               for him at the checkout and he has never known its password.
+               It lasts as long as the order does, and no longer. */
+            'link' => \App\Support\OrderKey::pay($this->order, max(2, $this->hoursLeft)),
             'total' => \App\Support\Price::format($this->order->total()),
         ]);
     }

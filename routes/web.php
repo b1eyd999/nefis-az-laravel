@@ -10,6 +10,7 @@ use App\Http\Controllers\GiftPageController;
 use App\Http\Controllers\LivePhotoController;
 use App\Http\Controllers\MapController;
 use App\Http\Controllers\MediaController;
+use App\Http\Controllers\OrderKeyController;
 use App\Http\Controllers\OrderFileController;
 use App\Http\Controllers\Phone\LiveController as PhoneLive;
 use App\Http\Controllers\Phone\MoneyController as PhoneMoney;
@@ -63,6 +64,19 @@ Route::post('/canli-hazirla/{livePhoto}', [LivePhotoController::class, 'storeMin
    calls, server to server: no session, no language prefix, and the signature
    inside is what makes it trustworthy. The other two are where the bank sends
    the customer back, and they decide nothing. */
+/* The link in a letter that opens the page it is about.
+   Everything a customer must DO after his order lives behind `auth`, and
+   since the checkout started making the account for him he has a password he
+   was never told — so the reminder letter's own button opened a sign-in form.
+   The signature is checked before anything else runs; see App\Support\OrderKey.
+   Registered once, outside the language groups, because it only redirects —
+   and to a page in the order's own language. */
+Route::get('/acar/{order}/{door}', [OrderKeyController::class, 'open'])
+    ->whereNumber('order')
+    ->where('door', 'pay|review|extra')
+    ->middleware(['signed', 'throttle:20,1'])
+    ->name('orders.key');
+
 Route::post('/epoint/result', [EpointController::class, 'result'])->name('epoint.result');
 Route::get('/epoint/ugurlu/{order}', [EpointController::class, 'done'])
     ->whereNumber('order')->middleware('auth')->name('epoint.done');

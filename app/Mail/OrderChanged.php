@@ -33,7 +33,10 @@ class OrderChanged extends Mailable
         return new Content(view: 'mail.order-changed', with: [
             'order' => $this->adjustment->order,
             'adjustment' => $this->adjustment,
-            'link' => CustomerNotice::adjustmentLink($this->adjustment),
+            /* Signed, like the reminder: this one asks for money, so the
+               button must open rather than ask for a password he was never
+               given. */
+            'link' => \App\Support\OrderKey::extra($this->adjustment, 24 * 14),
         ]);
     }
 }
