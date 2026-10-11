@@ -471,7 +471,6 @@
             @endforeach
           </div>
         @endif
-        @include('partials.design-rights')
       </div>
 
       <form class="customize-panel" method="POST" action="{{ lroute('cart.add') }}" enctype="multipart/form-data" id="customize-form">
@@ -755,11 +754,12 @@
                he wants to. He was being asked which of a hundred and sixty
                bars goes inside before the basket would take the box — the
                one decision in the whole order he has no opinion about, and
-               the one that stopped him. The cheapest of the first top brand:
-               the page's own «dan» price is built from the cheapest bar, so
-               this is the figure he was already shown. */
+               the one that stopped him. The cheapest bar in the shop,
+               whatever brand it belongs to — the page's own «…-dan» price is
+               worked out from exactly that bar, so the figure he was shown
+               in the catalogue is the figure he now sees in the total. */
             $picked = $chocolates->firstWhere('id', (int) old('chocolate_id'));
-            $picked ??= $brands->first()?->sortBy('price')->first();
+            $picked ??= $chocolates->sortBy('price')->first();
             $openBrand = $picked['brand'] ?? $brands->keys()->first();
           @endphp
           <div class="choc-block" id="choc-block">
@@ -997,20 +997,23 @@
 </section>
 
 @if($gifts->isNotEmpty())
-  {{-- Above the chips are a label, deliberately: a visitor mid-upload should
-       not be invited away. Here, past the basket button, the same occasions
-       are a way on — and they carry this page's weight to the pages written
-       to be found. --}}
+  {{-- The occasions this design suits, said the way a caption says them —
+       not offered as a way out. The owner asked for hashtags: words, not
+       buttons. They used to be links, which made the row look like six
+       decisions a visitor had to take before he could get on with the one
+       he had already made. The same occasions are still linked from the
+       front page, the footer and the gift hub, so nothing is lost to a
+       search engine by letting them rest here. --}}
   <section>
     <div class="wrap">
       <div class="section-head center">
         <h2>{{ __('Bu dizayn hansı münasibətlərə uyğundur') }}</h2>
       </div>
-      <div class="occ-chips">
+      <p class="occ-tags">
         @foreach($gifts as $gift)
-          <a class="occ-chip" href="{{ $gift->url() }}">{{ $gift->emoji }} {{ $gift->linkText() }}</a>
+          <span class="occ-tag">#{{ $gift->linkText() }}</span>
         @endforeach
-      </div>
+      </p>
     </div>
   </section>
 @endif
@@ -1058,6 +1061,16 @@
     </div>
   </section>
 @endif
+{{-- Who owns the artwork: at the foot of the page, where a notice of this
+     kind belongs. It used to sit between the box and the upload box, so the
+     first thing a customer met on his way to ordering was a warning about
+     copying designs. --}}
+<section class="design-rights-foot">
+  <div class="wrap-narrow">
+    @include('partials.design-rights')
+  </div>
+</section>
+
 @if($cutsFaces)
   @include('partials.cutout-brush')
 @endif
@@ -2741,31 +2754,57 @@
 
   /* The bar shows itself once the real button has gone off the bottom of
      the screen, and hides again when it comes back — so there is never a
-     moment with two buttons saying the same thing. The floating chat
-     bubble is lifted out of its way while it is there. */
+     moment with two buttons saying the same thing.
+
+     Driven by the scroll position and nothing else. It was an
+     IntersectionObserver watching the real button, plus a MutationObserver
+     mirroring its disabled state; on iOS showing a fixed bar moves the
+     visual viewport (the browser's own chrome slides), which re-fires the
+     observer, which toggles the bar again — a loop with no exit, and Safari
+     answers that by killing the tab. One rAF-throttled read, one write only
+     when the answer has actually changed, and nothing the bar does can feed
+     back into the decision. */
   (function(){
     var bar = document.getElementById('buy-bar');
     var real = document.getElementById('add-to-cart-btn');
     var barBtn = document.getElementById('buy-bar-btn');
-    if (!bar || !real || !('IntersectionObserver' in window)) return;
+    if (!bar || !real || !barBtn) return;
 
-    // The twin is shut exactly when the real one is.
-    new MutationObserver(function(){ barBtn.disabled = real.disabled; })
-      .observe(real, { attributes: true, attributeFilter: ['disabled'] });
-    barBtn.disabled = real.disabled;
+    var showing = null;
+    var ticking = false;
 
-    function show(on){
-      bar.hidden = ! on;
-      document.body.classList.toggle('has-buy-bar', on);
+    function look(){
+      ticking = false;
+      // Past the preview, and the real button not yet in view.
+      var box = real.getBoundingClientRect();
+      var want = window.scrollY > 320 && box.top > window.innerHeight;
+
+      if (want !== showing) {
+        showing = want;
+        bar.hidden = ! want;
+        document.body.classList.toggle('has-buy-bar', want);
+      }
+      if (barBtn.disabled !== real.disabled) barBtn.disabled = real.disabled;
     }
 
-    new IntersectionObserver(function(entries){
-      entries.forEach(function(entry){
-        // Only once he is past the preview: on the first screen the page is
-        // still an invitation, not a form.
-        show(! entry.isIntersecting && window.scrollY > 320);
-      });
-    }, { rootMargin: '0px 0px -8px 0px' }).observe(real);
+    function ask(){
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(look);
+    }
+
+    window.addEventListener('scroll', ask, { passive: true });
+    window.addEventListener('resize', ask, { passive: true });
+    /* The button opens and shuts as the photograph arrives; the same tick
+       carries that across without watching the element itself. Looked up
+       here rather than borrowed: the page's `customizeForm` belongs to
+       another block, and reaching for it from this one throws. */
+    var theForm = document.getElementById('customize-form');
+    if (theForm) {
+      theForm.addEventListener('change', ask);
+      theForm.addEventListener('input', ask);
+    }
+    ask();
   })();
 })();
 </script>

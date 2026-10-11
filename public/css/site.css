@@ -1067,6 +1067,13 @@
     background:var(--paper); font-size:.875rem; font-weight:500; color:var(--cocoa-soft); transition:border-color .2s, color .2s, transform .2s; }
   .occ-chip:hover{ border-color:var(--gold); color:var(--cocoa); transform:translateY(-2px); }
   /* a chip that only names an occasion: nothing to click, so nothing moves */
+  /* The occasions a design suits, written as tags rather than offered as
+     buttons: words under a heading, nothing to press. */
+  .occ-tags{
+    display:flex; flex-wrap:wrap; justify-content:center; gap:.3rem .85rem;
+    max-width:44rem; margin:0 auto; line-height:1.9;
+  }
+  .occ-tag{ font-size:.9375rem; font-weight:500; color:var(--gold-deep); white-space:nowrap; }
   .occ-chip.is-static{ cursor:default; }
   .price-from{ margin:.4rem 0 0; font-weight:700; color:var(--gold-deep); font-size:1.0625rem; }
 
@@ -1660,3 +1667,6 @@
   .chat-hello .btn{ margin-top:.15rem; }
   .chat-hello-bad{ margin:0; font-size:.8125rem; font-weight:600; color:#c0392b; }
   .chat-hello-bad[hidden]{ display:none; }
+
+  /* The ownership notice, at the foot of the design page. */
+  .design-rights-foot{ padding-top:0; }

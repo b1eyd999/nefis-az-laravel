@@ -185,30 +185,37 @@ class ChocolateTest extends TestCase
         Chocolate::create(['name' => 'Milka Bubbles 90 qr', 'base_price' => 4]);
         Chocolate::create(['name' => 'Milka Oreo 92 qr', 'base_price' => 4]);
         Chocolate::create(['name' => 'Bianca Dark 100 q', 'base_price' => 4]);
-        Chocolate::create(['name' => 'Şekersiz şokolad, tünd, 100 q', 'base_price' => 2]);
+        $cheapest = Chocolate::create(['name' => 'Şekersiz şokolad, tünd, 100 q', 'base_price' => 2]);
         $chips = function (string $html) {
             preg_match_all('/class="choc-brand([^"]*)"\s*data-brand="([^"]*)"/', $html, $m);
 
             return array_map(fn ($class, $brand) => $brand . (str_contains($class, 'top') ? '*' : ''), $m[1], $m[2]);
         };
 
-        // Milka is a top brand by default (Alpen Gold too, but there is none): first, orange and open.
+        // Milka is a top brand by default (Alpen Gold too, but there is none): first and orange.
         $html = $this->get(route('products.customize', $box->slug))->assertOk()->getContent();
         $this->assertSame(['Milka*', 'Alenka', 'Bianca', 'Digər'], $chips($html), 'top brands, then A–Z, the unbranded last');
-        /* `has-pick` joins the class list now that a bar is always chosen
-           when the page opens — the customer is no longer made to pick one
-           out of a hundred and sixty before the basket will take the box. */
-        $this->assertMatchesRegularExpression('/class="choc-brand top active[^"]*"\s*data-brand="Milka"/', $html);
-        $this->assertMatchesRegularExpression('/class="choc-brand top active has-pick"/', $html,
-            'the first top brand holds the bar that is chosen for him');
-        $this->assertMatchesRegularExpression('/class="choc-group" data-brand="Milka"\s*>/', $html);
-        $this->assertMatchesRegularExpression('/class="choc-group" data-brand="Alenka"\s*hidden/', $html);
+        $this->assertMatchesRegularExpression('/class="choc-brand top[^"]*"\s*data-brand="Milka"/', $html);
+
+        /* One bar is chosen when the page opens, and it is the CHEAPEST in
+           the shop — not the cheapest of whichever brand happens to be
+           first. The owner asked for that in so many words: the page's own
+           «…-dan» price is worked out from exactly this bar, so the figure
+           the customer saw in the catalogue is the figure in his total.
+           Here that is the unbranded 2 ₼ one, so its group is the open one
+           — what he sees has to be what is ticked. */
+        $this->assertMatchesRegularExpression('/class="choc-brand active has-pick"\s*data-brand="Digər"/', $html);
+        $this->assertMatchesRegularExpression('/class="choc-group" data-brand="Digər"\s*>/', $html);
+        $this->assertMatchesRegularExpression('/class="choc-group" data-brand="Milka"\s*hidden/', $html);
+        $this->assertMatchesRegularExpression('/name="chocolate_id" value="' . $cheapest->id . '"[^>]*checked/', $html,
+            'the cheapest bar in the shop is the one already ticked');
         $this->assertStringContainsString('Milka <span>2</span>', $html);
 
         // The unbranded bucket is the one chip with a word to translate; its key stays.
         Setting::put(Setting::SITE_LANGUAGES, 'az,ru,en');
         $ru = $this->get(route('ru.products.customize', $box->slug))->assertOk()->getContent();
-        $this->assertStringContainsString('data-brand="Digər" aria-pressed="false">Другие <span>1</span>', $ru);
+        // It is the open one now: the cheapest bar in this shop is unbranded.
+        $this->assertStringContainsString('data-brand="Digər" aria-pressed="true">Другие <span>1</span>', $ru);
 
         // The owner's own top list, in his order.
         Setting::put(Setting::TOP_BRANDS, json_encode(['Bianca', 'Alenka']));
