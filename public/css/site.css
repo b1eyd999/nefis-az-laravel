@@ -1622,3 +1622,21 @@
   .field-why{
     margin:.45rem 0 0; font-size:.8125rem; font-weight:600; line-height:1.45; color:#c0392b;
   }
+
+  /* ---------- the bar that buys, pinned to the phone ---------- */
+  /* The design page is seven screens tall and the button that buys sits on
+     the fourth. This is its twin, shown once the real one is off-screen. */
+  .buy-bar{
+    position:fixed; left:0; right:0; bottom:0; z-index:75;
+    display:flex; align-items:center; gap:.75rem;
+    padding:.7rem 1rem calc(.7rem + env(safe-area-inset-bottom, 0px));
+    background:var(--glass); backdrop-filter:blur(12px);
+    border-top:1px solid var(--line); box-shadow:0 -10px 30px -18px rgba(58,38,23,.4);
+  }
+  .buy-bar[hidden]{ display:none; }
+  .buy-bar-sum{ flex:none; display:flex; flex-direction:column; line-height:1.15; }
+  .buy-bar-sum b{ font-size:1.0625rem; font-variant-numeric:tabular-nums; }
+  .buy-bar .btn{ flex:1; padding-top:.85rem; padding-bottom:.85rem; }
+  /* The chat bubble steps up out of its way rather than sitting on it. */
+  body.has-buy-bar .float-stack{ bottom:5.25rem; }
+  @media (min-width:900px){ .buy-bar{ display:none; } }

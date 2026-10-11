@@ -973,6 +973,18 @@
           </div>
         @endif
 
+        {{-- A twin of the button, pinned to the bottom of a phone screen.
+             The page is seven and a half screens tall and the real button
+             sits on the fourth: a customer who had chosen everything still
+             had to guess that scrolling further would find a way to buy. It
+             shows itself once he has scrolled past the preview and hides
+             again when the real button is on screen, so he never sees two. --}}
+        <div class="buy-bar" id="buy-bar" hidden>
+          <span class="buy-bar-sum"><b id="buy-bar-total">—</b></span>
+          <button type="submit" class="btn btn-primary btn-flame" id="buy-bar-btn"
+                  @if($needsPhoto) disabled @endif>{{ __('Səbətə Əlavə Et') }}</button>
+        </div>
+
         <button type="submit" class="btn btn-primary btn-block btn-flame" id="add-to-cart-btn"
                 @if($needsPhoto) disabled @endif>{{ __('Səbətə Əlavə Et') }}</button>
         {{-- The button is shut until the picture is there; say so, or it looks
@@ -2719,10 +2731,42 @@
     var each = box + choc + wrap + letter + ar;
     var all = each * n + rush;
     totalOut.textContent = all > 0 ? fmt(all) + (n > 1 ? ' (' + n + ' × ' + fmt(each) + (rush ? ' + ' + fmt(rush) : '') + ')' : '') : '—';
+    // The bar at the bottom of the phone carries the same figure.
+    var barTotal = document.getElementById('buy-bar-total');
+    if (barTotal) barTotal.textContent = all > 0 ? fmt(all) : '—';
   }
   document.querySelectorAll('input[name="chocolate_id"], input[name="wrapping_id"], #letter-on, #ar-on, #rush').forEach(function(r){ r.addEventListener('change', update); });
   qty.addEventListener('input', update);
   update();
+
+  /* The bar shows itself once the real button has gone off the bottom of
+     the screen, and hides again when it comes back — so there is never a
+     moment with two buttons saying the same thing. The floating chat
+     bubble is lifted out of its way while it is there. */
+  (function(){
+    var bar = document.getElementById('buy-bar');
+    var real = document.getElementById('add-to-cart-btn');
+    var barBtn = document.getElementById('buy-bar-btn');
+    if (!bar || !real || !('IntersectionObserver' in window)) return;
+
+    // The twin is shut exactly when the real one is.
+    new MutationObserver(function(){ barBtn.disabled = real.disabled; })
+      .observe(real, { attributes: true, attributeFilter: ['disabled'] });
+    barBtn.disabled = real.disabled;
+
+    function show(on){
+      bar.hidden = ! on;
+      document.body.classList.toggle('has-buy-bar', on);
+    }
+
+    new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        // Only once he is past the preview: on the first screen the page is
+        // still an invitation, not a form.
+        show(! entry.isIntersecting && window.scrollY > 320);
+      });
+    }, { rootMargin: '0px 0px -8px 0px' }).observe(real);
+  })();
 })();
 </script>
 @endsection

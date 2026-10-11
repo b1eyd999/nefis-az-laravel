@@ -272,16 +272,48 @@
     });
   }
 
+  /* The map is a convenience, never the thing the courier drives to: that
+     is the address below it. When the map cannot open, it gets out of the
+     way and the address carries the order on its own. */
+  function failed(){
+    mapFailed = true;
+    box.hidden = true;
+    say(@json(__('Xəritə açılmadı — ünvanı aşağıda yazın, kifayətdir.')), 'err');
+    if (address) {
+      address.required = true;
+      try { address.focus({ preventScroll: true }); } catch (err) {}
+    }
+  }
+
   function ensure(){
     if (picker || loading) return loading;
     var value = lat.value && lng.value ? { lat: +lat.value, lng: +lng.value } : null;
+    say(@json(__('Xəritə açılır…')));
+
+    /* Raced against a clock. The map's own library comes from somebody
+       else's server, and a promise that never settles is not a failure the
+       `catch` below can see — so the grey rectangle sat there, the order
+       could not be sent, and the page went on telling him to pick a point
+       on a map that was never going to open. */
+    var gaveUp = false;
+    var clock = setTimeout(function(){
+      gaveUp = true;
+      failed();
+    }, 8000);
+
     loading = NefisMapPicker.mount(box, {
       google: box.dataset.google || null,
       bounds: bounds, center: JSON.parse(box.dataset.center), value: value,
       reverseUrl: box.dataset.reverse, searchUrl: box.dataset.search,
       onPick: picked
-    }).then(function(p){ picker = p; setTimeout(p.refresh, 50); return p; })
-      .catch(function(){ mapFailed = true; box.hidden = true; say(@json(__('Xəritə açılmadı, ünvanı aşağıda yazın.')), 'err'); });
+    }).then(function(p){
+      clearTimeout(clock);
+      if (gaveUp) return p;            // it arrived late; he is typing by now
+      picker = p; setTimeout(p.refresh, 50);
+      say(@json(__('Xəritəyə toxunun və ya işarəni sürüşdürün.')));
+
+      return p;
+    }).catch(function(){ clearTimeout(clock); failed(); });
     return loading;
   }
 
@@ -537,12 +569,19 @@
   form.addEventListener('submit', function(e){
     if (form.dataset.sent) { e.preventDefault(); return; }
     if (sendError) sendError.hidden = true;
+    /* A written address is enough. The pin was demanded outright, so a
+       customer whose map had not finished loading — or who simply could not
+       find his own house on it — could not send an order he had otherwise
+       filled in completely. The pin makes the courier's evening easier; the
+       address is what he actually drives to. */
     var door = document.querySelector('input[name="delivery_method_id"]:checked');
-    if (door && door.dataset.type === 'door' && !mapFailed && !lat.value) {
+    var written = address && address.value.trim().length >= 5;
+    if (door && door.dataset.type === 'door' && !mapFailed && !lat.value && !written) {
       e.preventDefault();
-      say(@json(__('Çatdırılma yerini xəritədə seçin.')), 'err');
-      if (sendError) { sendError.textContent = @json(__('Çatdırılma yerini xəritədə seçin.')); sendError.hidden = false; }
-      box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      var ask = @json(__('Ünvanı yazın və ya xəritədə yeri seçin.'));
+      say(ask, 'err');
+      if (sendError) { sendError.textContent = ask; sendError.hidden = false; }
+      complain(address, ask);
 
       return;
     }
