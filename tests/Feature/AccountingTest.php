@@ -67,18 +67,26 @@ class AccountingTest extends TestCase
      * What a box costs in materials, as the owner actually buys them.
      *
      * These were guesses until 2026-10-11 — paper at 9.80 ₼ and glue, and
-     * nothing else — so the books reported 0.212 ₼ against a real 0.417 ₼ and
+     * nothing else — so the books reported 0.212 ₼ against a real 0.401 ₼ and
      * every profit figure was flattering by the difference.
+     *
+     * The wrapping sheet is counted apart from that day on: it is spent on the
+     * wraps people ask for, not on every box, and charging it to every box put
+     * a kopek and a half into the price of a box nobody wrapped.
      */
-    public function test_one_box_costs_paper_ink_wrapping_and_glue(): void
+    public function test_one_box_costs_paper_ink_and_glue_and_the_wrap_is_counted_apart(): void
     {
         // 14 ₼ for 50 sheets; a 210 ₼ set of ink prints about 2 000 boxes;
-        // 8 ₼ for 500 wrapping sheets; 0.80 ₼ of glue to about 50 boxes.
+        // 0.80 ₼ of glue to about 50 boxes.
         $this->assertEqualsWithDelta(0.280, $this->paper()->costPerBox(), 0.0001);
         $this->assertEqualsWithDelta(0.105, $this->ink()->costPerBox(), 0.0001);
-        $this->assertEqualsWithDelta(0.016, $this->wrap()->costPerBox(), 0.0001);
         $this->assertEqualsWithDelta(0.016, $this->glue()->costPerBox(), 0.0001);
-        $this->assertEqualsWithDelta(0.417, Material::costOfOneBox(), 0.0001);
+        $this->assertEqualsWithDelta(0.401, Material::costOfOneBox(), 0.0001);
+
+        // 8 ₼ for 500 wrapping sheets, and only for a box somebody wraps.
+        $this->assertSame(Material::WRAP, $this->wrap()->spent_on);
+        $this->assertEqualsWithDelta(0.016, $this->wrap()->costPerBox(), 0.0001);
+        $this->assertEqualsWithDelta(0.016, Material::costOfOneWrap(), 0.0001);
     }
 
     public function test_orders_take_materials_out_of_stock_and_cancelling_puts_them_back(): void
@@ -89,7 +97,8 @@ class AccountingTest extends TestCase
         $order = $this->order(3);
         $this->assertSame(97.0, $this->paper()->fresh()->stock);
         $this->assertSame(-3.0, $this->glue()->fresh()->stock, 'no glue bought yet: the shortfall shows');
-        $this->assertEqualsWithDelta(1.25, $order->materials_cost, 0.001);   // 3 × 0.417
+        $this->assertEqualsWithDelta(1.20, $order->materials_cost, 0.001);   // 3 × 0.401
+        $this->assertSame(0.0, $this->wrap()->fresh()->stock, 'nobody asked for a wrap');
         $this->assertSame(2.69, $order->items->first()->chocolate_cost);
 
         $order->update(['status' => 'cancelled']);
@@ -113,9 +122,9 @@ class AccountingTest extends TestCase
         $this->assertSame(1, $r['orders']);
         $this->assertEqualsWithDelta(2 * (4 + $bar->price()) + 5, $r['revenue'], 0.001);
         $this->assertEqualsWithDelta(2 * 2.69, $r['chocolate'], 0.001);
-        $this->assertEqualsWithDelta(0.83, $r['materials'], 0.001);   // 2 × 0.417
+        $this->assertEqualsWithDelta(0.80, $r['materials'], 0.001);   // 2 × 0.401
         $this->assertSame(3.0, $r['expenses']);
-        $net = $r['revenue'] - 5.38 - 0.83 - 3;
+        $net = $r['revenue'] - 5.38 - 0.80 - 3;
         $this->assertEqualsWithDelta($net, $r['net'], 0.01);
         $this->assertCount(3, $r['shares']);
         $this->assertEqualsWithDelta($net, array_sum(array_column($r['shares'], 'amount')), 0.02);

@@ -3,7 +3,8 @@
 @section('title', 'Anbar — Nefis admin')
 @section('heading', 'Anbar')
 @section('tab', 'stock')
-@section('sub', 'Bir qutunun materialı: ' . \App\Support\Price::format($perBox) . ' (şokoladsız)')
+@section('sub', 'Bir qutunun materialı: ' . \App\Support\Price::format($perBox) . ' (şokoladsız)'
+  . ($perWrap > 0 ? ' · bükülürsə +' . \App\Support\Price::format($perWrap) : ''))
 
 @section('content')
   @php $qty = fn ($v) => \App\Http\Controllers\Phone\StockController::qty((float) $v); @endphp
@@ -11,25 +12,41 @@
   @forelse($materials as $m)
     @php
       $left = $m->boxesLeft();
-      $state = $m->stock <= 0 ? 'bad' : ($m->isLow() ? 'warn' : 'ok');
+      $state = $m->isNew() ? '' : ($m->stock <= 0 ? 'bad' : ($m->isLow() ? 'warn' : 'ok'));
+      /* What this one is spent on. A ribbon is only cut when a wrap that
+         names it is ordered, so saying «hər qutuya» over it would be a lie
+         the owner would plan his buying by. */
+      $on = match ($m->spent_on) {
+        \App\Models\Material::WRAP => 'hər bükməyə',
+        \App\Models\Material::RIBBON => $m->wrappings_count
+          ? $m->wrappings_count . ' qablaşdırmada'
+          : 'heç bir qablaşdırmada seçilməyib',
+        default => 'hər qutuya',
+      };
     @endphp
     <div class="ph-block">
       <div class="mat">
         <div class="grow">
-          <div class="name">{{ $m->name }}</div>
-          <div class="left {{ $state }}">{{ $m->stock <= 0 ? 'bitib' : $qty($m->stock) . ' ' . $m->unit }}</div>
+          <div class="name">{{ $m->name }} <span class="on {{ $m->spent_on }}">{{ $on }}</span></div>
+          <div class="left {{ $state }}">{{ $m->isNew() ? 'sayılmayıb' : ($m->stock <= 0 ? 'bitib' : $qty($m->stock) . ' ' . $m->unit) }}</div>
           <div class="small">
             @if($left === null)
-              hər qutuya nə qədər getdiyi yazılmayıb
+              bir dəfəyə nə qədər getdiyi yazılmayıb
+            @elseif($m->isNew())
+              hələ sayılmayıb — «Alış» və ya «Sayım» ilə yazın
             @elseif($m->stock <= 0)
               almaq lazımdır
             @else
-              {{ $left }} qutuya bəs edir{{ $m->isLow() ? ' — almaq lazımdır' : '' }}
+              {{ $left }} {{ $m->coversTo() }} bəs edir{{ $m->isLow() ? ' — almaq lazımdır' : '' }}
             @endif
           </div>
           <div class="small">
-            paçka {{ \App\Support\Price::format($m->pack_price) }} / {{ $qty($m->pack_size) }} {{ $m->unit }}
-            · qutuya {{ \App\Support\Price::format($m->costPerBox()) }}
+            @if($m->pack_price <= 0)
+              qiyməti hələ yazılmayıb — «Alış» ilə yazın
+            @else
+              paçka {{ \App\Support\Price::format($m->pack_price) }} / {{ $qty($m->pack_size) }} {{ $m->unit }}
+              · {{ $m->coversTo() }} {{ \App\Support\Price::format($m->costPerBox()) }}
+            @endif
           </div>
         </div>
       </div>

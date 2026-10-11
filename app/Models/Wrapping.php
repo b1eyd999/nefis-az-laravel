@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Support\Media;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -28,7 +29,8 @@ class Wrapping extends Model
     ];
 
     protected $fillable = [
-        'i18n','name', 'pattern', 'price', 'ribbon', 'ribbon_color', 'pattern_scale', 'is_active', 'sort_order'];
+        'i18n','name', 'pattern', 'price', 'ribbon', 'ribbon_color', 'ribbon_material_id',
+        'pattern_scale', 'is_active', 'sort_order'];
 
     protected function casts(): array
     {
@@ -47,6 +49,19 @@ class Wrapping extends Model
                 Storage::disk('public')->delete($w->pattern);
             }
         });
+    }
+
+    /**
+     * The roll on the shelf this wrap's ribbon is cut from.
+     *
+     * The link lives here rather than on the material because this is where
+     * the owner thinks about it — a wrap is a paper and a ribbon — and because
+     * one roll of red serves several wraps. Left empty, the wrap simply takes
+     * no ribbon out of the warehouse.
+     */
+    public function ribbonMaterial(): BelongsTo
+    {
+        return $this->belongsTo(Material::class, 'ribbon_material_id');
     }
 
     public function scopeShown(Builder $query): Builder

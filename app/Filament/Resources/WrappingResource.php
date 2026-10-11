@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Concerns\AdminOnly;
 use App\Filament\Resources\WrappingResource\Pages;
+use App\Models\Material;
 use App\Models\Wrapping;
 use App\Support\Price;
 use Filament\Forms;
@@ -62,12 +63,38 @@ class WrappingResource extends Resource
                             ->options(Wrapping::RIBBONS)
                             ->default(Wrapping::SATIN)
                             ->live()
+                            // «Lentsiz» has to empty the roll as well. A field
+                            // that is merely hidden keeps the value it had,
+                            // and the warehouse would go on cutting ribbon for
+                            // a wrap that no longer has any.
+                            ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                if ($state === Wrapping::NONE) {
+                                    $set('ribbon_material_id', null);
+                                }
+                            })
                             ->required(),
                         Forms\Components\ColorPicker::make('ribbon_color')
                             ->label('Lentin rəngi')
                             ->default('#F3D3B4')
                             ->live()
                             ->regex('/^#[0-9a-fA-F]{6}$/')
+                            ->visible(fn (Forms\Get $get) => $get('ribbon') !== Wrapping::NONE),
+                        /* Which roll this wrap's ribbon is cut from. Chosen
+                           here because this is where he thinks about it, and
+                           because one roll of red serves several wraps. Left
+                           empty, the warehouse simply does not count it. */
+                        Forms\Components\Select::make('ribbon_material_id')
+                            ->label('Anbardakı lent')
+                            ->options(fn () => Material::query()
+                                ->where('spent_on', Material::RIBBON)
+                                ->where('is_active', true)
+                                ->orderBy('name')
+                                ->pluck('name', 'id'))
+                            ->searchable()
+                            ->placeholder('Anbardan çıxılmasın')
+                            ->helperText('Bu qablaşdırma seçiləndə həmin lent anbardan özü azalacaq. '
+                                . 'Yeni lent «Anbar» səhifəsində əlavə olunur.')
+                            ->dehydrated()
                             ->visible(fn (Forms\Get $get) => $get('ribbon') !== Wrapping::NONE),
                         Forms\Components\TextInput::make('pattern_scale')
                             ->label('Naxışın ölçüsü')
@@ -97,7 +124,12 @@ class WrappingResource extends Resource
                     ->weight('bold')
                     ->searchable()
                     ->description(fn (Wrapping $w) => Wrapping::RIBBONS[$w->ribbon] ?? $w->ribbon),
-                Tables\Columns\ColorColumn::make('ribbon_color')->label('Lent'),
+                Tables\Columns\ColorColumn::make('ribbon_color')->label('Lent')
+                    ->tooltip(fn (Wrapping $w) => $w->ribbonMaterial?->name),
+                Tables\Columns\TextColumn::make('ribbonMaterial.name')
+                    ->label('Anbardan')
+                    ->placeholder('çıxılmır')
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('price')
                     ->label('Qiymət')
                     ->formatStateUsing(fn ($state) => Price::format((float) $state))

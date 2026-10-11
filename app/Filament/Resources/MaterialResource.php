@@ -15,6 +15,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * The stock: what goes into every box, how much is left, and what one box's
@@ -53,15 +54,29 @@ class MaterialResource extends Resource
                         Forms\Components\TextInput::make('unit')->label('Ölçü vahidi')->required()->default('ədəd')
                             ->helperText('Məs. vərəq, ml, ədəd, qutuluq'),
                     ])->columns(2),
+                Forms\Components\Section::make('Nəyə sərf olunur')
+                    ->description('Qutu kağızı hər qutuya gedir. Bükmə kağızı yalnız müştəri qablaşdırma seçəndə, '
+                        . 'lent isə yalnız onu işlədən qablaşdırma seçiləndə — hansı qablaşdırmaların bu lenti '
+                        . 'işlətdiyi «Qablaşdırma» səhifəsində göstərilir.')
+                    ->schema([
+                        Forms\Components\Radio::make('spent_on')
+                            ->label('')
+                            ->options(Material::SPENT_ON)
+                            ->default(Material::BOX)
+                            ->required()
+                            ->live(),
+                    ]),
                 Forms\Components\Section::make('Alış və sərfiyyat')
-                    ->description('Məs. 1 paçka kağız 9.80 ₼, içində 50 vərəq; bir qutuya 1 vərəq gedir.')
+                    ->description('Məs. 1 paçka kağız 14 ₼, içində 50 vərəq; bir qutuya 1 vərəq gedir.')
                     ->schema([
                         Forms\Components\TextInput::make('pack_price')->label('Bir paçkanın qiyməti')->numeric()->minValue(0)->step(0.01)->suffix('₼')->required()->live(onBlur: true),
                         Forms\Components\TextInput::make('pack_size')->label('Paçkada neçə vahid')->numeric()->minValue(0.001)->required()->live(onBlur: true),
-                        Forms\Components\TextInput::make('per_box')->label('Bir qutuya sərf')->numeric()->minValue(0)->required()->live(onBlur: true)
+                        Forms\Components\TextInput::make('per_box')
+                            ->label(fn (Get $get) => $get('spent_on') === Material::BOX ? 'Bir qutuya sərf' : 'Bir bükməyə sərf')
+                            ->numeric()->minValue(0)->required()->live(onBlur: true)
                             ->helperText('0 — sifarişlərdə istifadə olunmur'),
                         Forms\Components\Placeholder::make('cost')
-                            ->label('Bir qutuya dəyəri')
+                            ->label(fn (Get $get) => $get('spent_on') === Material::BOX ? 'Bir qutuya dəyəri' : 'Bir bükməyə dəyəri')
                             ->content(function (Get $get) {
                                 $size = (float) $get('pack_size');
                                 $unit = $size > 0 ? (float) $get('pack_price') / $size : 0;
@@ -89,19 +104,46 @@ class MaterialResource extends Resource
                 Tables\Columns\TextColumn::make('stock')
                     ->label('Anbarda')
                     ->formatStateUsing(fn (Material $m) => self::qty($m->stock) . ' ' . $m->unit)
-                    ->description(fn (Material $m) => $m->boxesLeft() !== null && $m->unit !== 'qutuluq' ? '≈ ' . $m->boxesLeft() . ' qutuluq' : null)
+                    ->description(fn (Material $m) => $m->boxesLeft() !== null && $m->unit !== 'qutuluq' ? '≈ ' . $m->boxesLeft() . ' ' . $m->coversWorth() : null)
                     ->color(fn (Material $m) => $m->isLow() ? 'danger' : null)
                     ->weight(fn (Material $m) => $m->isLow() ? 'bold' : null),
+                Tables\Columns\TextColumn::make('spent_on')
+                    ->label('Nəyə')
+                    ->formatStateUsing(fn (Material $m) => $m->spentOnLabel())
+                    // Which wraps pull this ribbon off the shelf — the owner
+                    // sets that on the wrap, so the material only reports it.
+                    ->description(fn (Material $m) => $m->spent_on === Material::RIBBON
+                        ? ($m->wrappings()->count() ?: 'heç bir') . ' qablaşdırmada'
+                        : null)
+                    ->badge()
+                    ->color(fn (Material $m) => match ($m->spent_on) {
+                        Material::WRAP => 'info',
+                        Material::RIBBON => 'warning',
+                        default => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('per_box')
-                    ->label('Bir qutuya')
+                    ->label('Bir dəfəyə')
                     ->formatStateUsing(fn (Material $m) => self::qty($m->per_box) . ' ' . $m->unit),
                 Tables\Columns\TextColumn::make('box_cost')
-                    ->label('Qutuya dəyəri')
+                    ->label('Dəyəri')
                     ->getStateUsing(fn (Material $m) => Price::format(round($m->costPerBox(), 3))),
                 Tables\Columns\IconColumn::make('is_active')->label('İstifadədə')->boolean(),
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order')
+            /* A material switched off is one the shop has stopped using. It
+               kept showing here, with its «Alış» button live, which is how the
+               owner ended up asking twice to be rid of a row he had already
+               switched off. It is hidden now, and one tick brings it back —
+               nothing is deleted, so its purchases and the cost of the orders
+               that used it stay in the books. */
+            ->filters([
+                Tables\Filters\Filter::make('active')
+                    ->label('Yalnız istifadədə olanlar')
+                    ->toggle()
+                    ->default(true)
+                    ->query(fn (Builder $query) => $query->where('is_active', true)),
+            ])
             ->actions([
                 Tables\Actions\Action::make('purchase')
                     ->label('Alış')

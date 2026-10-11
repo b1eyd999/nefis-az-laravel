@@ -230,6 +230,14 @@ dialog.sheet::backdrop{ background:rgba(0,0,0,.45); backdrop-filter:blur(2px); }
 .mat .left.bad{ color:var(--red); } .mat .left.warn{ color:var(--gold); }
 .mat .left.ok{ color:var(--green); }
 .mat .small{ font-size:.78rem; color:var(--cocoa-soft); }
+/* What a material is spent on. The wrapping paper and the ribbons do not
+   go into every box, and the owner has to be able to see which is which
+   at a glance while he is standing in a shop deciding what to buy. */
+.mat .on{ display:inline-block; margin-left:.35rem; padding:.1rem .45rem; border-radius:999px;
+  font-size:.68rem; font-weight:600; vertical-align:middle; white-space:nowrap;
+  background:rgba(0,0,0,.06); color:var(--cocoa-soft); }
+.mat .on.wrap{ background:rgba(37,99,235,.12); color:#1d4ed8; }
+.mat .on.ribbon{ background:rgba(217,119,6,.14); color:#b45309; }
 
 /* ---------- live photos ---------- */
 .live-row{ display:flex; gap:.75rem; align-items:center; }

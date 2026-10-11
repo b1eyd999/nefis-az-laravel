@@ -10,6 +10,7 @@ use App\Models\StockMovement;
 use App\Models\Withdrawal;
 use App\Models\User;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -42,14 +43,74 @@ class Accounting
         return filled($when) ? \Illuminate\Support\Carbon::parse($when) : null;
     }
 
+    /**
+     * How much of each material one order takes, and what that is counted in.
+     *
+     * A material is spent on every box, on every box somebody asked to have
+     * wrapped, or — a ribbon — only on the boxes whose wrap names it. Both
+     * `consume()` and `resync()` ask this one question, so an order placed and
+     * an order edited can never disagree about what it should hold.
+     *
+     * @param  Collection<int, Material>  $materials
+     * @return array<int, array{units: float, times: int, what: string}>
+     */
+    public static function needs(Order $order, Collection $materials): array
+    {
+        $items = $order->items()->get(['product_id', 'quantity', 'wrapping_id', 'wrapping_name', 'ribbon_material_id']);
+
+        // A box is a line with a box on it. A letter or a live photo ordered
+        // on its own is not, and takes no paper, ink or glue.
+        $boxes = (int) $items->whereNotNull('product_id')->sum('quantity');
+
+        /* A wrap, on the other hand, is a wrap wherever it sits — including a
+           line the owner adds by hand with nothing but «Qablaşdırma: Bordo»
+           on it. The name is the test rather than the id, because deleting a
+           wrap sets every old line's `wrapping_id` to null while the name it
+           was sold under stays; the customer paid for it either way. */
+        $wrapped = (int) $items
+            ->filter(fn ($i) => $i->wrapping_id !== null || filled($i->wrapping_name))
+            ->sum('quantity');
+
+        // Which roll each line was tied with, as written down when it was
+        // ordered. Nothing here asks the wraps table what it says today.
+        $ribbons = [];
+        foreach ($items as $item) {
+            if ($item->ribbon_material_id) {
+                $ribbons[$item->ribbon_material_id] = ($ribbons[$item->ribbon_material_id] ?? 0) + (int) $item->quantity;
+            }
+        }
+
+        $need = [];
+        foreach ($materials as $m) {
+            $times = match (true) {
+                // Switched off, or spent in no quantity: it takes nothing,
+                // whatever it is spent on.
+                ! $m->is_active || $m->per_box <= 0 => 0,
+                $m->spent_on === Material::WRAP => $wrapped,
+                $m->spent_on === Material::RIBBON => $ribbons[$m->id] ?? 0,
+                default => $boxes,
+            };
+
+            $need[$m->id] = [
+                'units' => round($m->per_box * $times, 3),
+                'times' => $times,
+                'what' => $m->covers(),
+            ];
+        }
+
+        return $need;
+    }
+
     /** Takes an order's materials out of stock and records what they cost. */
     public static function consume(Order $order): void
     {
         DB::transaction(function () use ($order) {
-            $boxes = (int) $order->items()->whereNotNull('product_id')->sum('quantity');
+            $materials = Material::used()->lockForUpdate()->get();
+            $need = self::needs($order, $materials);
             $total = 0.0;
-            foreach (Material::used()->lockForUpdate()->get() as $m) {
-                $qty = round($m->per_box * $boxes, 3);
+
+            foreach ($materials as $m) {
+                ['units' => $qty, 'times' => $times, 'what' => $what] = $need[$m->id];
                 if ($qty <= 0) {
                     continue;
                 }
@@ -57,7 +118,7 @@ class Accounting
                 StockMovement::create([
                     'material_id' => $m->id, 'order_id' => $order->id, 'type' => StockMovement::USAGE,
                     'quantity' => -$qty, 'unit_cost' => round($unit, 4), 'amount' => round($qty * $unit, 2),
-                    'note' => "Sifariş #{$order->id}: {$boxes} qutu",
+                    'note' => "Sifariş #{$order->id}: {$times} {$what}",
                 ]);
                 $m->decrement('stock', $qty);
                 $total += $qty * $unit;
@@ -87,16 +148,18 @@ class Accounting
         }
 
         DB::transaction(function () use ($order) {
-            $boxes = (int) $order->items()->whereNotNull('product_id')->sum('quantity');
             $moves = StockMovement::where('order_id', $order->id)
                 ->whereIn('type', [StockMovement::USAGE, StockMovement::RETURN])
                 ->get()
                 ->groupBy('material_id');
 
-            foreach (Material::used()->lockForUpdate()->get() as $m) {
+            $materials = Material::used()->lockForUpdate()->get();
+            $need = self::needs($order, $materials);
+
+            foreach ($materials as $m) {
+                ['units' => $want, 'times' => $times, 'what' => $what] = $need[$m->id];
                 $mine = $moves->get($m->id) ?? collect();
                 $out = round(-(float) $mine->sum('quantity'), 3);     // what this order holds now
-                $want = round($m->per_box * $boxes, 3);
                 $delta = round($want - $out, 3);
                 if (abs($delta) < 0.0005) {
                     continue;
@@ -117,7 +180,7 @@ class Accounting
                     'quantity' => -$delta,
                     'unit_cost' => round($unit, 4),
                     'amount' => round(abs($delta) * $unit, 2),
-                    'note' => "Sifariş #{$order->id} dəyişdi: {$boxes} qutu",
+                    'note' => "Sifariş #{$order->id} dəyişdi: {$times} {$what}",
                 ]);
                 $m->decrement('stock', $delta);
             }

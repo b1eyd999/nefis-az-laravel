@@ -36,6 +36,11 @@ class OrderItem extends Model
         'wrapping_id',
         'wrapping_name',
         'wrapping_price',
+        // And which roll of ribbon that wrap was tied with, frozen here for
+        // the same reason the name and the price are: the owner may re-point
+        // the wrap at another colour, or delete it, and what this order took
+        // off the shelf must not change with it.
+        'ribbon_material_id',
         // A Polaroid letter: inside the box, or the whole line when ordered alone.
         'letter_text',
         'letter_photo',
@@ -244,8 +249,39 @@ class OrderItem extends Model
         return $this->belongsTo(Wrapping::class);
     }
 
+    /** The roll this line's ribbon was cut from, as it was when ordered. */
+    public function ribbonMaterial(): BelongsTo
+    {
+        return $this->belongsTo(Material::class, 'ribbon_material_id');
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    /**
+     * Picking a wrap picks its ribbon, once.
+     *
+     * Every road into an order line goes through here — the shop's checkout, a
+     * basket the owner handed over, a line he types into the panel himself —
+     * so the roll is written down wherever the wrap is chosen, and only when
+     * it is chosen. A wrap carrying no ribbon («Lentsiz») leaves it empty: a
+     * form that hides the field rather than clearing it would otherwise go on
+     * cutting ribbon for a wrap that has none.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (OrderItem $item) {
+            if (! $item->isDirty('wrapping_id')) {
+                return;
+            }
+
+            $wrap = $item->wrapping_id ? Wrapping::find($item->wrapping_id) : null;
+
+            $item->ribbon_material_id = $wrap && $wrap->ribbon !== Wrapping::NONE
+                ? $wrap->ribbon_material_id
+                : null;
+        });
     }
 }

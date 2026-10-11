@@ -14,8 +14,15 @@ class ListMaterials extends ListRecords
 
     public function getSubheading(): ?string
     {
+        // The wrap is said separately, because most boxes are not wrapped: one
+        // figure that quietly added it to every box was the thing that made
+        // the whole page's maya dəyəri wrong.
+        $wrap = Material::costOfOneWrap();
+
         return 'Bir hazır qutunun materialı: ' . Price::format(round(Material::costOfOneBox(), 3))
-            . ' (şokoladsız). Hər sifarişdə material anbardan özü çıxılır.';
+            . ' (şokoladsız)'
+            . ($wrap > 0 ? '. Bükülürsə üstünə ' . Price::format(round($wrap, 3)) . ' (lent ayrı)' : '')
+            . '. Hər sifarişdə material anbardan özü çıxılır.';
     }
 
     protected function getHeaderActions(): array

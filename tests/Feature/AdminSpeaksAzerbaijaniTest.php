@@ -31,6 +31,12 @@ class AdminSpeaksAzerbaijaniTest extends TestCase
         $this->assertStringContainsString('Axtar', $html, 'the search box');
         $this->assertStringNotContainsString('>Search<', $html);
         $this->assertStringNotContainsString('No rəylər', $html);
+
+        /* Filament's own Azerbaijani file leaves one word in English — the
+           breadcrumb over every list reads «Rəylər · List» — so the shop
+           overrides it in lang/vendor/filament/az. */
+        $this->assertStringContainsString('Siyahı', $html, 'the breadcrumb');
+        $this->assertStringNotContainsString('>List<', $html);
     }
 
     public function test_the_shops_own_pages_still_follow_the_address(): void

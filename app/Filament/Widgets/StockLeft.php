@@ -40,28 +40,37 @@ class StockLeft extends TableWidget
                 Tables\Columns\TextColumn::make('name')->label('Material')->weight('bold')->wrap(),
                 Tables\Columns\TextColumn::make('stock')
                     ->label('Qalıq')
-                    ->formatStateUsing(fn ($state, Material $m) => (float) $state <= 0
-                        ? 'bitib'
-                        : rtrim(rtrim(number_format((float) $state, 2, '.', ' '), '0'), '.') . ' ' . $m->unit)
+                    ->formatStateUsing(fn ($state, Material $m) => match (true) {
+                        $m->isNew() => 'sayılmayıb',
+                        (float) $state <= 0 => 'bitib',
+                        default => rtrim(rtrim(number_format((float) $state, 2, '.', ' '), '0'), '.') . ' ' . $m->unit,
+                    })
                     ->badge()
                     ->color(fn ($state, Material $m) => match (true) {
+                        $m->isNew() => 'gray',
                         (float) $state <= 0 => 'danger',
                         $m->low_stock > 0 && (float) $state <= $m->low_stock => 'warning',
                         default => 'success',
                     })
                     ->sortable(),
                 Tables\Columns\TextColumn::make('boxes_left')
-                    ->label('Neçə qutuya bəs edir')
+                    // Not always a box: the wrapping paper and the ribbons are
+                    // spent on wraps, and most boxes are not wrapped.
+                    ->label('Nəyə bəs edir')
                     ->state(fn (Material $m) => match (true) {
                         $m->per_box <= 0 => '—',
+                        $m->isNew() => 'qiyməti yazılmayıb',
                         $m->stock <= 0 => 'almaq lazımdır',
-                        default => floor($m->stock / $m->per_box) . ' qutu',
+                        default => floor($m->stock / $m->per_box) . ' ' . $m->covers(),
                     })
                     // On a phone the two columns that matter are the name and what is left.
                     ->visibleFrom('md')
-                    ->color(fn (Material $m) => $m->stock <= 0
-                        ? 'danger'
-                        : ($m->per_box > 0 && $m->stock / $m->per_box < 10 ? 'warning' : 'gray')),
+                    ->color(fn (Material $m) => match (true) {
+                        $m->isNew() => 'gray',
+                        $m->stock <= 0 => 'danger',
+                        $m->per_box > 0 && $m->stock / $m->per_box < 10 => 'warning',
+                        default => 'gray',
+                    }),
             ])
             ->emptyStateHeading('Anbar boşdur')
             ->emptyStateDescription('Materialları "Anbar" bölməsində əlavə edin.');

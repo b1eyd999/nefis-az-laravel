@@ -25,8 +25,12 @@ class StockController extends Controller
     public function index(): View
     {
         return view('phone.stock', [
-            'materials' => Material::where('is_active', true)->orderBy('stock')->orderBy('sort_order')->get(),
+            'materials' => Material::where('is_active', true)
+                ->withCount('wrappings')
+                ->orderBy('stock')->orderBy('sort_order')->get(),
             'perBox' => Material::costOfOneBox(),
+            // Said apart from the box, because most boxes are not wrapped.
+            'perWrap' => Material::costOfOneWrap(),
         ]);
     }
 
