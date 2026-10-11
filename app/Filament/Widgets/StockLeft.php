@@ -32,8 +32,11 @@ class StockLeft extends TableWidget
     public function table(Table $table): Table
     {
         return $table
-            ->query(Material::query()->where('is_active', true))
-            ->defaultSort('stock')
+            // Counted first, lowest at the top; a roll with no price on it yet
+            // is not news and must not take the whole first page.
+            ->query(Material::query()->where('is_active', true)
+                ->orderByRaw('CASE WHEN pack_price <= 0 AND stock <= 0 THEN 1 ELSE 0 END')
+                ->orderBy('stock'))
             ->paginated([5, 10, 25])
             ->defaultPaginationPageOption(5)
             ->columns([
