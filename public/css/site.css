@@ -1595,7 +1595,10 @@
 .hero-nav{ position:relative; z-index:2; display:flex; align-items:center; justify-content:center; gap:1rem; margin-top:2.5rem; }
 .hero-dots{ display:flex; align-items:center; gap:.5rem; }
 .hero-dot{ width:.6rem; height:.6rem; border-radius:999px; border:0; padding:0; background:var(--line);
+  transition:width .35s var(--ease), background .35s, box-shadow .35s; }
+/* Under the cursor a dot lights up whole, in honey yellow. */
 .hero-dot:hover{ width:1.9rem; background:linear-gradient(120deg, #FFD166, #F5B301);
+  box-shadow:0 0 12px rgba(245,179,1,.65); }
 .hero-dot.is-on{ width:1.9rem; background:var(--flame-grad); box-shadow:0 4px 12px -4px var(--flame-shadow); }
 .hero-dot:focus-visible{ outline:2px solid var(--flame); outline-offset:3px; }
 @media (prefers-reduced-motion:reduce){ .hero-slider .hero-slide{ transition:none; } }
