@@ -35,6 +35,11 @@
     @if(session('status'))
       <div class="alert alert-success">{{ session('status') }}</div>
     @endif
+    {{-- Why something could not be done — a cancellation the shop cannot
+         take, most often. It used to be a bare «403 Forbidden» page. --}}
+    @if(session('error'))
+      <div class="alert alert-error">{{ session('error') }}</div>
+    @endif
 
     @if($orders->isEmpty())
       <div class="cart-empty">

@@ -87,19 +87,26 @@ class UnpaidOrderTest extends TestCase
         $stranger = User::factory()->create();
         $this->actingAs($stranger)->post(route('orders.cancel', $order))->assertForbidden();
 
-        // Nor one whose receipt is waiting for the owner to look at it.
+        /* The rest are refused in words on his own page rather than with a
+           bare 403: a customer who has just tried to cancel an order and
+           been shown an error code cannot tell whether it worked. */
+
+        // Not one whose receipt is waiting for the owner to look at it.
         $order->forceFill(['payment_receipt' => 'receipts/x.jpg'])->save();
-        $this->actingAs($user)->post(route('orders.cancel', $order))->assertForbidden();
+        $this->actingAs($user)->post(route('orders.cancel', $order))
+            ->assertRedirect(route('orders.index'))->assertSessionHas('error');
         $order->forceFill(['payment_receipt' => null])->save();
 
         // Nor one whose payment is at the bank this minute.
         $order->forceFill(['payment_started_at' => now()])->save();
-        $this->actingAs($user)->post(route('orders.cancel', $order))->assertForbidden();
+        $this->actingAs($user)->post(route('orders.cancel', $order))
+            ->assertRedirect(route('orders.index'))->assertSessionHas('error');
         $order->forceFill(['payment_started_at' => null])->save();
 
         // Nor one that is paid for.
         $order->forceFill(['status' => 'confirmed', 'payment_confirmed_at' => now()])->save();
-        $this->actingAs($user)->post(route('orders.cancel', $order))->assertForbidden();
+        $this->actingAs($user)->post(route('orders.cancel', $order))
+            ->assertRedirect(route('orders.index'))->assertSessionHas('error');
         $this->assertSame('confirmed', $order->fresh()->status);
 
         $this->actingAs($user)->get(route('orders.index'))->assertOk()->assertDontSee('Sifarişi ləğv et');

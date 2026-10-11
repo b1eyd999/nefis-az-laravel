@@ -32,7 +32,29 @@ class OrderController extends Controller
      */
     public function cancel(Request $request, Order $order): RedirectResponse
     {
-        abort_unless($order->mayBeDroppedBy($request->user()), 403);
+        // Somebody else's order is not his to touch, and that is the only
+        // thing worth a bare refusal.
+        abort_unless($request->user() && $order->user_id === $request->user()->id, 403);
+
+        /* Everything else is answered in words on his own page. He used to
+           get «403 Forbidden» on a white screen: tapping the button twice,
+           or coming back from the bank with the payment still in flight,
+           both ended there — and a customer who has just tried to cancel an
+           order and been shown an error code has no idea whether it was
+           cancelled or not. */
+        if ($order->status === 'cancelled') {
+            return redirect(lroute('orders.index'))
+                ->with('status', __('Bu sifariş artıq ləğv edilib.'));
+        }
+
+        if (! $order->mayBeDroppedBy($request->user())) {
+            return redirect(lroute('orders.index'))->with('error', match (true) {
+                $order->payment_confirmed_at !== null => __('Bu sifariş ödənilib — ləğv etmək üçün bizə yazın.'),
+                filled($order->payment_receipt) => __('Çekiniz yoxlanılır. Ləğv etmək üçün bizə yazın.'),
+                $order->paymentInFlight() => __('Ödəniş yoxlanılır. Bir neçə dəqiqədən sonra yenidən cəhd edin.'),
+                default => __('Bu sifarişi artıq ləğv etmək olmur — bizə yazın, kömək edək.'),
+            });
+        }
 
         $order->update(['status' => 'cancelled']);
 
