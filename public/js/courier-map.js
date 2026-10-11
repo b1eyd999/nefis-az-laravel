@@ -43,48 +43,93 @@
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    /* One line of small print out of whatever is actually known: a courier
+       with no number must not leave a dangling « · » behind him. */
+    function bits() {
+      var out = [];
+      for (var i = 0; i < arguments.length; i++) { if (arguments[i]) out.push(arguments[i]); }
+      return out.join(' · ');
+    }
+
+    function when(o) {
+      return o.day ? esc(o.day) + (o.slot ? ', ' + esc(o.slot) : '') : (o.slot ? esc(o.slot) : '');
+    }
+
+    /* The door he is headed for, told in one block: the address first, because
+       that is the question the owner is asking the page. */
+    function heading(h) {
+      return '<div class="ku-head' + (h.on_the_way ? ' live' : '') + '">'
+        + '<div class="ku-head-to">' + (h.on_the_way ? 'Yolda →' : 'Növbəti →')
+        + ' <b>' + esc(h.where || '—') + '</b></div>'
+        + '<div class="ku-meta">'
+        + bits('#' + esc(h.id), esc(h.status), esc(h.how), when(h),
+               (h.km !== null && h.km !== undefined) ? esc(h.km) + ' km qalıb' : '',
+               (h.on_the_way && h.since) ? 'yola düşdü ' + esc(h.since) : '')
+        + '</div><div class="ku-go">'
+        + '<a href="' + esc(h.url) + '">Sifarişi aç</a>'
+        + (h.map ? '<a href="' + esc(h.map) + '" target="_blank" rel="noopener">Ünvan xəritədə</a>' : '')
+        + (h.phone ? '<a href="tel:' + esc(h.phone) + '">Müştəriyə zəng</a>' : '')
+        + '</div></div>';
+    }
+
     function draw(couriers) {
       var list = document.getElementById('ku-list');
       var points = [];
       layer.clearLayers();
 
+      /* Empty now means one thing only — the shop has no couriers at all. A
+         man who is in but idle is listed below with his name and his number,
+         because «nobody is moving» and «nobody is hired» are not the same
+         thing to look at. */
       if (!couriers.length) {
-        list.innerHTML = '<div class="ku-empty"><b>Yolda kuryer yoxdur.</b><br>'
-          + 'Sifarişi kuryerə verəndə və o lokasiyanı yandıranda burada görünəcək.</div>';
+        list.innerHTML = '<div class="ku-empty"><b>Kuryer yoxdur.</b><br>'
+          + 'İstifadəçilər səhifəsində bir nəfərə «Kuryer» rolu verin — adı burada görünəcək.</div>';
         return;
       }
 
       var html = '';
       couriers.forEach(function (c) {
-        html += '<div class="ku-card"><h3>'
+        var h = c.heading;
+
+        html += '<div class="ku-card' + (c.out ? '' : ' ku-free') + '"><h3>'
           + (c.sharing ? '<span class="ku-live"></span>' : '<span class="ku-off"></span>')
           + esc(c.name) + '</h3><div class="ku-meta">'
-          + (c.sharing ? 'canlı' : 'söndürülüb')
-          + (c.at ? ' · son siqnal ' + esc(c.at) : ' · lokasiya yoxdur')
-          + (c.phone ? ' · <a href="tel:' + esc(c.phone) + '">' + esc(c.phone) + '</a>' : '')
+          + bits(c.sharing ? 'canlı' : 'lokasiya söndürülüb',
+                 c.at ? 'son siqnal ' + esc(c.at) : 'lokasiya yoxdur',
+                 c.phone ? '<a href="tel:' + esc(c.phone) + '">' + esc(c.phone) + '</a>' : '')
           + '</div>';
 
-        (c.orders || []).forEach(function (o) {
-          html += '<div class="ku-ord"><a href="' + esc(o.url) + '">#' + esc(o.id) + '</a> — '
-            + esc(o.status) + (o.on_the_way ? ' · yolda' : '')
-            + (o.slot ? ' · ' + esc(o.slot) : '')
-            + '<br><span class="ku-meta">' + esc(o.address || '—') + '</span></div>';
-          /* Where the box has to end up, so the owner sees the gap between the
-             courier and the door rather than only the courier. */
-          if (o.lat && o.lng) {
-            points.push([o.lat, o.lng]);
-            L.marker([o.lat, o.lng], { icon: icon('📍') })
-              .bindPopup('<b>#' + esc(o.id) + '</b><br>' + esc(o.address || ''))
-              .addTo(layer);
-          }
-        });
+        html += h ? heading(h) : '<div class="ku-none">Əlində sifariş yoxdur — boşdur.</div>';
+
+        var rest = (c.orders || []).filter(function (o) { return !o.heading; });
+        if (rest.length) {
+          html += '<div class="ku-more">Əlində daha ' + rest.length + ' sifariş:</div>';
+          rest.forEach(function (o) {
+            html += '<div class="ku-ord"><a href="' + esc(o.url) + '">#' + esc(o.id) + '</a> — '
+              + esc(o.where || '—') + '<br><span class="ku-meta">'
+              + bits(esc(o.status), when(o)) + '</span></div>';
+          });
+        }
         html += '</div>';
+
+        /* Where the boxes have to end up, so the owner sees the gap between
+           the courier and the door rather than only the courier. The one he is
+           on is flagged, and a dashed line says which way he is going. */
+        (c.orders || []).forEach(function (o) {
+          if (!o.lat || !o.lng) return;
+          points.push([o.lat, o.lng]);
+          L.marker([o.lat, o.lng], { icon: icon(o.heading ? '🏁' : '📍'), zIndexOffset: o.heading ? 200 : 0 })
+            .bindPopup('<b>#' + esc(o.id) + '</b><br>' + esc(o.where || '')
+              + (o.heading ? '<br>' + esc(c.name) + ' bu ünvana gedir' : ''))
+            .addTo(layer);
+        });
 
         if (c.lat && c.lng) {
           points.push([c.lat, c.lng]);
           L.marker([c.lat, c.lng], { icon: icon('🚴'), zIndexOffset: 500 })
             .bindPopup('<b>' + esc(c.name) + '</b><br>' + (c.sharing ? 'canlı' : 'son yer')
-              + (c.at ? ' · ' + esc(c.at) : ''))
+              + (c.at ? ' · ' + esc(c.at) : '')
+              + (h ? '<br>→ ' + esc(h.where || '') : ''))
             .addTo(layer);
           if (c.accuracy) {
             L.circle([c.lat, c.lng], { radius: Math.min(c.accuracy, 500), weight: 0,
@@ -92,6 +137,10 @@
           }
           if ((c.trail || []).length > 1) {
             L.polyline(c.trail, { color: '#d97706', weight: 3, opacity: .65 }).addTo(layer);
+          }
+          if (h && h.lat && h.lng) {
+            L.polyline([[c.lat, c.lng], [h.lat, h.lng]],
+              { color: '#2563eb', weight: 2, opacity: .85, dashArray: '6 8' }).addTo(layer);
           }
         }
       });

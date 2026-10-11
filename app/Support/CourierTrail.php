@@ -6,6 +6,7 @@ use App\Models\CourierPosition;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 /**
  * Where the couriers are.
@@ -74,20 +75,22 @@ class CourierTrail
     }
 
     /**
-     * What the owner's map draws: every courier who is out — sharing now, or
-     * holding an order that has not been delivered — with where he last was
-     * and what he is carrying.
+     * What the owner's map draws: every courier the shop has — his name, where
+     * he last was, what he is carrying, and first of all where he is headed.
+     *
+     * Everyone is listed, not only the men who are moving. The owner opened
+     * this page with nobody sharing and nobody carrying, and found an empty
+     * box: a page that cannot tell «the shop has no couriers» from «no courier
+     * is out right now» is no use to him. A man with nothing on his hands is
+     * listed as free, with his name and his number still there to ring.
+     *
+     * Whoever is out comes first; inside each group the names stay in order.
      *
      * @return array<int, array<string, mixed>>
      */
     public static function map(): array
     {
-        $couriers = User::query()
-            ->where('role', User::COURIER)
-            ->where(fn ($q) => $q->whereNotNull('sharing_until')
-                ->orWhereHas('deliveries', fn ($d) => $d->whereNotIn('status', self::DONE)))
-            ->orderBy('name')
-            ->get();
+        $couriers = User::couriers();
 
         if ($couriers->isEmpty()) {
             return [];
@@ -96,10 +99,15 @@ class CourierTrail
         $orders = Order::query()
             ->whereIn('courier_id', $couriers->modelKeys())
             ->whereNotIn('status', self::DONE)
+            // The nearest day first, so the top of his list is the one he is
+            // on — that is what «where is he headed» comes down to when nobody
+            // has pressed «yola düşdüm» yet. Orders with no day queue behind.
+            ->orderByRaw('CASE WHEN delivery_date IS NULL THEN 1 ELSE 0 END')
             ->orderBy('delivery_date')
             ->orderBy('id')
             ->get(['id', 'courier_id', 'status', 'delivery_address', 'delivery_lat', 'delivery_lng',
-                'delivery_slot', 'on_the_way_at', 'contact_phone'])
+                'delivery_slot', 'delivery_date', 'delivery_type', 'delivery_name', 'metro_station',
+                'postal_index', 'recipient_name', 'on_the_way_at', 'contact_phone'])
             ->groupBy('courier_id');
 
         $trail = CourierPosition::query()
@@ -109,35 +117,100 @@ class CourierTrail
             ->get(['user_id', 'lat', 'lng', 'accuracy', 'created_at'])
             ->groupBy('user_id');
 
-        return $couriers->map(function (User $courier) use ($orders, $trail) {
-            $points = $trail->get($courier->id) ?? collect();
-            $last = $points->last();
+        return $couriers
+            ->map(function (User $courier) use ($orders, $trail) {
+                $points = $trail->get($courier->id) ?? collect();
+                $last = $points->last();
+                $his = $orders->get($courier->id) ?? collect();
 
-            return [
-                'id' => $courier->id,
-                'name' => $courier->name,
-                'phone' => $courier->phone,
-                'sharing' => $courier->isSharing(),
-                // The last reading, and when — "not sharing, last seen 12:40"
-                // has to be tellable from "sharing, here".
-                'at' => $last ? self::clock($last->created_at) : null,
-                'lat' => $last?->lat,
-                'lng' => $last?->lng,
-                'accuracy' => $last?->accuracy,
-                'trail' => $points->map(fn (CourierPosition $p) => [$p->lat, $p->lng])->values()->all(),
-                'orders' => ($orders->get($courier->id) ?? collect())->map(fn (Order $o) => [
-                    'id' => $o->id,
-                    'status' => $o->statusLabel(),
-                    'address' => $o->delivery_address,
-                    'phone' => $o->contact_phone,
-                    'slot' => $o->delivery_slot,
-                    'lat' => $o->delivery_lat,
-                    'lng' => $o->delivery_lng,
-                    'on_the_way' => $o->isOnTheWay(),
-                    'url' => route('filament.admin.resources.orders.edit', ['record' => $o->id]),
-                ])->values()->all(),
-            ];
-        })->values()->all();
+                /* The one he is on: the order he said he had set off with, or
+                   else the first on his list. Everything else he is holding is
+                   listed underneath it. */
+                $heading = $his->first(fn (Order $o) => $o->isOnTheWay()) ?? $his->first();
+
+                return [
+                    'id' => $courier->id,
+                    'name' => $courier->name,
+                    'phone' => $courier->phone,
+                    'sharing' => $courier->isSharing(),
+                    // Out, in the only sense the owner cares about: either his
+                    // phone is reporting or he has a box in his hands.
+                    'out' => $courier->isSharing() || $his->isNotEmpty(),
+                    // The last reading, and when — "not sharing, last seen 12:40"
+                    // has to be tellable from "sharing, here".
+                    'at' => $last ? self::clock($last->created_at) : null,
+                    'lat' => $last?->lat,
+                    'lng' => $last?->lng,
+                    'accuracy' => $last?->accuracy,
+                    'trail' => $points->map(fn (CourierPosition $p) => [$p->lat, $p->lng])->values()->all(),
+                    'heading' => $heading ? self::door($heading, $last?->lat, $last?->lng) : null,
+                    'orders' => self::load($his, $heading),
+                ];
+            })
+            // Stable in PHP 8, so the names stay alphabetical within each group.
+            ->sortBy(fn (array $c) => $c['out'] ? 0 : 1)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Where a box has to end up, said the way the owner would say it.
+     *
+     * The address is the one the order itself prints — a metro station or a
+     * postal index reads as the address for those, instead of a blank line —
+     * and the kilometres are the straight line from wherever the courier last
+     * was, which is enough to tell «he is nearly there» from «he has not left».
+     *
+     * @return array<string, mixed>
+     */
+    private static function door(Order $order, ?float $lat, ?float $lng): array
+    {
+        return [
+            'id' => $order->id,
+            'where' => $order->deliverySummary(),
+            'how' => $order->delivery_name,
+            'slot' => $order->delivery_slot,
+            'day' => $order->delivery_date ? DeliveryTime::day($order->delivery_date) : null,
+            'status' => $order->statusLabel(),
+            'on_the_way' => $order->isOnTheWay(),
+            'since' => self::clock($order->on_the_way_at),
+            'phone' => $order->contact_phone,
+            'lat' => $order->delivery_lat,
+            'lng' => $order->delivery_lng,
+            'km' => self::km($lat, $lng, $order->delivery_lat, $order->delivery_lng),
+            'map' => $order->mapUrl(),
+            'url' => route('filament.admin.resources.orders.edit', ['record' => $order->id]),
+        ];
+    }
+
+    /**
+     * Everything in his hands, with the one he is on marked as such.
+     *
+     * @param  Collection<int, Order>  $his
+     * @return array<int, array<string, mixed>>
+     */
+    private static function load(Collection $his, ?Order $heading): array
+    {
+        return $his
+            ->map(fn (Order $o) => self::door($o, null, null)
+                + ['heading' => $heading !== null && $o->id === $heading->id])
+            ->values()
+            ->all();
+    }
+
+    /** Straight-line kilometres between two points, or nothing if one is missing. */
+    private static function km(?float $aLat, ?float $aLng, ?float $bLat, ?float $bLng): ?float
+    {
+        if ($aLat === null || $aLng === null || $bLat === null || $bLng === null) {
+            return null;
+        }
+
+        $dLat = deg2rad($bLat - $aLat);
+        $dLng = deg2rad($bLng - $aLng);
+        $h = sin($dLat / 2) ** 2
+            + cos(deg2rad($aLat)) * cos(deg2rad($bLat)) * sin($dLng / 2) ** 2;
+
+        return round(2 * 6371.0 * asin(min(1.0, sqrt($h))), 1);
     }
 
     /** The endings that take an order off a courier's hands. */

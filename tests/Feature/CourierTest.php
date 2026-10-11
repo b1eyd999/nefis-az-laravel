@@ -387,13 +387,87 @@ class CourierTest extends TestCase
         $this->assertSame($order->id, $answer[0]['orders'][0]['id']);
     }
 
-    public function test_a_delivered_order_takes_him_off_the_map(): void
+    public function test_a_delivered_order_leaves_him_listed_but_free(): void
     {
         $courier = $this->courier();
         $order = $this->order($courier);
         $order->forceFill(['status' => 'completed'])->save();
 
-        $this->assertSame([], CourierTrail::map(), 'nothing to carry and not sharing');
+        /* He stays on the page by name. The owner opened it with nobody out
+           and read «no courier is on the road» as «the page is broken» — his
+           own words were that he wants the couriers' names here. What changes
+           when a man is free is `out`, not whether he exists. */
+        $map = CourierTrail::map();
+        $this->assertCount(1, $map);
+        $this->assertSame('Ramil', $map[0]['name']);
+        $this->assertFalse($map[0]['out'], 'nothing to carry and not sharing');
+        $this->assertNull($map[0]['heading']);
+        $this->assertSame([], $map[0]['orders']);
+
+        // No couriers at all is the one empty answer left.
+        $courier->delete();
+        $this->assertSame([], CourierTrail::map());
+    }
+
+    public function test_the_map_says_which_door_the_courier_is_headed_for(): void
+    {
+        $courier = $this->courier();
+
+        // Two in his hands: tomorrow's, and today's that he has set off with.
+        $later = $this->order($courier, ['delivery_date' => now()->addDay()->toDateString(),
+            'delivery_address' => 'Bakı, Həsən Əliyev 1']);
+        $now = $this->order($courier, ['delivery_date' => now()->toDateString(),
+            'delivery_slot' => '14:00–17:00', 'delivery_lat' => 40.4000, 'delivery_lng' => 49.8500]);
+
+        $this->actingAs($courier)->post(route('courier.way', $now))->assertRedirect();
+        CourierTrail::start($courier);
+        CourierTrail::record($courier->fresh(), 40.3900, 49.8500, 12);
+
+        $map = CourierTrail::map();
+        $heading = $map[0]['heading'];
+
+        $this->assertSame($now->id, $heading['id'], 'the one he said he had set off with');
+        $this->assertSame('Bakı, Nizami küç. 5', $heading['where']);
+        $this->assertSame('14:00–17:00', $heading['slot']);
+        $this->assertTrue($heading['on_the_way']);
+        $this->assertNotNull($heading['since']);
+        // Straight line from his last reading to the door: about a kilometre.
+        $this->assertEqualsWithDelta(1.1, $heading['km'], 0.2);
+        $this->assertStringContainsString('49.85', (string) $heading['map']);
+
+        // The rest of his load is still there, with the one he is on flagged.
+        $this->assertCount(2, $map[0]['orders']);
+        $flagged = collect($map[0]['orders'])->firstWhere('heading', true);
+        $this->assertSame($now->id, $flagged['id']);
+        $this->assertFalse(collect($map[0]['orders'])->firstWhere('id', $later->id)['heading']);
+    }
+
+    public function test_without_a_word_from_him_the_nearest_day_is_where_he_is_headed(): void
+    {
+        $courier = $this->courier();
+        $this->order($courier, ['delivery_date' => now()->addDays(3)->toDateString()]);
+        $soon = $this->order($courier, ['delivery_date' => now()->toDateString()]);
+
+        $heading = CourierTrail::map()[0]['heading'];
+
+        $this->assertSame($soon->id, $heading['id']);
+        $this->assertFalse($heading['on_the_way']);
+        // No reading from his phone, so there is no distance to claim.
+        $this->assertNull($heading['km']);
+    }
+
+    public function test_the_men_who_are_out_are_listed_before_the_men_who_are_free(): void
+    {
+        $free = $this->courier(['name' => 'Anar']);
+        $busy = $this->courier(['name' => 'Zaur']);
+        $this->order($busy);
+
+        $map = CourierTrail::map();
+
+        // Alphabetically Anar comes first; with a box in his hands Zaur does.
+        $this->assertSame(['Zaur', 'Anar'], array_column($map, 'name'));
+        $this->assertTrue($map[0]['out']);
+        $this->assertFalse($map[1]['out']);
     }
 
     public function test_the_owners_own_phone_never_becomes_a_courier_on_the_map(): void

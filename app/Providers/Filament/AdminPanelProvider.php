@@ -96,6 +96,10 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                // Filament's own words follow the application's locale, and
+                // this installation runs on `en`; without this the panel read
+                // «Rəylər · List», «Search», «No rəylər».
+                \App\Http\Middleware\AdminInAzerbaijani::class,
             ])
             ->authMiddleware([
                 Authenticate::class,
