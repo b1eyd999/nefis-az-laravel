@@ -167,9 +167,20 @@
                          width="1080" height="1350" decoding="async"
                          @if($loop->parent->first && $loop->index < 2) fetchpriority="high" @else loading="lazy" @endif>
                   </div>
+                    {{-- For somebody who only wants a closer look at the
+                         artwork: the card itself now goes to the design. --}}
+                    <button type="button" class="d-zoom" aria-label="{{ __('Şəkli böyüt') }}">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                    </button>
                   <div class="d-card-body">
                     <h3>{{ $design->tr('name') }}</h3>
                     <span>{{ $label }}</span>
+                    {{-- The catalogue was the one page that hid the price, so
+                         a gift-buyer with a figure in his head had to open a
+                         design to find out whether this shop was for him. --}}
+                    <b class="d-card-price">{{ $design->priceFrom()
+                      ? __(':price-dan', ['price' => \App\Support\Price::format($design->priceFrom())])
+                      : __('Qiymət sorğu ilə') }}</b>
                   </div>
                 </a>
               @endforeach
@@ -261,12 +272,17 @@
     document.body.style.overflow = "";
   }
 
-  // Cards are links (search engines follow them); a plain click opens the preview instead.
-  document.querySelectorAll(".d-card").forEach(function(card){
-    card.addEventListener("click", function(e){
-      if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+  /* A tap on a card opens the design, which is what a card is for.
+     It used to open a bigger copy of the same picture instead: the visitor
+     learned nothing, shut it, tapped the next one, learned nothing again —
+     and the catalogue, which is where the shop's own banner button sends
+     him, could not be got out of. The magnifier below still opens the
+     preview for somebody who only wants a closer look. */
+  document.querySelectorAll(".d-card .d-zoom").forEach(function(btn){
+    btn.addEventListener("click", function(e){
       e.preventDefault();
-      open(card);
+      e.stopPropagation();
+      open(btn.closest(".d-card"));
     });
   });
 

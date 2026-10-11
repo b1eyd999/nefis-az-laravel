@@ -1600,3 +1600,20 @@
 .hero-dot:focus-visible{ outline:2px solid var(--flame); outline-offset:3px; }
 @media (prefers-reduced-motion:reduce){ .hero-slider .hero-slide{ transition:none; } }
 .collections-foot{ display:flex; justify-content:center; margin-top:3rem; }
+
+  /* ---------- the catalogue card ---------- */
+  /* A tap on the card opens the design; the magnifier is for the visitor
+     who only wants a closer look at the artwork. */
+  .d-card{ position:relative; }
+  .d-card .d-zoom{
+    position:absolute; top:.5rem; right:.5rem; z-index:2;
+    width:2.25rem; height:2.25rem; border-radius:50%; border:1px solid var(--line);
+    background:var(--glass); color:var(--cocoa); display:grid; place-items:center;
+    cursor:pointer; padding:0; backdrop-filter:blur(6px);
+  }
+  .d-card .d-zoom svg{ width:1.0625rem; height:1.0625rem; }
+  .d-card .d-zoom:hover{ border-color:var(--gold-deep); }
+  .d-card-price{
+    display:block; margin-top:.2rem; font-size:.9375rem; font-weight:700;
+    color:var(--gold-deep); font-variant-numeric:tabular-nums;
+  }
