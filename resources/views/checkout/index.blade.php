@@ -780,10 +780,16 @@
           </label>
         @endif
 
-        <div class="field">
-          <label for="contact_phone">{{ __('Telefon nömrəsi') }}</label>
-          <input type="tel" id="contact_phone" name="contact_phone" value="{{ old('contact_phone', auth()->user()?->phone) }}" required placeholder="{{ __('+994 XX XXX XX XX') }}">
-        </div>
+        {{-- Only somebody who is signed in is asked here. A guest typed his
+             number into «Əlaqə nömrəsi» at the top of this same form; asking
+             for it again, under a different label, taught him either that the
+             shop was not listening or that this one was somebody else's. --}}
+        @auth
+          <div class="field">
+            <label for="contact_phone">{{ __('Telefon nömrəsi') }}</label>
+            <input type="tel" id="contact_phone" name="contact_phone" value="{{ old('contact_phone', auth()->user()?->phone) }}" required placeholder="{{ __('+994 XX XXX XX XX') }}">
+          </div>
+        @endauth
         <div class="field">
           <label for="note">{{ __('Əlavə Qeyd (istəyə bağlı)') }}</label>
           <textarea id="note" name="note" rows="3">{{ old('note') }}</textarea>

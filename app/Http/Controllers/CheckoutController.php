@@ -296,7 +296,11 @@ class CheckoutController extends Controller
     private function validateDelivery(Request $request): array
     {
         $common = [
-            'contact_phone' => ['required', 'string', 'max:30'],
+            /* A guest gives his number once, as `guest_phone`, at the top
+               of the form. This runs before his account is made, so the
+               rule has to accept that field rather than demand a second
+               copy of the same number. */
+            'contact_phone' => ['required_without:guest_phone', 'nullable', 'string', 'max:30'],
             'note' => ['nullable', 'string', 'max:500'],
             // Anything but a string here used to take the checkout down with it.
             'promo_code' => ['nullable', 'string', 'max:32'],
@@ -358,7 +362,10 @@ class CheckoutController extends Controller
             'delivery_type' => $method->type,
             'delivery_name' => $method->name,
             'delivery_price' => $method->price,
-            'contact_phone' => $data['contact_phone'],
+            // Whichever field he filled: the order carries one number. A
+            // guest's field is not merely empty — it is not on his page at
+            // all, so it is absent from the validated data.
+            'contact_phone' => ($data['contact_phone'] ?? null) ?: (string) $request->input('guest_phone'),
             'recipient_name' => $data['recipient_name'] ?? null,
             'postal_index' => isset($data['postal_index']) ? DeliveryMethod::normalizeIndex($data['postal_index']) : null,
             'metro_station' => $data['metro_station'] ?? null,
