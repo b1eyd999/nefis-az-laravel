@@ -26,6 +26,7 @@ class StylesheetIsWholeTest extends TestCase
             ['css/site.css'],
             ['css/admin-phone.css'],
             ['css/polaroid.css'],
+            ['css/color-picker.css'],
         ];
     }
 

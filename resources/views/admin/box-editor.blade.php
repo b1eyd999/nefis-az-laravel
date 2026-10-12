@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500;600;700&family=Great+Vibes&family=Poppins:wght@600&family=Titan+One&family=Bungee&family=Fredoka:wght@600&family=Sacramento&family=Creepster&family=Source+Sans+3:wght@400;600&family=Orbitron:wght@800&family=Anton&family=Cinzel:wght@400;700&family=Bangers&family=Luckiest+Guy&family=Oswald:wght@500;700&family=Bevan&family=Archivo+Black&family=Caveat:wght@600&family=Pacifico&family=Montserrat:wght@300;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('css/color-picker.css') }}?v={{ \App\Support\Assets::version('css/color-picker.css') }}">
 <style>
   :root{
     --ink:#1d2433; --ink-2:#4b5566; --muted:#8a93a3; --line:#e3e6ec; --panel:#ffffff;
@@ -291,6 +292,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="{{ asset('js/color-picker.js') }}?v={{ \App\Support\Assets::version('js/color-picker.js') }}"></script>
 <script src="{{ asset('js/star-data.js') }}?v={{ \App\Support\Assets::version('js/star-data.js') }}"></script>
 <script src="{{ asset('js/star-extra.js') }}?v={{ \App\Support\Assets::version('js/star-extra.js') }}"></script>
 <script src="{{ asset('js/star-map.js') }}?v={{ \App\Support\Assets::version('js/star-map.js') }}"></script>

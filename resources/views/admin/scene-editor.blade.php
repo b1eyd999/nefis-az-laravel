@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('css/color-picker.css') }}?v={{ \App\Support\Assets::version('css/color-picker.css') }}">
 <style>
   :root{
     --ink:#1d2433; --ink-2:#4b5566; --muted:#8a93a3; --line:#e3e6ec; --panel:#ffffff;
@@ -196,6 +197,7 @@
 <canvas class="loupe" id="loupe" width="180" height="180" hidden></canvas>
 <div class="toast" id="toast"></div>
 
+<script src="{{ asset('js/color-picker.js') }}?v={{ \App\Support\Assets::version('js/color-picker.js') }}"></script>
 <script src="{{ asset('js/scene-render.js') }}?v={{ \App\Support\Assets::version('js/scene-render.js') }}"></script>
 <script src="{{ asset('js/cover.js') }}?v={{ \App\Support\Assets::version('js/cover.js') }}"></script>
 <script>
