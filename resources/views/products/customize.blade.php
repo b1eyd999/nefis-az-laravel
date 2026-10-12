@@ -139,7 +139,16 @@
   #map-chosen:not(:empty){ color:var(--gold); font-weight:600; }
   .slot-block{ border-top:1px solid var(--line); padding-top:1.25rem; }
   .slot-block:first-of-type{ border-top:none; padding-top:0; }
-  .slot-block .zoom-row{ margin-top:.75rem; }
+  /* The photograph's own controls, under the preview rather than in the form.
+     Hidden until a picture is in: an empty row would be another question for
+     a customer who is already unsure what the box above is showing. */
+  .ptools{ margin-top:1rem; }
+  .ptools [hidden]{ display:none !important; }
+  .ptools-head{ font-size:.8125rem; font-weight:600; color:var(--cocoa-soft); margin-bottom:.4rem; }
+  .ptools .zoom-row{ margin-top:0; }
+  .ptools .fix-bg{ margin-top:.6rem; }
+  /* Scrolled to, never behind the bar at the top of the page. */
+  .stage{ scroll-margin-top:5rem; }
   .spotify-pick{ border-top:1px solid var(--line); padding-top:1.25rem; }
   .spotify-pick .opt{ font-weight:400; opacity:.6; font-size:.85em; }
   .spotify-pick input{ width:100%; }
@@ -163,7 +172,7 @@
   .sp-tile img{ display:block; width:100%; max-width:18rem; height:auto; }
   .sp-note{ font-size:.8rem; opacity:.72; line-height:1.4; }
   @media (prefers-reduced-motion:reduce){ .spotify-shown{ animation:none; } }
-  .slot-block .rotate-row{ margin-top:.5rem; }
+  .ptools .rotate-row{ margin-top:.5rem; }
   .flip-btn[aria-pressed="true"]{ background:var(--flame-grad, #F86E17); color:#fff; border-color:transparent; }
   .rotate-reset{
     flex:none; width:2rem; height:2rem; border-radius:50%; border:1px solid var(--line);
@@ -471,6 +480,41 @@
             @endforeach
           </div>
         @endif
+
+        {{-- Zooming and turning the photograph, directly under the picture it
+             changes. These used to sit far down the form, beside the file
+             field, and several customers told the owner they had never
+             realised the box above was already showing their own photograph,
+             let alone that they could move it. Nothing appears here until a
+             photograph is in: an empty row would only be another question. --}}
+        @php $photoTools = collect($photoSlots)->filter(fn ($s) => $s->needsUpload()); @endphp
+        @if($photoTools->isNotEmpty())
+          <div class="photo-tools" id="photo-tools">
+            @foreach($photoTools as $index => $slot)
+              <div class="ptools" data-slot="{{ $index }}" hidden>
+                @if($photoTools->count() > 1)
+                  <div class="ptools-head">{{ $loop->iteration }}. {{ $slot->label ? __($slot->tr('label')) : __('Şəkil') }}</div>
+                @endif
+                <div class="range-row zoom-row" hidden>
+                  <span class="lbl">{{ __('Yaxınlaşdır') }}</span>
+                  <input type="range" class="zoom-range" min="50" max="500" value="100">
+                </div>
+                <div class="range-row rotate-row" hidden>
+                  <span class="lbl">{{ __('Fırlat') }}</span>
+                  <input type="range" class="rotate-range" min="-180" max="180" value="0">
+                  <button type="button" class="rotate-reset" title="{{ __('Sıfırla') }}">↺</button>
+                  {{-- A face cut from a photo often looks the wrong way round on a
+                       drawn body: this turns it over without touching anything else. --}}
+                  <button type="button" class="flip-btn" aria-pressed="false" title="{{ __('Güzgü') }}">⇄</button>
+                </div>
+                <p class="slot-hint" hidden>{{ __('Şəkli önizləmədə sürükləyərək mövqeyini dəyişə bilərsiniz.') }}</p>
+                @if($slot->cutout)
+                  <button type="button" class="btn btn-ghost fix-bg" hidden>{{ __('Fonu düzəlt') }}</button>
+                @endif
+              </div>
+            @endforeach
+          </div>
+        @endif
       </div>
 
       <form class="customize-panel" method="POST" action="{{ lroute('cart.add') }}" enctype="multipart/form-data" id="customize-form">
@@ -502,22 +546,11 @@
             <input type="hidden" name="photo_frames[{{ $index }}]" class="photo-frame">
             <input type="file" class="photo-input" id="photo-input-{{ $index }}" name="photos[{{ $index }}]"
                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" required style="display:none;">
-            <div class="range-row zoom-row" hidden>
-              <span class="lbl">{{ __('Yaxınlaşdır') }}</span>
-              <input type="range" class="zoom-range" min="50" max="500" value="100">
-            </div>
-            <div class="range-row rotate-row" hidden>
-              <span class="lbl">{{ __('Fırlat') }}</span>
-              <input type="range" class="rotate-range" min="-180" max="180" value="0">
-              <button type="button" class="rotate-reset" title="{{ __('Sıfırla') }}">↺</button>
-              {{-- A face cut from a photo often looks the wrong way round on a
-                   drawn body: this turns it over without touching anything else. --}}
-              <button type="button" class="flip-btn" aria-pressed="false" title="{{ __('Güzgü') }}">⇄</button>
-            </div>
-            <p class="slot-hint" hidden>{{ __('Şəkli önizləmədə sürükləyərək mövqeyini dəyişə bilərsiniz.') }}</p>
-            @if($slot->cutout)
-              <button type="button" class="btn btn-ghost fix-bg" hidden>{{ __('Fonu düzəlt') }}</button>
-            @endif
+            {{-- How the file is getting on: being converted, being made
+                 smaller, or not a picture at all. It belongs beside the field
+                 he has just tapped — what to DO with the photograph is said
+                 under the preview instead, where the photograph is. --}}
+            <p class="slot-hint slot-note" hidden></p>
           </div>
         @endforeach
 
@@ -1303,6 +1336,77 @@
   var angleNext = document.getElementById('angle-next');
   var angleThumbs = document.querySelectorAll('.angle-thumb');
   var slotBlocks = Array.prototype.slice.call(document.querySelectorAll('.slot-block'));
+
+  /* A photo window's zoom and turn live under the preview rather than in the
+     form, so they are found by the window's number instead of by looking
+     inside its block. Everything else about the window — the file field, the
+     chosen picture's name — is still in the form where the customer chose it. */
+  var photoTools = {};
+  Array.prototype.forEach.call(document.querySelectorAll('#photo-tools .ptools'), function (tools) {
+    photoTools[Number(tools.dataset.slot)] = tools;
+  });
+  function toolsOf(i){ return photoTools[i] || null; }
+
+  /**
+   * Where the zoom and turn of a photograph sit.
+   *
+   * On a phone the preview is at the top and the form below it, and a
+   * customer who had just chosen a picture never connected the two: several
+   * told the owner they had not realised the box above was already wearing
+   * their photograph, let alone that it could be moved. So on a narrow screen
+   * the controls go under the box, where the thing they change is.
+   *
+   * On a wide screen the box is already beside the form and stays in sight
+   * while it is scrolled — there the controls belong next to the field the
+   * customer is working in, and putting them in the stuck column would only
+   * push their lower half below the fold, where a stuck column never
+   * scrolls. The nodes are moved rather than copied, so every handler
+   * bound to them survives the journey.
+   */
+  var narrow = window.matchMedia('(max-width: 959px)');
+  function placeTools(){
+    Object.keys(photoTools).forEach(function (key) {
+      var tools = photoTools[key];
+      var home = narrow.matches
+        ? document.getElementById('photo-tools')
+        : document.querySelector('.slot-block[data-slot="' + key + '"]');
+      if (home && tools.parentNode !== home) home.appendChild(tools);
+    });
+  }
+  placeTools();
+  if (narrow.addEventListener) narrow.addEventListener('change', placeTools);
+  else if (narrow.addListener) narrow.addListener(placeTools);
+
+  /**
+   * Brings the photograph, and the handles that move it, in front of him.
+   *
+   * Only when they are not already there, only the first time a window is
+   * filled, and never while he is typing — a page that jumps under a raised
+   * keyboard loses him the field he was in. The picture and its controls
+   * together when both fit on the screen; when they do not, the controls,
+   * with as much of the picture above them as there is room for.
+   */
+  function showThePreview(tools){
+    var stage = document.getElementById('stage');
+    if (!stage || !narrow.matches) return;
+
+    var typing = document.activeElement;
+    if (typing && /^(INPUT|TEXTAREA|SELECT)$/.test(typing.tagName) && typing.type !== 'file') return;
+
+    var top = stage.getBoundingClientRect().top;
+    var foot = (tools || stage).getBoundingClientRect().bottom;
+    var room = window.innerHeight;
+    if (top > 0 && foot < room) return;
+
+    var bothFit = (foot - top) <= room - 16;
+    var target = bothFit ? stage : (tools || stage);
+
+    try {
+      target.scrollIntoView({ behavior: 'smooth', block: bothFit ? 'start' : 'end' });
+    } catch (e) {
+      target.scrollIntoView();
+    }
+  }
   var textInputs = Array.prototype.slice.call(document.querySelectorAll('.text-input'));
 
   var template = new Image(), templateReady = false;
@@ -1699,10 +1803,10 @@
          follows this view's own cutout. */
       var area = areaFor(i);
       if (!state.framed && area && (area.shape === 'ellipse' || area.cutout) && state.faceBox) frameOnFace(i, state.faceBox);
-      var block = slotBlocks[i];
-      var zoom = block && block.querySelector('.zoom-range');
+      var tools = toolsOf(i);
+      var zoom = tools && tools.querySelector('.zoom-range');
       if (zoom) zoom.value = Math.round(state.scale * 100);
-      var rot = block && block.querySelector('.rotate-range');
+      var rot = tools && tools.querySelector('.rotate-range');
       if (rot) rot.value = state.rotate || 0;
     });
 
@@ -1728,7 +1832,8 @@
     state.panX = desiredScale * (state.img.width / 2 - faceCx) / area.w;
     state.panY = desiredScale * (state.img.height / 2 - (faceCy + box.height * faceCenterBias)) / area.h;
 
-    var zoom = slotBlocks[slotIndex] && slotBlocks[slotIndex].querySelector('.zoom-range');
+    var tools = toolsOf(slotIndex);
+    var zoom = tools && tools.querySelector('.zoom-range');
     if (zoom) zoom.value = Math.round(state.scale * 100);
   }
 
@@ -1785,8 +1890,8 @@
       box = box || fromCut;
 
       if (!box) {
-        var block = slotBlocks[slotIndex];
-        var hint = block && block.querySelector('.slot-hint');
+        var tools = toolsOf(slotIndex);
+        var hint = tools && tools.querySelector('.slot-hint');
         if (hint) {
           hint.hidden = false;
           hint.textContent = @json(__('Üz tapılmadı — şəkli özünüz sürükləyib yerinə salın.'));
@@ -1885,16 +1990,31 @@
     var input = block.querySelector('.photo-input');
     if (!input) return;          // not a photo window, whatever else it is
     var label = block.querySelector('.upload-label');
-    var zoomRow = block.querySelector('.zoom-row');
-    var zoom = block.querySelector('.zoom-range');
-    var rotateRow = block.querySelector('.rotate-row');
-    var rotate = block.querySelector('.rotate-range');
-    var rotateReset = block.querySelector('.rotate-reset');
-    var flipBtn = block.querySelector('.flip-btn');
-    var hint = block.querySelector('.slot-hint');
-    var fixBg = block.querySelector('.fix-bg');
+    /* The handles that move the picture — under the box on a phone, beside
+       this field on a computer; see placeTools(). */
+    var tools = toolsOf(index) || block;
+    var zoomRow = tools.querySelector('.zoom-row');
+    var zoom = tools.querySelector('.zoom-range');
+    var rotateRow = tools.querySelector('.rotate-row');
+    var rotate = tools.querySelector('.rotate-range');
+    var rotateReset = tools.querySelector('.rotate-reset');
+    var flipBtn = tools.querySelector('.flip-btn');
+    /* Two lines, and they say different things. `note` is beside the field:
+       the file is being converted, is being made smaller, or will not open.
+       `hint` is under the picture: what he can now do with it. The first is
+       written before there is anything to show, so it cannot live inside a
+       block that is still hidden. */
+    var note = block.querySelector('.slot-note');
+    var hint = tools.querySelector('.slot-hint');
+    var fixBg = tools.querySelector('.fix-bg');
     var labelWas = label.textContent;
     var hintWas = hint ? hint.textContent : '';
+    /* Says a thing and shows itself; says nothing and gets out of the way. */
+    function say(words){
+      if (!note) return;
+      note.textContent = words || '';
+      note.hidden = ! words;
+    }
     var thumb = block.querySelector('.uc-thumb');
 
     /* The chosen photograph, small enough to sit on the folded line.
@@ -1931,7 +2051,8 @@
       photos[index].img = null;
       label.textContent = labelWas;
       forgetChosen();
-      if (hint){ hint.hidden = false; hint.textContent = @json(__('Bu fayl açılmadı. JPG və ya PNG şəkil seçin.')); }
+      if (tools !== block) tools.hidden = true;
+      say(@json(__('Bu fayl açılmadı. JPG və ya PNG şəkil seçin.')));
       addBtn.disabled = true;
       markAdd();
       draw();
@@ -1949,7 +2070,7 @@
          converted file is a .jpg, so this cannot run twice on one photo. */
       if (window.NefisPhoto && window.NefisPhoto.isHeic && window.NefisPhoto.isHeic(file)
           && typeof DataTransfer !== 'undefined') {
-        if (hint){ hint.hidden = false; hint.textContent = @json(__('Şəkil hazırlanır, bir neçə saniyə…')); }
+        say(@json(__('Şəkil hazırlanır, bir neçə saniyə…')));
         window.NefisPhoto.toJpeg(file).then(function (jpeg) {
           var box = new DataTransfer();
           box.items.add(jpeg);
@@ -1965,7 +2086,7 @@
          here, at a size that still prints, and goes in instead. It comes back
          through this same handler, marked, so it is not shrunk twice. */
       if (file.size > PHOTO_MAX_BYTES && !file.__shrunk && window.NefisPhoto && typeof DataTransfer !== 'undefined') {
-        if (hint){ hint.hidden = false; hint.textContent = @json(__('Şəkil kiçildilir…')); }
+        say(@json(__('Şəkil kiçildilir…')));
         window.NefisPhoto.load(file, 3000).then(function(pic){
           var c = pic;
           if (!pic.tagName || pic.tagName !== 'CANVAS') {
@@ -1995,7 +2116,7 @@
       var alreadyCut = input.dataset.processed === '1';
       input.dataset.processed = '';
       if (!alreadyCut && area && area.cutout && window.NefisCutout) {
-        if (hint){ hint.hidden = false; hint.textContent = @json(__('Şəkil hazırlanır, bir neçə saniyə…')); }
+        say(@json(__('Şəkil hazırlanır, bir neçə saniyə…')));
         if (fixBg) fixBg.hidden = true;
         cutting++;
         addBtn.disabled = true;
@@ -2013,7 +2134,7 @@
         window.NefisCutout.prepare(file).then(function(cut){
           if (!cut) {
             /* Better to say so than to leave a square photo on a drawn body. */
-            if (hint) hint.textContent = @json(__('Fonu kəsmək alınmadı. Şəkli özünüz yerləşdirin və ya fonu sadə olan başqa şəkil seçin.'));
+            say(@json(__('Fonu kəsmək alınmadı. Şəkli özünüz yerləşdirin və ya fonu sadə olan başqa şəkil seçin.')));
             settle();
             return;
           }
@@ -2033,7 +2154,7 @@
           /* Whatever the machine left behind, the customer wipes himself. */
           if (fixBg) fixBg.hidden = false;
         }).catch(function(){
-          if (hint) hint.textContent = @json(__('Fonu kəsmək alınmadı. Şəkli özünüz yerləşdirin və ya fonu sadə olan başqa şəkil seçin.'));
+          say(@json(__('Fonu kəsmək alınmadı. Şəkli özünüz yerləşdirin və ya fonu sadə olan başqa şəkil seçin.')));
           settle();
         });
       }
@@ -2051,13 +2172,20 @@
         photos[index].img = shown;
         showChosen(shown);
         applyAutoFraming(index, shown);
-        zoomRow.hidden = false;
-        rotateRow.hidden = false;
+        /* Brought forward only the first time this window is filled: a
+           customer changing a photograph he can already see does not want
+           the page moving under him. */
+        var firstTime = tools !== block && tools.hidden;
+        if (tools !== block) tools.hidden = false;
+        if (zoomRow) zoomRow.hidden = false;
+        if (rotateRow) rotateRow.hidden = false;
         if (rotate) rotate.value = 0;
+        if (firstTime) showThePreview(tools);
         /* Back to the slot's own words: this line may have been left saying
            the photo was being shrunk, or that the last file would not open —
            both of which are over by the time the picture is in. The cut-out
            branch writes its own ending, so it is left alone. */
+        if (! cutting) say('');
         if (hint){ hint.hidden = false; if (! cutting) hint.textContent = hintWas; }
         if (allSlotsFilled() && !cutting) addBtn.disabled = false;
         markAdd();
@@ -2181,7 +2309,9 @@
     if (anglePrev) anglePrev.addEventListener('click', stopTurning);
     if (angleNext) angleNext.addEventListener('click', stopTurning);
     angleThumbs.forEach(function(btn){ btn.addEventListener('click', stopTurning); });
-    Array.prototype.forEach.call(document.querySelectorAll('.slot-block'), function (block) {
+    /* #photo-tools too: on a phone the handles sit outside every slot
+       block, and touching them must stop the box turning by itself. */
+    Array.prototype.forEach.call(document.querySelectorAll('.slot-block, #photo-tools'), function (block) {
       block.addEventListener('pointerdown', stopTurning, { passive: true });
     });
   }
