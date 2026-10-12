@@ -231,7 +231,9 @@ class Accounting
     {
         return DB::transaction(function () use ($m, $packs, $packPrice, $note) {
             $qty = round($packs * $m->pack_size, 3);
-            $m->forceFill(['pack_price' => $packPrice])->save();
+            // Buying is also saying what is there: the warehouse stops calling
+            // this one «sayılmayıb» from here on.
+            $m->forceFill(['pack_price' => $packPrice, 'counted_at' => now()])->save();
             $m->increment('stock', $qty);
 
             return StockMovement::create([
@@ -243,16 +245,26 @@ class Accounting
         });
     }
 
-    /** Sets the stock to what was actually counted. */
+    /**
+     * Sets the stock to what was actually counted.
+     *
+     * The hour is written down whatever the count says — an empty shelf
+     * counted is still counted, and from then on the warehouse is entitled to
+     * call it «bitib». Only the figure itself is left alone when it matches:
+     * a movement of nothing would be a line in the ledger saying nothing.
+     */
     public static function adjust(Material $m, float $counted, ?string $note = null): ?StockMovement
     {
         $diff = round($counted - $m->stock, 3);
+
         if ($diff == 0.0) {
+            $m->forceFill(['counted_at' => now()])->save();
+
             return null;
         }
 
         return DB::transaction(function () use ($m, $counted, $diff, $note) {
-            $m->forceFill(['stock' => $counted])->save();
+            $m->forceFill(['stock' => $counted, 'counted_at' => now()])->save();
 
             return StockMovement::create([
                 'material_id' => $m->id, 'type' => StockMovement::ADJUST, 'quantity' => $diff,

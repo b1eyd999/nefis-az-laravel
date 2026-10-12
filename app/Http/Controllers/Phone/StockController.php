@@ -28,14 +28,15 @@ class StockController extends Controller
             'materials' => Material::where('is_active', true)
                 ->withCount('wrappings')
                 // What he has counted comes first, lowest stock at the top —
-                // that is the question this screen answers. A roll he has not
+                // that is the question this screen answers. A roll nobody has
                 // written down yet is at zero through no fault of its own and
                 // would otherwise sit above the paper that is running out.
-                ->orderByRaw('CASE WHEN pack_price <= 0 AND stock <= 0 THEN 1 ELSE 0 END')
+                ->knownFirst()
                 ->orderBy('stock')->orderBy('sort_order')->get(),
             'perBox' => Material::costOfOneBox(),
             // Said apart from the box, because most boxes are not wrapped.
             'perWrap' => Material::costOfOneWrap(),
+            'perRibbon' => Material::costOfRibbon(),
         ]);
     }
 

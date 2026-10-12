@@ -104,7 +104,12 @@ class MaterialResource extends Resource
                 Tables\Columns\TextColumn::make('stock')
                     ->label('Anbarda')
                     ->formatStateUsing(fn (Material $m) => self::qty($m->stock) . ' ' . $m->unit)
-                    ->description(fn (Material $m) => $m->boxesLeft() !== null && $m->unit !== 'qutuluq' ? '≈ ' . $m->boxesLeft() . ' ' . $m->coversWorth() : null)
+                    // «31 vərəq ≈ 31 qutuluq» helps; «30 bükməlik ≈ 30 bükməlik»
+                    // is the same sentence twice, so a material already counted
+                    // in what it covers says it once.
+                    ->description(fn (Material $m) => $m->boxesLeft() !== null && $m->unit !== $m->coversWorth()
+                        ? '≈ ' . $m->boxesLeft() . ' ' . $m->coversWorth()
+                        : null)
                     ->color(fn (Material $m) => $m->isLow() ? 'danger' : null)
                     ->weight(fn (Material $m) => $m->isLow() ? 'bold' : null),
                 Tables\Columns\TextColumn::make('spent_on')
@@ -113,7 +118,7 @@ class MaterialResource extends Resource
                     // Which wraps pull this ribbon off the shelf — the owner
                     // sets that on the wrap, so the material only reports it.
                     ->description(fn (Material $m) => $m->spent_on === Material::RIBBON
-                        ? ($m->wrappings()->count() ?: 'heç bir') . ' qablaşdırmada'
+                        ? ($m->wrappings_count ?: 'heç bir') . ' qablaşdırmada'
                         : null)
                     ->badge()
                     ->color(fn (Material $m) => match ($m->spent_on) {
@@ -176,6 +181,12 @@ class MaterialResource extends Resource
                     }),
                 Tables\Actions\EditAction::make(),
             ]);
+    }
+
+    /** How many wraps pull each ribbon: one query, not one per row. */
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withCount('wrappings');
     }
 
     public static function getRelations(): array

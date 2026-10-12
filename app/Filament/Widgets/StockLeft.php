@@ -6,6 +6,7 @@ use App\Models\Material;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * What is left in the store room, the thinnest first, so an empty shelf is
@@ -32,11 +33,14 @@ class StockLeft extends TableWidget
     public function table(Table $table): Table
     {
         return $table
-            // Counted first, lowest at the top; a roll with no price on it yet
-            // is not news and must not take the whole first page.
-            ->query(Material::query()->where('is_active', true)
-                ->orderByRaw('CASE WHEN pack_price <= 0 AND stock <= 0 THEN 1 ELSE 0 END')
-                ->orderBy('stock'))
+            ->query(Material::query()->where('is_active', true))
+            /* Counted first, lowest at the top; a roll nobody has counted yet
+               is not news and must not take the whole first page. Written as
+               the default sort rather than baked into the query, so clicking
+               the «Qalıq» header replaces it instead of landing behind it. */
+            ->defaultSort(fn (Builder $query, string $direction) => $query
+                ->knownFirst()
+                ->orderBy('stock', $direction))
             ->paginated([5, 10, 25])
             ->defaultPaginationPageOption(5)
             ->columns([
@@ -62,7 +66,7 @@ class StockLeft extends TableWidget
                     ->label('Nəyə bəs edir')
                     ->state(fn (Material $m) => match (true) {
                         $m->per_box <= 0 => '—',
-                        $m->isNew() => 'qiyməti yazılmayıb',
+                        $m->isNew() => 'hələ sayılmayıb',
                         $m->stock <= 0 => 'almaq lazımdır',
                         default => floor($m->stock / $m->per_box) . ' ' . $m->covers(),
                     })

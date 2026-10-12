@@ -66,12 +66,19 @@ class DashboardTest extends TestCase
             ->assertSee('Kinder')
             ->assertCanSeeTableRecords(Order::firstOrFail()->items);   // the table renders its rows
 
+        // Counted, and there is none: that is «bitib».
         Material::create(['name' => 'Yapışqan', 'unit' => 'qutucuq', 'pack_price' => 5, 'pack_size' => 10,
-            'per_box' => 0.1, 'stock' => 0, 'low_stock' => 2, 'is_active' => true]);
+            'per_box' => 0.1, 'stock' => 0, 'low_stock' => 2, 'counted_at' => now(), 'is_active' => true]);
+
+        /* Never counted, and also at zero — a roll of ribbon the shop has
+           just put on the page. The warehouse must not call that «bitib»:
+           nobody has said how much of it there is. */
+        Material::create(['name' => 'Əlüvə lent', 'unit' => 'bükməlik', 'pack_price' => 1.20,
+            'pack_size' => 30, 'per_box' => 1, 'spent_on' => Material::RIBBON, 'stock' => 0, 'is_active' => true]);
 
         /* The widget shows the five thinnest shelves first, and the real
            materials (paper, ink, wrapping, glue) are all at or below zero in
-           a fresh test database — so the two this test invents sit on the
+           a fresh test database — so the ones this test invents sit on the
            second page unless it asks for more rows. */
         Livewire::test(StockLeft::class)
             ->set('tableRecordsPerPage', 25)
@@ -79,7 +86,8 @@ class DashboardTest extends TestCase
             ->assertSee('Lent')
             ->assertSee('6 ədəd')
             ->assertSee('bitib')                       // nothing left reads as a word, not as "0"
-            ->assertSee('almaq lazımdır');
+            ->assertSee('almaq lazımdır')
+            ->assertSee('hələ sayılmayıb');
     }
 
     public function test_a_manager_sees_the_work_but_not_the_money(): void

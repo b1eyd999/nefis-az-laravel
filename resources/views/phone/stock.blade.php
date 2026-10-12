@@ -3,8 +3,17 @@
 @section('title', 'Anbar — Nefis admin')
 @section('heading', 'Anbar')
 @section('tab', 'stock')
+@php
+  /* What a plain box costs, and what wrapping one adds on top. Two figures
+     rather than one: most boxes are not wrapped, and the single figure that
+     quietly carried the wrapping was what sent the whole maya dəyəri wrong. */
+  $wrapSum = $perWrap + ($perRibbon ? $perRibbon[0] : 0);
+  $wrapMax = $perWrap + ($perRibbon ? $perRibbon[1] : 0);
+  $wrapped = $wrapSum <= 0 ? null : '+' . \App\Support\Price::format($wrapSum)
+    . ($wrapMax > $wrapSum ? '…' . \App\Support\Price::format($wrapMax) : '');
+@endphp
 @section('sub', 'Bir qutunun materialı: ' . \App\Support\Price::format($perBox) . ' (şokoladsız)'
-  . ($perWrap > 0 ? ' · bükülürsə +' . \App\Support\Price::format($perWrap) : ''))
+  . ($wrapped ? ' · bükülürsə ' . $wrapped : ''))
 
 @section('content')
   @php $qty = fn ($v) => \App\Http\Controllers\Phone\StockController::qty((float) $v); @endphp

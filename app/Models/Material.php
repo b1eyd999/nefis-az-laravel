@@ -37,7 +37,7 @@ class Material extends Model
         self::RIBBON => 'Lent — yalnız onu seçən qablaşdırmalara',
     ];
 
-    protected $fillable = ['name', 'unit', 'pack_price', 'pack_size', 'per_box', 'spent_on', 'stock', 'low_stock', 'is_active', 'sort_order'];
+    protected $fillable = ['name', 'unit', 'pack_price', 'pack_size', 'per_box', 'spent_on', 'stock', 'low_stock', 'counted_at', 'is_active', 'sort_order'];
 
     protected $attributes = ['spent_on' => self::BOX];
 
@@ -49,6 +49,7 @@ class Material extends Model
             'per_box' => 'float',
             'stock' => 'float',
             'low_stock' => 'float',
+            'counted_at' => 'datetime',
             'is_active' => 'boolean',
         ];
     }
@@ -123,15 +124,35 @@ class Material extends Model
     }
 
     /**
-     * Nothing has been written down about this one yet: no price, nothing on
-     * the shelf. A roll of ribbon the shop has just put on the page is not
-     * «bitib» — it is simply not counted yet, and saying the warehouse has run
-     * out of six colours on the morning they appear would be six alarms the
-     * owner cannot clear and would soon learn to ignore.
+     * The shop has never written anything down about this one: nothing on the
+     * shelf, and not one purchase or stocktake behind it.
+     *
+     * A roll of ribbon that has just appeared on the page is not «bitib» — it
+     * is simply not counted yet, and saying the warehouse has run out of six
+     * colours on the morning they appear would be six alarms the owner cannot
+     * clear and would soon learn to ignore. Knowing what a roll costs does not
+     * change that: the price is the recipe, the count is the shelf, and only
+     * the second one can run out.
+     *
+     * One «Alış» or one «Sayım» ends it for good — including a «Sayım» of
+     * nothing on an empty shelf, which writes no movement but does stamp
+     * `counted_at`, because he did go and look.
      */
     public function isNew(): bool
     {
-        return $this->pack_price <= 0 && $this->stock <= 0;
+        return $this->counted_at === null && $this->stock <= 0;
+    }
+
+    /**
+     * What the shop knows about first; what it has never counted, last.
+     *
+     * Every warehouse screen sorts by what is left, so a row sitting at zero
+     * because nobody has counted it would otherwise stand above the paper that
+     * is genuinely running out.
+     */
+    public function scopeKnownFirst(Builder $query): Builder
+    {
+        return $query->orderByRaw('CASE WHEN materials.counted_at IS NULL AND materials.stock <= 0 THEN 1 ELSE 0 END');
     }
 
     public function isLow(): bool
@@ -154,5 +175,20 @@ class Material extends Model
     {
         return (float) static::used()->where('spent_on', self::WRAP)->get()
             ->sum(fn (Material $m) => $m->costPerBox());
+    }
+
+    /**
+     * And what the ribbon adds: one figure while every roll costs the same,
+     * the two ends of the range once they do not.
+     *
+     * @return array{0: float, 1: float}|null  null while none is priced
+     */
+    public static function costOfRibbon(): ?array
+    {
+        $costs = static::used()->where('spent_on', self::RIBBON)->get()
+            ->map(fn (Material $m) => round($m->costPerBox(), 3))
+            ->filter(fn (float $cost) => $cost > 0);
+
+        return $costs->isEmpty() ? null : [$costs->min(), $costs->max()];
     }
 }

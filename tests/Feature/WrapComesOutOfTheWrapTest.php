@@ -270,6 +270,78 @@ class WrapComesOutOfTheWrapTest extends TestCase
         $this->assertTrue($fresh->fresh()->isLow());
     }
 
+    /**
+     * Knowing what a roll costs is not the same as having one.
+     *
+     * The owner gave the price the day after the ribbons appeared: 1.20 ₼ a
+     * roll, thirty wrapped boxes to a roll. The price is the recipe; the count
+     * is the shelf; only the shelf can run out. Tying the two together would
+     * have turned six priced rolls into six «bitib» the morning after.
+     */
+    public function test_knowing_what_a_roll_costs_is_not_the_same_as_having_one(): void
+    {
+        $red = Material::create(['name' => 'Qırmızı lent', 'unit' => 'bükməlik', 'pack_price' => 1.20,
+            'pack_size' => 30, 'per_box' => 1, 'spent_on' => Material::RIBBON, 'stock' => 0]);
+
+        $this->assertTrue($red->isNew(), 'priced, but never counted');
+        $this->assertFalse($red->isLow());
+        $this->assertEqualsWithDelta(0.04, $red->costPerBox(), 0.0001);   // 1.20 / 30
+        $this->assertEqualsWithDelta(0.04, Material::costOfRibbon()[0], 0.0001);
+
+        // One count, and the warehouse starts answering for it like anything else.
+        Accounting::adjust($red, 2);
+        $this->assertFalse($red->fresh()->isNew());
+        $this->assertFalse($red->fresh()->isLow());
+
+        Accounting::adjust($red->fresh(), 0);
+        $this->assertTrue($red->fresh()->isLow(), 'counted, and now really out');
+    }
+
+    /**
+     * Counting an empty shelf is still counting it.
+     *
+     * A «Sayım» that matches the books writes no movement, on purpose — a line
+     * in the ledger saying nothing. So «how much is there» cannot be read off
+     * the ledger: a man who counts his red ribbon, finds none and types 0 did
+     * answer the question, and the warehouse owes him «bitib» from then on.
+     * That is why the hour he looked is a column of its own.
+     */
+    public function test_counting_an_empty_shelf_is_still_counting_it(): void
+    {
+        $red = Material::create(['name' => 'Qırmızı lent', 'unit' => 'bükməlik', 'pack_price' => 1.20,
+            'pack_size' => 30, 'per_box' => 1, 'spent_on' => Material::RIBBON, 'stock' => 0]);
+
+        $this->assertTrue($red->isNew());
+
+        $this->assertNull(Accounting::adjust($red, 0), 'a count that matches writes no movement');
+
+        $this->assertNotNull($red->fresh()->counted_at);
+        $this->assertFalse($red->fresh()->isNew());
+        $this->assertTrue($red->fresh()->isLow(), 'counted, and honestly out');
+    }
+
+    public function test_the_migration_writes_the_price_he_gave_and_leaves_his_own_alone(): void
+    {
+        $seeded = Material::create(['name' => 'Ağ lent', 'unit' => 'qutuluq', 'pack_price' => 0,
+            'pack_size' => 100, 'per_box' => 1, 'spent_on' => Material::RIBBON, 'stock' => 0]);
+        $his = Material::create(['name' => 'Qızıl lent', 'unit' => 'bükməlik', 'pack_price' => 4.50,
+            'pack_size' => 25, 'per_box' => 1, 'spent_on' => Material::RIBBON, 'stock' => 0]);
+
+        (require database_path('migrations/2026_10_12_090000_what_a_roll_of_ribbon_costs.php'))->up();
+
+        $seeded->refresh();
+        $this->assertSame(1.20, $seeded->pack_price);
+        $this->assertSame(30.0, $seeded->pack_size);
+        $this->assertSame('bükməlik', $seeded->unit);
+
+        $his->refresh();
+        $this->assertSame(4.50, $his->pack_price, 'a roll he priced himself is his own figure');
+        $this->assertSame(25.0, $his->pack_size);
+
+        // And the wrapping paper, which is not a ribbon, is not touched.
+        $this->assertSame(8.0, $this->wrapPaper()->fresh()->pack_price);
+    }
+
     public function test_a_switched_off_material_is_not_in_the_warehouse_list(): void
     {
         $gone = Material::create(['name' => ' A4 ', 'unit' => 'ədəd', 'pack_price' => 9, 'pack_size' => 500,
@@ -351,6 +423,11 @@ class WrapComesOutOfTheWrapTest extends TestCase
         $phone->assertSee('hər bükməyə');          // the wrapping paper
         $phone->assertSee('1 qablaşdırmada');      // the ribbon, and how many wraps use it
         $phone->assertSee('hər qutuya');           // the box paper
+
+        /* The two figures a wrapped box costs, said apart: 0.401 ₼ of box, and
+           0.016 of paper plus 0.10 of this test's ribbon on top of it. */
+        $phone->assertSee('0.40 ₼', false);
+        $phone->assertSee('bükülürsə +0.12 ₼', false);
 
         $this->actingAs($owner)->get('/admin/materials')->assertOk()->assertSee('Hər bükməyə');
     }
