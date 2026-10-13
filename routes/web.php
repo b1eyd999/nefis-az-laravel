@@ -49,6 +49,32 @@ Route::get('/i/{path}', [MediaController::class, 'show'])
 Route::get('/manifest-{lang}.webmanifest', [PwaController::class, 'manifest'])
     ->where('lang', '[a-z]{2}')->middleware('data')->name('manifest');
 
+/* What tells Android that the app az.nefis.app speaks for this domain. Without
+   it the app opens the shop with Chrome's address bar across the top, which is
+   what a Trusted Web Activity exists to avoid.
+
+   It is a route and not a file under public/ because the deploy copies the web
+   root with `cp -R public/*`, and that glob passes over anything whose name
+   starts with a dot.
+
+   Certificate fingerprints are public by design — they are what a phone checks
+   the installed app against, so there is nothing here to keep out of git. The
+   first is the key the bundle is signed with before upload; Play App Signing
+   re-signs the app with a key of Google's own, whose fingerprint Play Console
+   shows under «App integrity» after the first upload and which has to be added
+   here too, or the bar comes back for everyone who installs from the store. */
+Route::get('/.well-known/assetlinks.json', fn () => response()->json([[
+    'relation' => ['delegate_permission/common.handle_all_urls'],
+    'target' => [
+        'namespace' => 'android_app',
+        'package_name' => 'az.nefis.app',
+        'sha256_cert_fingerprints' => [
+            // Upload key (android/android.keystore, alias "nefis")
+            'F9:E7:89:3B:28:EF:15:FF:69:51:76:DB:93:AD:A3:D6:CA:3C:62:9E:92:18:5F:BE:5C:F9:65:18:A0:7E:38:B1',
+        ],
+    ],
+]], 200, [], JSON_UNESCAPED_SLASHES)->header('Cache-Control', 'public, max-age=3600'))->name('assetlinks');
+
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->middleware('data')->name('sitemap');
 // The designs as a product feed, for Google Merchant Center's free listings.
 Route::get('/feed.xml', [FeedController::class, 'index'])->middleware('data')->name('feed');
