@@ -4,6 +4,7 @@ use App\Http\Middleware\AnswerIsNotAPage;
 use App\Http\Middleware\CourierOnly;
 use App\Http\Middleware\MaintenanceMode;
 use App\Http\Middleware\OwnerOnly;
+use App\Http\Middleware\SafetyHeaders;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\SignedInPagesAreNotKept;
 use App\Http\Middleware\StaffOnly;
@@ -23,7 +24,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // The owner's maintenance switch; staff and the admin panel stay open.
-        $middleware->web(append: [MaintenanceMode::class, SignedInPagesAreNotKept::class]);
+        // SafetyHeaders is last so it stamps whatever the others end up returning.
+        $middleware->web(append: [MaintenanceMode::class, SignedInPagesAreNotKept::class, SafetyHeaders::class]);
         /* The shop is Azerbaijani unless the address says otherwise. Said here
            rather than left to the server's own APP_LOCALE: a page outside the
            /ru and /en groups — the sign-out, a wrong address, a live photo —

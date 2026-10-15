@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\GiftPage;
 use App\Models\Product;
+use App\Models\Review;
 use App\Models\Wrapping;
 use App\Support\Letter;
 use App\Support\Locale;
@@ -39,6 +40,7 @@ class SitemapController extends Controller
         $wraps = (bool) $this->guard(fn () => Wrapping::where('is_active', true)->exists());
         $letters = (bool) $this->guard(fn () => Letter::enabled());
         $live = (bool) $this->guard(fn () => LiveMaterials::enabled());
+        $reviews = (bool) $this->guard(fn () => Review::shown()->exists());
 
         // Every language the shop offers, each page in its own address.
         foreach (Locale::published() as $locale) {
@@ -55,6 +57,20 @@ class SitemapController extends Controller
             $this->add(fn () => [route($name('info.how'))]);
             $this->add(fn () => [route($name('info.faq'))]);
             $this->add(fn () => [route($name('info.contact'))]);
+
+            /* What the shop promises in writing. Someone deciding whether to
+               hand over a card number searches for exactly these words —
+               "ödəniş", "qaytarma", "məxfilik" — and until now the three pages
+               that answer him were live but absent from the index. */
+            $this->add(fn () => [route($name('legal.terms'))]);
+            $this->add(fn () => [route($name('legal.privacy'))]);
+            $this->add(fn () => [route($name('legal.refund'))]);
+
+            /* Reviews, but only once one has been published: an empty page
+               that says "be the first" is not worth a place in the index. */
+            if ($reviews) {
+                $this->add(fn () => [route($name('reviews.index'))]);
+            }
 
             if ($gifts->isNotEmpty()) {
                 $this->add(fn () => [GiftPage::hubUrl($locale), $this->newest($gifts)]);

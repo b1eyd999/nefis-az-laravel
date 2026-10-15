@@ -1,6 +1,6 @@
 <x-filament-panels::page>
   {{-- The site's Polaroid look and its handwriting faces, so the preview here is the real thing. --}}
-  <link rel="stylesheet" href="{{ asset('css/polaroid.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/polaroid.css') }}?v={{ \App\Support\Assets::version('css/polaroid.css') }}">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Pacifico&family=Great+Vibes&family=Sacramento&display=swap">
   <style>
     .lt-grid{ display:grid; gap:1.5rem; align-items:start; }

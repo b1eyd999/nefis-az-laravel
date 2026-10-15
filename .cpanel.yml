@@ -43,6 +43,9 @@ deployment:
     - cd $APPPATH && $PHPBIN artisan products:fetch-posters 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
     # The catalogue cards' small copies, written once beside each poster.
     - cd $APPPATH && $PHPBIN artisan products:card-pictures 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
+    # The same for the wrapping papers, which are uploaded as print files and
+    # were being served whole into squares the size of a thumbnail.
+    - cd $APPPATH && $PHPBIN artisan wrappings:pictures 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
     # Chocolate bars and their prices (promotions included) from Araz Market.
     # A failure only reports; the bars keep their last prices.
     - cd $APPPATH && $PHPBIN artisan chocolates:sync 2>&1 | tee -a $APPPATH/storage/logs/deploy.log

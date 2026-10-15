@@ -899,7 +899,7 @@
                       <input type="radio" name="wrapping_id" value="{{ $w['id'] }}" data-price="{{ $w['price'] }}" data-name="{{ $w['name'] }}"
                              data-pattern="{{ $w['pattern'] }}" data-ribbon="{{ $w['ribbon'] }}" data-color="{{ $w['color'] }}" data-scale="{{ $w['scale'] }}"
                              @checked((string) old('wrapping_id') === (string) $w['id'])>
-                      <span class="sw" style="background-image:url('{{ $w['pattern'] }}')">
+                      <span class="sw" style="background-image:url('{{ $w['swatch'] ?? $w['pattern'] }}')">
                         @if($w['ribbon'] !== 'none')<i style="--rb: {{ $w['color'] }}"></i>@endif
                       </span>
                       <span class="nm">{{ $w['name'] }}</span>

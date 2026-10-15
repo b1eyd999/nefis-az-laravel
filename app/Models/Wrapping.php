@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ImageStore;
 use App\Support\Media;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -69,6 +70,26 @@ class Wrapping extends Model
         return $query->where('is_active', true)->orderBy('price')->orderBy('sort_order')->orderBy('id');
     }
 
+    /** The paper as the box renderer tiles it: big enough to look like paper. */
+    public const RENDER_SIDE = 900;
+
+    /** The paper in the little square a customer taps: a few dozen points. */
+    public const SWATCH_SIDE = 400;
+
+    /**
+     * A smaller copy of the pattern, or null when the original must be used.
+     *
+     * The file the owner uploads is a print file — one of them is seven
+     * megabytes — and it was going straight into a CSS background on squares
+     * the size of a thumbnail. Ten of those is twenty-nine megabytes to draw
+     * the wrapping row, which on a phone is the slowest moment in the whole
+     * order. The master file stays where it is; pages serve these copies.
+     */
+    public function patternSmall(int $side, bool $make = false): ?string
+    {
+        return ImageStore::smaller($this->pattern, $side, $make);
+    }
+
     /** What the customer's page needs to show it and wrap the box in it. */
     public function toCustomer(): array
     {
@@ -79,7 +100,8 @@ class Wrapping extends Model
             // translation of the Azerbaijani he typed.
             'name' => __($this->tr('name')),
             'price' => $this->price,
-            'pattern' => Media::url($this->pattern),
+            'pattern' => Media::url($this->patternSmall(self::RENDER_SIDE) ?? $this->pattern),
+            'swatch' => Media::url($this->patternSmall(self::SWATCH_SIDE) ?? $this->pattern),
             'ribbon' => $this->ribbon,
             'color' => $this->ribbon_color,
             'scale' => $this->pattern_scale,

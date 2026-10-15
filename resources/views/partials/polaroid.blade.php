@@ -7,7 +7,7 @@
          on. Asked for here so the pages that never show a letter do not. --}}
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Pacifico&family=Great+Vibes&family=Sacramento&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/polaroid.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/polaroid.css') }}?v={{ \App\Support\Assets::version('css/polaroid.css') }}">
   @endpush
 @endonce
 @php
