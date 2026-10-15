@@ -1670,3 +1670,20 @@
 
   /* The ownership notice, at the foot of the design page. */
   .design-rights-foot{ padding-top:0; }
+
+  /* Closing an account, at the foot of the customer's own page.
+     Folded shut by default: it is the one button on the site that cannot be
+     taken back, and it should never be the thing a thumb lands on. */
+  .danger-card{ border-color:rgba(181,71,63,.35); }
+  .danger-card > summary{
+    cursor:pointer; list-style:none; font-weight:700; font-size:1.0625rem;
+    color:var(--red); padding:.25rem 0;
+  }
+  .danger-card > summary::-webkit-details-marker{ display:none; }
+  .danger-card > summary::after{ content:' ▾'; opacity:.6; }
+  .danger-card[open] > summary::after{ content:' ▴'; }
+  .danger-card[open] > summary{ margin-bottom:.75rem; }
+  .danger-card .lead{ font-size:.9375rem; }
+  .btn-danger{ color:var(--red); border-color:rgba(181,71,63,.45); }
+  .btn-danger:hover{ background:rgba(181,71,63,.08); }
+  .field-bad{ display:block; margin-top:.35rem; font-size:.8125rem; font-weight:600; color:var(--red); }

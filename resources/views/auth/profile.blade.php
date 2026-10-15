@@ -88,6 +88,35 @@
         <button type="submit" class="btn btn-ghost btn-block">↩ {{ __('Çıxış') }}</button>
       </form>
     </div>
+
+    {{-- Closing the account. Folded away so it is never the thing a finger
+         lands on by accident, and it says plainly what stays behind: the
+         orders keep their numbers because the shop's books are built on
+         them, and they stop saying who they were for. --}}
+    @php $refusal = \App\Support\AccountWipe::refusal($user); @endphp
+    <details class="auth-card profile-card danger-card">
+      <summary>{{ __('Hesabı silmək') }}</summary>
+
+      @error('wipe')<p class="field-bad">{{ $message }}</p>@enderror
+
+      @if($refusal)
+        <p class="lead">{{ $refusal }}</p>
+      @else
+        <p class="lead">{{ __('Adınız, nömrəniz, e-poçtunuz və sifarişlərinizdəki ünvanlar saytdan silinir. Sifarişlərin nömrəsi və məbləği mühasibat üçün qalır — amma kimə və hara getdiyi artıq yazılmır.') }}</p>
+        <p class="lead">{{ __('Bu geri qaytarılmır. Yenidən sifariş vermək istəsəniz, yeni hesab açarsınız.') }}</p>
+
+        <form method="POST" action="{{ lroute('profile.destroy') }}">
+          @csrf
+          <div class="field">
+            <label for="wipe-confirm">{{ __('Təsdiq üçün :word yazın.', ['word' => __('SİL')]) }}</label>
+            <input type="text" id="wipe-confirm" name="confirm" autocomplete="off"
+                   spellcheck="false" placeholder="{{ __('SİL') }}">
+            @error('confirm')<small class="field-bad">{{ $message }}</small>@enderror
+          </div>
+          <button type="submit" class="btn btn-ghost btn-block btn-danger">{{ __('Hesabı sil') }}</button>
+        </form>
+      @endif
+    </details>
   </div>
 </section>
 @endsection

@@ -7,6 +7,7 @@ use App\Support\Contact;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -245,6 +246,25 @@ class User extends Authenticatable implements FilamentUser
             'sharing_until' => 'datetime',
             // Set by the admin with the role, never from a form the user fills in.
             'profit_percent' => 'float',
+            // When its owner closed it. See App\Support\AccountWipe.
+            'scrubbed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * An account its owner has closed.
+     *
+     * The row is still here because the orders hang off it and the books are
+     * built on those — but there is no longer a person behind it, so it does
+     * not belong in the customer list or in the «someone just ordered» ticker.
+     */
+    public function isScrubbed(): bool
+    {
+        return $this->scrubbed_at !== null;
+    }
+
+    public function scopeLiving(Builder $query): Builder
+    {
+        return $query->whereNull('scrubbed_at');
     }
 }

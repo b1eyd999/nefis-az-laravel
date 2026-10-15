@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\AccountWipe;
 use App\Support\Contact;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
@@ -74,5 +77,43 @@ class ProfileController extends Controller
         $request->user()->update(['password' => Hash::make($request->string('password')->toString())]);
 
         return back()->with('status', __('Şifrəniz dəyişdirildi.'));
+    }
+
+    /**
+     * Closing the account, from the account itself.
+     *
+     * The word has to be typed out rather than a password given: an account
+     * made at checkout never had a password chosen for it, and its owner has
+     * as much right to close it as anyone.
+     *
+     * What this does is written out in App\Support\AccountWipe — in short,
+     * the row stays so the orders still add up in the books, and everything
+     * personal on it and inside those orders goes.
+     */
+    public function destroy(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($refusal = AccountWipe::refusal($user)) {
+            return back()->withErrors(['wipe' => $refusal]);
+        }
+
+        $request->validate([
+            'confirm' => ['required', 'string', function ($attribute, $value, $fail) {
+                if (Str::upper(trim((string) $value)) !== Str::upper(__('SİL'))) {
+                    $fail(__('Təsdiq üçün :word yazın.', ['word' => __('SİL')]));
+                }
+            }],
+        ]);
+
+        if (! AccountWipe::run($user)) {
+            return back()->withErrors(['wipe' => __('Hesab silinmədi. Bir az sonra yenidən yoxlayın.')]);
+        }
+
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect(lroute('home'))->with('status', __('Hesabınız silindi. Şəxsi məlumatlarınız saytdan getdi.'));
     }
 }

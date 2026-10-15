@@ -46,7 +46,8 @@
 
     <h2>{{ __('Nə qədər saxlanılır') }}</h2>
     <p>{{ __('Sifariş və onun şəkilləri sifariş tarixçəsi və mühasibat üçün saxlanılır; avtomatik silən bir şey yoxdur. Canlı şəklin videosu mümkün olan kimi Yandex Diskə köçürülür və saytdan silinir; köçürmə alınmasa, video yenidən cəhd edilənə qədər saytda qalır.') }}</p>
-    <p>{{ __('Silinməsini istəsəniz, bizə yazın — əl ilə silirik. Sifarişin özü ilə bağlı bəzi rəqəmlər mühasibat üçün qala bilər.') }}</p>
+    <p>{{ __('Hesabınızı istədiyiniz vaxt özünüz silə bilərsiniz: «Hesabım» səhifəsinin sonunda «Hesabı silmək». Adınız, nömrəniz, e-poçtunuz və sifarişlərinizdəki ünvanlar gedir. Sifarişin nömrəsi, tarixi və məbləği mühasibat üçün qalır — amma kimə və hara getdiyi artıq yazılmır.') }}</p>
+    <p>{{ __('İki şeyi bu düymə çata bilmir, odur ki açıq yazırıq: Yandex Diskə köçürülmüş canlı şəkil videosunu sayt silə bilmir, və saytdakı söhbətə və ya əlaqə formasına yazdıqlarınız hesaba bağlı deyil. Onları da silmək istəyirsinizsə, bizə yazın.') }}</p>
 
     <h2>{{ __('Canlı şəkil barədə ayrıca') }}</h2>
     <p>{{ __('Canlı şəklin linki qısa koddur və giriş tələb etmir: kodu bilən hər kəs videonu aça bilər. Qutunu əlinə alan adam onu görəcək — məhz bunun üçün düzəldilib. Video başqa yerdə paylaşılsa, biz ona nəzarət edə bilmirik.') }}</p>
@@ -55,7 +56,7 @@
     <p>{{ __('Sayt uşaqlar üçün deyil. Uşaq şəkli yükləyirsinizsə, bunu valideyn və ya qanuni nümayəndə kimi edirsiniz.') }}</p>
 
     <h2>{{ __('Hüquqlarınız') }}</h2>
-    <p>{{ __('Haqqınızda nə saxladığımızı soruşa, düzəltməyimizi və ya silməyimizi istəyə bilərsiniz. Bunun üçün aşağıdakı əlaqə yolları ilə yazın; hesabınızı özünüz silən düymə saytda yoxdur.') }}</p>
+    <p>{{ __('Haqqınızda nə saxladığımızı soruşa, düzəltməyimizi və ya silməyimizi istəyə bilərsiniz. Adınızı, nömrənizi və e-poçtunuzu «Hesabım» səhifəsində özünüz dəyişirsiniz, hesabı da orada özünüz silirsiniz. Qalan hər şey üçün aşağıdakı əlaqə yolları ilə yazın.') }}</p>
 
     <h2>{{ __('Əlaqə') }}</h2>
     @include('legal.contact')

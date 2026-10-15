@@ -32,11 +32,15 @@ class RecentSales
                 ->with(['order:id,user_id,recipient_name,created_at,status', 'order.user:id,name,role', 'product'])
                 ->whereNotNull('product_id')
                 // Orders that were really taken on — paid, or at least confirmed —
-                // and not the shop's own people trying the site out.
+                // and not the shop's own people trying the site out. Nor anyone
+                // who has since closed his account: his name is exactly what he
+                // asked the shop to stop showing.
                 ->whereHas('order', fn ($q) => $q
                     ->whereIn('status', ['confirmed', 'ready', 'completed'])
                     ->where('created_at', '>=', now()->subDays(self::DAYS))
-                    ->whereDoesntHave('user', fn ($u) => $u->whereIn('role', [User::ADMIN, User::MANAGER])))
+                    ->whereDoesntHave('user', fn ($u) => $u->where(fn ($w) => $w
+                        ->whereIn('role', [User::ADMIN, User::MANAGER])
+                        ->orWhereNotNull('scrubbed_at'))))
                 ->latest('id')
                 ->limit(self::KEEP)
                 ->get()

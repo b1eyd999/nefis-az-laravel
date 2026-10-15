@@ -138,6 +138,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/hesabim', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/hesabim/sifre', [ProfileController::class, 'password'])
         ->middleware('throttle:10,10')->name('profile.password');
+    // Closing the account. Throttled like the password: it asks for a word to
+    // be typed, and a word can be guessed at by a machine.
+    Route::post('/hesabim/sil', [ProfileController::class, 'destroy'])
+        ->middleware('throttle:5,10')->name('profile.destroy');
 
     // Paying by transfer, and the receipt that follows it.
     Route::prefix('sifaris/{order}')->whereNumber('order')->name('orders.')->group(function () {
