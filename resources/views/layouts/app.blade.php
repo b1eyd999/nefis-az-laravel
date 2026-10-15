@@ -291,6 +291,10 @@
 @include('partials.install-app')
 @yield('content')
 </main>
+{{-- Whether Google Analytics may run. Outside <main> because it sits over
+     the page rather than in it, and after the content so a reader who is
+     already deep in a design page is not interrupted at the top. --}}
+@include('partials.cookie-notice')
 
 <footer>
   <div class="wrap">

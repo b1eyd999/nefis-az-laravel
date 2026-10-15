@@ -29,7 +29,19 @@
 
     <h2>{{ __('Texniki məlumat') }}</h2>
     <p>{{ __('Saytın işləməsi üçün sessiya saxlanılır: bazada onun yanında IP ünvanınız və brauzerinizin adı da yazılır. Sessiyanın içində səbətiniz olur.') }}</p>
-    <p>{{ __('Brauzerinizdə saxlananlar: sessiya kukisi, forma qorunması üçün kuki, seçdiyiniz dil və işıqlı/qaranlıq rejim. Sayğac qoşulubsa, Google Analytics öz kukilərini də qoyur.') }}</p>
+    <p>{{ __('Brauzerinizdə saxlananlar: sessiya kukisi, forma qorunması üçün kuki və seçdiyiniz işıqlı/qaranlıq rejim. Dil kuki ilə yox, səhifənin ünvanı ilə seçilir.') }}</p>
+
+    <h2>{{ __('Çərəzlər') }}</h2>
+    <p>{{ __('İki cür çərəz var və fərqi burada yazırıq, çünki soruşulan yalnız ikincisidir.') }}</p>
+    <ul>
+      <li>{{ __('Zəruri olanlar — sessiya (səbətiniz onun içindədir) və forma qorunması. Onlarsız sifariş vermək mümkün deyil, ona görə icazə soruşulmur.') }}</li>
+      <li>{{ __('Könüllü olan — Google Analytics: neçə nəfərin hansı səhifəyə baxdığını sayır. Səhifənin altındakı zolaqda «Qəbul edirəm» deməyincə, Google-un heç bir faylı yüklənmir və heç bir sayğac işləmir.') }}</li>
+    </ul>
+    @if(\App\Support\CookieNotice::enabled())
+      <p>{{ __('Fikrinizi dəyişə bilərsiniz:') }}
+        <a href="#" data-cookie-reset>{{ __('seçimi yenidən soruş') }}</a>.</p>
+    @endif
+    <p>{{ __('Bundan başqa, saytın şriftləri Google-un serverindən yüklənir və xəritələr OpenStreetMap-dan gəlir — bu zaman IP ünvanınız həmin xidmətlərə görünür. Onlar çərəz qoymur.') }}</p>
     <p>{{ __('Girişdə, şifrə bərpasında və söhbətdə cəhdlər qısa müddətə sayılır — bu, saytı avtomatik hücumlardan qoruyur.') }}</p>
 
     <h2>{{ __('Kim görür') }}</h2>

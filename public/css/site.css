@@ -1687,3 +1687,24 @@
   .btn-danger{ color:var(--red); border-color:rgba(181,71,63,.45); }
   .btn-danger:hover{ background:rgba(181,71,63,.08); }
   .field-bad{ display:block; margin-top:.35rem; font-size:.8125rem; font-weight:600; color:var(--red); }
+
+  /* The strip asking whether Google Analytics may run. Written into the page
+     hidden, so it cannot flash before the script has read the saved answer. */
+  .cookie-bar{
+    position:fixed; left:0; right:0; bottom:0; z-index:60;
+    display:flex; flex-wrap:wrap; align-items:center; gap:.85rem 1.25rem;
+    padding:.95rem 1.1rem calc(.95rem + env(safe-area-inset-bottom, 0px));
+    background:var(--paper); border-top:1px solid var(--line);
+    box-shadow:0 -8px 28px rgba(58,38,23,.12);
+  }
+  .cookie-bar[hidden]{ display:none; }
+  .cookie-text{
+    flex:1 1 20rem; margin:0; font-size:.875rem; line-height:1.5; color:var(--cocoa-soft, inherit);
+  }
+  .cookie-text a{ color:var(--gold-deep); font-weight:600; text-decoration:underline; }
+  .cookie-acts{ display:flex; gap:.6rem; flex:0 0 auto; margin-left:auto; }
+  .cookie-acts .btn{ padding:.6rem 1.1rem; font-size:.875rem; white-space:nowrap; }
+  @media (max-width:40rem){
+    .cookie-acts{ width:100%; margin-left:0; }
+    .cookie-acts .btn{ flex:1 1 0; }
+  }

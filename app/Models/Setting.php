@@ -200,6 +200,13 @@ class Setting extends Model
     /** Google Analytics measurement id (G-XXXXXXX); empty means no counter on the site. */
     public const SEO_ANALYTICS = 'seo_google_analytics';
 
+    /**
+     * The strip at the foot of the page asking whether Google Analytics may
+     * run. Only shown when there is actually something to decide — see
+     * App\Support\CookieNotice.
+     */
+    public const COOKIE_NOTICE = 'cookie_notice';
+
     /** The chat on the site: its own bot, where it writes, and whether it is open. */
     public const CHAT_ENABLED = 'chat_enabled';
 
@@ -274,6 +281,7 @@ class Setting extends Model
     public const BOOKS_FROM = 'books_from';
 
     public const DEFAULTS = [
+        self::COOKIE_NOTICE => '1',
         self::AR_ENABLED => '1',
         self::AR_PRICE => '5',
         self::AR_VIDEO_MB => '18',

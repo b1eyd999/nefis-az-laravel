@@ -57,6 +57,7 @@ class SiteSettings extends Page implements HasActions, HasForms
     {
         $this->form->fill([
             'maintenance' => Setting::get(Setting::MAINTENANCE) === '1',
+            Setting::COOKIE_NOTICE => Setting::get(Setting::COOKIE_NOTICE) === '1',
             'maintenance_message' => Setting::get(Setting::MAINTENANCE_MESSAGE),
             'payment_limit' => (int) Setting::get(Setting::PAYMENT_LIMIT),
             'payment_window_hours' => (int) Setting::get(Setting::PAYMENT_WINDOW_HOURS),
@@ -458,6 +459,19 @@ class SiteSettings extends Page implements HasActions, HasForms
                             ->maxLength(80),
                     ])
                     ->columns(2),
+                Forms\Components\Section::make('Çərəzlər')
+                    ->description('Səhifənin altındakı zolaq: ziyarətçidən Google Analytics-in işləməsinə icazə soruşur.')
+                    ->schema([
+                        Forms\Components\Toggle::make(\App\Models\Setting::COOKIE_NOTICE)
+                            ->label('Çərəz zolağını göstər')
+                            ->helperText('Zolaq yalnız Google Analytics qoşulubsa görünür — başqa heç nə '
+                                . 'könüllü deyil: səbət, forma qorunması və yadda qalan rəng saytın '
+                                . 'işləməsi üçündür, onlardan imtina səbətsiz qalmaq deməkdir. '
+                                . 'Analitika qoşulmayıbsa, soruşulacaq bir şey yoxdur və zolaq çıxmır.')
+                            ->default(true),
+                    ])
+                    ->collapsible(),
+
                 Forms\Components\Section::make('Hüquqi məlumat')
                     ->description('Saytın ən aşağısında göstərilir. Boş qalan sahə yazılmır. VÖEN-i özünüz yazın.')
                     ->schema([
@@ -702,6 +716,7 @@ class SiteSettings extends Page implements HasActions, HasForms
         Setting::put(Setting::SEO_YANDEX, Seo::cleanCode($data['seo_yandex'] ?? ''));
         Setting::put(Setting::SEO_BING, Seo::cleanCode($data['seo_bing'] ?? ''));
         Setting::put(Setting::SEO_ANALYTICS, Seo::measurementId($data['seo_analytics'] ?? ''));
+        Setting::put(Setting::COOKIE_NOTICE, ! empty($data[Setting::COOKIE_NOTICE]));
         Setting::put(Setting::CONTACT_PHONE, Contact::clean($data['contact_phone'] ?? ''));
         Setting::put(Setting::CONTACT_HOURS, trim((string) ($data['contact_hours'] ?? '')));
         Setting::put(Setting::LEGAL_NAME, trim((string) ($data['legal_name'] ?? '')));

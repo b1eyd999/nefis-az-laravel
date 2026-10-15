@@ -241,13 +241,17 @@ class Seo
             return new HtmlString('');
         }
 
+        /* Google is not fetched here. The queue is opened and the id put
+           where the notice strip can find it; the tag itself is loaded by
+           public/js/cookie-notice.js, and only once the visitor has said yes.
+           Anything the shop measures in the meantime sits in dataLayer and
+           either flushes on consent or is never sent at all — which is what
+           a refusal is supposed to mean. */
         return new HtmlString(<<<HTML
-        <script async src="https://www.googletagmanager.com/gtag/js?id={$id}"></script>
         <script>
           window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', '{$id}');
+          window.gtag = window.gtag || function(){dataLayer.push(arguments);};
+          window.NefisGA = '{$id}';
         </script>
         HTML);
     }
