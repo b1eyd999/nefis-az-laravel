@@ -316,9 +316,14 @@ class SeoTest extends TestCase
 
         $product = collect($this->jsonLd($html))->flatMap(fn ($b) => $b['@graph'] ?? [$b])->firstWhere('@type', 'Product');
         $this->assertSame('Frame & Player, şəkilli şokolad qutusu', $product['name']);
-        $this->assertSame('AggregateOffer', $product['offers']['@type']);
-        $this->assertSame('4.90', $product['offers']['lowPrice']);
+        $this->assertSame('Offer', $product['offers']['@type']);
+        $this->assertSame('4.90', $product['offers']['price']);
         $this->assertSame('AZN', $product['offers']['priceCurrency']);
+        // A price with no date on it is dropped by Google after a while.
+        $this->assertNotEmpty($product['offers']['priceValidUntil']);
+        // And the seller has to be named here: the #store node lives on the
+        // home page, so a bare reference to it resolves to nothing.
+        $this->assertSame('Organization', $product['offers']['seller']['@type']);
         $this->assertStringContainsString('4.90 ₼-dan', $product['description']);
 
         // Google asks an offer how it ships and whether it comes back; without
@@ -337,7 +342,7 @@ class SeoTest extends TestCase
     /**
      * A box on its own is not something anyone can buy — a bar always goes in —
      * so the price the page and the markup name is the box plus the cheapest
-     * bar, and the range runs to the dearest.
+     * bar — and that is the single price the markup states.
      */
     public function test_the_price_offered_is_a_price_a_customer_can_pay(): void
     {
@@ -356,11 +361,21 @@ class SeoTest extends TestCase
         $offers = collect($this->jsonLd($html))->flatMap(fn ($b) => $b['@graph'] ?? [$b])
             ->firstWhere('@type', 'Product')['offers'];
 
-        $this->assertSame('AggregateOffer', $offers['@type']);
-        $this->assertSame(number_format(4.9 + $cheapest, 2, '.', ''), $offers['lowPrice']);
-        $this->assertSame(number_format(4.9 + $dearest, 2, '.', ''), $offers['highPrice']);
-        $this->assertSame(2, $offers['offerCount']);
-        $this->assertArrayNotHasKey('price', $offers, 'a single price would be one nobody can pay');
+        /* One Offer with the price the page headlines — the cheapest
+           complete box, bar included. An AggregateOffer stood here before,
+           which reads to Google as an offer with no price at all: it accepts
+           that type only where several merchants sell the same thing, and
+           here there is one seller with a set of variants. The whole
+           «merchant listing» report hung on this. */
+        $this->assertSame('Offer', $offers['@type']);
+        $this->assertSame(number_format(4.9 + $cheapest, 2, '.', ''), $offers['price']);
+        $this->assertArrayNotHasKey('lowPrice', $offers);
+        $this->assertArrayNotHasKey('offerCount', $offers);
+        // The number in the markup is the number on the page.
+        $this->assertStringContainsString(
+            \App\Support\Price::format(4.9 + $cheapest),
+            \App\Support\Price::format((float) $offers['price'])
+        );
     }
 
     /** The snippet Google shows must end on a word, and keep its last sentence. */

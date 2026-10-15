@@ -53,33 +53,52 @@
 
 @push('jsonld')
   {{ \App\Support\Seo::jsonLd(['@graph' => array_values(array_filter([
-      array_filter([
+      /* A half-described product is worse than none: Search Console reports
+         it as broken rather than ignoring it. So a design with no poster or
+         no price is simply left out of the markup. */
+      ($seoImage && $priceFrom) ? [
           '@type' => 'Product',
           'name' => $product->tr('name') . ', ' . __('şəkilli şokolad qutusu'),
-          'image' => $seoImage ? [$seoImage] : null,
+          'image' => [$seoImage],
           '@id' => lroute('products.customize', $product->slug) . '#product',
           'description' => $product->tr('description') ? (string) $product->tr('description') : $seoText,
           'sku' => 'nefis-' . $product->id,
           'category' => __('Fərdi şokolad qutusu'),
           'brand' => ['@type' => 'Brand', 'name' => 'Nefis'],
-          // A bar always goes inside, so the box alone is not a price anyone
-          // pays: what is offered is a range, from the cheapest bar to the
-          // dearest.
-          'offers' => $priceFrom ? [
-              '@type' => 'AggregateOffer',
+          /* One Offer, not an AggregateOffer.
+             A bar always goes inside, so the box alone is not a price anyone
+             pays, and the markup used to state the whole range instead. But
+             Google accepts an AggregateOffer only where several merchants
+             sell the same thing — here there is one seller and a set of
+             variants — and it reads such an offer as having no price at all.
+             That is what «Данные о товарах продавца» was reporting, and
+             because the offer node itself was thrown away, the shipping and
+             returns nested inside it were reported missing too.
+             The price given is the one the page headlines: the cheapest
+             complete box, bar included. */
+          'offers' => [
+              '@type' => 'Offer',
               'url' => lroute('products.customize', $product->slug),
               'priceCurrency' => 'AZN',
-              'lowPrice' => number_format($priceFrom, 2, '.', ''),
-              'highPrice' => number_format((float) $priceTo, 2, '.', ''),
-              'offerCount' => max(1, $chocFrom->count()),
+              'price' => number_format($priceFrom, 2, '.', ''),
+              // Computed, never a literal: a date that has passed silently
+              // takes the listing down.
+              'priceValidUntil' => now()->addYear()->toDateString(),
               'availability' => 'https://schema.org/InStock',
               'itemCondition' => 'https://schema.org/NewCondition',
-              'seller' => ['@id' => url('/') . '#store'],
+              // Named here rather than pointed at: the node carrying
+              // #store is built on the home page, not on this one, so the
+              // reference had nothing to resolve against.
+              'seller' => [
+                  '@type' => 'Organization',
+                  'name' => \App\Support\Seo::SHOP,
+                  'url' => url('/'),
+              ],
               // Google asks every offer these two as well.
               'shippingDetails' => \App\Support\Seo::shipping(),
               'hasMerchantReturnPolicy' => \App\Support\Seo::returns(),
-          ] : null,
-      ]),
+          ],
+      ] : null,
       \App\Support\Seo::breadcrumbs([
           [__('Ana səhifə'), lroute('home')],
           [__('Dizaynlar'), lroute('designs.index')],

@@ -3,6 +3,15 @@
 @section('title', __('Müştəri rəyləri') . ' | Nefis')
 @section('meta_description', __('Nefis.az-dan sifariş verənlərin rəyləri: qutu necə çıxdı, nə vaxt çatdı, şəkil necə göründü.'))
 
+{{-- While there is not one approved review, this page is ten words of its
+     own and an invitation — which is what Search Console reports as a page
+     not worth indexing. It stays open to crawling (follow), so the links in
+     the footer still carry weight, and the moment a first review is shown
+     the page goes back into the index on its own. --}}
+@if($standing['count'] < 1)
+  @section('robots', 'noindex, follow')
+@endif
+
 @if($standing['count'] > 0)
   @push('jsonld')
     {{-- The shop's own standing, said once, from the reviews themselves. --}}

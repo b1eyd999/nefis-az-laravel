@@ -28,7 +28,17 @@ class Seo
      */
     public static function canonical(?string $url = null): string
     {
-        return preg_replace('#^(https?://)www\.#i', '$1', $url ?? url()->current());
+        $url = preg_replace('#^(https?://)www\.#i', '$1', $url ?? url()->current());
+
+        /* And https, because the shop is only ever served over it. The
+           address bar is redirected by the server, but a page naming itself
+           over plain http tells a crawler the opposite of what the redirect
+           does. Not in a local run, where there is no certificate. */
+        if (app()->environment('production')) {
+            $url = preg_replace('#^http://#i', 'https://', $url);
+        }
+
+        return $url;
     }
 
     public static function jsonLd(array $data): HtmlString
@@ -42,6 +52,9 @@ class Seo
     }
 
     /** The shop itself, with the site, for the home page. */
+    /** The shop's own name, said the same way wherever it is named. */
+    public const SHOP = 'Nefis Şokolad Evi';
+
     public static function organization(): array
     {
         $home = url('/');
@@ -51,7 +64,7 @@ class Seo
             array_filter([
                 '@type' => 'OnlineStore',
                 '@id' => $home . '#store',
-                'name' => 'Nefis Şokolad Evi',
+                'name' => self::SHOP,
                 'alternateName' => 'Nefis',
                 'url' => $home,
                 'logo' => asset('images/logo.png'),
@@ -91,7 +104,17 @@ class Seo
      */
     public static function shipping(): array
     {
-        $cheapest = (float) (DeliveryMethod::shown()->min('price') ?? 0);
+        /* The region declared here is the whole country, so the rate beside
+           it has to be one that holds across the whole country. Taking the
+           minimum over every method made the markup say delivery is free to
+           all of Azerbaijan — true only of handing a box over at a Baku
+           metro station, and not of anything that actually travels. The
+           cheapest method that reaches the rest of the country is what is
+           quoted; metro's own price is still shown on the page itself. */
+        $reaching = DeliveryMethod::shown()
+            ->whereIn('type', [DeliveryMethod::DOOR, DeliveryMethod::POST])
+            ->min('price');
+        $cheapest = (float) ($reaching ?? DeliveryMethod::shown()->min('price') ?? 0);
         $lead = max(1, DeliveryTime::leadDays());
 
         return [
@@ -137,6 +160,13 @@ class Seo
             '@type' => 'MerchantReturnPolicy',
             'applicableCountry' => 'AZ',
             'returnPolicyCategory' => 'https://schema.org/MerchantReturnNotPermitted',
+            /* The category alone says «no returns», which is true of a
+               finished box with someone's face on it and untrue of the rest:
+               an order not yet started is cancelled and refunded, and so is
+               anything the shop got wrong. The link is where those terms are
+               written out, so the short answer is not the only one a reader
+               ever sees. */
+            'merchantReturnLink' => route('legal.refund'),
         ];
     }
 

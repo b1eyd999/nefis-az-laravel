@@ -5,6 +5,14 @@
      nowhere and the page fell back to the shop's own sentence. --}}
 @section('meta_description', \App\Support\Seo::snippet(__($page['lede'])))
 
+{{-- Nothing is tied to the xonça category yet, so the page says «Tezliklə»
+     five times and shows no box at all. The same condition that keeps it out
+     of the sitemap and out of the menu keeps it out of the index; when the
+     first box is attached, all three turn on together. --}}
+@unless(\App\Support\Xonca::ready())
+  @section('robots', 'noindex, follow')
+@endunless
+
 @section('page_style')
   /* The designs run as a row the finger pushes, the way a xonça is actually
      looked at — one after another — and settle into a grid where there is

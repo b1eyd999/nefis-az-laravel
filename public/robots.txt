@@ -7,4 +7,42 @@ Disallow: /qapaq-yarat
 Disallow: /xerite/
 Disallow: /sohbet/
 
+# Pages behind a door, or belonging to one visitor only. They already carry
+# noindex, but Search Console then lists every one of them under «excluded by
+# noindex» and under «page with redirect», which buries the reports that
+# matter. Nothing here is meant to be found in a search.
+Disallow: /cart
+Disallow: /checkout
+Disallow: /login
+Disallow: /register
+Disallow: /sifre-unutdum
+Disallow: /sifre-yenile
+Disallow: /hesabim
+Disallow: /orders
+Disallow: /sifaris/
+Disallow: /hazir-sebet/
+Disallow: /oflayn
+Disallow: /ru/cart
+Disallow: /ru/checkout
+Disallow: /ru/login
+Disallow: /ru/register
+Disallow: /ru/sifre-unutdum
+Disallow: /ru/sifre-yenile
+Disallow: /ru/hesabim
+Disallow: /ru/orders
+Disallow: /ru/sifaris/
+Disallow: /ru/hazir-sebet/
+Disallow: /ru/oflayn
+Disallow: /en/cart
+Disallow: /en/checkout
+Disallow: /en/login
+Disallow: /en/register
+Disallow: /en/sifre-unutdum
+Disallow: /en/sifre-yenile
+Disallow: /en/hesabim
+Disallow: /en/orders
+Disallow: /en/sifaris/
+Disallow: /en/hazir-sebet/
+Disallow: /en/oflayn
+
 Sitemap: https://nefis.az/sitemap.xml

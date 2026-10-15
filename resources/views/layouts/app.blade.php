@@ -38,10 +38,15 @@
 <meta property="og:locale" content="{{ ['az' => 'az_AZ', 'ru' => 'ru_RU', 'en' => 'en_US'][\App\Support\Locale::current()] }}">
 {{-- The same page in the other two languages, for search engines. --}}
 @unless(trim($__env->yieldContent('own_hreflang')))
+{{-- Through the same normaliser the canonical uses. Without it these two
+     lines kept whatever host the request arrived on, so a crawl that reached
+     www.nefis.az was handed a family of www addresses while the canonical
+     beside them said otherwise — hreflang contradicting canonical is how a
+     set of translations ends up read as duplicates. --}}
 @foreach(\App\Support\Locale::published() as $__loc)
-<link rel="alternate" hreflang="{{ $__loc }}" href="{{ \App\Support\Locale::switchUrl($__loc) }}">
+<link rel="alternate" hreflang="{{ $__loc }}" href="{{ \App\Support\Seo::canonical(\App\Support\Locale::switchUrl($__loc)) }}">
 @endforeach
-<link rel="alternate" hreflang="x-default" href="{{ \App\Support\Locale::switchUrl('az') }}">
+<link rel="alternate" hreflang="x-default" href="{{ \App\Support\Seo::canonical(\App\Support\Locale::switchUrl('az')) }}">
 @endunless
 <meta property="og:site_name" content="Nefis Şokolad Evi">
 <meta property="og:title" content="{!! $seoTitle !!}">

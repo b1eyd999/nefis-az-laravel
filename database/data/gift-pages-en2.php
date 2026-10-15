@@ -163,7 +163,7 @@ MD,
 
 - **Love Story**, in all three versions.
 - **Family Frame**, with the national ornament.
-- For the guests, see the page for [companies](/en/for-companies) — the same small printed boxes, ordered in bulk.
+- For the guests, see the page for [companies](/en/sirketler-ucun) — the same small printed boxes, ordered in bulk.
 
 ## How to order
 
@@ -263,7 +263,7 @@ A gift for a colleague has to be friendly without being personal. A chocolate bo
 
 - **Family Frame** or a plain frame, with a photograph of the team.
 - **Google** or **Netflix**, if the office takes a joke.
-- For a whole department, see the page for [companies](/en/for-companies).
+- For a whole department, see the page for [companies](/en/sirketler-ucun).
 
 ## How to order
 
@@ -329,7 +329,7 @@ December is the month of identical presents. A box with a photograph of the fami
 
 - **The family**, with a photo from the year that is ending.
 - **Friends**, with something that makes them laugh.
-- **The office** — see the page for [companies](/en/for-companies) for small printed chocolates in bulk.
+- **The office** — see the page for [companies](/en/sirketler-ucun) for small printed chocolates in bulk.
 
 ## How to order
 

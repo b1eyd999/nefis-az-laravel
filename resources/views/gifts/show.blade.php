@@ -11,9 +11,15 @@
 @section('own_hreflang', 1)
 @php
   $__az = $page->locale === 'az' ? $page : ($page->alt ?? null);
+  /* One address per language, and only languages the shop publishes.
+     Deduping by row id let two rows in the same language both be announced,
+     which makes the whole family unusable to a search engine; and a twin in
+     a language that is switched off was being announced as if it were live. */
   $__family = collect([$page, $alternate, $__az])->filter()
       ->merge($__az?->alternates()->where('is_active', true)->get() ?? collect())
-      ->unique('id')->filter->is_active;
+      ->filter->is_active
+      ->filter(fn ($twin) => in_array($twin->locale, \App\Support\Locale::published(), true))
+      ->unique('locale');
 @endphp
 @push('head')
   @foreach($__family as $__twin)
