@@ -138,10 +138,15 @@ class SeoTest extends TestCase
         $this->get(route('products.customize', 'love-story-vol-1'))->assertOk()
             ->assertSee('href="' . $az . '"', false);
 
-        // Each address belongs to one language only. (An old /podarki address
-        // is sent on first, and only then found to be the wrong language.)
-        $this->get('/ru/podarki/ad-gunu')->assertNotFound();
-        $this->get('/hediyye/devushke')->assertNotFound();
+        /* Each address belongs to one language only — but a slug from the
+           wrong language names a page that does exist, so it is sent to that
+           page rather than refused. Sixty-six such addresses had collected in
+           Search Console as «not found»; each is now one hop from the right
+           one. */
+        $this->get('/ru/podarki/ad-gunu')
+            ->assertRedirect(route('ru.gifts.show', 'na-den-rozhdeniya'));
+        $this->get('/hediyye/devushke')
+            ->assertRedirect(route('gifts.show', 'sevgiliye'));
 
         // The Azerbaijani pages stay Azerbaijani; the switcher offers the others.
         $this->get(route('home'))->assertOk()
@@ -179,9 +184,10 @@ class SeoTest extends TestCase
             ->assertSee('<link rel="alternate" hreflang="en" href="' . $en . '">', false)
             ->assertSee('<link rel="alternate" hreflang="ru" href="' . $ru . '">', false);
 
-        // The English hub lists them, and the address belongs to one language.
+        // The English hub lists them, and an Azerbaijani word under /en/gifts
+        // is carried to the English twin instead of being refused.
         $this->get(route('en.gifts.index'))->assertOk()->assertSee('Birthday gift');
-        $this->get('/en/gifts/ad-gunu')->assertNotFound();
+        $this->get('/en/gifts/ad-gunu')->assertRedirect($en);
     }
 
     public function test_a_language_still_being_written_is_kept_out_of_search(): void

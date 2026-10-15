@@ -31,7 +31,22 @@ class GiftPageController extends Controller
     public function show(GiftPage $giftPage): View|RedirectResponse
     {
         $locale = Locale::current();
-        abort_unless($giftPage->is_active && $giftPage->locale === $locale, 404);
+        abort_unless($giftPage->is_active, 404);
+
+        /* A gift page's slug is a translated word — /hediyye/sevgiliye,
+           /ru/podarki/lyubimomu, /en/gifts/for-your-love — but the route
+           finds a page by slug whatever language the address is in. So
+           /en/gifts/sevgiliye resolves to the Azerbaijani page and used to
+           be refused with a 404.
+           Sixty-six such addresses were sitting in Search Console: links
+           from before the slugs were translated, and anywhere a prefix was
+           swapped without the word after it. Each of them names a page that
+           does exist, so the answer is where it lives, not a dead end. The
+           model already works out the right address, falling back to the
+           hub when that language has no twin. */
+        if ($giftPage->locale !== $locale) {
+            return redirect($giftPage->localisedUrl($locale), 301);
+        }
 
         // The database matches a slug whatever its case, so /hediyye/AD-GUNU
         // answers as well as the real address. One of them is the page.

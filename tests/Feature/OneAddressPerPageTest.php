@@ -76,9 +76,13 @@ class OneAddressPerPageTest extends TestCase
         $html = $this->get($az->url())->assertOk()->getContent();
 
         $this->assertStringContainsString('href="' . $ru->url() . '"', $html);
-        // Never the Azerbaijani word under a Russian prefix: that address is a 404.
+        /* Never the Azerbaijani word under a Russian prefix: the menu offers
+           the twin's own address. Should such a link reach the site anyway —
+           from an old page, or a prefix swapped by hand — it is carried to
+           the twin rather than refused, which is what cleared sixty-six
+           «not found» entries out of Search Console. */
         $this->assertStringNotContainsString('/ru/podarki/' . $az->slug, $html);
-        $this->get('/ru/podarki/' . $az->slug)->assertNotFound();
+        $this->get('/ru/podarki/' . $az->slug)->assertRedirect($ru->url());
     }
 
     public function test_a_tracking_tag_does_not_reach_the_other_languages(): void
