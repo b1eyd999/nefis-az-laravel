@@ -64,6 +64,14 @@
   window.addEventListener('resize', measure);
   window.addEventListener('orientationchange', measure);
 
+  /* The first measurement is taken in the fallback font, because the page's
+     own face is loaded with display=swap and arrives later. It is wider, so
+     the sentence can gain a line and the strip grow by one — after
+     everything had already stepped aside by the old height. */
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(measure).catch(function () { /* older browser */ });
+  }
+
   function answer(value) {
     remember(value);
     bar.hidden = true;

@@ -1694,9 +1694,12 @@
      buttons (70), the buy bar (75). It was 60, under both, and the chat
      buttons sat squarely on top of «Qəbul edirəm»: the click landed on the
      stack and the strip never went away. A strip that cannot be answered
-     cannot be dismissed either, so it has to win the hit test. */
+     cannot be dismissed either, so it has to win the hit test.
+     But below the mobile menu (80), which covers the whole screen: at 90
+     the strip painted over its last three entries. 78 is the only free
+     storey between the buy bar and the menu. */
   .cookie-bar{
-    position:fixed; left:0; right:0; bottom:0; z-index:90;
+    position:fixed; left:0; right:0; bottom:0; z-index:78;
     display:flex; flex-wrap:wrap; align-items:center; gap:.85rem 1.25rem;
     padding:.95rem 1.1rem calc(.95rem + env(safe-area-inset-bottom, 0px));
     background:var(--paper); border-top:1px solid var(--line);
@@ -1739,4 +1742,25 @@
      viewport, so the stack moving does not carry it. */
   @media (max-width:520px){
     body.has-cookie-bar .chat-panel{ bottom:calc(5rem + var(--cookie-h, 0px)); }
+  }
+
+  /* «Somebody has just ordered…» stands in the same corner on 60, so the buy
+     bar and the strip both used to bury it — and its close cross with it,
+     which is the one part of it a visitor wants to reach. It steps up too. */
+  body.has-buy-bar .sale-toast{ bottom:5.5rem; }
+  body.has-cookie-bar .sale-toast{ bottom:calc(9.5rem + var(--cookie-h, 0px)); }
+  @media (max-width:640px){
+    body.has-buy-bar .sale-toast{ bottom:5.5rem; }
+    body.has-cookie-bar .sale-toast{ bottom:calc(1.25rem + var(--cookie-h, 0px)); }
+    body.has-cookie-bar.has-buy-bar .sale-toast{ bottom:calc(5.5rem + var(--cookie-h, 0px)); }
+  }
+
+  /* The install bar stepped aside for the chat buttons under 760px, while the
+     buy bar runs up to 899px. In the band between the two the buy bar covered
+     the install bar's button and its close cross outright. */
+  @media (max-width:899px){
+    body.has-buy-bar .pwa-bar{ bottom:calc(5.5rem + env(safe-area-inset-bottom)); }
+    body.has-buy-bar.has-cookie-bar .pwa-bar{
+      bottom:calc(5.5rem + var(--cookie-h, 0px) + env(safe-area-inset-bottom));
+    }
   }
