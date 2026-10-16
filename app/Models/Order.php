@@ -95,6 +95,25 @@ class Order extends Model
     protected function casts(): array
     {
         return [
+            /* Where the box went and who took it, kept unreadable in the
+               database itself. Whoever opens the file — a stolen backup, a
+               hosting company's own copy — sees ciphertext where the phone
+               numbers and the addresses used to be.
+               These seven and no others: the admin never searches or sorts
+               on any of them, and everything that reads them (the Telegram
+               order card, the courier's screen, the letters, the order form)
+               reads them through the model, which decrypts on the way out.
+               The customer's name, e-mail and number on the account are NOT
+               here — the shop signs people in by e-mail and by number, and
+               the owner finds an order by typing a customer's name. */
+            'contact_phone' => 'encrypted',
+            'recipient_name' => 'encrypted',
+            'delivery_address' => 'encrypted',
+            'postal_index' => 'encrypted',
+            'metro_station' => 'encrypted',
+            'note' => 'encrypted',
+            'courier_name' => 'encrypted',
+
             'delivery_price' => 'float',
             'free_delivery' => 'boolean',
             'rush_fee' => 'float',

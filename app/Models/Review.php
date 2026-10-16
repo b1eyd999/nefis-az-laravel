@@ -31,6 +31,9 @@ class Review extends Model
         return [
             'stars' => 'integer',
             'approved_at' => 'datetime',
+            /* The name shown under a review. The review's own words stay
+               readable, because the owner searches them in the admin. */
+            'shown_name' => 'encrypted',
         ];
     }
 

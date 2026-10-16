@@ -31,7 +31,14 @@ class CorporateRequest extends Model
 
     protected function casts(): array
     {
-        return ['quantity' => 'integer'];
+        return [
+            'quantity' => 'integer',
+            /* The person who wrote and what he asked for. The company name
+               and the number stay readable: the owner searches the list by
+               both of them. */
+            'person' => 'encrypted',
+            'note' => 'encrypted',
+        ];
     }
 
     protected static function booted(): void

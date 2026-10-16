@@ -16,6 +16,17 @@ class ChatMessage extends Model
 
     protected $fillable = ['thread', 'side', 'body', 'image', 'name', 'phone', 'page', 'tg_message_id'];
 
+    protected function casts(): array
+    {
+        /* Who wrote into the corner chat. Nothing looks these two up by
+           value — a thread is found by its own key and by tg_message_id —
+           so they can sit in the database unreadable. */
+        return [
+            'name' => 'encrypted',
+            'phone' => 'encrypted',
+        ];
+    }
+
     public function fromShop(): bool
     {
         return $this->side === self::SHOP;

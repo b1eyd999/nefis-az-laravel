@@ -26,7 +26,13 @@ class ContactMessage extends Model
 
     protected function casts(): array
     {
-        return ['answered_at' => 'datetime'];
+        return [
+            'answered_at' => 'datetime',
+            /* What the shop wrote to itself about this letter. The name,
+               the number and the letter itself stay readable — the admin
+               searches all three. */
+            'note' => 'encrypted',
+        ];
     }
 
     public function answerer(): BelongsTo
