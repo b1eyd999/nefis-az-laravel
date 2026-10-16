@@ -1162,7 +1162,15 @@
 
   /* ---------- floating contact ---------- */
   /* Both corner buttons stand in one column, the chat on top. */
-  .float-stack{ position:fixed; right:1.25rem; bottom:1.25rem; z-index:70; display:flex; flex-direction:column; align-items:flex-end; gap:.6rem; }
+  /* The box is 180x115 while the two buttons in it cover barely half of
+     that: the chat bubble is round and narrow, the Instagram button sits a
+     row below it, and align-items:flex-end leaves the whole left of the top
+     row empty. That empty part was still catching clicks — an invisible
+     dead corner on every page, and on the catalogue it sat over a design's
+     own card, so clicking that design did nothing at all.
+     The box lets clicks through; the buttons inside take them back. */
+  .float-stack{ position:fixed; right:1.25rem; bottom:1.25rem; z-index:70; display:flex; flex-direction:column; align-items:flex-end; gap:.6rem; pointer-events:none; }
+  .float-stack > *{ pointer-events:auto; }
   /* ---------- wiping the background off a cut-out head ---------- */
   .brush{ position:fixed; inset:0; z-index:220; display:grid; place-items:center; padding:1rem; }
   .brush[hidden]{ display:none; }
