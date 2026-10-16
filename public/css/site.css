@@ -1690,8 +1690,13 @@
 
   /* The strip asking whether Google Analytics may run. Written into the page
      hidden, so it cannot flash before the script has read the saved answer. */
+  /* Above every other thing pinned to the foot of the screen — the chat
+     buttons (70), the buy bar (75). It was 60, under both, and the chat
+     buttons sat squarely on top of «Qəbul edirəm»: the click landed on the
+     stack and the strip never went away. A strip that cannot be answered
+     cannot be dismissed either, so it has to win the hit test. */
   .cookie-bar{
-    position:fixed; left:0; right:0; bottom:0; z-index:60;
+    position:fixed; left:0; right:0; bottom:0; z-index:90;
     display:flex; flex-wrap:wrap; align-items:center; gap:.85rem 1.25rem;
     padding:.95rem 1.1rem calc(.95rem + env(safe-area-inset-bottom, 0px));
     background:var(--paper); border-top:1px solid var(--line);
@@ -1707,4 +1712,31 @@
   @media (max-width:40rem){
     .cookie-acts{ width:100%; margin-left:0; }
     .cookie-acts .btn{ flex:1 1 0; }
+  }
+
+  /* While the strip is asking, everything else pinned to the foot of the
+     screen steps up out of its way. Winning the hit test above is enough to
+     make the buttons work; this is so they can also be SEEN, and so the chat
+     and the buy bar are not buried under the strip in return.
+
+     --cookie-h is the strip's measured height, written by cookie-notice.js.
+     Measured rather than written here as a number: the text wraps to two or
+     three lines on a narrow phone, so any constant would be wrong on exactly
+     the screens where the strip is tallest. It falls back to 0px, so if the
+     script never runs nothing moves. */
+  body.has-cookie-bar .float-stack{ bottom:calc(1.25rem + var(--cookie-h, 0px)); }
+  body.has-cookie-bar.has-buy-bar .float-stack{ bottom:calc(5.25rem + var(--cookie-h, 0px)); }
+  body.has-cookie-bar .buy-bar{ bottom:var(--cookie-h, 0px); }
+  body.has-cookie-bar .pwa-bar{
+    bottom:calc(.9rem + var(--cookie-h, 0px) + env(safe-area-inset-bottom));
+  }
+  @media (max-width:760px){
+    body.has-cookie-bar .pwa-bar{
+      bottom:calc(9.25rem + var(--cookie-h, 0px) + env(safe-area-inset-bottom));
+    }
+  }
+  /* On a narrow phone the chat window leaves the stack and pins itself to the
+     viewport, so the stack moving does not carry it. */
+  @media (max-width:520px){
+    body.has-cookie-bar .chat-panel{ bottom:calc(5rem + var(--cookie-h, 0px)); }
   }

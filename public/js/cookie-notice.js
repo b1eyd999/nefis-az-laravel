@@ -44,25 +44,38 @@
     window.gtag('config', id);
   }
 
+  /* How tall the strip actually is, handed to the stylesheet so the chat
+     buttons, the buy bar and the install bar can step up by exactly that
+     much. Measured rather than assumed: the sentence wraps to two or three
+     lines on a narrow phone, and the strip is tallest on the screens with
+     the least room. Re-measured when the window changes, because that is
+     when the wrapping does. */
+  function measure() {
+    if (bar.hidden) return;
+    document.documentElement.style.setProperty('--cookie-h', bar.offsetHeight + 'px');
+  }
+
+  function show() {
+    bar.hidden = false;
+    document.body.classList.add('has-cookie-bar');
+    measure();
+  }
+
+  window.addEventListener('resize', measure);
+  window.addEventListener('orientationchange', measure);
+
   function answer(value) {
     remember(value);
     bar.hidden = true;
+    document.body.classList.remove('has-cookie-bar');
+    document.documentElement.style.removeProperty('--cookie-h');
     if (value === 'all') startAnalytics();
   }
 
-  var said = remembered();
-  if (said === 'all') {
-    startAnalytics();
-    return;                     // decided already; the strip stays away
-  }
-  if (said === 'essential') {
-    return;                     // decided already, and the answer was no
-  }
-
-  /* Not asked yet. The strip is written into the page hidden so it cannot
-     flash before this runs; show it now. */
-  bar.hidden = false;
-
+  /* Both listeners go on before anything returns. They used to be attached
+     only when the visitor had not answered yet, which left «seçimi yenidən
+     soruş» on the privacy page dead for precisely the people it is there
+     for: those who already answered and want to change their mind. */
   bar.addEventListener('click', function (e) {
     var btn = e.target.closest('[data-cookie]');
     if (!btn) return;
@@ -77,7 +90,20 @@
     if (!again) return;
     e.preventDefault();
     try { localStorage.removeItem(KEY); } catch (err) { /* nothing to undo */ }
-    bar.hidden = false;
+    show();
     bar.scrollIntoView({ block: 'end', behavior: 'smooth' });
   });
+
+  var said = remembered();
+  if (said === 'all') {
+    startAnalytics();
+    return;                     // decided already; the strip stays away
+  }
+  if (said === 'essential') {
+    return;                     // decided already, and the answer was no
+  }
+
+  /* Not asked yet. The strip is written into the page hidden so it cannot
+     flash before this runs; show it now. */
+  show();
 })();
