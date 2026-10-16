@@ -45,7 +45,9 @@
               '@type' => 'ListItem',
               'position' => $i + 1,
               'url' => lroute('products.customize', $p->slug),
-              'name' => $p->name,
+              // tr(), as the visible card does: the raw column is Azerbaijani,
+              // so Google was given a different name from the one on the page.
+              'name' => $p->tr('name'),
           ])->all(),
       ] : null,
   ]))]) }}

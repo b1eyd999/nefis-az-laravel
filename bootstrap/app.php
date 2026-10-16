@@ -49,6 +49,31 @@ return Application::configure(basePath: dirname(__DIR__))
             // Addresses a page fetches from, so `back()` never lands on them.
             'data' => AnswerIsNotAPage::class,
         ]);
+        /*
+         * Where a signed-out visitor is sent when he opens a page that needs
+         * an account — his orders, his profile, an order's payment page.
+         *
+         * Laravel's own answer is route('login'), which is the Azerbaijani
+         * one: a Russian customer following the link in his order e-mail was
+         * dropped onto a sign-in page in a language he had not chosen, and
+         * after signing in he carried on in Azerbaijani.
+         *
+         * Read off the address rather than from the app's locale, the same
+         * way the expired-token handler below does and for the same reason:
+         * this fires from middleware, and whether the route's own `locale:ru`
+         * has run by then is not something to depend on. The address is the
+         * one thing that is always already true.
+         */
+        $middleware->redirectGuestsTo(function (Request $request) {
+            $lang = explode('/', trim($request->path(), '/'))[0];
+
+            return route(
+                in_array($lang, Locale::published(), true) && $lang !== Locale::DEFAULT
+                    ? $lang.'.login'
+                    : 'login'
+            );
+        });
+
         // Telegram and the ePoint callback carry no session and no form token;
         // their own secret and signature guard them.
         $middleware->validateCsrfTokens(except: ['telegram/kuryer/*', 'telegram/sohbet/*', 'epoint/result']);
