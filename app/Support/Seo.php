@@ -69,7 +69,10 @@ class Seo
                 'url' => $home,
                 'logo' => asset('images/logo.png'),
                 'image' => asset('images/og-nefis.jpg'),
-                'description' => 'Öz şəkliniz və sözlərinizlə fərdi şokolad qutuları, ad günü, sevgiliyə, 8 Mart və hər münasibətə hədiyyə.',
+                /* Through __(), like the rest of the shop: the Russian and
+                   English home pages were describing the business in
+                   Azerbaijani to anyone reading the markup. */
+                'description' => __('Öz şəkliniz və sözlərinizlə fərdi şokolad qutuları, ad günü, sevgiliyə, 8 Mart və hər münasibətə hədiyyə.'),
                 'areaServed' => ['@type' => 'Country', 'name' => 'Azərbaycan'],
                 'address' => ['@type' => 'PostalAddress', 'addressLocality' => 'Bakı', 'addressCountry' => 'AZ'],
                 'currenciesAccepted' => 'AZN',
@@ -166,7 +169,10 @@ class Seo
                anything the shop got wrong. The link is where those terms are
                written out, so the short answer is not the only one a reader
                ever sees. */
-            'merchantReturnLink' => route('legal.refund'),
+            /* lroute, not route: on /ru and /en this was handing Google
+               the Azerbaijani page as the returns terms for a Russian or
+               English listing. */
+            'merchantReturnLink' => lroute('legal.refund'),
         ];
     }
 

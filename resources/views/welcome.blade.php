@@ -10,12 +10,17 @@
      visitors an order needed signing up long after the checkout had stopped
      asking. */
   $faq = \App\Support\Info::faq();
+  /* Only these five are printed below; the rest live on /suallar. The slice
+     is taken here and used in both places on purpose — Google asks that
+     marked-up questions be the ones a visitor can actually read on the
+     page, and the home page was offering eight while showing five. */
+  $faqShown = array_slice($faq, 0, 5);
   $steps = \App\Support\Info::steps();
   $info = \App\Support\Info::all();
 @endphp
 
 @push('jsonld')
-  {{ \App\Support\Seo::jsonLd(['@graph' => array_merge(\App\Support\Seo::organization()['@graph'], [\App\Support\Seo::faq($faq)])]) }}
+  {{ \App\Support\Seo::jsonLd(['@graph' => array_merge(\App\Support\Seo::organization()['@graph'], [\App\Support\Seo::faq($faqShown)])]) }}
 @endpush
 
 @section('page_style')
@@ -215,7 +220,7 @@
       <div class="faq-list reveal">
         {{-- Five here, the rest on the page of their own: the front page is
              not the place to read eight answers. --}}
-        @foreach(array_slice($faq, 0, 5) as $i => $f)
+        @foreach($faqShown as $i => $f)
           <details class="faq-item" @if($i === 0) open @endif>
             <summary>{{ $f['q'] }}<span class="plus"></span></summary>
             <div class="faq-a">{{ $f['a'] }}</div>
