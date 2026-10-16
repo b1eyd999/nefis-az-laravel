@@ -70,6 +70,127 @@ class Product extends Model
     {
         // A box's uploads live in their own folder; nothing else uses them.
         static::deleted(fn (Product $product) => Storage::disk('public')->deleteDirectory($product->assetDirectory()));
+
+        /* Renaming a design changes its address. The old one is written down
+           here so it can be redirected instead of answering 404 — see
+           resolveRouteBinding below, and the product_slugs migration for why
+           that matters more than it sounds. */
+        static::updating(function (Product $product) {
+            if (! $product->isDirty('slug')) {
+                return;
+            }
+
+            $was = (string) $product->getOriginal('slug');
+
+            if ($was !== '') {
+                ProductSlug::updateOrCreate(['slug' => $was], ['product_id' => $product->id]);
+            }
+
+            /* The design has just taken an address some design used to have
+               — its own, renamed back, or one freed by another. A live
+               address must never also be a forwarding address, or the
+               redirect sends it to itself. */
+            ProductSlug::where('slug', $product->slug)->delete();
+        });
+
+        // A slug chosen at birth that was once somebody else's: same rule.
+        static::created(fn (Product $product) => ProductSlug::where('slug', $product->slug)->delete());
+    }
+
+    /**
+     * Find the design this address belongs to — including the addresses it
+     * used to have.
+     *
+     * A slug that no design answers to is looked up among the old ones, and
+     * if it is found the visitor is sent on permanently. `abort()` with a
+     * response throws it from here, which is the only way out of a route
+     * binding: returning null would be a 404, and by the time the controller
+     * runs the binding has already given up.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        $product = parent::resolveRouteBinding($value, $field);
+
+        if ($product) {
+            return $product;
+        }
+
+        if (($field ?? $this->getRouteKeyName()) !== 'slug') {
+            return null;
+        }
+
+        $moved = ProductSlug::with('product')->where('slug', $value)->first()?->product;
+
+        // A design that is switched off has no address to send anyone to:
+        // 404 is the honest answer, and the one Google wants.
+        if (! $moved || ! $moved->is_active) {
+            return null;
+        }
+
+        abort(redirect($this->movedTo((string) $value, $moved->slug), 301));
+    }
+
+    /**
+     * The address asked for, with the old slug swapped for the new one.
+     *
+     * Built from the request rather than from a route name so it works
+     * wherever a design appears in a path — /products/x/customize, the same
+     * under /ru and /en, the box editor — and keeps whatever came after the
+     * question mark.
+     */
+    private function movedTo(string $was, string $now): string
+    {
+        $segments = array_map(
+            fn (string $segment) => $segment === $was ? $now : $segment,
+            request()->segments()
+        );
+
+        return url(implode('/', $segments))
+            . (($query = request()->getQueryString()) ? '?' . $query : '');
+    }
+
+    /** Addresses this design used to be published at. */
+    public function oldSlugs(): HasMany
+    {
+        return $this->hasMany(ProductSlug::class);
+    }
+
+    /**
+     * Start forwarding these addresses here.
+     *
+     * An address can only lead to one place, so one already pointing at
+     * another design is taken over rather than duplicated — the owner typing
+     * it here is saying where it should go now. The design's own current
+     * address is refused outright: it would redirect to itself.
+     *
+     * @param  iterable<int, string>  $slugs
+     */
+    public function rememberOldSlugs(iterable $slugs): void
+    {
+        foreach ($slugs as $slug) {
+            $slug = trim((string) $slug);
+
+            if ($slug === '' || $slug === $this->slug) {
+                continue;
+            }
+
+            // Nor an address some design actually answers to today.
+            if (static::where('slug', $slug)->exists()) {
+                continue;
+            }
+
+            ProductSlug::updateOrCreate(['slug' => $slug], ['product_id' => $this->id]);
+        }
+    }
+
+    /** @param  iterable<int, string>  $slugs */
+    public function forgetOldSlugs(iterable $slugs): void
+    {
+        $slugs = array_filter(array_map(fn ($s) => trim((string) $s), iterator_to_array($slugs, false)));
+
+        if ($slugs !== []) {
+            $this->oldSlugs()->whereIn('slug', $slugs)->delete();
+        }
     }
 
     /** Where the box editor keeps this product's uploaded artwork. */

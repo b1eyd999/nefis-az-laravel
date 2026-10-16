@@ -33,6 +33,13 @@ class EditProduct extends EditRecord
         // can still tell whether the owner actually moved the switch.
         $data['face_cutout_was'] = $data['face_cutout'];
 
+        /* The addresses this design used to live at. Kept twice for the same
+           reason: on saving, only what the owner actually added or removed
+           is acted on. Renaming the design writes a row of its own, and that
+           row is in neither list, so a careless save cannot wipe it. */
+        $data['old_slugs'] = $this->record->oldSlugs()->orderBy('slug')->pluck('slug')->all();
+        $data['old_slugs_was'] = $data['old_slugs'];
+
         return $data;
     }
 
@@ -68,6 +75,7 @@ class EditProduct extends EditRecord
 
         // Before the cover block below, which returns early for most designs.
         $this->applyFaceCutout($product);
+        $this->applyOldSlugs($product);
 
         if ($this->poster) {
             $product->storePoster($this->poster, $product->poster_url);
@@ -115,6 +123,31 @@ class EditProduct extends EditRecord
         }
 
         $this->data['face_cutout_was'] = $wanted;
+    }
+
+    /**
+     * Only the addresses the owner actually typed in or crossed out.
+     *
+     * Acting on the difference rather than on the whole list matters: this
+     * same save may have renamed the design, and the model will have written
+     * the address it is moving away from. That row was never on the form, so
+     * it is in neither list and survives — which is the behaviour anyone
+     * would expect, and the opposite of what replacing the list wholesale
+     * would do.
+     */
+    private function applyOldSlugs(Product $product): void
+    {
+        if (! array_key_exists('old_slugs_was', $this->data)) {
+            return;
+        }
+
+        $was = (array) $this->data['old_slugs_was'];
+        $now = (array) ($this->data['old_slugs'] ?? []);
+
+        $product->forgetOldSlugs(array_diff($was, $now));
+        $product->rememberOldSlugs(array_diff($now, $was));
+
+        $this->data['old_slugs_was'] = $now;
     }
 
     private function cutsFaces(Product $product): bool

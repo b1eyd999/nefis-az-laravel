@@ -46,6 +46,16 @@ Route::post('/mektub', [LetterController::class, 'store'])->middleware('throttle
 Route::get('/sirketler-ucun', [CorporateController::class, 'index'])->name('corporate.index');
 Route::post('/sirketler-ucun', [CorporateController::class, 'store'])->middleware('throttle:10,60')->name('corporate.store');
 
+/* Three English gift pages once linked to /en/for-companies, an address that
+   has never existed — the corporate page keeps the same slug in all three
+   languages. The links themselves were mended on 2026-10-15, but Google had
+   already indexed the address and still asks for it. This hands it on rather
+   than leaving it to time out of the report on its own. The redirect is
+   registered inside the language groups, so the English visitor stays in
+   English. */
+Route::get('/for-companies', fn () => redirect(lroute('corporate.index'), 301))
+    ->name('corporate.moved');
+
 Route::get('/canli-sekil', [LivePhotoController::class, 'create'])->name('live.create');
 
 /* The small chocolates a xonça is piled with, for an engagement, a henna

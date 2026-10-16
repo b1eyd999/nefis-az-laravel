@@ -54,6 +54,20 @@ class ProductResource extends Resource
                             ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
                             ->validationMessages(['regex' => 'Yalnız kiçik latın hərfləri, rəqəmlər və defis olmalıdır, məs. dark-spotify. Link bu sahəyə yazılmır.'])
                             ->unique(ignoreRecord: true),
+                        /* Adı dəyişəndə köhnə ünvan özü bura düşür — amma
+                           keçmişdə dəyişdirilənlər yazılmayıb qalıb, ona görə
+                           əl ilə də əlavə etmək olur. */
+                        Forms\Components\TagsInput::make('old_slugs')
+                            ->label('Köhnə ünvanlar')
+                            ->placeholder('kohne-ad')
+                            ->dehydrated(false)
+                            ->visible(fn (?Product $record) => (bool) $record)
+                            ->helperText('Bu dizaynın əvvəl olduğu ünvanlar. Oraya gələn adam — və '
+                                . 'Google — buradakı səhifəyə yönəldilir. Adı dəyişdirəndə köhnə ünvan '
+                                . 'özü yazılır; bura yalnız əvvəllər itirilmiş ünvanları əlavə edin. '
+                                . 'Yalnız ünvanın özü: kohne-ad, link yox.')
+                            ->nestedRecursiveRules(['regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'])
+                            ->columnSpanFull(),
                         Forms\Components\Textarea::make('description')
                             ->label('Açıqlama')
                             ->columnSpanFull(),
