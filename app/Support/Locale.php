@@ -41,7 +41,15 @@ class Locale
         $set = preg_split('/[^a-z]+/', strtolower((string) \App\Models\Setting::get(\App\Models\Setting::SITE_LANGUAGES))) ?: [];
         $set = array_values(array_intersect(self::all(), $set));
 
-        return $set === [] ? [self::DEFAULT] : array_unique(array_merge([self::DEFAULT], $set));
+        /* array_values, because array_unique keeps the keys it does not
+           remove: dropping the duplicate «az» at index 1 left [0,2,3], and a
+           PHP array with gaps in its keys is written out as a JSON object,
+           not a list. Google was being handed
+           "inLanguage": {"0":"az","2":"ru","3":"en"} where the schema asks
+           for ["az","ru","en"]. */
+        return $set === []
+            ? [self::DEFAULT]
+            : array_values(array_unique(array_merge([self::DEFAULT], $set)));
     }
 
     public static function isPublished(?string $locale = null): bool
@@ -97,9 +105,21 @@ class Locale
         }
 
         try {
-            // Only the page's own parameters: a utm_ tag copied in here would
-            // make every hreflang point at an address that is not canonical.
-            return route($wanted, request()->route()->parameters());
+            /* Only the parameters that are segments of the address itself.
+               Two reasons. A utm_ tag copied in here would make every
+               hreflang point at an address that is not canonical — and a
+               page registered with Route::view() carries `view` and `status`
+               among its parameters, which are the framework's own and not
+               part of any address. They were being appended as a query
+               string, so the three legal pages advertised nine hreflang
+               targets like /qaydalar?view=legal.terms&status=200 — nine
+               addresses that each canonicalise somewhere else, which is
+               exactly what Search Console was listing as «page variant with
+               a canonical tag». */
+            $route = app('router')->getRoutes()->getByName($wanted);
+            $belongs = array_flip($route ? $route->parameterNames() : []);
+
+            return route($wanted, array_intersect_key(request()->route()->parameters(), $belongs));
         } catch (\Throwable) {
             return self::home($locale);
         }

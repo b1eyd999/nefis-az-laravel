@@ -7,6 +7,13 @@ Disallow: /qapaq-yarat
 Disallow: /xerite/
 Disallow: /sohbet/
 
+# Laravel's own health page. It answers 200, carries the shop's name in its
+# title and says «Application up» — a page of this shop as far as Google is
+# concerned, and the only page on the site nobody wrote. Nothing links to it,
+# so refusing the crawl is enough; it is registered outside the web group, so
+# a header set in the application never reaches it.
+Disallow: /up
+
 # Pages behind a door, or belonging to one visitor only. They already carry
 # noindex, but Search Console then lists every one of them under «excluded by
 # noindex» and under «page with redirect», which buries the reports that

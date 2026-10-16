@@ -3,6 +3,7 @@
 use App\Http\Middleware\AnswerIsNotAPage;
 use App\Http\Middleware\CourierOnly;
 use App\Http\Middleware\MaintenanceMode;
+use App\Http\Middleware\OneAddressPerPage;
 use App\Http\Middleware\OwnerOnly;
 use App\Http\Middleware\SafetyHeaders;
 use App\Http\Middleware\SetLocale;
@@ -32,6 +33,10 @@ return Application::configure(basePath: dirname(__DIR__))
            used to come back in whatever language the hosting was configured
            with, which is how signing out turned the shop English. */
         $middleware->prependToGroup('web', SetLocale::class);
+        /* Global, not in the web group: a doubled slash matches no route at
+           all, so the 404 is thrown while the router is still looking and a
+           group middleware never runs. This has to come before routing. */
+        $middleware->prepend(OneAddressPerPage::class);
         // Which language a page is written in comes from its address.
         // Who may open which part of the phone admin: the shop's people see
         // the orders, the owner alone sees the books, the stock and the videos.
