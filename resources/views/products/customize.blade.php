@@ -81,8 +81,11 @@
               'url' => lroute('products.customize', $product->slug),
               'priceCurrency' => 'AZN',
               'price' => number_format($priceFrom, 2, '.', ''),
-              // Computed, never a literal: a date that has passed silently
-              // takes the listing down.
+              // Both ends of the window the price holds for. Computed, never
+              // literals: a date that has passed silently takes the listing
+              // down. Google asks for the second and merely likes the first,
+              // which was the one yellow mark left on the offer.
+              'validFrom' => now()->toDateString(),
               'priceValidUntil' => now()->addYear()->toDateString(),
               'availability' => 'https://schema.org/InStock',
               'itemCondition' => 'https://schema.org/NewCondition',
