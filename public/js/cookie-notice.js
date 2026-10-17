@@ -44,6 +44,55 @@
     window.gtag('config', id);
   }
 
+  /* Taking the yes back.
+   *
+   * Saying no, or asking to be asked again, used to clear only the answer:
+   * Google's own cookies stayed on the machine and its tag went on
+   * measuring the page that was already open. Withdrawing consent has to
+   * undo what consent did, or the choice means nothing.
+   *
+   * Two separate things, because one does not imply the other. The disable
+   * flag is Google's documented switch and stops the tag that is already
+   * loaded, without waiting for a reload. Deleting the cookies removes the
+   * identifier it would otherwise pick up again. */
+  function stopAnalytics() {
+    var id = window.NefisGA;
+    if (id) window['ga-disable-' + id] = true;
+    dropGoogleCookies();
+  }
+
+  /* The hosts a cookie might have been written for. Google sets its own on
+     the registrable domain, so deleting one without naming that domain
+     looks like it worked and changes nothing. */
+  function hosts() {
+    var h = location.hostname;
+    var out = ['', h, '.' + h];
+    var parts = h.split('.');
+    if (parts.length > 2) {
+      var base = parts.slice(-2).join('.');
+      out.push(base, '.' + base);
+    }
+    return out;
+  }
+
+  function dropGoogleCookies() {
+    var names = document.cookie.split(';').map(function (c) {
+      return c.split('=')[0].trim();
+    }).filter(function (n) {
+      // _ga, _ga_G-XXXX, _gid, _gat, _gat_gtag_…, _gcl_au — matched by
+      // shape rather than by a list, so a new property id is covered too.
+      return n && (n === '_ga' || n.indexOf('_ga_') === 0 || n === '_gid' ||
+                   n.indexOf('_gat') === 0 || n.indexOf('_gcl') === 0);
+    });
+
+    names.forEach(function (n) {
+      hosts().forEach(function (d) {
+        document.cookie = n + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/' +
+          (d ? '; domain=' + d : '');
+      });
+    });
+  }
+
   /* How tall the strip actually is, handed to the stylesheet so the chat
      buttons, the buy bar and the install bar can step up by exactly that
      much. Measured rather than assumed: the sentence wraps to two or three
@@ -77,7 +126,7 @@
     bar.hidden = true;
     document.body.classList.remove('has-cookie-bar');
     document.documentElement.style.removeProperty('--cookie-h');
-    if (value === 'all') startAnalytics();
+    if (value === 'all') { startAnalytics(); } else { stopAnalytics(); }
   }
 
   /* Both listeners go on before anything returns. They used to be attached
@@ -98,6 +147,9 @@
     if (!again) return;
     e.preventDefault();
     try { localStorage.removeItem(KEY); } catch (err) { /* nothing to undo */ }
+    /* Asking to be asked again is a withdrawal until the next answer, so
+       the measuring stops now rather than when the strip is answered. */
+    stopAnalytics();
     show();
     bar.scrollIntoView({ block: 'end', behavior: 'smooth' });
   });
@@ -108,7 +160,12 @@
     return;                     // decided already; the strip stays away
   }
   if (said === 'essential') {
-    return;                     // decided already, and the answer was no
+    /* Decided already, and the answer was no. The sweep runs on every such
+       page because the cookies may predate this answer — somebody who
+       accepted months ago and declined later still had Google's
+       identifier sitting on his machine. */
+    stopAnalytics();
+    return;
   }
 
   /* Not asked yet. The strip is written into the page hidden so it cannot
