@@ -28,9 +28,17 @@
      because the yes was given before. */
   var loaded = false;
   function startAnalytics() {
-    if (loaded) return;
     var id = window.NefisGA;
     if (!id) return;
+
+    /* Before the guard below, and before anything else: somebody who said
+       no and then changed his mind on the same page still carries the
+       disable flag from the refusal. Leaving it set loads the tag and
+       silences it — the shop would measure nothing and nothing would look
+       broken. */
+    window['ga-disable-' + id] = false;
+
+    if (loaded) return;
     loaded = true;
 
     var s = document.createElement('script');
