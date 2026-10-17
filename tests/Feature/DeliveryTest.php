@@ -75,18 +75,65 @@ class DeliveryTest extends TestCase
         $this->assertSame(9.0, $order->total());
     }
 
-    public function test_the_far_corners_of_the_city_are_still_the_city(): void
+    /**
+     * This test used to assert the opposite, and the change is deliberate.
+     *
+     * It was written when the rule was «is the point inside Baku», and it
+     * guarded a widening: the old box stopped at the built-up middle and
+     * told a man in Qaradağ he was not in his own city. That was the right
+     * fix for the question being asked then.
+     *
+     * The question changed. One courier cannot drive forty minutes up the
+     * peninsula for one box, and an order from Buzovna showed the rule had
+     * no opinion about distance at all. So the far settlements are out
+     * again — not because they are not Baku, but because they are too far
+     * to drive to. They are still served, by post and at a metro station.
+     */
+    public function test_the_door_is_driven_to_by_distance_not_by_the_city_limit(): void
     {
-        // The box used to stop at the built-up middle, so a customer standing
-        // in Qaradağ or out towards Zərə was told he was not in Baku at all.
-        $this->assertTrue(DeliveryMethod::inBaku(40.09, 49.41), 'Qobustan qəsəbəsi, Qaradağ');
-        $this->assertTrue(DeliveryMethod::inBaku(40.35, 50.26), 'Zirə');
-        $this->assertTrue(DeliveryMethod::inBaku(40.70, 49.85), 'the northern settlements');
-        $this->assertTrue(DeliveryMethod::inBaku(40.3869, 49.8434), 'the middle of town');
+        // The city a courier crosses in a morning.
+        $this->assertTrue(DeliveryMethod::reaches(40.3869, 49.8434), 'the middle of town');
+        $this->assertTrue(DeliveryMethod::reaches(40.4650, 49.8200), 'Binəqədi, 7 km');
+        $this->assertTrue(DeliveryMethod::reaches(40.3300, 49.7200), 'Lökbatan, 15 km');
+        $this->assertTrue(DeliveryMethod::reaches(40.4675, 50.0467), 'the airport, 17 km');
 
-        $this->assertFalse(DeliveryMethod::inBaku(40.6828, 46.3606), 'Gəncə');
-        $this->assertFalse(DeliveryMethod::inBaku(41.36, 49.22), 'Quba');
-        $this->assertFalse(DeliveryMethod::inBaku(38.75, 48.85), 'Lənkəran');
+        // Baku on paper, too far to drive for one box.
+        $this->assertFalse(DeliveryMethod::reaches(40.5167, 50.1167), 'Buzovna, 24 km — the order that started this');
+        $this->assertFalse(DeliveryMethod::reaches(40.4900, 50.1400), 'Mərdəkan, 25 km');
+        $this->assertFalse(DeliveryMethod::reaches(40.35, 50.26), 'Zirə, 34 km');
+        $this->assertFalse(DeliveryMethod::reaches(40.09, 49.41), 'Qobustan qəsəbəsi, Qaradağ');
+
+        // And another city is still another city.
+        $this->assertFalse(DeliveryMethod::reaches(40.6828, 46.3606), 'Gəncə');
+        $this->assertFalse(DeliveryMethod::reaches(41.36, 49.22), 'Quba');
+        $this->assertFalse(DeliveryMethod::reaches(38.75, 48.85), 'Lənkəran');
+    }
+
+    public function test_the_owner_can_move_the_limit_himself(): void
+    {
+        $door = $this->method(DeliveryMethod::DOOR);
+
+        $this->assertFalse(DeliveryMethod::reaches(40.5167, 50.1167), 'Buzovna, at the default 20 km');
+
+        $door->update(['options' => array_merge((array) $door->options, ['radius_km' => 30])]);
+        $this->assertTrue(DeliveryMethod::reaches(40.5167, 50.1167), 'Buzovna, once he widens it to 30 km');
+
+        $door->update(['options' => array_merge((array) $door->options, ['radius_km' => 10])]);
+        $this->assertFalse(DeliveryMethod::reaches(40.3300, 49.7200), 'Lökbatan, once he narrows it to 10 km');
+        $this->assertTrue(DeliveryMethod::reaches(40.3869, 49.8434), 'the middle of town, always');
+
+        // Nonsense in the field falls back to the default rather than
+        // refusing the whole city.
+        $door->update(['options' => array_merge((array) $door->options, ['radius_km' => 0])]);
+        $this->assertSame((float) DeliveryMethod::DOOR_RADIUS_KM, DeliveryMethod::doorRadiusKm());
+    }
+
+    public function test_the_distance_is_measured_the_way_a_map_measures_it(): void
+    {
+        // Against figures taken off a map, to a hundred metres.
+        $this->assertEqualsWithDelta(24.3, DeliveryMethod::kmFromCentre(40.5167, 50.1167), 0.6, 'Buzovna');
+        $this->assertEqualsWithDelta(16.5, DeliveryMethod::kmFromCentre(40.4675, 50.0467), 0.6, 'the airport');
+        $this->assertEqualsWithDelta(0.0, DeliveryMethod::kmFromCentre(40.4093, 49.8671), 0.1, 'the centre itself');
     }
 
     public function test_the_door_delivery_point_comes_from_the_map_and_stays_in_baku(): void

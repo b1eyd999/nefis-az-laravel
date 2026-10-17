@@ -8,6 +8,7 @@
  *
  *   NefisMapPicker.mount(el, {
  *     google: 'KEY' | null, bounds: {south, west, north, east}, center: {lat, lng},
+ *     radiusKm: how far the courier goes — drawn as a ring, 0 to leave it off,
  *     value: {lat, lng} | null, reverseUrl, searchUrl,
  *     onPick(lat, lng)            a point was set (click, drag, search, locate)
  *   }) -> Promise<{ place(lat, lng, pan), refresh(), reverse(lat, lng) -> Promise<string|null>,
@@ -70,6 +71,18 @@
         maxZoom: 19, referrerPolicy: 'strict-origin-when-cross-origin',
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
       }).addTo(map);
+
+      /* The area the courier actually drives. Drawn rather than left to be
+         discovered by being refused: a customer who can see the edge picks
+         inside it, and one who lives outside reaches for the post instead
+         of trying the map three times. */
+      if (o.radiusKm > 0) {
+        L.circle([o.center.lat, o.center.lng], {
+          radius: o.radiusKm * 1000,
+          color: '#C2610A', weight: 1.5, opacity: .7,
+          fillColor: '#C2610A', fillOpacity: .07, interactive: false
+        }).addTo(map);
+      }
       function paint() { el.classList.toggle('map-dark', isDark()); }
       paint();
       onThemeChange(paint);
@@ -159,6 +172,15 @@
         backgroundColor: isDark() ? '#1f1712' : '#f7efe3'
       });
       onThemeChange(function () { map.setOptions({ styles: isDark() ? GOOGLE_DARK : GOOGLE_LIGHT }); });
+
+      // The same ring as on the free map, for the same reason.
+      if (o.radiusKm > 0) {
+        new gm.Circle({
+          map: map, center: o.center, radius: o.radiusKm * 1000,
+          strokeColor: '#C2610A', strokeOpacity: .7, strokeWeight: 1.5,
+          fillColor: '#C2610A', fillOpacity: .07, clickable: false
+        });
+      }
 
       var icon = { url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(PIN), scaledSize: new gm.Size(36, 46), anchor: new gm.Point(18, 44) };
       var marker = null, geocoder = new gm.Geocoder();

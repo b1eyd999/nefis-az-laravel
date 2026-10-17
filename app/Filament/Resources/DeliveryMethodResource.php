@@ -59,6 +59,16 @@ class DeliveryMethodResource extends Resource
                             ->maxLength(255)
                             ->columnSpanFull(),
                         Forms\Components\Toggle::make('is_active')->label('Müştəriyə göstər'),
+                        Forms\Components\TextInput::make('options.radius_km')
+                            ->label('Qapıya çatdırılma neçə km-ə qədər')
+                            ->numeric()->minValue(1)->maxValue(60)->step(1)->suffix('km')
+                            ->placeholder((string) DeliveryMethod::DOOR_RADIUS_KM)
+                            ->helperText('Mərkəzdən düz xətt ilə. Müştəri xəritədə bu dairəni görür və '
+                                . 'kənarında nöqtə seçə bilmir — ona poçt və metro təklif olunur. '
+                                . 'Məsafələr: Lökbatan 15 km, hava limanı 17, Maştağa 18, Bilgəh 21, '
+                                . 'Buzovna 24, Mərdəkan 25, Türkan 34, Zirə 39. '
+                                . 'Boş qalsa ' . DeliveryMethod::DOOR_RADIUS_KM . ' km işlənir.')
+                            ->visible(fn (?DeliveryMethod $record) => $record?->type === DeliveryMethod::DOOR),
                         Forms\Components\TextInput::make('options.google_maps_key')
                             ->label('Google Maps açarı (istəyə bağlı)')
                             ->helperText('Boş olarsa, xəritə OpenStreetMap ilə işləyir. Google üçün: Google Cloud Console → "Maps JavaScript API" və "Geocoding API"ni aktiv edin, açar yaradın və onu yalnız nefis.az saytına məhdudlaşdırın (HTTP referrer: https://nefis.az/*).')

@@ -261,10 +261,31 @@
   var bounds = JSON.parse(box.dataset.bounds);
 
   function say(text, cls){ hint.textContent = text; hint.className = 'map-hint' + (cls ? ' ' + cls : ''); }
-  function inBaku(a, b){ return a >= bounds.south && a <= bounds.north && b >= bounds.west && b <= bounds.east; }
+  var centre = JSON.parse(box.dataset.center);
+  var radius = parseFloat(box.dataset.radius) || 0;
+
+  /* The same measurement the server makes, so the map refuses a point here
+     rather than letting the order be written and bounced. Straight-line
+     kilometres from the centre: «inside Baku» is not the question, since
+     Buzovna is Baku and forty minutes away. */
+  function kmFromCentre(a, b){
+    var R = 6371, dLat = (a - centre.lat) * Math.PI / 180, dLng = (b - centre.lng) * Math.PI / 180;
+    var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(centre.lat * Math.PI / 180) * Math.cos(a * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+  function reaches(a, b){
+    if (a < bounds.south || a > bounds.north || b < bounds.west || b > bounds.east) return false;
+    return !radius || kmFromCentre(a, b) <= radius;
+  }
+  var tooFar = @json(__('Bura qapıya çatdırılma çatmır — mağazadan :km km uzaqdır. Poçtla və ya metro stansiyasına göndərə bilərik.'));
+  function sayTooFar(a, b){
+    say(tooFar.replace(':km', Math.round(kmFromCentre(a, b))), 'err');
+  }
 
   function picked(a, b){
-    if (!inBaku(a, b)) { say(@json(__('Bu yer Bakıdan kənardadır, qapıya çatdırılma yalnız Bakı daxilindədir.')), 'err'); return; }
+    if (!reaches(a, b)) { sayTooFar(a, b); return; }
     lat.value = a.toFixed(7); lng.value = b.toFixed(7);
     say(@json(__('Yer seçildi. Ünvanı yoxlayın, mənzil və mərtəbəni əlavə edin.')), 'ok');
     picker.reverse(a, b).then(function(text){
@@ -303,7 +324,7 @@
 
     loading = NefisMapPicker.mount(box, {
       google: box.dataset.google || null,
-      bounds: bounds, center: JSON.parse(box.dataset.center), value: value,
+      bounds: bounds, center: centre, radiusKm: radius, value: value,
       reverseUrl: box.dataset.reverse, searchUrl: box.dataset.search,
       onPick: picked
     }).then(function(p){
@@ -357,14 +378,14 @@
     (ensure() || Promise.resolve()).then(function(){
       navigator.geolocation.getCurrentPosition(function(pos){
         var a = pos.coords.latitude, b = pos.coords.longitude;
-        if (!inBaku(a, b)) {
+        if (!reaches(a, b)) {
           /* A computer without GPS is placed by its network, and that can be
              a different city; saying "you are outside Baku" to someone who is
              standing in it reads as a fault of the site. */
           var off = Math.round((pos.coords.accuracy || 0) / 1000);
           say(off >= 5
             ? @json(__('Yeriniz dəqiq tapılmadı (ən azı :km km xəta) — yeri xəritədə əl ilə seçin.')).replace(':km', off)
-            : @json(__('Siz Bakıdan kənardasınız, yeri xəritədə əl ilə seçin.')), 'err');
+            : tooFar.replace(':km', Math.round(kmFromCentre(a, b))), 'err');
 
           return;
         }
@@ -761,6 +782,7 @@
                    data-google="{{ \App\Models\DeliveryMethod::googleMapsKey() }}"
                    data-bounds='@json(\App\Models\DeliveryMethod::BAKU_BOUNDS)'
                    data-center='@json(\App\Models\DeliveryMethod::BAKU_CENTER)'
+                   data-radius="{{ \App\Models\DeliveryMethod::doorRadiusKm() }}"
                    data-reverse="{{ route('map.reverse') }}" data-search="{{ route('map.search') }}"></div>
               <p class="map-hint" id="map-hint">{{ __('Xəritəyə toxunun və ya işarəni sürüşdürün, ünvan özü yazılacaq.') }}</p>
               <input type="hidden" name="delivery_lat" id="delivery_lat" value="{{ old('delivery_lat') }}" data-optional>

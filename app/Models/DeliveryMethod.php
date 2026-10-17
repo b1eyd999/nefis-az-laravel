@@ -85,11 +85,65 @@ class DeliveryMethod extends Model
         return filled($door?->options['google_maps_key'] ?? null) ? trim($door->options['google_maps_key']) : null;
     }
 
-    public static function inBaku(float $lat, float $lng): bool
+    /**
+     * How far from the centre the shop will carry a box to the door.
+     *
+     * Twenty kilometres, and the number was chosen by measuring rather than
+     * guessed. From the centre: the airport is 16.5 km, Maştağa 18, Lökbatan
+     * 15 — all still the city a courier crosses in a morning. Buzovna is
+     * 24.3, Mərdəkan 24.8, Türkan 34, Zirə 39. Twenty is the widest line
+     * that leaves the distant settlements out, so it refuses as little as
+     * possible while answering the thing that went wrong: an order arrived
+     * from Buzovna.
+     *
+     * The owner can move it in the admin — one courier, one city, and what
+     * that is worth changes with the season.
+     */
+    public const DOOR_RADIUS_KM = 20;
+
+    /** The limit as the owner has set it, or the default above. */
+    public static function doorRadiusKm(): float
+    {
+        $door = static::where('type', self::DOOR)->first();
+        $set = $door?->options['radius_km'] ?? null;
+
+        return is_numeric($set) && (float) $set > 0 ? (float) $set : (float) self::DOOR_RADIUS_KM;
+    }
+
+    /**
+     * Will the shop drive to this point?
+     *
+     * Not «is it in Baku», which is the question it used to ask and the
+     * reason the rule failed: Buzovna IS Baku on paper, forty minutes out
+     * along the peninsula. A courier cares about the distance, so that is
+     * what is measured — from the centre, as the crow flies.
+     *
+     * The rectangle stays as a first, cheap refusal: a point in another
+     * country should not need trigonometry to be turned away.
+     */
+    public static function reaches(float $lat, float $lng): bool
     {
         $b = self::BAKU_BOUNDS;
 
-        return $lat >= $b['south'] && $lat <= $b['north'] && $lng >= $b['west'] && $lng <= $b['east'];
+        if ($lat < $b['south'] || $lat > $b['north'] || $lng < $b['west'] || $lng > $b['east']) {
+            return false;
+        }
+
+        return self::kmFromCentre($lat, $lng) <= self::doorRadiusKm();
+    }
+
+    /** Straight-line kilometres from the city centre. */
+    public static function kmFromCentre(float $lat, float $lng): float
+    {
+        $c = self::BAKU_CENTER;
+        $r = 6371.0;
+
+        $dLat = deg2rad($lat - $c['lat']);
+        $dLng = deg2rad($lng - $c['lng']);
+        $h = sin($dLat / 2) ** 2
+            + cos(deg2rad($c['lat'])) * cos(deg2rad($lat)) * sin($dLng / 2) ** 2;
+
+        return 2 * $r * asin(min(1.0, sqrt($h)));
     }
 
     protected function casts(): array

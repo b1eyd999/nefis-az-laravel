@@ -343,7 +343,7 @@ class CheckoutController extends Controller
                 // The point picked on the map: only inside Baku.
                 'delivery_lat' => ['nullable', 'required_with:delivery_lng', 'numeric'],
                 'delivery_lng' => ['nullable', 'required_with:delivery_lat', 'numeric', function ($attr, $value, $fail) use ($request) {
-                    if (! DeliveryMethod::inBaku((float) $request->input('delivery_lat'), (float) $value)) {
+                    if (! DeliveryMethod::reaches((float) $request->input('delivery_lat'), (float) $value)) {
                         $fail(__('Seçdiyiniz yer Bakıdan kənardadır, qapıya çatdırılma yalnız Bakı daxilindədir.'));
                     }
                 }],

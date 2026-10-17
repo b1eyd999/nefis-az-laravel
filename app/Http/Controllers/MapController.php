@@ -27,7 +27,7 @@ class MapController extends Controller
         ]);
         $lat = round((float) $data['lat'], 5);
         $lng = round((float) $data['lng'], 5);
-        if (! DeliveryMethod::inBaku($lat, $lng)) {
+        if (! DeliveryMethod::reaches($lat, $lng)) {
             return response()->json(['address' => null, 'outside' => true]);
         }
 
