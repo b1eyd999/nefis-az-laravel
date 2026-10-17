@@ -72,6 +72,7 @@ class SiteSettings extends Page implements HasActions, HasForms
             'seo_bing' => Setting::get(Setting::SEO_BING),
             'seo_analytics' => Setting::get(Setting::SEO_ANALYTICS),
             'contact_phone' => Setting::get(Setting::CONTACT_PHONE),
+            'contact_phone_2' => Setting::get(Setting::CONTACT_PHONE_2),
             'contact_hours' => Setting::get(Setting::CONTACT_HOURS),
             'legal_name' => Setting::get(Setting::LEGAL_NAME),
             'legal_voen' => Setting::get(Setting::LEGAL_VOEN),
@@ -448,10 +449,18 @@ class SiteSettings extends Page implements HasActions, HasForms
                     ->description('Saytın aşağısında və mobil menyuda görünür. Nömrə həm zəng, həm də WhatsApp üçün işlədilir.')
                     ->schema([
                         Forms\Components\TextInput::make('contact_phone')
-                            ->label('Telefon (WhatsApp)')
+                            ->label('Əsas telefon (WhatsApp)')
+                            ->tel()
+                            ->placeholder('+994 55 383 86 89')
+                            ->helperText('Ölkə kodu ilə yazın. Boş qalsa, saytda yalnız Instagram göstərilir. '
+                                . 'WhatsApp düyməsi və Google-un oxuduğu nömrə — məhz bu.')
+                            ->maxLength(30),
+                        Forms\Components\TextInput::make('contact_phone_2')
+                            ->label('İkinci telefon')
                             ->tel()
                             ->placeholder('+994 99 230 80 50')
-                            ->helperText('Ölkə kodu ilə yazın. Boş qalsa, saytda yalnız Instagram göstərilir.')
+                            ->helperText('İstəyə görə. Saytda birincinin yanında göstərilir, '
+                                . 'əlaqə səhifəsində öz WhatsApp linki ilə. Boş qoysanız, heç nə dəyişmir.')
                             ->maxLength(30),
                         Forms\Components\TextInput::make('contact_hours')
                             ->label('İş saatları')
@@ -718,6 +727,7 @@ class SiteSettings extends Page implements HasActions, HasForms
         Setting::put(Setting::SEO_ANALYTICS, Seo::measurementId($data['seo_analytics'] ?? ''));
         Setting::put(Setting::COOKIE_NOTICE, ! empty($data[Setting::COOKIE_NOTICE]));
         Setting::put(Setting::CONTACT_PHONE, Contact::clean($data['contact_phone'] ?? ''));
+        Setting::put(Setting::CONTACT_PHONE_2, Contact::clean($data['contact_phone_2'] ?? ''));
         Setting::put(Setting::CONTACT_HOURS, trim((string) ($data['contact_hours'] ?? '')));
         Setting::put(Setting::LEGAL_NAME, trim((string) ($data['legal_name'] ?? '')));
         // Only the digits: a number typed with spaces or "VÖEN:" in front of

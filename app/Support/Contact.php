@@ -32,8 +32,12 @@ class Contact
     /** What people read: +994 99 230 80 50. */
     public static function display(): string
     {
-        $d = self::digits();
+        return self::pretty(self::digits());
+    }
 
+    /** The one place a number is spaced out, so both are spaced alike. */
+    private static function pretty(string $d): string
+    {
         // Azerbaijani numbers read as +994 XX XXX XX XX; anything else stays whole.
         if (strlen($d) === 12 && str_starts_with($d, '994')) {
             return sprintf('+994 %s %s %s %s', substr($d, 3, 2), substr($d, 5, 3), substr($d, 8, 2), substr($d, 10, 2));
@@ -45,6 +49,39 @@ class Contact
     public static function whatsapp(): string
     {
         return 'https://wa.me/' . self::digits();
+    }
+
+    /* ——— the second number ———
+       Written down beside the first and answered the same way. Everything
+       below mirrors the four above; nothing else in the shop changes,
+       because the main number is still the one a button or a search result
+       carries when it can only carry one. */
+
+    public static function digits2(): string
+    {
+        return preg_replace('/\D/', '', (string) Setting::get(Setting::CONTACT_PHONE_2));
+    }
+
+    public static function has2(): bool
+    {
+        // And never the same number twice: a shop that lists one line as two
+        // looks careless, and the second row would link to the first.
+        return strlen(self::digits2()) >= 9 && self::digits2() !== self::digits();
+    }
+
+    public static function dial2(): string
+    {
+        return '+' . self::digits2();
+    }
+
+    public static function display2(): string
+    {
+        return self::pretty(self::digits2());
+    }
+
+    public static function whatsapp2(): string
+    {
+        return 'https://wa.me/' . self::digits2();
     }
 
     public static function hours(): string

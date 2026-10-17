@@ -184,6 +184,16 @@ class Setting extends Model
     /** How customers reach the shop: the phone (WhatsApp too) and when it is answered. */
     public const CONTACT_PHONE = 'contact_phone';
 
+    /**
+     * A second number, shown beside the first.
+     *
+     * The shop's own line and the owner's old one are both answered, and
+     * both are on WhatsApp. Only CONTACT_PHONE is the main one though: the
+     * WhatsApp button and the telephone Google reads point at that, because
+     * a search result and a single button can each carry one number.
+     */
+    public const CONTACT_PHONE_2 = 'contact_phone_2';
+
     public const CONTACT_HOURS = 'contact_hours';
 
     /**

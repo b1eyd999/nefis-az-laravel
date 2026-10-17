@@ -24,10 +24,24 @@
           <span class="way-ico">📞</span>
           <span class="way-text"><b>{{ $d['phone'] }}</b><small>{{ $d['hours'] ?: __('Zəng edin') }}</small></span>
         </a>
+        @if($d['phone2'])
+          {{-- The second line. Shown right under the first, because somebody
+               who did not get through on one tries the other immediately. --}}
+          <a class="way" href="tel:{{ $d['dial2'] }}">
+            <span class="way-ico">📞</span>
+            <span class="way-text"><b>{{ $d['phone2'] }}</b><small>{{ __('İkinci nömrə') }}</small></span>
+          </a>
+        @endif
         <a class="way" href="{{ $d['whatsapp'] }}" target="_blank" rel="noopener">
           <span class="way-ico">@include('partials.whatsapp-icon')</span>
           <span class="way-text"><b>WhatsApp</b><small>{{ __('Şəkil və səs mesajı da göndərə bilərsiniz') }}</small></span>
         </a>
+        @if($d['whatsapp2'])
+          <a class="way" href="{{ $d['whatsapp2'] }}" target="_blank" rel="noopener">
+            <span class="way-ico">@include('partials.whatsapp-icon')</span>
+            <span class="way-text"><b>WhatsApp</b><small>{{ $d['phone2'] }}</small></span>
+          </a>
+        @endif
       @endif
       <a class="way" href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener">
         <span class="way-ico">@include('partials.instagram-icon')</span>

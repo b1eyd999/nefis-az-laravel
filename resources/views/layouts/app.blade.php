@@ -257,6 +257,9 @@
     <div class="mn-group">
       <span class="mn-head">{{ __('Əlaqə') }}</span>
       <a href="tel:{{ \App\Support\Contact::dial() }}">📞 {{ \App\Support\Contact::display() }}</a>
+      @if(\App\Support\Contact::has2())
+        <a href="tel:{{ \App\Support\Contact::dial2() }}">📞 {{ \App\Support\Contact::display2() }}</a>
+      @endif
       <a href="{{ \App\Support\Contact::whatsapp() }}" target="_blank" rel="noopener">💬 WhatsApp</a>
     </div>
   @endif
@@ -338,6 +341,9 @@
         <h3>{{ __('Əlaqə') }}</h3>
         @if(\App\Support\Contact::has())
           <a href="tel:{{ \App\Support\Contact::dial() }}" class="f-phone">{{ \App\Support\Contact::display() }}</a>
+          @if(\App\Support\Contact::has2())
+            <a href="tel:{{ \App\Support\Contact::dial2() }}" class="f-phone">{{ \App\Support\Contact::display2() }}</a>
+          @endif
           <a href="{{ \App\Support\Contact::whatsapp() }}" target="_blank" rel="noopener">WhatsApp</a>
         @endif
         <a href="https://www.instagram.com/nefis.az/" target="_blank" rel="noopener">Instagram</a>

@@ -71,6 +71,11 @@ class InfoController extends Controller
             'phone' => Contact::has() ? Contact::display() : null,
             'dial' => Contact::has() ? Contact::dial() : null,
             'whatsapp' => Contact::has() ? Contact::whatsapp() : null,
+            // The second line, when there is one. Its own WhatsApp: both
+            // numbers are answered there.
+            'phone2' => Contact::has2() ? Contact::display2() : null,
+            'dial2' => Contact::has2() ? Contact::dial2() : null,
+            'whatsapp2' => Contact::has2() ? Contact::whatsapp2() : null,
             'hours' => Contact::hours() ? __(Contact::hours()) : null,
             'email' => \App\Support\CustomerNotice::FROM,
             'legal' => array_filter([
