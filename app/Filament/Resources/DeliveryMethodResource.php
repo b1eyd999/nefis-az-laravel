@@ -60,15 +60,60 @@ class DeliveryMethodResource extends Resource
                             ->columnSpanFull(),
                         Forms\Components\Toggle::make('is_active')->label('Müştəriyə göstər'),
                         Forms\Components\TextInput::make('options.radius_km')
-                            ->label('Qapıya çatdırılma neçə km-ə qədər')
+                            ->label('Üstəlik məsafə həddi (istəyə bağlı)')
                             ->numeric()->minValue(1)->maxValue(60)->step(1)->suffix('km')
-                            ->placeholder((string) DeliveryMethod::DOOR_RADIUS_KM)
-                            ->helperText('Mərkəzdən düz xətt ilə. Müştəri xəritədə bu dairəni görür və '
-                                . 'kənarında nöqtə seçə bilmir — ona poçt və metro təklif olunur. '
-                                . 'Məsafələr: Lökbatan 15 km, hava limanı 17, Maştağa 18, Bilgəh 21, '
-                                . 'Buzovna 24, Mərdəkan 25, Türkan 34, Zirə 39. '
-                                . 'Boş qalsa ' . DeliveryMethod::DOOR_RADIUS_KM . ' km işlənir.')
+                            ->placeholder('həddi yox')
+                            ->helperText('Aşağıdaki zona onsuz da mərkəzdən 20 km-də bitir. Bura rəqəm '
+                                . 'yazsanız, zona bir də bu dairə ilə kəsilir — yəni yalnız daraldır, '
+                                . 'genişləndirmir. Mərkəzdən: Sabunçu 8 km, Suraxanı 10, Zabrat 10, '
+                                . 'Hövsan 14, Nardaran 14, Maştağa 18, Bilgəh 19. Boş qalsa hədd yoxdur.')
                             ->visible(fn (?DeliveryMethod $record) => $record?->type === DeliveryMethod::DOOR),
+                        Forms\Components\Textarea::make('options.zone')
+                            ->label('Qapıya çatdırılma zonası')
+                            ->helperText('Müştəri xəritədə düz bu sahəni görür və kənarında nöqtə seçə '
+                                . 'bilmir — ona poçt və metro təklif olunur. İçində: Səbail, Nəsimi, '
+                                . 'Nərimanov, Yasamal, Xətai, Nizami, Suraxanı, Sabunçu. Kənarda: '
+                                . 'Binəqədi (Dərnəgül, Azadlıq prospekti, Xocəsən), Qaradağ (Lökbatan), '
+                                . 'Xəzər (hava limanı, Buzovna, Mərdəkan), Xırdalan, Sumqayıt. '
+                                . 'Hər sətirdə bir künc: en, uzunluq. Dəyişmək lazım olsa, yeri adı ilə '
+                                . 'deyin — əl ilə yazmaq lazım deyil.')
+                            ->rows(8)
+                            ->visible(fn (?DeliveryMethod $record) => $record?->type === DeliveryMethod::DOOR)
+                            ->formatStateUsing(fn ($state) => is_array($state)
+                                ? implode("
+", array_map(fn ($p) => implode(', ', (array) $p), $state))
+                                : $state)
+                            // A corner that is not two numbers is dropped rather
+                            // than stored as nonsense; too few corners left and
+                            // the model falls back to the zone it came with, so a
+                            // slip here never shuts the whole city out.
+                            ->dehydrateStateUsing(function ($state) {
+                                if (is_array($state)) {
+                                    return $state;
+                                }
+                                $points = [];
+                                foreach (preg_split('/\R/', (string) $state) as $line) {
+                                    $p = array_values(array_filter(array_map('trim', explode(',', $line)), 'is_numeric'));
+                                    if (count($p) === 2) {
+                                        $points[] = [(float) $p[0], (float) $p[1]];
+                                    }
+                                }
+
+                                return $points;
+                            })
+                            ->hintAction(
+                                Forms\Components\Actions\Action::make('defaultZone')
+                                    ->label('Standart zonanı qaytar')
+                                    ->icon('heroicon-m-arrow-path')
+                                    ->requiresConfirmation()
+                                    ->modalHeading('Zona əvəz olunsun?')
+                                    ->modalDescription('Yazdıqlarınızın yerinə səkkiz rayonun standart '
+                                        . 'sərhədi yazılacaq. «Saxla» deməyincə dəyişiklik yadda qalmır.')
+                                    ->action(fn (Forms\Set $set) => $set('options.zone', implode("
+",
+                                        array_map(fn ($p) => implode(', ', $p), DeliveryMethod::DOOR_ZONE))))
+                            )
+                            ->columnSpanFull(),
                         Forms\Components\TextInput::make('options.google_maps_key')
                             ->label('Google Maps açarı (istəyə bağlı)')
                             ->helperText('Boş olarsa, xəritə OpenStreetMap ilə işləyir. Google üçün: Google Cloud Console → "Maps JavaScript API" və "Geocoding API"ni aktiv edin, açar yaradın və onu yalnız nefis.az saytına məhdudlaşdırın (HTTP referrer: https://nefis.az/*).')

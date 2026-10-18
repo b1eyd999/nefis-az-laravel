@@ -262,12 +262,22 @@
 
   function say(text, cls){ hint.textContent = text; hint.className = 'map-hint' + (cls ? ' ' + cls : ''); }
   var centre = JSON.parse(box.dataset.center);
+  var zone = JSON.parse(box.dataset.zone);
   var radius = parseFloat(box.dataset.radius) || 0;
 
-  /* The same measurement the server makes, so the map refuses a point here
-     rather than letting the order be written and bounced. Straight-line
-     kilometres from the centre: «inside Baku» is not the question, since
-     Buzovna is Baku and forty minutes away. */
+  /* The same two tests the server makes, so the map refuses a point here
+     rather than letting the order be written and bounced.
+     «Inside Baku» is not the question — Buzovna is Baku and forty minutes
+     away, and Binəqədi is Baku and nearer than Suraxanı, which is served.
+     The question is the shape the courier covers. */
+  function inZone(a, b){
+    var hit = false;
+    for (var i = 0, j = zone.length - 1; i < zone.length; j = i++) {
+      var yi = zone[i][0], xi = zone[i][1], yj = zone[j][0], xj = zone[j][1];
+      if ((yi > a) !== (yj > a) && b < (xj - xi) * (a - yi) / (yj - yi) + xi) hit = !hit;
+    }
+    return hit;
+  }
   function kmFromCentre(a, b){
     var R = 6371, dLat = (a - centre.lat) * Math.PI / 180, dLng = (b - centre.lng) * Math.PI / 180;
     var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -277,15 +287,20 @@
   }
   function reaches(a, b){
     if (a < bounds.south || a > bounds.north || b < bounds.west || b > bounds.east) return false;
+    if (!inZone(a, b)) return false;
     return !radius || kmFromCentre(a, b) <= radius;
   }
-  var tooFar = @json(__('Bura qapıya çatdırılma çatmır — mağazadan :km km uzaqdır. Poçtla və ya metro stansiyasına göndərə bilərik.'));
-  function sayTooFar(a, b){
-    say(tooFar.replace(':km', Math.round(kmFromCentre(a, b))), 'err');
+  var tooFar = @json(__('Bura qapıya çatdırılma çatmır — xəritədə işarələnmiş sahənin kənarındadır. Poçtla və ya metro stansiyasına göndərə bilərik.'));
+  /* It used to name the distance, and that has to stop now the rule is a
+     shape: «you are 7 km away» to somebody in Binəqədi, while the shop
+     drives to Suraxanı at 9.5, reads as an excuse rather than a reason.
+     The map shows the area; the sentence points at it. */
+  function sayTooFar(){
+    say(tooFar, 'err');
   }
 
   function picked(a, b){
-    if (!reaches(a, b)) { sayTooFar(a, b); return; }
+    if (!reaches(a, b)) { sayTooFar(); return; }
     lat.value = a.toFixed(7); lng.value = b.toFixed(7);
     say(@json(__('Yer seçildi. Ünvanı yoxlayın, mənzil və mərtəbəni əlavə edin.')), 'ok');
     picker.reverse(a, b).then(function(text){
@@ -324,7 +339,7 @@
 
     loading = NefisMapPicker.mount(box, {
       google: box.dataset.google || null,
-      bounds: bounds, center: centre, radiusKm: radius, value: value,
+      bounds: bounds, center: centre, zone: zone, radiusKm: radius, value: value,
       reverseUrl: box.dataset.reverse, searchUrl: box.dataset.search,
       onPick: picked
     }).then(function(p){
@@ -385,7 +400,7 @@
           var off = Math.round((pos.coords.accuracy || 0) / 1000);
           say(off >= 5
             ? @json(__('Yeriniz dəqiq tapılmadı (ən azı :km km xəta) — yeri xəritədə əl ilə seçin.')).replace(':km', off)
-            : tooFar.replace(':km', Math.round(kmFromCentre(a, b))), 'err');
+            : tooFar, 'err');
 
           return;
         }
@@ -783,6 +798,7 @@
                    data-bounds='@json(\App\Models\DeliveryMethod::BAKU_BOUNDS)'
                    data-center='@json(\App\Models\DeliveryMethod::BAKU_CENTER)'
                    data-radius="{{ \App\Models\DeliveryMethod::doorRadiusKm() }}"
+                   data-zone='@json(\App\Models\DeliveryMethod::doorZone())'
                    data-reverse="{{ route('map.reverse') }}" data-search="{{ route('map.search') }}"></div>
               <p class="map-hint" id="map-hint">{{ __('Xəritəyə toxunun və ya işarəni sürüşdürün, ünvan özü yazılacaq.') }}</p>
               <input type="hidden" name="delivery_lat" id="delivery_lat" value="{{ old('delivery_lat') }}" data-optional>

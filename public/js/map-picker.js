@@ -8,7 +8,9 @@
  *
  *   NefisMapPicker.mount(el, {
  *     google: 'KEY' | null, bounds: {south, west, north, east}, center: {lat, lng},
- *     radiusKm: how far the courier goes — drawn as a ring, 0 to leave it off,
+ *     zone: [[lat, lng], …] the outline the courier covers — drawn, and
+ *           the thing a point is tested against,
+ *     radiusKm: an extra limit from the centre, drawn as a ring; 0 for none,
  *     value: {lat, lng} | null, reverseUrl, searchUrl,
  *     onPick(lat, lng)            a point was set (click, drag, search, locate)
  *   }) -> Promise<{ place(lat, lng, pan), refresh(), reverse(lat, lng) -> Promise<string|null>,
@@ -75,12 +77,20 @@
       /* The area the courier actually drives. Drawn rather than left to be
          discovered by being refused: a customer who can see the edge picks
          inside it, and one who lives outside reaches for the post instead
-         of trying the map three times. */
+         of trying the map three times.
+         It is the city's own district lines, not a circle round the shop —
+         so the edge a customer sees is the edge he would recognise. */
+      if (o.zone && o.zone.length > 2) {
+        L.polygon(o.zone, {
+          color: '#C2610A', weight: 2.5, opacity: .9,
+          fillColor: '#C2610A', fillOpacity: .1, interactive: false
+        }).addTo(map);
+      }
       if (o.radiusKm > 0) {
         L.circle([o.center.lat, o.center.lng], {
           radius: o.radiusKm * 1000,
-          color: '#C2610A', weight: 1.5, opacity: .7,
-          fillColor: '#C2610A', fillOpacity: .07, interactive: false
+          color: '#C2610A', weight: 1, opacity: .5, dashArray: '4 4',
+          fill: false, interactive: false
         }).addTo(map);
       }
       function paint() { el.classList.toggle('map-dark', isDark()); }
@@ -173,12 +183,19 @@
       });
       onThemeChange(function () { map.setOptions({ styles: isDark() ? GOOGLE_DARK : GOOGLE_LIGHT }); });
 
-      // The same ring as on the free map, for the same reason.
+      // The same outline as on the free map, for the same reason.
+      if (o.zone && o.zone.length > 2) {
+        new gm.Polygon({
+          map: map, paths: o.zone.map(function (p) { return { lat: p[0], lng: p[1] }; }),
+          strokeColor: '#C2610A', strokeOpacity: .9, strokeWeight: 2.5,
+          fillColor: '#C2610A', fillOpacity: .1, clickable: false
+        });
+      }
       if (o.radiusKm > 0) {
         new gm.Circle({
           map: map, center: o.center, radius: o.radiusKm * 1000,
-          strokeColor: '#C2610A', strokeOpacity: .7, strokeWeight: 1.5,
-          fillColor: '#C2610A', fillOpacity: .07, clickable: false
+          strokeColor: '#C2610A', strokeOpacity: .5, strokeWeight: 1,
+          fillOpacity: 0, clickable: false
         });
       }
 

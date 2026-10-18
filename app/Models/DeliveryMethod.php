@@ -86,40 +86,86 @@ class DeliveryMethod extends Model
     }
 
     /**
-     * How far from the centre the shop will carry a box to the door.
+     * Where the courier goes.
      *
-     * Twenty kilometres, and the number was chosen by measuring rather than
-     * guessed. From the centre: the airport is 16.5 km, Maştağa 18, Lökbatan
-     * 15 — all still the city a courier crosses in a morning. Buzovna is
-     * 24.3, Mərdəkan 24.8, Türkan 34, Zirə 39. Twenty is the widest line
-     * that leaves the distant settlements out, so it refuses as little as
-     * possible while answering the thing that went wrong: an order arrived
-     * from Buzovna.
+     * Not a circle, and the reason is worth writing down: the owner asked to
+     * drop Binəqədi while keeping Sabunçu and Suraxanı, and no circle can do
+     * that. Binəqədi is 7.4 km from the centre, Sabunçu 7.7, Suraxanı 9.5 —
+     * every circle that keeps the last two keeps the first. He was not
+     * describing a distance at all; he was naming districts.
      *
-     * The owner can move it in the admin — one courier, one city, and what
-     * that is worth changes with the season.
+     * So this is the outline of the eight districts he delivers to —
+     * Səbail, Nəsimi, Nərimanov, Yasamal, Xətai, Nizami, Suraxanı,
+     * Sabunçu — cut off at 20 km from the centre, because Sabunçu as a
+     * district runs on to Maştağa and Bilgəh and that is the same «too far»
+     * that the order from Buzovna was.
+     *
+     * Traced from the districts' real boundaries (OpenStreetMap relations
+     * 11826939-11827250), rasterised at 170 m and simplified to a quarter
+     * kilometre. It holds every one of the eight districts inside 20 km,
+     * and crosses no more than 170 m into a neighbouring one.
      */
-    public const DOOR_RADIUS_KM = 20;
+    public const DOOR_ZONE = [
+        [40.2283, 49.8410], [40.2403, 49.7770], [40.2867, 49.7410], [40.2927, 49.7410], [40.3062, 49.7650],
+        [40.3272, 49.7850], [40.3377, 49.7830], [40.3513, 49.7950], [40.3663, 49.7930], [40.3798, 49.7850],
+        [40.3978, 49.7850], [40.4143, 49.7950], [40.4158, 49.8050], [40.4218, 49.8110], [40.4188, 49.8270],
+        [40.4113, 49.8270], [40.4188, 49.8610], [40.4353, 49.8610], [40.4382, 49.8710], [40.4562, 49.8710],
+        [40.4592, 49.8770], [40.4817, 49.8850], [40.4817, 49.8910], [40.4997, 49.8930], [40.4997, 49.9010],
+        [40.4937, 49.9010], [40.4937, 49.9090], [40.5027, 49.9270], [40.5207, 49.9270], [40.5192, 49.8670],
+        [40.5403, 49.8690], [40.5433, 49.8530], [40.5493, 49.8530], [40.5568, 49.7770], [40.5763, 49.7710],
+        [40.5868, 49.8110], [40.5898, 49.8450], [40.5898, 49.9010], [40.5793, 49.9550], [40.5613, 50.0010],
+        [40.5358, 50.0410], [40.5297, 50.0390], [40.5297, 50.0270], [40.5192, 50.0270], [40.5192, 50.0230],
+        [40.5102, 50.0230], [40.5057, 50.0350], [40.5012, 50.0350], [40.4997, 50.0270], [40.4817, 50.0270],
+        [40.4787, 50.0310], [40.4637, 50.0270], [40.4637, 50.0310], [40.4412, 50.0490], [40.4472, 50.0930],
+        [40.4338, 50.0990], [40.4308, 50.1050], [40.3888, 50.1050], [40.3528, 50.0950], [40.3152, 50.0730],
+        [40.2897, 50.0490], [40.2702, 50.0230], [40.2493, 49.9830], [40.2343, 49.9350], [40.2283, 49.8950]
+    ];
 
-    /** The limit as the owner has set it, or the default above. */
+    /** The zone as the owner has redrawn it, or the one above. */
+    public static function doorZone(): array
+    {
+        $door = static::where('type', self::DOOR)->first();
+        $set = $door?->options['zone'] ?? null;
+
+        $points = [];
+        foreach (is_array($set) ? $set : [] as $p) {
+            $p = is_array($p) ? array_values($p) : [];
+            if (count($p) === 2 && is_numeric($p[0]) && is_numeric($p[1])) {
+                $points[] = [(float) $p[0], (float) $p[1]];
+            }
+        }
+
+        // Fewer than three corners is not a shape. Falling back to the
+        // default beats refusing the whole city over a mistyped line.
+        return count($points) >= 3 ? $points : self::DOOR_ZONE;
+    }
+
+    /**
+     * An extra limit in kilometres, off unless the owner sets one.
+     *
+     * The zone above already stops at 20 km, so this is only ever a
+     * tightening — a number here shrinks what is drawn and what is
+     * accepted, and nothing widens past the districts.
+     */
     public static function doorRadiusKm(): float
     {
         $door = static::where('type', self::DOOR)->first();
         $set = $door?->options['radius_km'] ?? null;
 
-        return is_numeric($set) && (float) $set > 0 ? (float) $set : (float) self::DOOR_RADIUS_KM;
+        return is_numeric($set) && (float) $set > 0 ? (float) $set : 0.0;
     }
 
     /**
      * Will the shop drive to this point?
      *
      * Not «is it in Baku», which is the question it used to ask and the
-     * reason the rule failed: Buzovna IS Baku on paper, forty minutes out
-     * along the peninsula. A courier cares about the distance, so that is
-     * what is measured — from the centre, as the crow flies.
+     * reason the rule failed twice over: Buzovna IS Baku, forty minutes out
+     * along the peninsula, and Binəqədi is Baku and nearer than half the
+     * places he does deliver to. The answer is a shape, and this is the
+     * point-in-polygon test for it.
      *
      * The rectangle stays as a first, cheap refusal: a point in another
-     * country should not need trigonometry to be turned away.
+     * country should not need sixty-five comparisons to be turned away.
      */
     public static function reaches(float $lat, float $lng): bool
     {
@@ -129,7 +175,32 @@ class DeliveryMethod extends Model
             return false;
         }
 
-        return self::kmFromCentre($lat, $lng) <= self::doorRadiusKm();
+        if (! self::inZone($lat, $lng)) {
+            return false;
+        }
+
+        $limit = self::doorRadiusKm();
+
+        return $limit <= 0 || self::kmFromCentre($lat, $lng) <= $limit;
+    }
+
+    /** Whether the point falls inside the delivery outline. */
+    public static function inZone(float $lat, float $lng): bool
+    {
+        $zone = self::doorZone();
+        $inside = false;
+
+        for ($i = 0, $j = count($zone) - 1; $i < count($zone); $j = $i++) {
+            [$yi, $xi] = $zone[$i];
+            [$yj, $xj] = $zone[$j];
+
+            if (($yi > $lat) !== ($yj > $lat)
+                && $lng < ($xj - $xi) * ($lat - $yi) / ($yj - $yi) + $xi) {
+                $inside = ! $inside;
+            }
+        }
+
+        return $inside;
     }
 
     /** Straight-line kilometres from the city centre. */
