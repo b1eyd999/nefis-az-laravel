@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
@@ -24,7 +25,9 @@ class AuthController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'string', 'email', 'max:255',
+                Rule::unique('users', 'email')
+                    ->where(fn ($q) => $q->whereRaw('LOWER(email) = ?', [Str::lower(trim((string) $request->input('email')))]))],
             // The shop rings and writes on WhatsApp; an order without a number
             // is an order nobody can ask about.
             'phone' => ['required', 'string', 'max:30', function ($attribute, $value, $fail) {

@@ -302,7 +302,12 @@ class Accounting
             // them before the customer paid, so it never was income; and money
             // still owed either way over a later change has not moved yet — a
             // promise is no more income here than it is anywhere else.
-            $goods = $o->itemsTotal() - (float) ($o->discount ?? 0) - $o->outstanding() + $o->owedBack();
+            /* Through discountOff(), like everybody else. Straight off the
+               frozen column, an order that shrank after a code was used
+               booked negative takings: itemsTotal 20 against a discount of
+               40 is −20 of revenue for a month, for an order whose own page
+               correctly reads 0. */
+            $goods = $o->itemsTotal() - $o->discountOff() - $o->outstanding() + $o->owedBack();
             $delivery = $o->deliveryCharged();
             $chocolate = (float) $o->items->sum(fn ($i) => (float) ($i->chocolate_cost ?? 0) * $i->quantity);
             $materials = (float) ($o->materials_cost ?? 0);

@@ -139,7 +139,14 @@ class MapImage
             return null;
         }
 
-        $disk->put($name, $answer->body());
+        /* Only if it is really on the disk. A failed write used to be
+           handed back as a good name, and the page then served an empty
+           200 marked immutable for a year — so the window stayed blank for
+           that customer, and for everything that cached it, long after the
+           disk had room again. */
+        if ($disk->put($name, $answer->body()) === false) {
+            return null;
+        }
 
         return $name;
     }

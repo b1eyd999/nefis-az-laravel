@@ -168,6 +168,8 @@
     }
     log.appendChild(el);
     log.scrollTop = log.scrollHeight;
+
+    return el;
   }
 
   function poll(){
@@ -320,19 +322,31 @@
     if (picked) data.append('image', picked);
 
     var mine = { side:'me', body: body, image: picked ? shotImg.src : null, at:'' };
-    line(mine);
+    var drawn = line(mine);
     text.value = ''; text.style.height = 'auto';
-    var sending = picked; picked = null; shot.hidden = true; file.value = '';
+    picked = null; shot.hidden = true; file.value = '';
     say('');
+
+    /* A send that did not arrive must not sit in the thread looking exactly
+       like one that did — and the words must come back, because they were
+       taken out of the box the moment he tapped. */
+    function failed(){
+      say(@json(__('Mesaj getmədi, bir azdan yenidən yoxlayın.')));
+      if (drawn) drawn.classList.add('unsent');
+      if (!text.value) { text.value = body; }
+    }
 
     fetch(@json(route('chat.send')), { method:'POST', body:data, headers:{ 'Accept':'application/json', 'X-Requested-With':'XMLHttpRequest' } })
       .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
       .then(function(res){
-        if (!res.ok){ say(@json(__('Mesaj getmədi, bir azdan yenidən yoxlayın.'))); return; }
+        if (!res.ok){ failed(); return; }
         if (res.d && res.d.message) last = Math.max(last, res.d.message.id);
       })
-      .catch(function(){ say(@json(__('Mesaj getmədi, bir azdan yenidən yoxlayın.'))); })
-      .finally(function(){ if (sending) URL.revokeObjectURL(mine.image); });
+      .catch(failed);
+    /* The picture is NOT handed back here. It was revoked the moment the
+       request settled, while the bubble above was still pointing at it: the
+       photograph he had just sent went blank, and tapping it opened an empty
+       tab. The browser frees it when the page goes. */
   });
 
   /* Even closed, the window listens now and then — once it has been opened

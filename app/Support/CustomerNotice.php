@@ -118,14 +118,19 @@ class CustomerNotice
 
     private static function message(Order $order): string
     {
-        $lines = ['Nefis.az, sifariş #'.$order->id, self::line($order)];
+        /* Written inside inTheirLanguage(), so these go through __() like
+           everything else: the message used to arrive half Russian and half
+           Azerbaijani, which reads worse than either on its own. */
+        $lines = [__('Nefis.az, sifariş #:id', ['id' => $order->id]), self::line($order)];
 
         if ($order->delivery_date) {
-            $lines[] = 'Çatdırılma: '.DeliveryTime::day($order->delivery_date)
-                .($order->delivery_slot ? ', '.$order->delivery_slot : '');
+            $lines[] = __('Çatdırılma: :day', [
+                'day' => DeliveryTime::day($order->delivery_date)
+                    .($order->delivery_slot ? ', '.$order->delivery_slot : ''),
+            ]);
         }
         if ($order->total() > 0) {
-            $lines[] = 'Məbləğ: '.Price::format($order->total());
+            $lines[] = __('Məbləğ: :sum', ['sum' => Price::format($order->total())]);
         }
         $lines[] = self::link($order);
 

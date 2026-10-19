@@ -48,13 +48,24 @@ class PromoCodeResource extends Resource
                     ->label('Promokod')
                     ->required()
                     ->maxLength(32)
-                    // Upper-cased before the unique check sees it: the model
-                    // stores it upper-cased, so checking the typed case let
-                    // "yaz10" through to crash against the stored "YAZ10".
+                    // Stored upper-cased whatever he types.
                     ->dehydrateStateUsing(fn (?string $state) => \Illuminate\Support\Str::upper(trim((string) $state)))
-                    ->rule(fn (?\App\Models\PromoCode $record) => \Illuminate\Validation\Rule::unique('promo_codes', 'code')
-                        ->ignore($record?->id)
-                        ->where(fn ($q) => $q->whereRaw('UPPER(code) = ?', [\Illuminate\Support\Str::upper(trim((string) request()->input('data.code')))])))
+                    /* And checked the same way. Rule::unique could not do
+                       it: its own `code = ?` is matched against the state
+                       as typed — dehydrateStateUsing runs later, at saving
+                       — and SQLite compares strings by their bytes, so
+                       "yaz10" found no row, passed, and then went down on
+                       the unique index with a database error on the screen.
+                       An extra whereRaw cannot help, being ANDed with it. */
+                    ->rule(fn (?\App\Models\PromoCode $record) => function (string $attribute, $value, \Closure $fail) use ($record) {
+                        $taken = \App\Models\PromoCode::whereRaw('UPPER(code) = ?', [\Illuminate\Support\Str::upper(trim((string) $value))])
+                            ->when($record, fn ($q) => $q->whereKeyNot($record->id))
+                            ->exists();
+
+                        if ($taken) {
+                            $fail('Bu promokod artıq var.');
+                        }
+                    })
                     ->helperText('Böyük hərflərlə saxlanır; müştəri necə yazsa da tapılır.')
                     ->default(fn () => PromoCode::make())
                     ->suffixAction(

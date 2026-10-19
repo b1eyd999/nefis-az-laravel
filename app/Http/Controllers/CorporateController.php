@@ -40,7 +40,7 @@ class CorporateController extends Controller
             'phone' => ['required', 'string', 'max:40'],
             'email' => ['nullable', 'email', 'max:150'],
             'quantity' => ['required', 'integer', 'min:' . $minimum, 'max:1000000'],
-            'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:4096'],
+            'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:4096'],
             /* The artwork a company's own designer drew. Checked by what the
                file actually is, not by what it is called: the name is the
                one thing an uploader controls completely. */

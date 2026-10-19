@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Support\Cart;
 use App\Support\OrderKey;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,6 +30,12 @@ class OrderKeyController extends Controller
            admin, or another member of the household. The letter went to this
            customer's address, so the link speaks for him. */
         if ($request->user()?->id !== $customer->id) {
+            /* Whatever is in the basket belonged to whoever was signed in a
+               moment ago — the owner building a box for somebody else, most
+               of the time. regenerate() changes the session's name and not
+               its contents, so without this the basket followed the link
+               into this customer's account, photograph, words and all. */
+            Cart::clear();
             Auth::login($customer);
             $request->session()->regenerate();
         }

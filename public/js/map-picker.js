@@ -38,10 +38,15 @@
     }
   }
 
+  /* An empty answer and a failed one are not the same thing. Turning every
+     refusal into {} told a customer whose search was rate-limited, or whose
+     geocoder answered 500, that his own street does not exist — so he typed
+     it again, differently, and gave up on a correct address. The caller is
+     told which of the two happened. */
   function getJSON(url) {
     return fetch(url, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
-      .then(function (r) { return r.ok ? r.json() : {}; })
-      .catch(function () { return {}; });
+      .then(function (r) { return r.ok ? r.json() : { failed: true }; })
+      .catch(function () { return { failed: true }; });
   }
 
   /* ---------------- OpenStreetMap (Leaflet) ---------------- */
@@ -118,7 +123,11 @@
           return getJSON(o.reverseUrl + '?lat=' + lat + '&lng=' + lng).then(function (d) { return d.address || null; });
         },
         search: function (q) {
-          return getJSON(o.searchUrl + '?q=' + encodeURIComponent(q)).then(function (d) { return d.results || []; });
+          return getJSON(o.searchUrl + '?q=' + encodeURIComponent(q)).then(function (d) {
+            if (d.failed) { throw new Error('lookup failed'); }
+
+            return d.results || [];
+          });
         }
       };
     });
@@ -229,7 +238,13 @@
                 return { lat: x.geometry.location.lat(), lng: x.geometry.location.lng(), label: x.formatted_address };
               });
             })
-            .catch(function () { return []; });
+            .catch(function (e) {
+              /* ZERO_RESULTS really is nothing found; anything else is the
+                 lookup itself failing, and must not be told to the customer
+                 as «there is no such street». */
+              if (e && e.code === 'ZERO_RESULTS') { return []; }
+              throw e;
+            });
         }
       };
     });

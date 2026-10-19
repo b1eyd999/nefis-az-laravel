@@ -80,11 +80,11 @@
                   <span class="thumb-more">+{{ count($item['photo_paths']) - 1 }}</span>
                 @endif
               @else
-                <img src="{{ \App\Support\Media::url($item['product']->catalogImage()) }}" alt="{{ $item['product']->name }}">
+                <img src="{{ \App\Support\Media::url($item['product']->catalogImage()) }}" alt="{{ $item['product']->tr('name') }}">
               @endif
             </div>
             <div class="info">
-              <h3>{{ $isLive ? __('Canlı şəkil') : ($isLetter ? __('Polaroid məktub') : $item['product']->name) }}</h3>
+              <h3>{{ $isLive ? __('Canlı şəkil') : ($isLetter ? __('Polaroid məktub') : $item['product']->tr('name')) }}</h3>
               <p>
                 @if($texts) "{{ implode('" · "', $texts) }}" &middot; @endif
                 @php $unit = \App\Support\Cart::unitPrice($item, $item['product']); @endphp

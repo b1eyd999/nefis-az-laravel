@@ -55,7 +55,7 @@
           @if($s->image)
             <div class="hero-visual hero-in d3 has-img">
               @if($s->ribbon)<div class="hero-ribbon">{{ $s->ribbon }}</div>@endif
-              <img src="{{ $s->imageUrl() }}" alt="{{ str_replace("\n", ' ', $s->title) }}" class="fit-{{ $s->image_fit === 'contain' ? 'contain' : 'cover' }}"
+              <img src="{{ $s->imageUrl() }}" alt="{{ str_replace("\n", ' ', $s->tr('title')) }}" class="fit-{{ $s->image_fit === 'contain' ? 'contain' : 'cover' }}"
                    @if($i > 0) loading="lazy" @endif>
             </div>
           @endif

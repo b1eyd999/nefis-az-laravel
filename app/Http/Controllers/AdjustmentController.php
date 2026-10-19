@@ -12,6 +12,7 @@ use App\Support\Telegram;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\View\View;
 
 /**
@@ -65,8 +66,12 @@ class AdjustmentController extends Controller
 
         $url = Epoint::startAdjustment(
             $adjustment,
-            route('epoint.done', ['order' => $order->id]),
-            route('epoint.failed', ['order' => $order->id]),
+            /* Signed and good for a day, exactly as the order's own payment
+               does it. Both of these routes sit behind `signed`, so a plain
+               route() sent the customer back from the bank — with the money
+               already taken — to a bare 403. */
+            URL::temporarySignedRoute('epoint.done', now()->addDay(), ['order' => $order->id]),
+            URL::temporarySignedRoute('epoint.failed', now()->addDay(), ['order' => $order->id]),
         );
 
         if (! $url) {

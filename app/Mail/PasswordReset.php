@@ -31,7 +31,10 @@ class PasswordReset extends Mailable
         return new Content(view: 'mail.password-reset', with: [
             'name' => $this->user->name,
             'hours' => $this->hours,
-            'link' => route('password.reset', ['token' => $this->token, 'email' => $this->user->email]),
+            // In the language the letter itself is written in: a Russian letter
+            // whose only button opened an Azerbaijani page read as somebody
+            // else's site.
+            'link' => lroute('password.reset', ['token' => $this->token, 'email' => $this->user->email]),
         ]);
     }
 }

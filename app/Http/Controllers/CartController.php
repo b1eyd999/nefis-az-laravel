@@ -42,8 +42,23 @@ class CartController extends Controller
 
     public function add(Request $request): RedirectResponse
     {
-        $product = Product::with(['photoSlots', 'textSlots'])->findOrFail($request->input('product_id'));
+        /* One design, named by its number. Given an array, findOrFail()
+           hands back a collection and everything below it breaks on a
+           500 instead of saying what was wrong. */
+        $request->validate(['product_id' => ['required', 'integer']]);
+
+        $product = Product::with(['photoSlots', 'textSlots'])->findOrFail($request->integer('product_id'));
         abort_unless($product->is_active && $product->isCustomizable(), 404);
+
+        /* A design the owner has not priced says «Qiymət sorğu ilə» on its
+           card, and used to go into the basket all the same with the box
+           counted as nothing: the customer paid for the chocolate bar and
+           got the box for free, and the order looked ordinary in the admin.
+           It is not for sale until it has a price. */
+        if (! $product->price) {
+            return redirect(lroute('products.customize', $product))
+                ->withErrors(['product_id' => __('Bu dizaynın qiyməti hələ təyin olunmayıb — bizə yazın, sizin üçün hesablayaq.')]);
+        }
 
         $rules = [
             'quantity' => ['nullable', 'integer', 'min:1', 'max:20'],
@@ -241,12 +256,15 @@ class CartController extends Controller
     {
         $names = [];
 
+        /* Named the way the page names them. The messages around these are
+           translated, and they were being filled with an Azerbaijani field
+           name — «Şəkil 1 шəkil olmalıdır» for a Russian customer. */
         foreach ($product->photoSlots as $index => $slot) {
-            $names["photos.$index"] = $slot->label ?: 'Şəkil ' . ($index + 1);
+            $names["photos.$index"] = $slot->label ? __($slot->tr('label')) : __('Şəkil') . ' ' . ($index + 1);
         }
 
         foreach ($product->textSlots as $index => $slot) {
-            $names["custom_texts.$index"] = $slot->label ?: 'Mətn ' . ($index + 1);
+            $names["custom_texts.$index"] = $slot->label ? __($slot->tr('label')) : __('Mətn') . ' ' . ($index + 1);
         }
 
         return $names;

@@ -99,7 +99,13 @@ class GuestCheckout
             'password' => Hash::make(Str::random(40)),
         ]);
 
-        Telegram::signedUp($user);
+        /* After the page has gone, not before it. Telegram is routinely slow
+           to answer from here, and a guest pressing «order» was waiting out
+           that call inside his own request — the same way the order card is
+           already handled at the checkout. The welcome letter stays where it
+           is: it carries a link that has to be built in the language the
+           page is being read in. */
+        defer(fn () => Telegram::signedUp($user));
 
         Auth::login($user);
         $request->session()->regenerate();

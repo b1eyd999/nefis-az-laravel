@@ -346,7 +346,7 @@
         @endif
       </label>
       <label><span>{{ __('Loqo') }}</span>
-        <input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml"></label>
+        <input type="file" name="logo" accept="image/png,image/jpeg,image/webp"></label>
       <label class="full"><span>{{ __('Şüar') }}</span>
         <input type="text" name="slogan" value="{{ old('slogan') }}" maxlength="120"></label>
       <label class="full"><span>{{ __('QR kod hara aparsın') }}</span>

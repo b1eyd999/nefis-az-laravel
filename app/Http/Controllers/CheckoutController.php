@@ -67,9 +67,16 @@ class CheckoutController extends Controller
      */
     public function promo(Request $request): \Illuminate\Http\JsonResponse
     {
+        // Anything but a string — code[]=X from a mangled form or a bot —
+        // used to come back as a 500 where the page expects a plain no.
+        $typed = $request->input('code');
+        if (! is_string($typed) && ! is_numeric($typed)) {
+            return response()->json(['ok' => false, 'message' => __('Belə promokod yoxdur.')]);
+        }
+
         $goods = self::goodsOf(Cart::items());
 
-        $promo = PromoCode::byCode($request->string('code')->toString());
+        $promo = PromoCode::byCode((string) $typed);
 
         if (! $promo) {
             return response()->json(['ok' => false, 'message' => __('Belə promokod yoxdur.')]);
@@ -238,6 +245,17 @@ class CheckoutController extends Controller
            nothing to pay through the site, there is nothing to wait for, so
            it goes out now; otherwise Order::booted() sends it the moment
            payment is confirmed, whichever way it is confirmed. */
+        /* A basket that comes to nothing — a code worth all of it, with the
+           delivery given away as well — has nothing to pay and must not be
+           sent to a bank for 0.00 AZN: the gateway refuses, the order sits
+           in «ödəniş gözlənilir» for ever and the owner is never told about
+           it at all. Confirmed here the same way his own button confirms
+           one, so the code is counted and the card reaches Telegram. */
+        $nothingToPay = $payable && $order->total() <= 0;
+        if ($nothingToPay) {
+            $order->forceFill(['status' => 'confirmed', 'payment_confirmed_at' => now()])->save();
+        }
+
         if (! $payable) {
             defer(fn () => Telegram::order($order));
         }
@@ -251,7 +269,7 @@ class CheckoutController extends Controller
 
         Cart::clear();
 
-        return $payable
+        return $payable && ! $nothingToPay
             ? redirect(lroute('orders.pay', $order))
             : redirect(lroute('orders.index'))->with('status', __('Sifarişiniz qəbul edildi! Tezliklə sizinlə əlaqə saxlayacağıq.'));
     }
@@ -318,7 +336,12 @@ class CheckoutController extends Controller
         if (! DeliveryMethod::where('is_active', true)->exists()) {
             $data = $request->validate($common + ['delivery_address' => ['required', 'string', 'max:255']]);
 
-            return ['contact_phone' => $data['contact_phone'], 'delivery_address' => $data['delivery_address']]
+            /* The same fallback as the branch below: a guest types his
+               number once, at the top of the form, as `guest_phone`, so
+               `contact_phone` is simply not there and reading it took the
+               whole checkout down with an undefined key. */
+            return ['contact_phone' => ($data['contact_phone'] ?? null) ?: (string) $request->input('guest_phone'),
+                'delivery_address' => $data['delivery_address']]
                 + self::when($data) + ['rush_fee' => self::rushFee($data)];
         }
 

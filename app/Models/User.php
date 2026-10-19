@@ -8,11 +8,13 @@ use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable implements FilamentUser
 {
@@ -78,12 +80,32 @@ class User extends Authenticatable implements FilamentUser
         return 'p:' . substr((string) $digits, -9);
     }
 
+    /**
+     * The address, kept the way addresses are compared: in lower case.
+     *
+     * Set here rather than in each of the four places that write one — the
+     * profile, registration, guest checkout and the admin — so none of them
+     * can be the one that forgets.
+     */
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value) => $value === null ? null : Str::lower(trim($value)),
+        );
+    }
+
     public static function byLogin(string $login): ?self
     {
         $login = trim($login);
 
         if (str_contains($login, '@')) {
-            return static::where('email', $login)->first();
+            /* Without LOWER() on both sides this is a BINARY comparison on
+               SQLite, and a customer who wrote «Leyla@Gmail.com» when she
+               registered was told her details were wrong every time she
+               typed her own address in lower case — and the other way
+               round, since a telephone capitalises the first letter by
+               itself. An address is the same address however it is typed. */
+            return static::whereRaw('LOWER(email) = ?', [Str::lower($login)])->first();
         }
 
         $matches = static::samePhone($login)->limit(5)->get();

@@ -58,10 +58,11 @@ class ReviewController extends Controller
             /* His own photograph of the box, which is worth more than
                anything the shop can shoot itself. Checked by what the file
                is, not by what it is called. */
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,heic', 'max:8192'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
         ], [
             'stars.required' => __('Neçə ulduz verdiyinizi seçin.'),
-            'photo.image' => __('Şəkil JPG, PNG və ya WEBP olmalıdır.'),
+            'photo.image' => __('Şəkil JPG, PNG və ya WEBP olmalıdır. iPhone-da şəkli «Fayllar»dan yox, «Şəkillər»dən seçin — telefon onu özü çevirir.'),
+            'photo.mimes' => __('Şəkil JPG, PNG və ya WEBP olmalıdır. iPhone-da şəkli «Fayllar»dan yox, «Şəkillər»dən seçin — telefon onu özü çevirir.'),
             'photo.max' => __('Şəkil 8 MB-dan böyük ola bilməz.'),
         ]);
 

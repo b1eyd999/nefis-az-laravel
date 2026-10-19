@@ -12,7 +12,7 @@
   </div>
 
   @if(($showProduct ?? false) && $review->product)
-    <a class="rv-what" href="{{ lroute('products.customize', $review->product->slug) }}">{{ $review->product->name }}</a>
+    <a class="rv-what" href="{{ lroute('products.customize', $review->product->slug) }}">{{ $review->product->tr('name') }}</a>
   @endif
 
   @if(filled($review->body))

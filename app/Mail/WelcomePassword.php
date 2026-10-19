@@ -39,8 +39,8 @@ class WelcomePassword extends Mailable
             'email' => $this->user->email,
             'hours' => $this->hours,
             'days' => (int) round($this->hours / 24),
-            'link' => route('password.reset', ['token' => $this->token, 'email' => $this->user->email]),
-            'orders' => route('orders.index'),
+            'link' => lroute('password.reset', ['token' => $this->token, 'email' => $this->user->email]),
+            'orders' => lroute('orders.index'),
         ]);
     }
 }

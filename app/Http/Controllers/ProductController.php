@@ -192,7 +192,7 @@ class ProductController extends Controller
 
         return $scenes
             ->map(fn (array $scene) => array_merge($flat, ['label' => $scene['label'], 'scene' => $scene]))
-            ->push(array_merge($flat, ['label' => 'Düz görünüş']))
+            ->push(array_merge($flat, ['label' => __('Düz görünüş')]))
             ->values()
             ->all();
     }

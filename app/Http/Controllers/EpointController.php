@@ -163,6 +163,22 @@ class EpointController extends Controller
         }
 
         if (! $paid) {
+            /* But not over an order that is already paid for. A customer
+               whose first card is refused tries a second, and the gateway
+               can repeat — or simply be late with — the refusal for the
+               first. Writing that attempt's id over the one that actually
+               paid left the order pointing at the wrong transaction, and
+               the guard below then read the next repeat of the GOOD
+               callback as a second charge and told the owner to refund a
+               customer who had paid exactly once. */
+            if ($order->payment_confirmed_at) {
+                Log::info('epoint: a late failure for an order already paid', [
+                    'order' => $order->id, 'attempt' => $transaction, 'paid with' => $seen,
+                ]);
+
+                return response('ok', 200);
+            }
+
             $order->forceFill([
                 'payment_method' => 'card',
                 'epoint_transaction' => $transaction ?: $seen,

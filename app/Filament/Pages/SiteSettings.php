@@ -745,10 +745,17 @@ class SiteSettings extends Page implements HasActions, HasForms
         Setting::put(Setting::MORNING_NOTE, ! empty($data['morning_note']));
         Setting::put(Setting::MORNING_NOTE_AT, preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', (string) ($data['morning_note_at'] ?? ''))
             ? $data['morning_note_at'] : '09:00');
+        /* Switching the letter off hides its three fields, so they are not
+           in what the form sends — and a `?? 0` then wrote nothing over the
+           terms he had set. They are kept as they were, and are waiting when
+           he turns the letter back on. */
         Setting::put(Setting::AFTER_SALE, ! empty($data['after_sale']));
-        Setting::put(Setting::AFTER_SALE_AFTER, max(0, (int) ($data['after_sale_after'] ?? 24)));
-        Setting::put(Setting::AFTER_SALE_PERCENT, max(0, min(100, round((float) ($data['after_sale_percent'] ?? 0), 2))));
-        Setting::put(Setting::AFTER_SALE_DAYS, max(0, (int) ($data['after_sale_days'] ?? 0)));
+        Setting::put(Setting::AFTER_SALE_AFTER,
+            max(0, (int) ($data['after_sale_after'] ?? Setting::get(Setting::AFTER_SALE_AFTER))));
+        Setting::put(Setting::AFTER_SALE_PERCENT,
+            max(0, min(100, round((float) ($data['after_sale_percent'] ?? Setting::get(Setting::AFTER_SALE_PERCENT)), 2))));
+        Setting::put(Setting::AFTER_SALE_DAYS,
+            max(0, (int) ($data['after_sale_days'] ?? Setting::get(Setting::AFTER_SALE_DAYS))));
         Setting::put(Setting::SALE_TOASTS, ! empty($data['sale_toasts']));
         Telegram::saveToken($data['telegram_token'] ?? '');
         Setting::put(Setting::TELEGRAM_CHAT, preg_replace('/[^0-9-]/', '', (string) ($data['telegram_chat'] ?? '')));

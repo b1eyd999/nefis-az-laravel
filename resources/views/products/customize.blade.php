@@ -119,6 +119,9 @@
   /* A window holding the sky fills itself. Only a window the customer has
      to put a picture in keeps the button shut. */
   $needsPhoto = $photoSlots->contains(fn ($s) => $s->needsUpload());
+  // Not for sale until the owner has priced it: the box line reads
+  // «sorğu ilə» and the basket would have counted it as nothing.
+  $noPrice = ! $product->price;
   $skySlot = $photoSlots->first(fn ($s) => $s->isSky());
   $skyOffers = $skySlot?->skyChoices() ?? [];
   $skyLook = $skySlot?->skyDefaults() ?? \App\Support\Sky::LOOK;
@@ -1037,15 +1040,17 @@
         <div class="buy-bar" id="buy-bar" hidden>
           <span class="buy-bar-sum"><b id="buy-bar-total">—</b></span>
           <button type="submit" class="btn btn-primary btn-flame" id="buy-bar-btn"
-                  @if($needsPhoto) disabled @endif>{{ __('Səbətə Əlavə Et') }}</button>
+                  @if($needsPhoto || $noPrice) disabled @endif>{{ __('Səbətə Əlavə Et') }}</button>
         </div>
 
         <button type="submit" class="btn btn-primary btn-block btn-flame" id="add-to-cart-btn"
-                @if($needsPhoto) disabled @endif>{{ __('Səbətə Əlavə Et') }}</button>
+                @if($needsPhoto || $noPrice) disabled @endif>{{ __('Səbətə Əlavə Et') }}</button>
         {{-- The button is shut until the picture is there; say so, or it looks
              broken. On a design that needs no photo the line is still here,
              empty, because anything else the form refuses is said in it too. --}}
-        <p class="add-hint" id="add-hint" @unless($needsPhoto) hidden @endunless>{{ $needsPhoto ? __('Əvvəlcə şəklinizi yükləyin — sonra düymə işə düşür.') : '' }}</p>
+        <p class="add-hint" id="add-hint" @unless($needsPhoto || $noPrice) hidden @endunless>{{ $noPrice
+            ? __('Bu dizaynın qiyməti hələ təyin olunmayıb — bizə yazın, sizin üçün hesablayaq.')
+            : ($needsPhoto ? __('Əvvəlcə şəklinizi yükləyin — sonra düymə işə düşür.') : '') }}</p>
       </form>
     </div>
   </div>

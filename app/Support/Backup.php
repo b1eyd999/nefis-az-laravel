@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -110,7 +111,19 @@ class Backup
             : self::dump($stamp);
     }
 
-    /** One file in, one file out. */
+    /**
+     * One file in, one file out.
+     *
+     * Asked of SQLite itself rather than taken with copy(): `VACUUM INTO`
+     * reads the database under its own lock and writes a settled copy, so a
+     * checkout committing at 03:40 cannot be caught half-written. A plain
+     * copy() of a live file can take pages from before and after the same
+     * transaction and leave a copy that only looks fine — and the journal
+     * that would have undone it is not copied with it.
+     *
+     * Older SQLite builds have no VACUUM INTO, and a hosting account can
+     * refuse it; a copy taken the old way is still far better than none.
+     */
     private static function copySqlite(string $stamp): string
     {
         $from = (string) DB::connection()->getConfig('database');
@@ -123,10 +136,23 @@ class Backup
 
         $to = self::directory() . '/nefis_' . $stamp . '.sqlite';
         $part = $to . '.part';
+        @unlink($part);
 
-        if (! copy($from, $part)) {
-            throw new \RuntimeException('Could not copy ' . $from);
+        try {
+            DB::statement('VACUUM INTO ?', [$part]);
+        } catch (\Throwable $e) {
+            @unlink($part);
+            Log::warning('VACUUM INTO alınmadı, adi kopya götürülür: ' . $e->getMessage());
+            if (! copy($from, $part)) {
+                throw new \RuntimeException('Could not copy ' . $from);
+            }
         }
+
+        if (! is_file($part) || filesize($part) === 0) {
+            @unlink($part);
+            throw new \RuntimeException('The copy came out empty');
+        }
+
         rename($part, $to);
 
         return self::finish($to);
@@ -446,6 +472,13 @@ class Backup
      * A dump says so itself with its last line; a copied SQLite file says so
      * by being a SQLite file at all. Anything else is something that was
      * being written when the lights went out.
+     *
+     * The `.gz` is taken off before deciding which of the two this is, and
+     * both ends are read through the squeezing. Without that, every nightly
+     * copy — which is a SQLite file AND squeezed — failed both tests at
+     * once: it does not end in `.sqlite`, and a database has no last line of
+     * a dump in it. `db:backup` deleted the file it had just written, every
+     * night, and the shop kept only the copies made by hand.
      */
     public static function whole(string $path): bool
     {
@@ -453,15 +486,30 @@ class Backup
             return false;
         }
 
-        if (str_ends_with($path, '.sqlite')) {
-            $head = (string) file_get_contents($path, false, null, 0, 16);
+        $kind = str_ends_with($path, '.gz') ? substr($path, 0, -3) : $path;
 
-            return str_starts_with($head, 'SQLite format 3');
+        if (str_ends_with($kind, '.sqlite')) {
+            return str_starts_with(self::head($path, 16), 'SQLite format 3');
         }
 
-        $tail = self::tail($path, 256);
+        return str_contains(self::tail($path, 256), self::MARKER);
+    }
 
-        return str_contains($tail, self::MARKER);
+    /** The start of a file, squeezed or not. */
+    private static function head(string $path, int $bytes): string
+    {
+        if (! str_ends_with($path, '.gz')) {
+            return (string) file_get_contents($path, false, null, 0, $bytes);
+        }
+
+        $handle = gzopen($path, 'rb');
+        if (! $handle) {
+            return '';
+        }
+        $seen = (string) gzread($handle, $bytes);
+        gzclose($handle);
+
+        return $seen;
     }
 
     /** The end of a file, squeezed or not. */

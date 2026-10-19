@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
@@ -289,7 +290,17 @@ class Product extends Model
             return $this->box_color;
         }
         if (! $this->box_color_auto && $this->preview_image && $this->exists) {
-            $this->refreshAutoBoxColor();
+            /* Once a day per visual, not once per visitor. A design whose
+               edges are transparent — ordinary for box artwork — has no
+               colour to find, so the column stays empty and the next
+               request read the whole file off the disk and decoded it
+               again. The key carries the image's own name, so a visual the
+               owner replaces is looked at straight away. */
+            $key = 'box-colour:' . md5((string) $this->preview_image);
+            if (! Cache::has($key)) {
+                Cache::put($key, true, now()->addDay());
+                $this->refreshAutoBoxColor();
+            }
         }
 
         return $this->box_color_auto;
@@ -351,8 +362,13 @@ class Product extends Model
             }
         }
 
-        return $this->layers()->exists() || $this->shapes()->exists() || $this->photoSlots()->exists();
+        return $this->drawnOn ??= $this->layers()->exists()
+            || $this->shapes()->exists()
+            || $this->photoSlots()->exists();
     }
+
+    /** Remembered for as long as this one design is in hand. */
+    protected ?bool $drawnOn = null;
 
     /**
      * Nothing has been drawn on it yet.

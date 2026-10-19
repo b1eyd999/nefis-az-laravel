@@ -299,12 +299,14 @@ class Epoint
 
         $reference = self::reference($order);
 
-        $answer = self::post([
+        $payload = [
             'public_key' => self::publicKey(),
             'amount' => number_format($order->total(), 2, '.', ''),
             'order_id' => $reference,
             'description' => 'Nefis.az sifariş #' . $order->id,
-        ], self::WIDGET);
+        ];
+
+        $answer = self::post($payload, self::WIDGET);
 
         if (($answer['status'] ?? null) !== self::SUCCESS || empty($answer['widget_url'])) {
             Log::warning('epoint: wallet widget not opened', [
@@ -315,6 +317,15 @@ class Epoint
 
             return null;
         }
+
+        /* What the widget was opened for, so the callback checks the payment
+           against this and not against an older card attempt. The order is
+           deliberately NOT stamped as having a payment in flight — see the
+           note above — but the sum must still be the one being asked for:
+           a refused card, then an edit by the owner, then a wallet payment
+           used to be refused as a wrong amount although the customer had
+           paid the right one to the qəpik. */
+        $order->forceFill(['payment_asked_for' => $payload['amount']])->save();
 
         return $answer['widget_url'];
     }

@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
@@ -36,7 +37,12 @@ class ProfileController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            // Lower-cased for the same reason the column is: otherwise two
+            // accounts could hold one address in two spellings, and neither
+            // owner would be able to sign in by it.
+            'email' => ['required', 'string', 'email', 'max:255',
+                Rule::unique('users', 'email')->ignore($user->id)
+                    ->where(fn ($q) => $q->whereRaw('LOWER(email) = ?', [Str::lower(trim((string) $request->input('email')))]))],
             // The shop rings and writes on WhatsApp, and two accounts on one
             // number can never sign in by it again.
             'phone' => ['required', 'string', 'max:30', function ($attribute, $value, $fail) use ($user) {

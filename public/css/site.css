@@ -1308,6 +1308,8 @@
   .chat-line span{ display:block; white-space:pre-wrap; overflow-wrap:anywhere; }
   .chat-line i{ display:block; font-style:normal; font-size:.65rem; opacity:.6; margin-top:.15rem; text-align:right; }
   .chat-line img{ display:block; max-width:100%; border-radius:.6rem; margin-bottom:.3rem; }
+  /* Sent, but it never arrived: it must not look like the ones that did. */
+  .chat-line.unsent{ opacity:.55; outline:1px dashed rgba(192,57,43,.7); outline-offset:2px; }
   .chat-line.shop{ align-self:flex-start; background:var(--paper); color:var(--cocoa); border-bottom-left-radius:.35rem;
     box-shadow:0 8px 18px -14px rgba(58,38,23,.5), 0 0 0 1px var(--line); }
   .chat-line.me{ align-self:flex-end; background:var(--flame-grad); color:#fff; border-bottom-right-radius:.35rem;

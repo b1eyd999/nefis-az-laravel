@@ -24,7 +24,9 @@ class BoxEditorTest extends TestCase
         parent::setUp();
         Storage::fake('public');
         $this->admin = User::factory()->create(['is_admin' => true]);
-        $this->box = Product::create(['name' => 'Qara Spotify', 'slug' => 'qara-spotify', 'is_active' => true]);
+        // Priced, because an unpriced design is not for sale at all and the
+        // basket turns it away before any of this is reached.
+        $this->box = Product::create(['name' => 'Qara Spotify', 'slug' => 'qara-spotify', 'is_active' => true, 'price' => 20]);
     }
 
     private function transparentPng(int $w, int $h): UploadedFile

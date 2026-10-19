@@ -313,6 +313,9 @@
      way and the address carries the order on its own. */
   function failed(){
     mapFailed = true;
+    // Said on the element too: the form's own block is a separate piece of
+    // script now, and this is how it knows not to insist on a pin.
+    box.dataset.failed = '1';
     box.hidden = true;
     say(@json(__('Xəritə açılmadı — ünvanı aşağıda yazın, kifayətdir.')), 'err');
     if (address) {
@@ -362,16 +365,23 @@
   /* Search: Enter or a pause after typing; the choice drops the pin there. */
   var timer = null, found = [];
   function showResults(list){
-    found = list;
-    results.innerHTML = list.length
-      ? list.map(function(r, i){ return '<li data-i="' + i + '">' + r.label.replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }) + '</li>'; }).join('')
-      : '<li class="none">' + @json(__('Heç nə tapılmadı')) + '</li>';
+    found = list || [];
+    /* `null` is not `[]`. The lookup goes through this shop to OpenStreetMap
+       and is rate-limited on the way; answering a refusal with «nothing
+       found» sent a customer off to retype an address that was right all
+       along. */
+    var none = list === null
+      ? @json(__('Axtarış indi işləmir — ünvanı aşağıda özünüz yazın.'))
+      : @json(__('Heç nə tapılmadı'));
+    results.innerHTML = found.length
+      ? found.map(function(r, i){ return '<li data-i="' + i + '">' + r.label.replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }) + '</li>'; }).join('')
+      : '<li class="none">' + none + '</li>';
     results.hidden = false;
   }
   function runSearch(){
     var text = q.value.trim();
     if (text.length < 3 || !picker) { results.hidden = true; return; }
-    picker.search(text).then(showResults);
+    picker.search(text).then(showResults, function(){ showResults(null); });
   }
   q.addEventListener('input', function(){ clearTimeout(timer); timer = setTimeout(runSearch, 700); });
   q.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); clearTimeout(timer); runSearch(); } });
@@ -405,7 +415,12 @@
           return;
         }
         typedByHand = false;
-        picker.place(a, b, true);
+        /* The map may never have opened — a blocked tile server, a dead
+           network — in which case there is no picker to drop a pin into,
+           and reaching for one left the customer looking at «Yeriniz
+           müəyyən edilir…» for ever. The point is still worth keeping:
+           the order travels on it even with no map to show it on. */
+        if (picker) { picker.place(a, b, true); }
         picked(a, b);
       }, function(){ say(@json(__('Yerinizə icazə verilmədi, xəritədə özünüz seçin.')), 'err'); }, { enableHighAccuracy: true, timeout: 10000 });
     });
@@ -508,8 +523,27 @@
     });
   })();
 
+})();
+
+/* The form itself. A separate block on purpose: the one above gives up when
+   there is no map on the page, and with every delivery method switched off
+   there is none — which used to take the double-tap guard and the readable
+   refusals down with it, on exactly the page where an order is sent. */
+(function(){
   var form = document.getElementById('checkout-form');
+  if (!form) return;
+
   var sendError = document.getElementById('send-error');
+  var mapBox = document.getElementById('dlv-map');
+  var lat = document.getElementById('delivery_lat');
+  var address = document.getElementById('delivery_address');
+  var hint = document.getElementById('map-hint');
+
+  function say(text, cls){
+    if (!hint) return;
+    hint.textContent = text;
+    hint.className = 'map-hint' + (cls ? ' ' + cls : '');
+  }
 
   /* A radio that is hidden under its own card cannot be pointed at, so the
      browser refuses the form without a word and the button looks broken.
@@ -612,7 +646,8 @@
        address is what he actually drives to. */
     var door = document.querySelector('input[name="delivery_method_id"]:checked');
     var written = address && address.value.trim().length >= 5;
-    if (door && door.dataset.type === 'door' && !mapFailed && !lat.value && !written) {
+    var mapFailed = !mapBox || mapBox.dataset.failed === '1';
+    if (door && door.dataset.type === 'door' && !mapFailed && lat && !lat.value && !written) {
       e.preventDefault();
       var ask = @json(__('Ünvanı yazın və ya xəritədə yeri seçin.'));
       say(ask, 'err');
@@ -670,11 +705,11 @@
                 <span class="thumb-more">+{{ count($item['photo_paths']) - 1 }}</span>
               @endif
             @else
-              <img src="{{ \App\Support\Media::url($item['product']->catalogImage()) }}" alt="{{ $item['product']->name }}">
+              <img src="{{ \App\Support\Media::url($item['product']->catalogImage()) }}" alt="{{ $item['product']->tr('name') }}">
             @endif
           </div>
           <div class="info">
-            <h3>{{ $isLive ? __('Canlı şəkil') : ($isLetter ? __('Polaroid məktub') : $item['product']->name) }}</h3>
+            <h3>{{ $isLive ? __('Canlı şəkil') : ($isLetter ? __('Polaroid məktub') : $item['product']->tr('name')) }}</h3>
             <p>
               @if($texts) "{{ implode('" · "', $texts) }}" &middot; @endif
               {{ __(':count ədəd', ['count' => $item['quantity']]) }}

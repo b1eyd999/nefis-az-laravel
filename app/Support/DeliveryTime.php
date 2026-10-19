@@ -59,10 +59,15 @@ class DeliveryTime
         }
         $date = $date instanceof CarbonInterface ? $date : Carbon::parse($date);
 
+        /* Through __(), so the day a Russian or English customer is given
+           is written in his own language: «26 сентября, пятница» rather
+           than «26 sentyabr, cümə». The Azerbaijani words are the keys, as
+           everywhere else in the shop, so nothing changes for a reader of
+           Azerbaijani. */
         $months = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avqust', 'sentyabr', 'oktyabr', 'noyabr', 'dekabr'];
         $days = ['bazar', 'bazar ertəsi', 'çərşənbə axşamı', 'çərşənbə', 'cümə axşamı', 'cümə', 'şənbə'];
 
-        return $date->day . ' ' . $months[$date->month - 1] . ', ' . $days[$date->dayOfWeek];
+        return $date->day . ' ' . __($months[$date->month - 1]) . ', ' . __($days[$date->dayOfWeek]);
     }
 
     /** What the customer is told before choosing. */
@@ -71,7 +76,10 @@ class DeliveryTime
         $days = self::leadDays();
 
         return $days === 0
-            ? 'Sifarişi seçdiyiniz gün çatdırırıq.'
-            : 'Hər qutu əl ilə hazırlanır: sifariş ' . $days . ' gündən sonra hazır olur. Ən tez ' . self::day(self::earliest()) . ' tarixinə çatdıra bilərik.';
+            ? __('Sifarişi seçdiyiniz gün çatdırırıq.')
+            : __('Hər qutu əl ilə hazırlanır: sifariş :days gündən sonra hazır olur. Ən tez :day tarixinə çatdıra bilərik.', [
+                'days' => $days,
+                'day' => self::day(self::earliest()),
+            ]);
     }
 }

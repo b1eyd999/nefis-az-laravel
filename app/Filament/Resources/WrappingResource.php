@@ -95,6 +95,11 @@ class WrappingResource extends Resource
                             ->helperText('Bu qablaşdırma seçiləndə həmin lent anbardan özü azalacaq. '
                                 . 'Yeni lent «Anbar» səhifəsində əlavə olunur.')
                             ->dehydrated()
+                            /* Hidden is not the same as cleared. Moving a
+                               wrap to «Lentsiz» left its roll pointing at
+                               the warehouse, so the list went on saying
+                               «Anbardan: …» for a wrap with no ribbon. */
+                            ->dehydrateStateUsing(fn ($state, Forms\Get $get) => $get('ribbon') === Wrapping::NONE ? null : $state)
                             ->visible(fn (Forms\Get $get) => $get('ribbon') !== Wrapping::NONE),
                         Forms\Components\TextInput::make('pattern_scale')
                             ->label('Naxışın ölçüsü')

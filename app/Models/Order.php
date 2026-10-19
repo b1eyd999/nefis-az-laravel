@@ -363,15 +363,27 @@ class Order extends Model
     /**
      * What came off the goods — never more than the goods themselves.
      *
-     * The discount is frozen on the order, and the order can shrink after it:
-     * two boxes bought with a code worth all of them, then one line taken off
-     * in the admin. Unclamped, the total went negative and the shop was told
-     * to give back more than it ever took. The stored figure is left alone so
-     * the order still says what the code was worth on the day.
+     * A code is a percentage, and it has to stay one when the order changes.
+     * Clamping the frozen manat figure was not enough: two boxes at 20 with
+     * a code worth half came to 25 paid; delete one line and the whole 20 of
+     * discount landed on the one box left, so the shop refunded 20 for a box
+     * the customer had paid 10 for and gave the other away. Worked out the
+     * same way `PromoCode::discountOn()` worked it out, so an order nobody
+     * has touched comes back to the qəpik it was written with.
+     *
+     * The stored figure is still what answers for an order from before the
+     * percentage was kept, and for anything the owner took off by hand.
      */
     public function discountOff(): float
     {
-        return round(min($this->itemsTotal(), (float) ($this->discount ?? 0)), 2);
+        $goods = $this->itemsTotal();
+        $percent = (float) ($this->promo_percent ?? 0);
+
+        if ($percent > 0) {
+            return round(min($goods, $goods * $percent / 100), 2);
+        }
+
+        return round(min($goods, (float) ($this->discount ?? 0)), 2);
     }
 
     /**

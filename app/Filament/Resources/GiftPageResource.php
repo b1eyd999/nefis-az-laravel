@@ -58,6 +58,12 @@ class GiftPageResource extends Resource
                             ->options(fn () => GiftPage::where('locale', 'az')->orderBy('sort_order')->pluck('menu_label', 'id'))
                             ->searchable()
                             ->visible(fn (Forms\Get $get) => $get('locale') === 'ru')
+                            /* Only a Russian page is a Russian version of
+                               something. Moved back to Azerbaijani, the page
+                               used to keep pointing at the page it was once
+                               paired with, and Google was told a page was
+                               its own translation. */
+                            ->dehydrateStateUsing(fn ($state, Forms\Get $get) => $get('locale') === 'ru' ? $state : null)
                             ->helperText('Google bilsin ki, bu, həmin səhifənin rusca variantıdır. Dizaynları da ondan götürür.'),
                         Forms\Components\TextInput::make('link_text')
                             ->label('Link yazısı')

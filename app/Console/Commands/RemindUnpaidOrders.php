@@ -47,7 +47,14 @@ class RemindUnpaidOrders extends Command
             return self::SUCCESS;
         }
 
-        $window = max(1, (int) Setting::get(Setting::PAYMENT_WINDOW_HOURS));
+        /* The clock that actually cancels the order, which is the one
+           `orders:expire-unpaid` runs on. It used to read
+           PAYMENT_WINDOW_HOURS — the window over which a payment ACCOUNT's
+           counter empties itself, nothing to do with how long an order may
+           wait. The two share a default of 24, which is why it worked; the
+           day the owner set his account rotation to three hours or less,
+           every reminder would have stopped without a word. */
+        $window = ExpireUnpaidOrders::HOURS;
 
         /* Not one whose letter would arrive after the order had already been
            cancelled: the reminder is only worth sending while there is still

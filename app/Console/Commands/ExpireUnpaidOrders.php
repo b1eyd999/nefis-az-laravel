@@ -16,13 +16,21 @@ use Illuminate\Console\Command;
  */
 class ExpireUnpaidOrders extends Command
 {
-    protected $signature = 'orders:expire-unpaid {--hours=24 : how long an order may wait for its card payment}';
+    /**
+     * How long an order may wait for its card payment.
+     *
+     * Named here because the reminder has to know it too: it must not write
+     * to a customer after the order it is about has already been cancelled.
+     */
+    public const HOURS = 24;
+
+    protected $signature = 'orders:expire-unpaid {--hours= : how long an order may wait for its card payment}';
 
     protected $description = 'Cancel orders left waiting for a card payment, so their materials go back to stock';
 
     public function handle(): int
     {
-        $quiet = now()->subHours(max(1, (int) $this->option('hours')));
+        $quiet = now()->subHours(max(1, (int) ($this->option('hours') ?? self::HOURS)));
 
         $stale = Order::where('status', 'awaiting_payment')
             ->whereNull('payment_confirmed_at')

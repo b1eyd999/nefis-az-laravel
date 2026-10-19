@@ -346,6 +346,22 @@ class ProductResource extends Resource
                             ->when($data['active_only'] ?? false, fn ($q) => $q->where('is_active', true))
                             ->get(['id', 'price']);
 
+                        /* Nothing matched, so nothing is written — and above
+                           all the way back is left alone. Setting every price
+                           to zero by mistake made the next run match no rows
+                           at all (they are chosen by having a price above
+                           zero), and the empty list was saved over the only
+                           copy of the real prices. */
+                        if ($rows->isEmpty()) {
+                            Notification::make()
+                                ->warning()
+                                ->title('Dəyişdiriləcək qutu tapılmadı')
+                                ->body('Qiyməti olan qutu yoxdur. «Qiyməti geri qaytar» olduğu kimi qalır.')
+                                ->send();
+
+                            return;
+                        }
+
                         $before = [];
                         $changed = 0;
                         foreach ($rows as $row) {

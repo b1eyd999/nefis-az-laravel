@@ -67,8 +67,16 @@ class ImageStore
             $path = "{$dir}/{$name}.webp";
             ob_start();
             imagewebp($source, null, $quality);
-            Storage::disk('public')->put($path, ob_get_clean());
+            $written = Storage::disk('public')->put($path, ob_get_clean());
             imagedestroy($source);
+
+            /* A full disk or a quota reached makes put() answer false, and
+               the path was handed back all the same: the order carried a
+               receipt that was not there, and the caller then deleted the
+               one before it. */
+            if ($written === false) {
+                throw new \RuntimeException('Could not write ' . $path);
+            }
 
             return [$path, (int) $width, (int) $height];
         }

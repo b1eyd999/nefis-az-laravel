@@ -376,6 +376,11 @@ class Telegram
             // printed at their own prices and the total is the smaller one.
             $lines[] = '🎟 Promokod ' . $order->promo_code . ' — −' . Price::format($order->discountOff());
         }
+        if (($order->rush_fee ?? 0) > 0) {
+            // Printed, or the message does not add up and nobody is told the
+            // box was asked for in a hurry.
+            $lines[] = '⚡️ Təcili hazırlanma — ' . Price::format((float) $order->rush_fee);
+        }
         $lines[] = '💰 <b>Cəmi: ' . Price::format($order->total()) . '</b>';
         /* Said plainly, because this message is now only sent once the money
            is in — except for an order the site never asked payment for, and
