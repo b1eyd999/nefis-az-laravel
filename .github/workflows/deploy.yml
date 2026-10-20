@@ -105,7 +105,7 @@ jobs:
         # GitHub's own action, like the rest of this workflow.
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: The extensions the suite needs
         # The suite paints real images to prove they come out right, and runs
