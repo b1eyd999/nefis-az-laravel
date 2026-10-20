@@ -97,6 +97,25 @@ class TheThingsTheAuditFoundTest extends TestCase
     }
 
     /**
+     * Every copy was listed four hours early, so one written at 03:40 read
+     * as «23:40 the day before» — a night that looked as though nothing had
+     * been taken. Carbon 3 reads a bare timestamp as UTC; the shop keeps
+     * Asia/Baku.
+     */
+    public function test_a_copy_is_dated_by_the_shops_own_clock(): void
+    {
+        $path = Backup::make('audit_tz_' . uniqid());
+
+        $row = collect(Backup::all())->firstWhere('path', $path);
+        $this->assertNotNull($row, 'the copy is in the list');
+        $this->assertLessThan(120, abs($row['at']->diffInSeconds(now())),
+            'listed as ' . $row['at']->format('d.m.Y H:i') . ', taken at ' . now()->format('d.m.Y H:i'));
+        $this->assertSame(config('app.timezone'), $row['at']->timezoneName);
+
+        @unlink($path);
+    }
+
+    /**
      * The bank sends the customer back to a route behind `signed`. Paying
      * the difference on an edited order handed it an address with no
      * signature, so the money went and a 403 came back.

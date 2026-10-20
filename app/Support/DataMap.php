@@ -250,6 +250,31 @@ class DataMap
     }
 
     /**
+     * Which database the shop is actually running on.
+     *
+     * Said out loud because there is no other way to know it from here —
+     * the owner has no SSH — and because not knowing it sent a whole
+     * review down the wrong road: a copy of the database is written one way
+     * for SQLite and another for MySQL, and the two do not agree about
+     * capital letters in a search.
+     *
+     * @return array{driver: string, name: string, backup: string}
+     */
+    public static function engine(): array
+    {
+        $driver = DB::connection()->getDriverName();
+        $file = (string) DB::connection()->getConfig('database');
+        $isFile = $driver === 'sqlite' && $file !== ':memory:' && is_file($file);
+
+        return [
+            'driver' => $driver,
+            'name' => $driver === 'sqlite' ? basename($file) : $file,
+            // What `db:backup` writes, which is what the list of copies shows.
+            'backup' => $isFile ? 'kopya (.sqlite.gz)' : 'dump (.sql.gz)',
+        ];
+    }
+
+    /**
      * Does the key still open what is stored?
      *
      * The one failure worth losing sleep over: a restored database with a

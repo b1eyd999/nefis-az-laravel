@@ -556,7 +556,13 @@ class Backup
                 'name' => basename($path),
                 'path' => $path,
                 'size' => (int) filesize($path),
-                'at' => \Illuminate\Support\Carbon::createFromTimestamp((int) filemtime($path)),
+                /* In the shop's own hours. Carbon 3 reads a bare timestamp
+                   as UTC, so every copy was listed four hours early: one
+                   written at 03:40 on the 20th appeared as «19.10 23:40»,
+                   which reads as a copy that was never taken that night.
+                   The morning note measures the newest copy's age off this
+                   too. */
+                'at' => \Illuminate\Support\Carbon::createFromTimestamp((int) filemtime($path), config('app.timezone')),
             ];
         }
 

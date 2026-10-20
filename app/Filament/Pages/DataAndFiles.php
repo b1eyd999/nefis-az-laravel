@@ -115,6 +115,11 @@ class DataAndFiles extends Page implements HasActions
         return DataMap::keyOpens();
     }
 
+    public function engine(): array
+    {
+        return DataMap::engine();
+    }
+
     public function files(): array
     {
         return DataMap::files($this->fresh);

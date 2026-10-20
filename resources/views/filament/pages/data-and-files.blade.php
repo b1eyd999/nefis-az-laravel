@@ -109,6 +109,16 @@
     </table>
   </div>
 
+  {{-- ——— which database ——— --}}
+  @php($eng = $this->engine())
+  <div class="dm-h">Saytın bazası</div>
+  <div class="dm-note">
+    Sayt <span class="dm-mono">{{ $eng['driver'] }}</span> bazası ilə işləyir
+    (<span class="dm-mono">{{ $eng['name'] }}</span>), gecə kopyası isə
+    <span class="dm-mono">{{ $eng['backup'] }}</span> şəklində yazılır — «Baza kopyaları»
+    səhifəsindəki fayl adları buna uyğun olmalıdır.
+  </div>
+
   {{-- ——— encryption ——— --}}
   <div class="dm-h">Bazada şifrələnən məlumat</div>
   <div class="dm-note">
