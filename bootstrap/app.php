@@ -76,7 +76,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Telegram and the ePoint callback carry no session and no form token;
         // their own secret and signature guard them.
-        $middleware->validateCsrfTokens(except: ['telegram/kuryer/*', 'telegram/sohbet/*', 'epoint/result']);
+        $middleware->validateCsrfTokens(except: ['telegram/kuryer/*', 'telegram/sohbet/*', 'epoint/result', 'whatsapp/hook']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // More than the hosting takes in one sending (a long video): a plain

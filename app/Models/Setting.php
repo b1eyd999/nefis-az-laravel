@@ -47,6 +47,33 @@ class Setting extends Model
     public const EPOINT_PUBLIC_KEY = 'epoint_public_key';
     public const EPOINT_PRIVATE_KEY = 'epoint_private_key';
 
+    /**
+     * WhatsApp inside the admin, through Meta's own Cloud API.
+     *
+     * The number used here is given over to the API and stops working in the
+     * ordinary WhatsApp application — which is why the shop keeps two, one
+     * for the panel and one for the telephone in the owner's hand.
+     *
+     * The token and the two secrets are the shop's own: kept encrypted here,
+     * never in the repository, and never sent to a browser.
+     */
+    public const WHATSAPP_ENABLED = 'whatsapp_enabled';
+
+    /** Meta's id for the number, not the number itself. */
+    public const WHATSAPP_PHONE_ID = 'whatsapp_phone_id';
+
+    /** The number as a customer would dial it, for the panel to show. */
+    public const WHATSAPP_NUMBER = 'whatsapp_number';
+
+    /** A permanent system-user token. Encrypted. */
+    public const WHATSAPP_TOKEN = 'whatsapp_token';
+
+    /** The word Meta echoes back when it first calls the hook. Encrypted. */
+    public const WHATSAPP_VERIFY = 'whatsapp_verify';
+
+    /** The app secret every notice is signed with. Encrypted. */
+    public const WHATSAPP_APP_SECRET = 'whatsapp_app_secret';
+
     public const MAINTENANCE_MESSAGE = 'maintenance_message';
 
     /**
@@ -336,6 +363,12 @@ class Setting extends Model
         self::EPOINT_ENABLED => '0',
         self::EPOINT_WALLET => '0',
         self::GEOAPIFY_KEY => '',
+        self::WHATSAPP_ENABLED => '0',
+        self::WHATSAPP_PHONE_ID => '',
+        self::WHATSAPP_NUMBER => '',
+        self::WHATSAPP_TOKEN => '',
+        self::WHATSAPP_VERIFY => '',
+        self::WHATSAPP_APP_SECRET => '',
         self::EPOINT_PUBLIC_KEY => '',
         self::EPOINT_PRIVATE_KEY => '',
         self::MAINTENANCE_MESSAGE => 'Saytda texniki işlər aparılır. Tezliklə qayıdacağıq!',

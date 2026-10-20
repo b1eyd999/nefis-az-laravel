@@ -24,6 +24,7 @@ use App\Http\Controllers\SceneEditorController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\StarMapController;
 use App\Http\Controllers\TelegramController;
+use App\Http\Controllers\WhatsAppHookController;
 use App\Support\Locale;
 use Illuminate\Support\Facades\Route;
 
@@ -131,6 +132,15 @@ Route::middleware(['throttle:30,1', 'data'])->prefix('sohbet')->name('chat.')->g
 Route::post('/telegram/sohbet/{secret}', [ChatController::class, 'hook'])
     ->where('secret', '[A-Za-z0-9]{32}')
     ->name('telegram.chat');
+
+/* WhatsApp. Meta calls the first of these once, when the hook is set up, and
+   expects a word it was given beforehand echoed back; afterwards it posts
+   every message to the second, signed with the app secret. Neither carries a
+   session: the signature is what says the notice is Meta's. */
+Route::get('/whatsapp/hook', [WhatsAppHookController::class, 'verify'])->name('whatsapp.verify');
+Route::post('/whatsapp/hook', [WhatsAppHookController::class, 'receive'])
+    ->middleware('throttle:300,1')
+    ->name('whatsapp.hook');
 
 // Address lookups for the checkout map (OpenStreetMap), asked through the site.
 Route::middleware(['throttle:40,1', 'data'])->prefix('xerite')->name('map.')->group(function () {

@@ -64,6 +64,12 @@ class SiteSettings extends Page implements HasActions, HasForms
             'payment_note' => Setting::get(Setting::PAYMENT_NOTE),
             'epoint_enabled' => Setting::get(Setting::EPOINT_ENABLED) === '1',
             'epoint_wallet' => Setting::get(Setting::EPOINT_WALLET) === '1',
+            'whatsapp_enabled' => Setting::get(Setting::WHATSAPP_ENABLED) === '1',
+            'whatsapp_phone_id' => Setting::get(Setting::WHATSAPP_PHONE_ID),
+            'whatsapp_number' => Setting::get(Setting::WHATSAPP_NUMBER),
+            'whatsapp_token' => \App\Support\WhatsApp::token(),
+            'whatsapp_verify' => \App\Support\WhatsApp::verifyWord(),
+            'whatsapp_app_secret' => \App\Support\WhatsApp::appSecret(),
             'epoint_public_key' => Epoint::publicKey(),
             'epoint_private_key' => Epoint::privateKey(),
             'geoapify_key' => \App\Support\MapImage::key(),
@@ -393,6 +399,48 @@ class SiteSettings extends Page implements HasActions, HasForms
                     ])
                     ->columns(2)
                     ->collapsible(),
+                Forms\Components\Section::make('WhatsApp (admin panelində)')
+                    ->description('Açıq olanda müştərinin WhatsApp yazışması panelin «WhatsApp» '
+                        . 'səhifəsində görünür və işçilər oradan cavab verə bilir — hər cavabın '
+                        . 'altında kimin yazdığı qalır. Bu nömrə Meta-nın API-sinə verilir və '
+                        . 'adi WhatsApp tətbiqində işləməyi dayandırır, ona görə ikinci nömrəni '
+                        . 'telefonda saxlayın. Meta-da «Webhook» ünvanı olaraq bunu yazın: '
+                        . self::hookUrl())
+                    ->schema([
+                        Forms\Components\Toggle::make('whatsapp_enabled')
+                            ->label('WhatsApp panelə gəlsin')
+                            ->helperText('Nömrə və açar yazılmayınca səhifə görünmür.')
+                            ->columnSpanFull(),
+                        Forms\Components\TextInput::make('whatsapp_number')
+                            ->label('Nömrə')
+                            ->placeholder('+994 55 383 86 89')
+                            ->helperText('Yalnız göstərmək üçün — müştəriyə zəng edəndə lazım olur.')
+                            ->maxLength(40),
+                        Forms\Components\TextInput::make('whatsapp_phone_id')
+                            ->label('Phone number ID')
+                            ->helperText('Meta-da: WhatsApp → API Setup. Nömrənin özü yox, nömrənin nömrəsi.')
+                            ->autocomplete(false)
+                            ->maxLength(64),
+                        Forms\Components\TextInput::make('whatsapp_token')
+                            ->label('Daimi açar (System user token)')
+                            ->password()->revealable()->autocomplete(false)
+                            ->helperText('Şifrələnmiş saxlanılır. Müvəqqəti açar 24 saatdan sonra ölür — '
+                                . 'Business Settings → System users-dən daimi olanı götürün.')
+                            ->columnSpanFull(),
+                        Forms\Components\TextInput::make('whatsapp_verify')
+                            ->label('Verify token')
+                            ->password()->revealable()->autocomplete(false)
+                            ->helperText('Özünüz uydurduğunuz söz. Meta-da webhook qurarkən eynisini yazın.')
+                            ->maxLength(190),
+                        Forms\Components\TextInput::make('whatsapp_app_secret')
+                            ->label('App secret')
+                            ->password()->revealable()->autocomplete(false)
+                            ->helperText('Meta-da: App settings → Basic. Hər bildirişin doğrudan Meta-dan '
+                                . 'gəldiyini yoxlamaq üçündür — onsuz heç nə qəbul edilmir.')
+                            ->maxLength(190),
+                    ])
+                    ->columns(2)
+                    ->collapsible(),
                 Forms\Components\Section::make('Lokasiya xəritələri')
                     ->description('«lokasiya» qutularında müştərinin seçdiyi yerin küçələri buradan gəlir. '
                         . 'Pulsuz hesab geoapify.com-da açılır (Projects → API Keys). Açar yazılmayınca xəritə '
@@ -707,6 +755,12 @@ class SiteSettings extends Page implements HasActions, HasForms
         return route('epoint.result');
     }
 
+    /** The one address Meta is given, for both the handshake and the messages. */
+    public static function hookUrl(): string
+    {
+        return route('whatsapp.hook');
+    }
+
     public function save(): void
     {
         $data = $this->form->getState();
@@ -714,6 +768,12 @@ class SiteSettings extends Page implements HasActions, HasForms
         Setting::put(Setting::PAYMENT_LIMIT, (int) $data['payment_limit']);
         Setting::put(Setting::PAYMENT_WINDOW_HOURS, (int) $data['payment_window_hours']);
         Setting::put(Setting::PAYMENT_NOTE, $data['payment_note'] ?? '');
+        Setting::put(Setting::WHATSAPP_ENABLED, ! empty($data['whatsapp_enabled']));
+        Setting::put(Setting::WHATSAPP_PHONE_ID, trim((string) ($data['whatsapp_phone_id'] ?? '')));
+        Setting::put(Setting::WHATSAPP_NUMBER, trim((string) ($data['whatsapp_number'] ?? '')));
+        \App\Support\WhatsApp::saveToken($data['whatsapp_token'] ?? '');
+        \App\Support\WhatsApp::saveVerifyWord($data['whatsapp_verify'] ?? '');
+        \App\Support\WhatsApp::saveAppSecret($data['whatsapp_app_secret'] ?? '');
         Setting::put(Setting::EPOINT_PUBLIC_KEY, trim((string) ($data['epoint_public_key'] ?? '')));
         Epoint::savePrivateKey($data['epoint_private_key'] ?? '');
         \App\Support\MapImage::saveKey($data['geoapify_key'] ?? '');
