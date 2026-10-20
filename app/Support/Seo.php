@@ -210,19 +210,41 @@ class Seo
         'and', 'or', 'but', 'with', 'for', 'of', 'to', 'in', 'on', 'at', 'the', 'a', 'an', 'by', 'from', 'as', 'that',
     ];
 
+    /**
+     * Trailing spaces and punctuation — by character, never by byte.
+     *
+     * rtrim takes its second argument as a list of BYTES. An em dash in that
+     * list is three bytes, E2 80 94, and the Russian «р» is D1 80: rtrim
+     * sees the 80 and takes it, leaving half a letter behind. The old code
+     * did this and printed «…Цент□.» under one design; feeding that same
+     * half-letter to a /u pattern is worse still, because the pattern simply
+     * refuses and the description comes out empty.
+     */
+    private static function trimTail(string $s): string
+    {
+        return (string) preg_replace('/[\s,.;:—–-]+$/u', '', $s);
+    }
+
     /** Steps back off any word the sentence was only leaning on. */
     private static function endsOnAWord(string $cut): string
     {
-        $words = preg_split('/\s+/u', rtrim($cut, " ,.;:—-"), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $kept = self::trimTail($cut);
+        $words = preg_split('/\s+/u', $kept, -1, PREG_SPLIT_NO_EMPTY);
+
+        // Whatever happens below, a description is never made emptier than it
+        // came in: there is no sentence here to improve.
+        if (! $words) {
+            return $kept;
+        }
 
         // Never past half of what was kept: a description is no use as one word.
         $floor = (int) ceil(count($words) / 2);
         while (count($words) > $floor
-            && in_array(mb_strtolower(rtrim((string) end($words), " ,.;:—-")), self::LEANING, true)) {
+            && in_array(mb_strtolower(self::trimTail((string) end($words))), self::LEANING, true)) {
             array_pop($words);
         }
 
-        return rtrim(implode(' ', $words), " ,.;:—-");
+        return self::trimTail(implode(' ', $words));
     }
 
     public static function breadcrumbs(array $trail): array

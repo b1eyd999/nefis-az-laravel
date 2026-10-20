@@ -211,6 +211,54 @@ class TheFourThingsTheSiteCheckFoundTest extends TestCase
         }
     }
 
+    /**
+     * The one this very change broke, on the way to fixing something else.
+     *
+     * rtrim takes a list of BYTES. The em dash in that list is E2 80 94 and
+     * the Russian «р» is D1 80, so rtrim took the 80 and left half a letter.
+     * The old code printed that half letter; the new code handed it to a /u
+     * pattern, which refused the whole string — and the police box lost its
+     * Russian description altogether, down to a bare full stop.
+     */
+    public function test_a_cut_never_lands_inside_a_letter(): void
+    {
+        $police = 'Золотая лента, два флага и щит с надписью «POLİS»; ниже — ночной Баку: '
+            . 'Пламенные башни, телебашня, Центр Гейдара Алиева и машина дорожно-патрульной '
+            . 'службы. Сверху ваше фото, внизу — ваша строка.';
+
+        $cut = Seo::snippet($police, 110);
+
+        $this->assertTrue(mb_check_encoding($cut, 'UTF-8'), 'half a letter came back: ' . $cut);
+        $this->assertStringStartsWith('Золотая лента', $cut);
+        $this->assertGreaterThan(80, mb_strlen($cut), 'the description collapsed: «' . $cut . '»');
+        $this->assertStringNotContainsString("ï¿½", $cut);
+    }
+
+    /**
+     * And nothing else may come back broken either: every language the shop
+     * speaks, cut at every length a tail can leave.
+     */
+    public function test_no_length_in_any_language_breaks_a_letter(): void
+    {
+        $texts = [
+            'Золотая лента, два флага и щит с надписью «POLİS»; ниже — ночной Баку, Пламенные башни и Центр Гейдара Алиева, а сверху ваше фото.',
+            'Qızılı lent, iki bayraq və üstündə «POLİS» yazılmış emblem; aşağıda gecə Bakısı — Alov Qüllələri, telequllə və Heydər Əliyev Mərkəzi.',
+            'A gold ribbon, two flags and a shield lettered “POLİS”; below, Baku at night — the Flame Towers, the TV tower and the Heydar Aliyev Centre.',
+        ];
+
+        foreach ($texts as $text) {
+            for ($limit = 30; $limit <= 150; $limit++) {
+                $cut = Seo::snippet($text, $limit);
+
+                $this->assertTrue(mb_check_encoding($cut, 'UTF-8'),
+                    'broken at ' . $limit . ': ' . $cut);
+                $this->assertStringNotContainsString("ï¿½", $cut, 'at ' . $limit);
+                $this->assertGreaterThan($limit * 0.3, mb_strlen($cut),
+                    'almost nothing left at ' . $limit . ': «' . $cut . '»');
+            }
+        }
+    }
+
     /** What it did well before, it still does. */
     public function test_a_whole_sentence_is_still_preferred_and_short_text_left_alone(): void
     {
