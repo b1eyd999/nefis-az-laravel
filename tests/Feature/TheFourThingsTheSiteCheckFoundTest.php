@@ -98,9 +98,22 @@ class TheFourThingsTheSiteCheckFoundTest extends TestCase
         $this->assertTrue(self::inside('tooBigForGd', [Storage::disk('public')->path($huge)]),
             'twelve thousand pixels square is 579 MB before the copy is even started');
 
-        // And the call survives: it returns, and writes nothing it cannot make.
-        $this->assertNull(ImageStore::smaller($huge, 400, true));
-        $this->assertFalse(Storage::disk('public')->exists('wrappings/huge@400.webp'));
+        /* And the call survives, which is the whole point. Where Imagick is
+           installed — the hosting and the runner both have it — it goes on
+           and makes the copy GD could not. Where it is not, there is
+           nothing further to try and the page keeps serving the master:
+           heavy, but there, and the deploy is not killed on its way past. */
+        $made = ImageStore::smaller($huge, 400, true);
+
+        if (class_exists(\Imagick::class)) {
+            $this->assertSame('wrappings/huge@400.webp', $made,
+                'Imagick is here and should have made it');
+            $this->assertLessThan(Storage::disk('public')->size($huge) * 4,
+                strlen((string) Storage::disk('public')->get($made)));
+        } else {
+            $this->assertNull($made);
+            $this->assertFalse(Storage::disk('public')->exists('wrappings/huge@400.webp'));
+        }
 
         /* Take the guard out and this file does not fail — it kills the
            whole run, with the very words the hosting saw:
