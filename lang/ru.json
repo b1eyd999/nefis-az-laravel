@@ -1135,5 +1135,6 @@
     "Ağ": "Белый",
     "Bej": "Бежевый",
     "Bu, işçi hesabıdır. İdarə panelindən daxil olun: :link": "Это рабочий аккаунт. Войдите через панель управления: :link",
-    "Şifrəniz yeniləndi. İdarə panelinə daxil olun.": "Пароль обновлён. Войдите в панель управления."
+    "Şifrəniz yeniləndi. İdarə panelinə daxil olun.": "Пароль обновлён. Войдите в панель управления.",
+    "Say 1 ilə :most arasında olmalıdır.": "Количество должно быть от 1 до :most."
 }

@@ -32,7 +32,7 @@ class SitemapController extends Controller
 
     public function index(): Response
     {
-        $products = $this->guard(fn () => Product::where('is_active', true)
+        $products = $this->guard(fn () => Product::onTheShelf()
             ->orderBy('sort_order')->orderBy('name')->get()->filter->isCustomizable()) ?? collect();
         $allGifts = $this->guard(fn () => GiftPage::shown()->get()) ?? collect();
         $azGifts = $allGifts->where('locale', 'az');

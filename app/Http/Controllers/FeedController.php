@@ -21,7 +21,7 @@ class FeedController extends Controller
     {
         $items = '';
 
-        foreach (Product::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get() as $product) {
+        foreach (Product::onTheShelf()->orderBy('sort_order')->orderBy('name')->get() as $product) {
             if (! $product->isCustomizable() || ! $product->price) {
                 continue;                                   // nothing to sell, or no price to show
             }

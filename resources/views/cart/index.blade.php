@@ -106,9 +106,9 @@
                         aria-label="{{ __('Bir az') }}"
                         @disabled($item['quantity'] <= 1)>&minus;</button>
                 <span aria-live="polite">{{ $item['quantity'] }}</span>
-                <button type="submit" name="quantity" value="{{ min(\App\Support\Cart::MOST, $item['quantity'] + 1) }}"
+                <button type="submit" name="quantity" value="{{ min(\App\Support\Cart::most(), $item['quantity'] + 1) }}"
                         aria-label="{{ __('Bir çox') }}"
-                        @disabled($item['quantity'] >= \App\Support\Cart::MOST)>+</button>
+                        @disabled($item['quantity'] >= \App\Support\Cart::most())>+</button>
               </form>
               @if(! empty($item['chocolate']))
                 <p style="margin-top:.2rem;">🍫 {{ $item['chocolate']['name'] }} &middot; {{ \App\Support\Price::format($item['chocolate']['price']) }}</p>

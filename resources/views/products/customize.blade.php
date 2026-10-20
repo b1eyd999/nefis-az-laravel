@@ -993,7 +993,7 @@
         <div class="qty-row">
           <div>
             <label for="quantity">{{ __('Say') }}</label>
-            <input type="number" id="quantity" name="quantity" value="1" min="1" max="20">
+            <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ \App\Support\Cart::most() }}">
           </div>
           @if(\App\Support\DeliveryTime::rushFee() > 0)
             {{-- Made before the others: chosen here, paid once for the order. --}}

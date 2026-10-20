@@ -156,7 +156,7 @@ class Xonca
     /** The designs on the shelf, newest first, the way the catalogue orders them. */
     public static function designs()
     {
-        return Product::where('is_active', true)
+        return Product::onTheShelf()
             ->where('category', self::CATEGORY)
             ->withCount('layers')
             ->orderBy('sort_order')
@@ -167,6 +167,6 @@ class Xonca
     /** There is a page worth linking to only once a design is on it. */
     public static function ready(): bool
     {
-        return Product::where('is_active', true)->where('category', self::CATEGORY)->exists();
+        return Product::onTheShelf()->where('category', self::CATEGORY)->exists();
     }
 }

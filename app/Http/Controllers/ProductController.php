@@ -23,7 +23,12 @@ class ProductController extends Controller
            whatever was drawn last sank to the bottom. Dragging the rows in the
            admin writes a real `sort_order` and overrules this; a design added
            afterwards keeps the default 0 and so opens the list again. */
-        $designs = Product::where('is_active', true)
+        /* A design drawn with a company's logo leaves the public shelf.
+           The company itself — and the shop — still see it, because the
+           basket is usually filled here, on the same page a customer uses. */
+        $designs = Product::query()
+            ->where('is_active', true)
+            ->unless(auth()->user()?->buysBusinessDesigns(), fn ($q) => $q->where('business_only', false))
             ->withCount('layers')
             ->orderBy('sort_order')
             ->orderByDesc('id')
@@ -50,7 +55,7 @@ class ProductController extends Controller
 
     public function customize(Product $product)
     {
-        abort_unless($product->is_active, 404);
+        abort_unless($product->openTo(auth()->user()), 404);
 
         /* Switched on but nothing drawn on it yet. Rather than a bare 404 —
            the design does exist, and the owner is working on it — the page

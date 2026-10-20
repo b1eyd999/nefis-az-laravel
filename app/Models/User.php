@@ -32,10 +32,21 @@ class User extends Authenticatable implements FilamentUser
        /kuryer. */
     public const COURIER = 'courier';
 
+    /**
+     * A company with an account of its own.
+     *
+     * Not staff and not a courier: an ordinary customer in every way except
+     * two — the shop marks it so a manager can see at a glance who he is
+     * talking to, and the designs drawn with somebody's logo on them can be
+     * ordered into this account and no other.
+     */
+    public const BUSINESS = 'business';
+
     /** The roles, as the admin panel names them. */
     public const ROLES = [
         self::CUSTOMER => 'Müştəri',
         self::COURIER => 'Kuryer',
+        self::BUSINESS => 'Biznes',
         self::MANAGER => 'Menecer',
         self::ADMIN => 'Admin',
     ];
@@ -169,6 +180,22 @@ class User extends Authenticatable implements FilamentUser
     public function isStaff(): bool
     {
         return $this->isAdmin() || $this->role === self::MANAGER;
+    }
+
+    /**
+     * A company. It opens nothing in the panel — it is a customer — and the
+     * shop's own people count as one wherever a business account may buy,
+     * because the order is usually placed for the company by the shop.
+     */
+    public function isBusiness(): bool
+    {
+        return $this->role === self::BUSINESS && ! $this->isStaff();
+    }
+
+    /** May this person be sold a design drawn for the companies? */
+    public function buysBusinessDesigns(): bool
+    {
+        return $this->isBusiness() || $this->isStaff();
     }
 
     /**

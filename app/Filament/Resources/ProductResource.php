@@ -100,6 +100,11 @@ class ProductResource extends Resource
                         Forms\Components\Toggle::make('is_active')
                             ->label('Saytda görünsün')
                             ->default(true),
+                        Forms\Components\Toggle::make('business_only')
+                            ->label('Yalnız biznes hesablar üçün')
+                            ->helperText('Şirkətin loqosu ilə çəkilmiş dizayn. Kataloqda, sitemap-da və '
+                                . 'lentdə görünmür; yalnız biznes hesab — və mağazanın özü — onu səbətə ata bilər.')
+                            ->default(false),
                         // This switch belongs to the design's photo windows, not to the products
                         // table, so EditProduct reads it from them and writes it back by hand.
                         // Hidden while creating: a design has no photo window until the box

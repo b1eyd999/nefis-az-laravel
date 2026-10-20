@@ -48,7 +48,7 @@ class CartController extends Controller
         $request->validate(['product_id' => ['required', 'integer']]);
 
         $product = Product::with(['photoSlots', 'textSlots'])->findOrFail($request->integer('product_id'));
-        abort_unless($product->is_active && $product->isCustomizable(), 404);
+        abort_unless($product->openTo($request->user()) && $product->isCustomizable(), 404);
 
         /* A design the owner has not priced says «Qiymət sorğu ilə» on its
            card, and used to go into the basket all the same with the box
@@ -61,7 +61,7 @@ class CartController extends Controller
         }
 
         $rules = [
-            'quantity' => ['nullable', 'integer', 'min:1', 'max:20'],
+            'quantity' => ['nullable', 'integer', 'min:1', 'max:' . Cart::most()],
             'rush' => ['nullable', 'boolean'],
         ];
 
@@ -161,8 +161,8 @@ class CartController extends Controller
             'photos.*.image' => __(':attribute şəkil olmalıdır (JPG, PNG və s.).'),
             'photos.*.max' => __(':attribute 8 MB-dan böyük ola bilməz.'),
             'quantity.integer' => __('Say tam ədəd olmalıdır.'),
-            'quantity.min' => __('Say 1 ilə 20 arasında olmalıdır.'),
-            'quantity.max' => __('Say 1 ilə 20 arasında olmalıdır.'),
+            'quantity.min' => __('Say 1 ilə :most arasında olmalıdır.', ['most' => Cart::most()]),
+            'quantity.max' => __('Say 1 ilə :most arasında olmalıdır.', ['most' => Cart::most()]),
             'map_place.required_without_all' => __('Hansı yerin küçələri olsun? Yeri yazın.'),
             'map_lat.required_without' => __('Hansı yerin küçələri olsun? Yeri yazın.'),
             'map_lon.required_without' => __('Hansı yerin küçələri olsun? Yeri yazın.'),
@@ -281,10 +281,10 @@ class CartController extends Controller
     public function quantity(Request $request, string $id): RedirectResponse
     {
         $data = $request->validate([
-            'quantity' => ['required', 'integer', 'min:1', 'max:' . Cart::MOST],
+            'quantity' => ['required', 'integer', 'min:1', 'max:' . Cart::most()],
         ], [
             'quantity.max' => __('Bir dizayndan ən çox :most ədəd sifariş etmək olar. Daha çoxu üçün bizə yazın.',
-                ['most' => Cart::MOST]),
+                ['most' => Cart::most()]),
         ]);
 
         Cart::setQuantity($id, (int) $data['quantity']);

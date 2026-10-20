@@ -37,6 +37,24 @@ class Cart
      */
     public const MOST = 20;
 
+    /**
+     * What a company may order of one design.
+     *
+     * The corporate page asks for a hundred as its minimum, and the
+     * basket stopped at twenty — so the one customer that page was
+     * written for could not actually buy. A business account, and the
+     * shop filling a basket for one, go to five hundred.
+     */
+    public const MOST_BUSINESS = 500;
+
+    /** The most of one design this person may order. */
+    public static function most(?\App\Models\User $who = null): int
+    {
+        $who ??= auth()->user();
+
+        return $who?->buysBusinessDesigns() ? self::MOST_BUSINESS : self::MOST;
+    }
+
     /** Whether the customer asked for his order to be made before the others. */
     protected const RUSH = 'cart_rush';
 
@@ -176,7 +194,7 @@ class Cart
      */
     public static function setQuantity(string $id, int $quantity): void
     {
-        $quantity = max(1, min(self::MOST, $quantity));
+        $quantity = max(1, min(self::most(), $quantity));
         $items = self::raw();
         foreach ($items as $i => $item) {
             if (($item['id'] ?? null) === $id) {

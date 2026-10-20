@@ -154,7 +154,8 @@ class UserResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn (?string $state) => User::ROLES[$state] ?? $state)
                     ->color(fn (?string $state) => match ($state) {
-                        User::ADMIN => 'danger', User::MANAGER => 'warning', default => 'gray',
+                        User::ADMIN => 'danger', User::MANAGER => 'warning',
+                        User::BUSINESS => 'info', User::COURIER => 'success', default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('profit_percent')
                     ->label('Pay')

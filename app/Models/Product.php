@@ -55,6 +55,7 @@ class Product extends Model
         'template_width',
         'template_height',
         'is_active',
+        'business_only',
         'sort_order',
     ];
 
@@ -63,6 +64,7 @@ class Product extends Model
         return [
             'i18n' => 'array',
             'is_active' => 'boolean',
+            'business_only' => 'boolean',
             'price' => 'float',
         ];
     }
@@ -415,6 +417,31 @@ class Product extends Model
     public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    /**
+     * Everything the public shelf may show: switched on, and not one of the
+     * designs drawn for a company. Used by the catalogue, the home page, the
+     * sitemap and the feed — anywhere a stranger is being shown a list.
+     */
+    public function scopeOnTheShelf($query)
+    {
+        return $query->where('is_active', true)->where('business_only', false);
+    }
+
+    /**
+     * May this person open and order this design?
+     *
+     * A company's design is reachable by its own address — the shop sends
+     * the link — but only to that company and to the shop itself.
+     */
+    public function openTo(?User $who): bool
+    {
+        if (! $this->is_active) {
+            return false;
+        }
+
+        return ! $this->business_only || (bool) $who?->buysBusinessDesigns();
     }
 
     public function layers(): HasMany
