@@ -104,6 +104,20 @@ class AuthController extends Controller
         }
 
         RateLimiter::clear($key);
+
+        /* Not through this door. The password is checked first and on
+           purpose: a wrong one gets the same answer here as anywhere else,
+           so this page never tells a stranger which addresses belong to the
+           shop. Only somebody who has already proved the password is his is
+           told where to go — and he is told, because otherwise the shop's
+           own people stand at a door that simply says no. */
+        if ($user->signsInAtThePanel()) {
+            return back()->withErrors([
+                'login' => __('Bu, işçi hesabıdır. İdarə panelindən daxil olun: :link',
+                    ['link' => url('/admin')]),
+            ])->onlyInput('login');
+        }
+
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 

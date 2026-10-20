@@ -172,6 +172,22 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
+     * The shop's own people sign in at the panel, and nowhere else.
+     *
+     * The customers' form, the password-reset page — those are the doors
+     * customers use. An admin or a manager who types the right password
+     * into one of them is told where his own door is and left outside it.
+     *
+     * A courier is deliberately not included. He is not staff, he has no
+     * panel to sign into, and /kuryer is reached through the ordinary form
+     * like any other page a signed-in person sees.
+     */
+    public function signsInAtThePanel(): bool
+    {
+        return $this->isStaff();
+    }
+
+    /**
      * A courier is not staff and never becomes one by accident: the panel, the
      * phone admin and every resource in them ask `isStaff()`, so adding the
      * role opens nothing. What it opens is the one screen written for him.

@@ -30,6 +30,10 @@
   /* ---------- the video over the picture (1000 px = the picture's width in MindAR's space) ---------- */
   #clip-wrap{ display:flex; align-items:center; justify-content:center; pointer-events:none; }
   #clip-wrap:not(.in-ar){ position:fixed; left:-10000px; top:0; }
+  /* Its transform is rewritten every frame from the camera. Saying so keeps
+     it on a layer of its own, so the phone moves it instead of repainting
+     it, and it stops shivering a sub-pixel at a time. */
+  #clip-wrap.in-ar{ will-change:transform; backface-visibility:hidden; }
   #clip{ display:block; object-fit:contain; background:transparent; border-radius:14px;
     box-shadow:0 30px 90px rgba(0,0,0,.45); transform:scale(.55); opacity:0; transition:transform .7s var(--ease), opacity .35s; }
   #clip-wrap.show #clip{ transform:scale(1); opacity:1; }
@@ -353,7 +357,23 @@
           container: $('ar'),
           imageTargetSrc: @json($live->mindUrl()),
           uiLoading: 'no', uiScanning: 'no', uiError: 'no',
-          filterMinCF: 0.0001, filterBeta: 0.001,
+          /* The two numbers that decide whether the film sits on the box.
+             MindAR smooths the target's position with a one-euro filter:
+
+               cutoff = filterMinCF + filterBeta × (how fast it is moving)
+
+             filterMinCF alone decides how calm it is when the telephone is
+             held still; filterBeta is how much the filter is allowed to
+             speed up when the telephone moves. These were 0.0001 and 0.001
+             — a beta a millionth of the library's own — so the filter never
+             sped up at all and the film swam along behind the box in the
+             hand. The library's defaults are 0.001 and 1000, and that is
+             what they are now.
+
+             If it ever looks restless while the hand is still, lower
+             filterMinCF; if it lags again while the hand moves, raise
+             filterBeta. */
+          filterMinCF: 0.001, filterBeta: 1000,
         });
         const { renderer, cssRenderer, scene, cssScene, camera } = mindar;
         const anchor = mindar.addCSSAnchor(0);

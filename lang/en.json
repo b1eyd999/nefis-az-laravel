@@ -1133,5 +1133,7 @@
     "Loqonuzu yükləyin, qutunun rəngini seçin — necə görünəcəyini elə burada görürsünüz. Sifariş verməzdən əvvəl heç nəyə ehtiyac yoxdur.": "Upload your logo, pick the box colour — and see it right here. Nothing has to be ordered first.",
     "Qara": "Black",
     "Ağ": "White",
-    "Bej": "Beige"
+    "Bej": "Beige",
+    "Bu, işçi hesabıdır. İdarə panelindən daxil olun: :link": "This is a staff account. Sign in through the admin panel: :link",
+    "Şifrəniz yeniləndi. İdarə panelinə daxil olun.": "Your password has been changed. Sign in at the admin panel."
 }

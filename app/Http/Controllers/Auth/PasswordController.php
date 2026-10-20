@@ -103,6 +103,17 @@ class PasswordController extends Controller
         $user->forceFill(['password' => Hash::make($data['password'])])->save();
         DB::table('password_reset_tokens')->where('email', $user->email)->delete();
 
+        /* The shop's own people may change their password here — the letter
+           went to their address and they have just proved it — but they are
+           not signed in by it. Their door is the panel. Every session they
+           had is still closed: that is the whole point of a reset. */
+        if ($user->signsInAtThePanel()) {
+            DB::table('sessions')->where('user_id', $user->id)->delete();
+
+            return redirect('/admin')->with('status',
+                __('Şifrəniz yeniləndi. İdarə panelinə daxil olun.'));
+        }
+
         // Signed in straight away: he has just proved the address is his.
         Auth::login($user);
         $request->session()->regenerate();
