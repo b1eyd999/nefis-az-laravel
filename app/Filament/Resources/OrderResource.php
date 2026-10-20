@@ -222,7 +222,7 @@ class OrderResource extends Resource
                             ->content(fn (?Order $record) => $record
                                 ? 'Məhsullar '.Price::format($record->itemsTotal())
                                     .($record->hasDiscount()
-                                        ? ' − endirim '.Price::format($record->discount)
+                                        ? ' − endirim '.Price::format($record->discountOff())
                                             .' ('.$record->promo_code.', '.rtrim(rtrim(number_format((float) $record->promo_percent, 2, '.', ''), '0'), '.').'%)'
                                         : '')
                                     .' + çatdırılma '.Price::format($record->delivery_price ?? 0)

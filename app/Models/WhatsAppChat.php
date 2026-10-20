@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * One person the shop is talking to on WhatsApp.
@@ -42,6 +43,12 @@ class WhatsAppChat extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(WhatsAppMessage::class, 'wa_id', 'wa_id');
+    }
+
+    /** The newest line, for the list to show without asking per row. */
+    public function lastLine(): HasOne
+    {
+        return $this->hasOne(WhatsAppMessage::class, 'wa_id', 'wa_id')->latestOfMany('id');
     }
 
     public function order(): BelongsTo

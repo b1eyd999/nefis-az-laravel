@@ -63,6 +63,7 @@ class GiftPageResource extends Resource
                                used to keep pointing at the page it was once
                                paired with, and Google was told a page was
                                its own translation. */
+                            ->dehydratedWhenHidden()
                             ->dehydrateStateUsing(fn ($state, Forms\Get $get) => $get('locale') === 'ru' ? $state : null)
                             ->helperText('Google bilsin ki, bu, həmin səhifənin rusca variantıdır. Dizaynları da ondan götürür.'),
                         Forms\Components\TextInput::make('link_text')

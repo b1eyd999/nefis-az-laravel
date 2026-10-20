@@ -35,7 +35,7 @@ class OrderKeyController extends Controller
                of the time. regenerate() changes the session's name and not
                its contents, so without this the basket followed the link
                into this customer's account, photograph, words and all. */
-            Cart::clear();
+            Cart::forgetHere();
             Auth::login($customer);
             $request->session()->regenerate();
         }

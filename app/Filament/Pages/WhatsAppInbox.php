@@ -77,7 +77,7 @@ class WhatsAppInbox extends Page
     /** @return Collection<int, WhatsAppChat> */
     public function chats(): Collection
     {
-        return WhatsAppChat::newestFirst()->limit(200)->get();
+        return WhatsAppChat::with('lastLine')->newestFirst()->limit(200)->get();
     }
 
     public function chat(): ?WhatsAppChat
@@ -93,11 +93,16 @@ class WhatsAppInbox extends Page
             return collect();
         }
 
+        /* The LAST four hundred, read back into order. Taking the first
+           four hundred showed a long conversation's beginning and hid every
+           message since — including the one that had just come in. */
         return WhatsAppMessage::with('author')
             ->where('wa_id', $chat->wa_id)
-            ->orderBy('id')
+            ->orderByDesc('id')
             ->limit(400)
-            ->get();
+            ->get()
+            ->reverse()
+            ->values();
     }
 
     public function open(int $id): void
@@ -150,6 +155,8 @@ class WhatsAppInbox extends Page
 
         $line = WhatsApp::reply($chat, $text, auth()->id());
         $this->draft = '';
+        // Having answered him, nobody needs telling he is unread.
+        $this->seen();
 
         if ($line && $line->status === 'failed') {
             Notification::make()->danger()

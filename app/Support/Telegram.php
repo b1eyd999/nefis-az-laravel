@@ -353,6 +353,22 @@ class Telegram
 
     public static function order(Order $order): void
     {
+        /* Always in the owner's own language, whatever page this was fired
+           from. The dates learned to speak three languages, and an order
+           confirmed inside a Russian customer's own request then sent the
+           owner «21 октября, среда» — his card is for him to read. */
+        $was = app()->getLocale();
+        app()->setLocale(\App\Support\Locale::DEFAULT);
+
+        try {
+            self::orderCard($order);
+        } finally {
+            app()->setLocale($was);
+        }
+    }
+
+    private static function orderCard(Order $order): void
+    {
         $order->loadMissing(['items', 'user']);
 
         $lines = ['🍫 <b>Yeni sifariş #' . $order->id . '</b>', ''];

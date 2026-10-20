@@ -34,7 +34,7 @@
         @if($order->hasDiscount())
           <div style="display:flex; justify-content:space-between; gap:1rem; font-size:.9375rem; color:#15803d; margin-bottom:.4rem;">
             <span>{{ __('Promokod') }} {{ $order->promo_code }}</span>
-            <b>−{{ \App\Support\Price::format($order->discount) }}</b>
+            <b>−{{ \App\Support\Price::format($order->discountOff()) }}</b>
           </div>
         @endif
         <div class="pay-total">

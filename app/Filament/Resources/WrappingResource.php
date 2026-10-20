@@ -99,6 +99,10 @@ class WrappingResource extends Resource
                                wrap to «Lentsiz» left its roll pointing at
                                the warehouse, so the list went on saying
                                «Anbardan: …» for a wrap with no ribbon. */
+                            // Hidden is not dropped: without this Filament
+                            // leaves the field out of what is saved entirely,
+                            // so the line below never ran and the roll stayed.
+                            ->dehydratedWhenHidden()
                             ->dehydrateStateUsing(fn ($state, Forms\Get $get) => $get('ribbon') === Wrapping::NONE ? null : $state)
                             ->visible(fn (Forms\Get $get) => $get('ribbon') !== Wrapping::NONE),
                         Forms\Components\TextInput::make('pattern_scale')

@@ -61,7 +61,7 @@
                 {{ $c->last_message_at?->diffForHumans(short: true) }}
               </span>
             </span>
-            <span class="wa-last">{{ $c->messages()->latest('id')->first()?->summary() }}</span>
+            <span class="wa-last">{{ $c->lastLine?->summary() }}</span>
           </button>
         @empty
           <div class="wa-empty">Hələ heç kim yazmayıb.</div>
@@ -86,7 +86,7 @@
             @endif
           </div>
 
-          <div class="wa-log">
+          <div class="wa-log" x-data x-init="$el.scrollTop = $el.scrollHeight">
             @foreach($this->thread() as $m)
               <div class="wa-msg {{ $m->mine() ? 'us' : 'them' }} {{ $m->status === 'failed' ? 'failed' : '' }}">
                 @if($m->hasMedia())
@@ -116,8 +116,10 @@
 
           @if($chat->windowOpen())
             <form class="wa-say" wire:submit.prevent="send">
+              {{-- Shift+Enter is a new line, not a half-written answer sent
+                   to the customer. --}}
               <textarea wire:model="draft" rows="1" placeholder="Cavabınızı yazın…"
-                        wire:keydown.enter.prevent="send"></textarea>
+                        wire:keydown.enter.exact.prevent="send"></textarea>
               <x-filament::button type="submit" wire:loading.attr="disabled">Göndər</x-filament::button>
             </form>
           @else

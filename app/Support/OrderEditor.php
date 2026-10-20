@@ -58,6 +58,17 @@ class OrderEditor
 
             $difference = round($after - $before, 2);
 
+            /* An order that has changed is not the order the customer was
+               asked to pay for. The figure frozen when a payment page or a
+               wallet sheet was opened must go with it, or a sheet still open
+               on his telephone pays the OLD amount and the callback — which
+               compares against that frozen figure — accepts it as correct.
+               Cleared, the callback falls back to the order's own total and
+               the shop is told about the shortfall instead. */
+            if (! $order->isPaidFor() && $order->payment_asked_for !== null) {
+                $order->forceFill(['payment_asked_for' => null])->save();
+            }
+
             // Nothing moved, or the customer has not paid yet — in which case
             // his payment page still asks for the whole of the new total and
             // there is no difference to settle.

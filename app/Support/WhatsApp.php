@@ -164,7 +164,9 @@ class WhatsApp
 
         if (! $answer->successful()) {
             $why = (string) ($answer->json('error.message') ?? $answer->body());
-            Log::warning('whatsapp: the answer did not go', ['to' => $chat->wa_id, 'why' => $why]);
+            // The number is not written out: the log is plain text on a
+            // shared host, and the conversation is already in the panel.
+            Log::warning('whatsapp: the answer did not go', ['chat' => $chat->id, 'why' => $why]);
             $line->forceFill(['status' => 'failed', 'error' => Str::limit($why, 400)])->save();
 
             return $line;
@@ -186,6 +188,9 @@ class WhatsApp
      * Meta keeps it for a few days and behind a token, so a link into their
      * store is no use in a panel somebody opens next week.
      */
+    /** As much of somebody else's file as the shop is willing to hold. */
+    public const MEDIA_MB = 24;
+
     public static function fetchMedia(string $mediaId): ?array
     {
         $token = self::token();
@@ -199,7 +204,30 @@ class WhatsApp
                 return null;
             }
 
-            $file = Http::withToken($token)->timeout(60)->get((string) $about->json('url'));
+            /* Meta takes a document of a hundred megabytes, and this answer
+               is held whole in memory before it is written. On a shared host
+               that is the end of the request — and Meta, seeing no 200,
+               sends the same notice again, so it would be the end of every
+               retry too. What is too big is left with Meta; the message
+               still arrives, saying what kind of thing it was. */
+            $size = (int) ($about->json('file_size') ?? 0);
+            if ($size > self::MEDIA_MB * 1024 * 1024) {
+                Log::warning('whatsapp: a file too big to keep', ['media' => $mediaId, 'bytes' => $size]);
+
+                return null;
+            }
+
+            $url = (string) $about->json('url');
+
+            // Only from Meta's own store: the token below travels with it.
+            $host = (string) (parse_url($url, PHP_URL_HOST) ?: '');
+            if (! preg_match('/(^|\\.)(fbcdn\\.net|facebook\\.com|fbsbx\\.com|whatsapp\\.net)$/i', $host)) {
+                Log::warning('whatsapp: a file offered from somewhere else', ['host' => $host]);
+
+                return null;
+            }
+
+            $file = Http::withToken($token)->timeout(60)->get($url);
             if (! $file->successful()) {
                 return null;
             }

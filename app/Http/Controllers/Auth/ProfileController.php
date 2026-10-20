@@ -37,12 +37,24 @@ class ProfileController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            // Lower-cased for the same reason the column is: otherwise two
-            // accounts could hold one address in two spellings, and neither
-            // owner would be able to sign in by it.
-            'email' => ['required', 'string', 'email', 'max:255',
-                Rule::unique('users', 'email')->ignore($user->id)
-                    ->where(fn ($q) => $q->whereRaw('LOWER(email) = ?', [Str::lower(trim((string) $request->input('email')))]))],
+            /* Asked ourselves rather than through Rule::unique, which ANDs
+               its own `email = <as typed>` with anything added in where():
+               on a byte-comparing database the same address in different
+               capitals found nothing, passed, and then went down on the
+               unique index with a database error on the screen. */
+            'email' => ['required', 'string', 'email', 'max:255', (function () use ($user) {
+                $mine = $user->id;
+
+                return function (string $attribute, $value, \Closure $fail) use ($mine) {
+                    $taken = User::whereRaw('LOWER(email) = ?', [Str::lower(trim((string) $value))])
+                        ->when($mine, fn ($q) => $q->whereKeyNot($mine))
+                        ->exists();
+
+                    if ($taken) {
+                        $fail(__('Bu e-poçt ilə artıq hesab var.'));
+                    }
+                };
+            })()],
             // The shop rings and writes on WhatsApp, and two accounts on one
             // number can never sign in by it again.
             'phone' => ['required', 'string', 'max:30', function ($attribute, $value, $fail) use ($user) {

@@ -31,14 +31,21 @@ class WhatsAppHookController extends Controller
     public function verify(Request $request): Response
     {
         $word = WhatsApp::verifyWord();
+        $given = $request->query('hub_verify_token');
+        $challenge = $request->query('hub_challenge');
 
+        /* Read as words or not at all. An array here — ?hub_verify_token[]=x,
+           which anybody may send — used to be cast to a string, and PHP's
+           «array to string» warning is an exception in Laravel: a public 500
+           with a stack trace in the log, on a route with no throttle. */
         if (blank($word)
             || $request->query('hub_mode') !== 'subscribe'
-            || ! hash_equals($word, (string) $request->query('hub_verify_token'))) {
+            || ! is_scalar($given) || ! is_scalar($challenge)
+            || ! hash_equals($word, (string) $given)) {
             return response('no', 403);
         }
 
-        return response((string) $request->query('hub_challenge'), 200)
+        return response((string) $challenge, 200)
             ->header('Content-Type', 'text/plain');
     }
 
@@ -56,11 +63,28 @@ class WhatsAppHookController extends Controller
                 $value = $change['value'] ?? [];
                 $this->names($value);
 
+                /* Each on its own. Meta packs several messages into one
+                   notice, and a single odd field used to abort the lot — the
+                   good messages were lost with the bad one, and Meta then
+                   resent the same notice for ever because it never saw a
+                   200. What cannot be written is written in the log and the
+                   rest goes on. */
                 foreach ((array) ($value['messages'] ?? []) as $message) {
-                    $this->wrote($message, $value);
+                    try {
+                        $this->wrote(is_array($message) ? $message : [], $value);
+                    } catch (\Throwable $e) {
+                        Log::error('whatsapp: a message could not be written', [
+                            'id' => is_array($message) ? ($message['id'] ?? null) : null,
+                            'why' => $e->getMessage(),
+                        ]);
+                    }
                 }
                 foreach ((array) ($value['statuses'] ?? []) as $status) {
-                    $this->moved($status);
+                    try {
+                        $this->moved(is_array($status) ? $status : []);
+                    } catch (\Throwable $e) {
+                        Log::error('whatsapp: a status could not be written', ['why' => $e->getMessage()]);
+                    }
                 }
             }
         }
@@ -100,8 +124,12 @@ class WhatsAppHookController extends Controller
             'button' => (string) ($message['button']['text'] ?? ''),
             'interactive' => (string) ($message['interactive']['list_reply']['title']
                 ?? $message['interactive']['button_reply']['title'] ?? ''),
+            /* A named place comes with its name; «send my current
+               location» comes with nothing but the two numbers, and those
+               used to be dropped — so the one message whose whole point is
+               where the customer is arrived empty. */
             'location' => trim((string) ($message['location']['name'] ?? '') . ' '
-                . ($message['location']['address'] ?? '')),
+                . ($message['location']['address'] ?? '')) ?: self::whereHeIs($message['location'] ?? []),
             default => (string) ($message[$type]['caption'] ?? ''),
         };
 
@@ -145,6 +173,20 @@ class WhatsAppHookController extends Controller
         /* The owner is not sitting in the panel all day, and a question
            nobody sees is a lost order. The same bell as everything else. */
         $this->ring($waId, $body, $type);
+    }
+
+    /** The two numbers, as a line somebody can tap. */
+    private static function whereHeIs(array $location): string
+    {
+        $lat = $location['latitude'] ?? null;
+        $lng = $location['longitude'] ?? null;
+
+        if (! is_numeric($lat) || ! is_numeric($lng)) {
+            return '';
+        }
+
+        return '📍 ' . round((float) $lat, 6) . ', ' . round((float) $lng, 6)
+            . "\n" . 'https://www.google.com/maps?q=' . round((float) $lat, 6) . ',' . round((float) $lng, 6);
     }
 
     /** What became of something the shop sent. */

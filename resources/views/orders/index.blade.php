@@ -120,7 +120,7 @@
             @endif
             @if($order->hasDiscount())
               <p style="font-size:.875rem; color:#15803d; font-weight:600; margin-top:.35rem;">
-                🎟 {{ __('Promokod') }} {{ $order->promo_code }} — −{{ \App\Support\Price::format($order->discount) }}
+                🎟 {{ __('Promokod') }} {{ $order->promo_code }} — −{{ \App\Support\Price::format($order->discountOff()) }}
               </p>
             @endif
             @if($order->total() > 0)

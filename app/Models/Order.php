@@ -378,12 +378,20 @@ class Order extends Model
     {
         $goods = $this->itemsTotal();
         $percent = (float) ($this->promo_percent ?? 0);
+        $frozen = (float) ($this->discount ?? 0);
 
         if ($percent > 0) {
-            return round(min($goods, $goods * $percent / 100), 2);
+            /* Never more than the code was worth on the day. Recomputing the
+               percentage alone was wrong in the other direction: a box ADDED
+               to the order a week later was quietly sold at half price,
+               because a single-use code went on applying to goods it was
+               never accepted for. So the percentage is what shrinks the
+               discount when the order shrinks, and the figure frozen at
+               checkout is the ceiling it can never pass. */
+            return round(min($goods, $goods * $percent / 100, $frozen ?: PHP_FLOAT_MAX), 2);
         }
 
-        return round(min($goods, (float) ($this->discount ?? 0)), 2);
+        return round(min($goods, $frozen), 2);
     }
 
     /**
@@ -406,7 +414,9 @@ class Order extends Model
 
     public function hasDiscount(): bool
     {
-        return (float) ($this->discount ?? 0) > 0;
+        // What actually comes off today, not what came off on the day: an
+        // order whose lines are all gone has no discount line to print.
+        return $this->discountOff() > 0;
     }
 
     /** Everything the order was changed to after the customer had paid. */

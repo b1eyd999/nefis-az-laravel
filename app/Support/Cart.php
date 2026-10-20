@@ -208,6 +208,22 @@ class Cart
     }
 
     /**
+     * Drop the basket from this browser without touching what is kept for
+     * anybody's account.
+     *
+     * For the one moment the browser changes hands: a link out of a letter
+     * signs its own customer in, and whatever was in the basket belonged to
+     * whoever was there a second ago. clear() would have written the empty
+     * basket over that person's saved one — the owner, most of the time,
+     * twenty minutes of work in the box editor gone for good.
+     */
+    public static function forgetHere(): void
+    {
+        Session::forget(self::KEY);
+        Session::forget(self::RUSH);
+    }
+
+    /**
      * Put a whole basket in place of whatever was there.
      *
      * Used when the shop has filled a basket for a customer and he opens it:

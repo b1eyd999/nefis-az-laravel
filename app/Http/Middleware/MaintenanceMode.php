@@ -31,7 +31,12 @@ class MaintenanceMode
      */
     private const OPEN = ['admin', 'admin/*', 'livewire/*', 'filament/*', 'up',
         'login', 'logout', 'ru/login', 'ru/logout', 'en/login', 'en/logout',
-        'kuryer', 'kuryer/*', 'canli/*', 'epoint/*', 'telegram/*'];
+        'kuryer', 'kuryer/*', 'canli/*', 'epoint/*', 'telegram/*',
+        /* For the same reason as the two above: a 503 to a message from a
+           customer is a question nobody will ever see — the only copy was in
+           the request we refused — and Meta, after enough refusals, switches
+           the hook off until somebody turns it back on by hand. */
+        'whatsapp/hook'];
 
     public function handle(Request $request, Closure $next): Response
     {

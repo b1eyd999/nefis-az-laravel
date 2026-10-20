@@ -25,9 +25,19 @@ class AuthController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255',
-                Rule::unique('users', 'email')
-                    ->where(fn ($q) => $q->whereRaw('LOWER(email) = ?', [Str::lower(trim((string) $request->input('email')))]))],
+            'email' => ['required', 'string', 'email', 'max:255', (function () {
+                $mine = null;
+
+                return function (string $attribute, $value, \Closure $fail) use ($mine) {
+                    $taken = User::whereRaw('LOWER(email) = ?', [Str::lower(trim((string) $value))])
+                        ->when($mine, fn ($q) => $q->whereKeyNot($mine))
+                        ->exists();
+
+                    if ($taken) {
+                        $fail(__('Bu e-poçt ilə artıq hesab var.'));
+                    }
+                };
+            })()],
             // The shop rings and writes on WhatsApp; an order without a number
             // is an order nobody can ask about.
             'phone' => ['required', 'string', 'max:30', function ($attribute, $value, $fail) {
