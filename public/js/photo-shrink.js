@@ -204,11 +204,25 @@
         return viaImage(file, max);              // already small: nothing to save
       }
 
+      /* One side only, never both.
+       *
+       * The header's figures are the pixels AS STORED, and a telephone
+       * stores a portrait photograph sideways with a flag saying to turn
+       * it. The browser turns it — so asking for both sides pressed a tall
+       * picture into a wide frame: 3024×4032 came back as 1600×1200 and the
+       * customer's face was half again too wide. Given one side the browser
+       * works the other out itself and the proportions hold, whichever way
+       * round it decides the picture goes. At worst the result is bigger
+       * than asked for, which costs a little memory and nothing else. */
       var k = max / Math.max(size.w, size.h);
-      var w = Math.max(1, Math.round(size.w * k));
-      var h = Math.max(1, Math.round(size.h * k));
+      var opts = { resizeQuality: 'high' };
+      if (size.w >= size.h) {
+        opts.resizeWidth = Math.max(1, Math.round(size.w * k));
+      } else {
+        opts.resizeHeight = Math.max(1, Math.round(size.h * k));
+      }
 
-      return createImageBitmap(file, { resizeWidth: w, resizeHeight: h, resizeQuality: 'high' })
+      return createImageBitmap(file, opts)
         .then(function (bitmap) {
           var c = document.createElement('canvas');
           c.width = bitmap.width;
