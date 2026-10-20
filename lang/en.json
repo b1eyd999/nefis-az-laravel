@@ -1128,5 +1128,10 @@
     "Çatdırılma: :day": "Delivery: :day",
     "çərşənbə": "Wednesday",
     "çərşənbə axşamı": "Tuesday",
-    "şənbə": "Saturday"
+    "şənbə": "Saturday",
+    "Qəhvənin yanında verilən kiçik şokolad: üstündə sizin loqonuz, arxasında QR kod. Qonaq onu cibinə qoyur, evdə açır — və markanız bir daha yadına düşür.": "A small chocolate served with the coffee: your logo on the front, a QR code on the back. The guest slips it into a pocket, opens it at home — and your brand comes to mind once more.",
+    "Loqonuzu yükləyin, qutunun rəngini seçin — necə görünəcəyini elə burada görürsünüz. Sifariş verməzdən əvvəl heç nəyə ehtiyac yoxdur.": "Upload your logo, pick the box colour — and see it right here. Nothing has to be ordered first.",
+    "Qara": "Black",
+    "Ağ": "White",
+    "Bej": "Beige"
 }

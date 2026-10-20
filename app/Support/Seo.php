@@ -198,7 +198,31 @@ class Seo
 
         $space = mb_strrpos($cut, ' ');
 
-        return rtrim($space ? mb_substr($cut, 0, $space) : $cut, " ,.;:—-") . '.';
+        return self::endsOnAWord($space ? mb_substr($cut, 0, $space) : $cut) . '.';
+    }
+
+    /* The small words a sentence leans on and cannot end with. «…paste the
+       song's link and.» is what Google printed under an English design, and
+       it reads as a broken page before anybody clicks. */
+    private const LEANING = [
+        'və', 'ilə', 'üçün', 'ya', 'yaxud', 'amma', 'ancaq', 'ki', 'da', 'də', 'ən', 'bu', 'o',
+        'и', 'а', 'но', 'или', 'с', 'со', 'в', 'во', 'на', 'для', 'из', 'по', 'от', 'до', 'за', 'под', 'над', 'при', 'что', 'как',
+        'and', 'or', 'but', 'with', 'for', 'of', 'to', 'in', 'on', 'at', 'the', 'a', 'an', 'by', 'from', 'as', 'that',
+    ];
+
+    /** Steps back off any word the sentence was only leaning on. */
+    private static function endsOnAWord(string $cut): string
+    {
+        $words = preg_split('/\s+/u', rtrim($cut, " ,.;:—-"), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        // Never past half of what was kept: a description is no use as one word.
+        $floor = (int) ceil(count($words) / 2);
+        while (count($words) > $floor
+            && in_array(mb_strtolower(rtrim((string) end($words), " ,.;:—-")), self::LEANING, true)) {
+            array_pop($words);
+        }
+
+        return rtrim(implode(' ', $words), " ,.;:—-");
     }
 
     public static function breadcrumbs(array $trail): array

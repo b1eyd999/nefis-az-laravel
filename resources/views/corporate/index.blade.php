@@ -221,7 +221,7 @@
             @foreach($page['colors'] as $i => $color)
               <button type="button" class="co-swatch" data-color="{{ $color['hex'] }}"
                       style="background:{{ $color['hex'] }}" aria-pressed="{{ $i === 0 ? 'true' : 'false' }}"
-                      title="{{ $color['name'] }}"><span>{{ $color['name'] }}</span></button>
+                      title="{{ __($color['name']) }}"><span>{{ __($color['name']) }}</span></button>
             @endforeach
           </div>
         </div>

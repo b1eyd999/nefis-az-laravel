@@ -264,6 +264,22 @@ class ImageStore
             return null;
         }
 
+        /* A gift wrap arrived as a print master twelve thousand pixels
+           square. GD wants four bytes a pixel before it will look at it —
+           six hundred megabytes — and running out of memory is not an
+           exception on the way to a catch block, it is the end of the
+           process. Every wrapping paper, poster and card queued behind that
+           one was never made, and the deploy still said it had succeeded,
+           so the shop went on serving the three-megabyte master to every
+           customer who opened a design.
+
+           So the size is read from the file's header first, which costs
+           nothing, and anything too big for GD is handed to Imagick, which
+           can decode a JPEG straight to the size we asked for. */
+        if (self::tooBigForGd($disk->path($path))) {
+            return self::smallerWithImagick($disk, $path, $small, $side);
+        }
+
         $source = match (Str::lower(Str::afterLast($path, '.'))) {
             'webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($disk->path($path)) : false,
             'png' => function_exists('imagecreatefrompng') ? @imagecreatefrompng($disk->path($path)) : false,
@@ -300,6 +316,89 @@ class ImageStore
             return null;
         } finally {
             imagedestroy($source);
+        }
+    }
+
+    /**
+     * Would opening this with GD cost more memory than we are allowed?
+     *
+     * Four bytes a pixel for the picture, and the scaled copy wants its own
+     * on top, so the whole is asked for with room to spare. A file whose
+     * header cannot be read is left to GD, which will simply refuse it.
+     */
+    private static function tooBigForGd(string $full): bool
+    {
+        $size = @getimagesize($full);
+        if (! $size || empty($size[0]) || empty($size[1])) {
+            return false;
+        }
+
+        $limit = self::memoryLimit();
+        if ($limit <= 0) {
+            return false;                       // no limit set: GD may try
+        }
+
+        $wants = $size[0] * $size[1] * 4 * 1.25;
+
+        return $wants > ($limit - memory_get_usage(true));
+    }
+
+    /** memory_limit in bytes, or 0 when it is unlimited. */
+    private static function memoryLimit(): int
+    {
+        $raw = trim((string) ini_get('memory_limit'));
+        if ($raw === '' || $raw === '-1') {
+            return 0;
+        }
+
+        $n = (int) $raw;
+
+        return match (strtolower(substr($raw, -1))) {
+            'g' => $n * 1024 * 1024 * 1024,
+            'm' => $n * 1024 * 1024,
+            'k' => $n * 1024,
+            default => $n,
+        };
+    }
+
+    /**
+     * The same copy, for a picture GD cannot lift.
+     *
+     * Imagick is told the size we want before it reads: for a JPEG that lets
+     * it throw away seven eighths of the file during decoding, so a master
+     * GD needs six hundred megabytes for costs a few. Where Imagick is not
+     * installed there is nothing more to try, and null leaves the page
+     * serving the original — heavy, but there.
+     */
+    private static function smallerWithImagick($disk, string $path, string $small, int $side): ?string
+    {
+        if (! class_exists(\Imagick::class)) {
+            return null;
+        }
+
+        $im = null;
+        try {
+            $im = new \Imagick();
+            // Only JPEG reads this, and on anything else it is ignored.
+            $im->setOption('jpeg:size', $side . 'x' . $side);
+            $im->readImage($disk->path($path));
+            $im->setImageOrientation(\Imagick::ORIENTATION_TOPLEFT);
+
+            if (max($im->getImageWidth(), $im->getImageHeight()) <= $side) {
+                return null;                    // already small enough as it is
+            }
+
+            $im->thumbnailImage($side, $side, true);
+            $im->setImageFormat('webp');
+            $im->setImageCompressionQuality(82);
+
+            return $disk->put($small, $im->getImageBlob()) ? $small : null;
+        } catch (\Throwable) {
+            return null;
+        } finally {
+            if ($im instanceof \Imagick) {
+                $im->clear();
+            }
         }
     }
 }
