@@ -2483,6 +2483,192 @@
     draw();
   }
 
+  /* --------------------------------------------------------- two fingers
+
+     The sliders under the photograph are exact, but they are not how a
+     person holds a telephone. The customer looks at his own face inside the
+     window and wants to make it bigger there, where he is looking — not by
+     finding a slider somewhere below the box and watching the result out of
+     the corner of his eye.
+
+     So two fingers on the preview zoom the photograph in the window they
+     are over, and a twist turns it.
+
+     Only over a window that has a photograph in it. Everywhere else on the
+     box two fingers still belong to the browser, so the design can be
+     magnified to be looked at; and one finger outside a window still
+     scrolls the page, which is the whole reason this canvas sets no
+     touch-action of its own.
+  */
+
+  /** The zoom slider's own 50–500, as the numbers the state keeps. */
+  var MIN_SCALE = 0.5, MAX_SCALE = 5;
+
+  /* A hand that pinches also twists a few degrees without meaning to. The
+     turn is ignored until it is plainly deliberate, and then follows the
+     fingers from that point on rather than jumping by the dead angle. */
+  var TWIST_DEAD = 10;
+
+  var pinch = null;
+
+  /* targetTouches and never touches: the second has every contact on the
+     page in it, so a thumb left resting on the slider below the box would
+     be read as the second finger of a pinch — and its touchend would go to
+     the slider, not here, leaving the pinch running with nobody in it. */
+  function onCanvas(e){ return e.targetTouches; }
+
+  function twoFingers(list){
+    var a = list[0], b = list[1];
+    var dx = b.clientX - a.clientX, dy = b.clientY - a.clientY;
+
+    return {
+      x: (a.clientX + b.clientX) / 2,
+      y: (a.clientY + b.clientY) / 2,
+      span: Math.sqrt(dx * dx + dy * dy),
+      deg: Math.atan2(dy, dx) * 180 / Math.PI
+    };
+  }
+
+  /** The photograph a point of the box is sitting on, if it is on one. */
+  function photoUnder(x, y){
+    var slot = slotAtPoint(toMockupCoords(x, y));
+    if (slot < 0 || !photos[slot] || !photos[slot].img) return -1;
+    /* The street map is not pinched: its zoom is a request to the map
+       service, and a pinch would ask for new streets sixty times a second. */
+    if (typeof MAP_SLOT !== 'undefined' && MAP_SLOT[slot]) return -1;
+
+    return slot;
+  }
+
+  function startPinch(list){
+    var g = twoFingers(list);
+    if (!g.span) return false;
+
+    /* Between the fingers first, and then each finger on its own. A face
+       looks out of a window the size of a coin and nobody puts both fingers
+       inside it: one lands on the face, the other on the chocolate beside
+       it, and that is plainly a pinch of the face. */
+    var slot = photoUnder(g.x, g.y);
+    if (slot < 0) slot = photoUnder(list[0].clientX, list[0].clientY);
+    if (slot < 0) slot = photoUnder(list[1].clientX, list[1].clientY);
+    if (slot < 0) return false;
+
+    /* The one-finger slide lets go: the picture is now in two hands. Through
+       endDrag and not by hand, because a half-finished map drag is waiting
+       in mapPush and dropping dragMap on the floor would leave the preview
+       showing streets the order never hears about. */
+    endDrag();
+    pinch = { slot: slot, span: g.span, deg: g.deg, x: g.x, y: g.y, twisted: false };
+
+    return true;
+  }
+
+  /* A finger joined or left and two are still down. The photograph keeps
+     the hands it has, measured afresh — and the dead angle comes back, so
+     the change of grip is not read as a turn. */
+  function regrip(list){
+    var g = twoFingers(list);
+    if (!g.span) return;
+    pinch.span = g.span;
+    pinch.deg = g.deg;
+    pinch.x = g.x;
+    pinch.y = g.y;
+    pinch.twisted = false;
+  }
+
+  function movePinch(list){
+    var g = twoFingers(list);
+    var area = areaFor(pinch.slot);
+    var state = photos[pinch.slot];
+    if (!g.span || !area || !state) return;
+
+    /* Where the hands are on the box. On a view that is a photograph of the
+       box this is null off the design itself — a finger on the table beside
+       it — and there is then nowhere to anchor the zoom. Growing the
+       picture anyway would slide it out from under the hand, so the gesture
+       waits, keeping its last good grip, until the fingers are back on the
+       box. */
+    var here = toMockupCoords(g.x, g.y);
+    if (!here) return;
+
+    var was = state.scale || 1;
+    /* The slider's own ends — but never tighter than the photograph already
+       is. A window that frames the face by itself writes a scale of its own
+       and is not bound by the slider: a small head in a big photograph comes
+       out at six or ten. Clamping that to five on the first graze of a
+       second finger would shrink the head for good, since the slider cannot
+       reach back up past five either. */
+    var top = Math.max(MAX_SCALE, was), floor = Math.min(MIN_SCALE, was);
+    state.scale = Math.min(top, Math.max(floor, was * (g.span / pinch.span)));
+    /* Taken from what the scale really became and not from what the fingers
+       asked for, so at either end of the range the picture stops growing
+       instead of quietly sliding out from under the hand. */
+    var grew = state.scale / was;
+
+    var turn = g.deg - pinch.deg;
+    // atan2 jumps by a full turn as the fingers pass straight up.
+    if (turn > 180) turn -= 360; else if (turn < -180) turn += 360;
+    if (!pinch.twisted) {
+      if (Math.abs(turn) < TWIST_DEAD) {
+        turn = 0;
+      } else {
+        pinch.twisted = true;
+        turn -= turn > 0 ? TWIST_DEAD : -TWIST_DEAD;
+      }
+    }
+    if (turn) state.rotate = wrapDeg((state.rotate || 0) + turn);
+
+    // The picture goes where the two hands go.
+    var before = toMockupCoords(pinch.x, pinch.y);
+    if (before) {
+      state.panX = (state.panX || 0) + (here.x - before.x) / area.w;
+      state.panY = (state.panY || 0) + (here.y - before.y) / area.h;
+    }
+
+    /* And grows about the point between the fingers, so whatever he is
+       holding stays between them instead of drifting towards the middle of
+       the window. The photograph's centre sits at pan × the window's own
+       size away from that window's centre, so the line from the fingers to
+       that centre is scaled and turned, and the centre is put back where
+       that line now ends. */
+    var wcx = area.x + area.w / 2, wcy = area.y + area.h / 2;
+    var vx = wcx + (state.panX || 0) * area.w - here.x;
+    var vy = wcy + (state.panY || 0) * area.h - here.y;
+    var rad = turn * Math.PI / 180, sin = Math.sin(rad), cos = Math.cos(rad);
+    state.panX = (here.x + (vx * cos - vy * sin) * grew - wcx) / area.w;
+    state.panY = (here.y + (vx * sin + vy * cos) * grew - wcy) / area.h;
+
+    state.framed = true;
+    pinch.span = g.span;
+    pinch.x = g.x;
+    pinch.y = g.y;
+    // Held at the angle the gesture began at until the dead angle is broken.
+    if (pinch.twisted) pinch.deg = g.deg;
+
+    showSliders(pinch.slot);
+    draw();
+  }
+
+  /** Kept inside the turn slider's own -180..180. */
+  function wrapDeg(deg){
+    deg = (deg + 180) % 360;
+    if (deg < 0) deg += 360;
+
+    return deg - 180;
+  }
+
+  /* The two sliders are the same two numbers written down. They have to
+     follow the fingers, or the next touch of one of them sends the picture
+     back to whatever it was showing before the pinch. */
+  function showSliders(i){
+    var tools = toolsOf(i) || document.querySelector('.slot-block[data-slot="' + i + '"]');
+    if (!tools) return;
+    var zoom = tools.querySelector('.zoom-range');
+    if (zoom) zoom.value = Math.round((photos[i].scale || 1) * 100);
+    var rot = tools.querySelector('.rotate-range');
+    if (rot) rot.value = Math.round(photos[i].rotate || 0);
+  }
+
   canvas.addEventListener('mousedown', function(e){
     if (startDrag(e.clientX, e.clientY)) e.preventDefault();
   });
@@ -2490,18 +2676,75 @@
   window.addEventListener('mouseup', endDrag);
 
   canvas.addEventListener('touchstart', function(e){
-    var t = e.touches[0];
+    // The second finger arrives in its own touchstart, mid-slide.
+    var down = onCanvas(e);
+    if (down.length >= 2) {
+      if (pinch) { regrip(down); e.preventDefault(); return; }
+      if (startPinch(down)) { e.preventDefault(); return; }
+      /* Two fingers on something that is not a photograph — the street map,
+         an empty window, the chocolate. Whatever one finger had begun is
+         finished properly and the gesture is left to the browser, which is
+         how the customer magnifies the design to look at it. Without this
+         the slide went on running and read the pinch as one finger moving,
+         which on a map window walked the printed place down the street. */
+      endDrag();
+
+      return;
+    }
+    var t = down[0];
     if (t && startDrag(t.clientX, t.clientY)) e.preventDefault();
   }, { passive: false });
+
   canvas.addEventListener('touchmove', function(e){
-    var t = e.touches[0];
-    if (t && dragSlot >= 0) { moveDrag(t.clientX, t.clientY); e.preventDefault(); }
+    var down = onCanvas(e);
+    if (pinch && down.length >= 2) {
+      movePinch(down);
+      e.preventDefault();
+
+      return;
+    }
+    /* One finger and one only. dragMap as well as dragSlot: with only
+       dragSlot here the ground under a street-map window moved for a mouse
+       and would not move for a finger. */
+    if (down.length === 1 && (dragSlot >= 0 || dragMap >= 0)) {
+      moveDrag(down[0].clientX, down[0].clientY);
+      e.preventDefault();
+    }
   }, { passive: false });
-  canvas.addEventListener('touchend', endDrag);
+
+  canvas.addEventListener('touchend', function(e){ letGo(onCanvas(e)); });
   /* iOS takes the touch away for a call or the notification shade; without
      this the next swipe pans the photo instead of the page, by the whole
      stale distance at once. */
-  canvas.addEventListener('touchcancel', endDrag);
+  canvas.addEventListener('touchcancel', function(e){ letGo(onCanvas(e)); });
+
+  function letGo(left){
+    if (pinch) {
+      /* A third finger of the holding hand brushed the box and has lifted
+         again. Two are still pinching, so the gesture carries on with the
+         two that are left rather than dying with no way back. */
+      if (left.length >= 2) { regrip(left); return; }
+      pinch = null;
+      /* One finger still down: the slide carries on from where that finger
+         is, instead of the picture sticking until he lets go and starts
+         again — and without the jump a stale lastX would give it. */
+      if (left.length === 1) {
+        startDrag(left[0].clientX, left[0].clientY);
+
+        return;
+      }
+    }
+    endDrag();
+  }
+
+  /* Safari on the iPhone zooms the whole page on a pinch, and will do it
+     over the top of the touch events above. These three are its own, and
+     refusing them is what actually keeps the page still — but only while a
+     pinch of ours is running, so that elsewhere on the box the customer can
+     still magnify the design. */
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(function(name){
+    canvas.addEventListener(name, function(e){ if (pinch) e.preventDefault(); }, { passive: false });
+  });
 })();
 
 /* Brand chips: one brand's bars at a time. */

@@ -96,6 +96,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Node, for the gesture on the box
+        # The two-finger pinch on the design preview is browser JavaScript and
+        # cannot be reached from PHP, so tests/Js/pinch.cjs lifts it out of the
+        # view and drives it under node. The runner image has node already, but
+        # only by habit: pinned here so the day it is pruned the suite says so
+        # instead of quietly skipping the only real test of that gesture.
+        # GitHub's own action, like the rest of this workflow.
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: The extensions the suite needs
         # The suite paints real images to prove they come out right, and runs
         # on sqlite in memory. Installed with apt rather than a third-party
