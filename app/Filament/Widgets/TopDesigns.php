@@ -38,7 +38,10 @@ class TopDesigns extends TableWidget
                 OrderItem::query()
                     ->selectRaw('MIN(order_items.id) as id, order_items.product_name,
                         SUM(order_items.quantity) as boxes,
-                        SUM(order_items.quantity * (COALESCE(order_items.price, 0) + COALESCE(order_items.chocolate_price, 0)
+                        -- A line sold as a package was charged its own one price;
+                        -- adding its parts up as well would count it twice.
+                        SUM(order_items.quantity * COALESCE(order_items.bundle_price,
+                            COALESCE(order_items.price, 0) + COALESCE(order_items.chocolate_price, 0)
                             + COALESCE(order_items.wrapping_price, 0) + COALESCE(order_items.letter_price, 0)
                             + COALESCE(order_items.ar_price, 0))) as money')
                     ->whereHas('order', fn (Builder $q) => $q->where('status', '!=', 'cancelled')

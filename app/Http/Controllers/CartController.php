@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Bundle;
 use App\Models\Chocolate;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -60,6 +61,24 @@ class CartController extends Controller
                 ->withErrors(['product_id' => __('Bu dizaynın qiyməti hələ təyin olunmayıb — bizə yazın, sizin üçün hesablayaq.')]);
         }
 
+        /* A ready package. What is in it is the owner's answer, not the
+           form's: the price was agreed for that exact box, that bar and that
+           paper, so the parts are written over whatever was posted. The page
+           shows them locked, but a locked control is a courtesy to an honest
+           customer and nothing more — this is where it is actually decided. */
+        $bundle = null;
+        if ($request->filled('bundle_id')) {
+            $bundle = Bundle::offered()->whereKey($request->integer('bundle_id'))->first();
+            abort_unless($bundle && $bundle->product_id === $product->id, 404);
+
+            $request->merge([
+                'chocolate_id' => $bundle->chocolate_id,
+                'wrapping_id' => $bundle->wrapping_id,
+                'letter_on' => $bundle->letter_on ? 1 : 0,
+                'ar_on' => $bundle->ar_on ? 1 : 0,
+            ]);
+        }
+
         $rules = [
             'quantity' => ['nullable', 'integer', 'min:1', 'max:' . Cart::most()],
             'rush' => ['nullable', 'boolean'],
@@ -67,7 +86,12 @@ class CartController extends Controller
 
         // A bar has to be picked whenever there are bars to pick from.
         if (Chocolate::where('is_active', true)->exists()) {
-            $rules['chocolate_id'] = ['required', Rule::exists('chocolates', 'id')->where('is_active', true)->whereNull('deleted_at')];
+            $rules['chocolate_id'] = [
+                /* Unless a package says there is no bar in it: then there is
+                   nothing for the customer to pick and nothing to require. */
+                $bundle && ! $bundle->chocolate_id ? 'nullable' : 'required',
+                Rule::exists('chocolates', 'id')->where('is_active', true)->whereNull('deleted_at'),
+            ];
         }
 
         foreach ($product->photoSlots as $index => $slot) {
@@ -243,7 +267,8 @@ class CartController extends Controller
         Cart::add($product->id, $paths, $texts, $quantity,
             OrderItem::photoLabelsFor($product), OrderItem::textLabelsFor($product), $chocolate, $wrapping,
             $withLetter ? Letter::fromRequest($request) : null,
-            $withAr ? LiveMaterials::fromRequest($request) : null, $song, $frames, $star, $spot);
+            $withAr ? LiveMaterials::fromRequest($request) : null, $song, $frames, $star, $spot,
+            $bundle?->forCart());
 
         // The line as it was just added — box, bar, paper, letter and video.
         $line = Cart::items()[array_key_last(Cart::items())] ?? [];

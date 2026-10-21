@@ -188,6 +188,12 @@ class CheckoutController extends Controller
             $line = $order->items()->create([
                 'product_id' => $product->id,
                 'product_name' => $product->name,
+                /* Frozen beside the line, like the wrapping: the owner may
+                   rename or reprice the package tomorrow, and what this
+                   customer paid for today must not move with it. */
+                'bundle_id' => $item['bundle']['id'] ?? null,
+                'bundle_name' => $item['bundle']['name'] ?? null,
+                'bundle_price' => $item['bundle']['price'] ?? null,
                 'customer_photos' => $item['photo_paths'],
                 'custom_texts' => $item['custom_texts'],
                 // Carts filled before labels were kept take them from the design.

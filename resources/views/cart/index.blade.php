@@ -110,16 +110,22 @@
                         aria-label="{{ __('Bir çox') }}"
                         @disabled($item['quantity'] >= \App\Support\Cart::most())>+</button>
               </form>
+              @php $paket = $item['bundle'] ?? null; @endphp
+              @if($paket)
+                {{-- Bought as a package: one price for the lot, so the parts
+                     are listed as what is in the box and not as money. --}}
+                <p style="margin-top:.2rem;"><b>{{ __('Hazır paket') }}:</b> {{ __($paket['name']) }}</p>
+              @endif
               @if(! empty($item['chocolate']))
-                <p style="margin-top:.2rem;">🍫 {{ $item['chocolate']['name'] }} &middot; {{ \App\Support\Price::format($item['chocolate']['price']) }}</p>
+                <p style="margin-top:.2rem;">🍫 {{ $item['chocolate']['name'] }}@unless($paket) &middot; {{ \App\Support\Price::format($item['chocolate']['price']) }}@endunless</p>
               @endif
               @if(! empty($item['wrapping']))
-                <p style="margin-top:.2rem;">🎁 {{ __('Qablaşdırma') }}: {{ $item['wrapping']['name'] }} &middot; {{ \App\Support\Price::format($item['wrapping']['price']) }}</p>
+                <p style="margin-top:.2rem;">🎁 {{ __('Qablaşdırma') }}: {{ $item['wrapping']['name'] }}@unless($paket) &middot; {{ \App\Support\Price::format($item['wrapping']['price']) }}@endunless</p>
               @endif
               @if($isLive)
                 <p style="margin-top:.2rem;">🎬 {{ __('Şəkil və video, QR kodla çap olunur') }}</p>
               @elseif(! empty($item['ar']))
-                <p style="margin-top:.2rem;">🎬 {{ __('Canlı şəkil (AR)') }} &middot; {{ \App\Support\Price::format($item['ar']['price']) }}</p>
+                <p style="margin-top:.2rem;">🎬 {{ __('Canlı şəkil (AR)') }}@unless($paket) &middot; {{ \App\Support\Price::format($item['ar']['price']) }}@endunless</p>
               @endif
               @if(! empty($item['spotify']))
                 {{-- Free, so no price: the song is part of the box, not an extra. --}}
@@ -129,7 +135,7 @@
               @endif
               @if(! empty($item['letter']))
                 <p style="margin-top:.2rem;">💌 {{ $isLetter ? '' : __('Polaroid məktub') . ' · ' }}{{ \Illuminate\Support\Str::limit(str_replace("\n", ' ', $item['letter']['text'] ?? ''), 60) ?: __('şəkilli') }}
-                  @unless($isLetter) &middot; {{ \App\Support\Price::format($item['letter']['price']) }} @endunless</p>
+                  @unless($isLetter || $paket) &middot; {{ \App\Support\Price::format($item['letter']['price']) }} @endunless</p>
               @endif
             </div>
             <form method="POST" action="{{ lroute('cart.remove', $item['id']) }}">

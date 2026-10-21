@@ -14,6 +14,9 @@ class OrderItem extends Model
         'order_id',
         'product_id',
         'product_name',
+        'bundle_id',
+        'bundle_name',
+        'bundle_price',
         'customer_photos',
         'custom_texts',
         'photo_labels',
@@ -65,12 +68,22 @@ class OrderItem extends Model
             'letter_price' => 'float',
             'ar_price' => 'float',
             'price' => 'float',
+            'bundle_price' => 'float',
         ];
     }
 
     /** One box with its bar, wrap and letter, as ordered. */
     public function unitPrice(): float
     {
+        /* Sold as a package: one agreed price, frozen on the line the day it
+           was bought. The parts beside it say what was in the box, not what
+           each cost — adding them up would charge for the package twice.
+           Anything reading this line with a partial select must ask for
+           bundle_price too, or it falls back to the sum and overcharges. */
+        if ($this->bundle_price !== null) {
+            return (float) $this->bundle_price;
+        }
+
         return (float) ($this->price ?? 0) + (float) ($this->chocolate_price ?? 0) + (float) ($this->wrapping_price ?? 0)
             + (float) ($this->letter_price ?? 0) + (float) ($this->ar_price ?? 0);
     }

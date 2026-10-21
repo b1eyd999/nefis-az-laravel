@@ -39,10 +39,17 @@ class HeroSlideResource extends Resource
     {
         return Forms\Components\TextInput::make($name)
             ->label($label)
-            ->datalist(self::LINKS)
+            /* The ready packages are offered here by name, so hanging one
+               on a banner is choosing it from a list rather than copying an
+               address across from another screen. */
+            ->datalist(fn () => array_merge(
+                self::LINKS,
+                \App\Models\Bundle::offered()->orderBy('sort_order')->get()
+                    ->map(fn (\App\Models\Bundle $b) => $b->url())->all(),
+            ))
             ->placeholder('/dizaynlar')
             ->maxLength(255)
-            ->helperText('Saytın səhifəsi (/dizaynlar, /qablasdirma), ana səhifədə yer (#collections) və ya başqa sayt (https://…).')
+            ->helperText('Saytın səhifəsi (/dizaynlar, /qablasdirma), ana səhifədə yer (#collections), hazır paket (siyahıdan seçin) və ya başqa sayt (https://…).')
             ->rule(fn () => function (string $attribute, $value, \Closure $fail) {
                 if (filled($value) && HeroSlide::href($value) === null) {
                     $fail('Link / ilə, # ilə və ya https:// ilə başlamalıdır.');

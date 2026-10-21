@@ -35,7 +35,7 @@ class OrderController extends Controller
             ->with([
                 'user:id,name,phone',
                 // unitPrice() adds these five up; asking for fewer costs a query per line.
-                'items:id,order_id,product_id,quantity,price,chocolate_price,wrapping_price,letter_price,ar_price',
+                'items:id,order_id,product_id,quantity,price,bundle_price,chocolate_price,wrapping_price,letter_price,ar_price',
             ])
             ->withCount('items')
             ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('status', $status))

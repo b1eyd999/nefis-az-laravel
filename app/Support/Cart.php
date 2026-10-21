@@ -103,7 +103,7 @@ class Cart
 
     public static function add(int $productId, array $photoPaths, array $customTexts, int $quantity = 1,
         array $photoLabels = [], array $textLabels = [], ?array $chocolate = null, ?array $wrapping = null, ?array $letter = null, ?array $ar = null, ?string $spotify = null,
-        array $photoFrames = [], ?array $star = null, ?array $spot = null): void
+        array $photoFrames = [], ?array $star = null, ?array $spot = null, ?array $bundle = null): void
     {
         $items = self::raw();
         $items[] = [
@@ -122,6 +122,8 @@ class Cart
             'letter' => $letter,
             'ar' => $ar,
             'spotify' => $spotify,
+            // Set only on a line bought as a package; its price is the line's.
+            'bundle' => $bundle,
         ];
         Session::put(self::KEY, $items);
         self::keep();
@@ -180,6 +182,14 @@ class Cart
     /** One of a line: the box, the bar inside it, the paper around it and the letter in it. */
     public static function unitPrice(array $item, ?\App\Models\Product $product): float
     {
+        /* A package is one price for the lot, agreed when the owner put it
+           together. Its parts are still on the line — the admin has to see
+           what is in the box — but they are what was included, not what was
+           charged, so they are not added up. */
+        if (isset($item['bundle']['price'])) {
+            return (float) $item['bundle']['price'];
+        }
+
         return (float) ($product?->price ?? 0) + (float) ($item['chocolate']['price'] ?? 0)
             + (float) ($item['wrapping']['price'] ?? 0) + (float) ($item['letter']['price'] ?? 0)
             + (float) ($item['ar']['price'] ?? 0);

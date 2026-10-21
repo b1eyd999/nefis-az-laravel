@@ -1136,5 +1136,8 @@
     "Bej": "Beige",
     "Bu, işçi hesabıdır. İdarə panelindən daxil olun: :link": "This is a staff account. Sign in through the admin panel: :link",
     "Şifrəniz yeniləndi. İdarə panelinə daxil olun.": "Your password has been changed. Sign in at the admin panel.",
-    "Say 1 ilə :most arasında olmalıdır.": "The number must be between 1 and :most."
+    "Say 1 ilə :most arasında olmalıdır.": "The number must be between 1 and :most.",
+    "Hazır paket": "Ready package",
+    "paketdə": "included",
+    "Paketin tərkibi dəyişmir — qiymət bütün dəstə görədir. Şəklinizi və sözlərinizi əlavə edin, bu qədər.": "What is in the package does not change — the price is for the whole of it. Add your photo and your words, and that is all."
 }

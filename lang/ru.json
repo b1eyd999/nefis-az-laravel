@@ -1136,5 +1136,8 @@
     "Bej": "Бежевый",
     "Bu, işçi hesabıdır. İdarə panelindən daxil olun: :link": "Это рабочий аккаунт. Войдите через панель управления: :link",
     "Şifrəniz yeniləndi. İdarə panelinə daxil olun.": "Пароль обновлён. Войдите в панель управления.",
-    "Say 1 ilə :most arasında olmalıdır.": "Количество должно быть от 1 до :most."
+    "Say 1 ilə :most arasında olmalıdır.": "Количество должно быть от 1 до :most.",
+    "Hazır paket": "Готовый набор",
+    "paketdə": "в наборе",
+    "Paketin tərkibi dəyişmir — qiymət bütün dəstə görədir. Şəklinizi və sözlərinizi əlavə edin, bu qədər.": "Состав набора не меняется — цена указана за весь комплект. Добавьте своё фото и слова, и всё."
 }

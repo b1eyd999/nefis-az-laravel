@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Chocolate;
 use App\Models\DesignLayer;
+use App\Models\Bundle;
 use App\Models\GiftPage;
 use App\Models\Product;
 use App\Models\ProductAngle;
@@ -137,8 +138,24 @@ class ProductController extends Controller
                 ->with('user')->latest('approved_at')->take(3)->get()
             : collect();
 
+        /* A ready package, arrived at from a banner. Everything in it is
+           settled — the bar, the paper, the letter, the live photograph — and
+           the page shows what is in the box instead of asking again. The
+           basket decides this over again from the package itself, so a
+           tampered form gains nothing; this only spares an honest customer
+           the questions. A package that has been switched off, or that
+           belongs to another design, is simply ignored and the page is the
+           ordinary one. */
+        $bundle = null;
+        if (request()->filled('paket')) {
+            $bundle = Bundle::offered()->with(['chocolate', 'wrapping'])
+                ->whereKey(request()->integer('paket'))
+                ->where('product_id', $product->id)
+                ->first();
+        }
+
         return view('products.customize', compact('product', 'viewData', 'chocolates', 'wrappings',
-            'gifts', 'related', 'standing', 'reviews'));
+            'gifts', 'related', 'standing', 'reviews', 'bundle'));
     }
 
     /**

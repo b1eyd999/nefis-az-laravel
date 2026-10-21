@@ -37,7 +37,7 @@ class MoneyController extends Controller
         // there waiting to be paid, shown beside the till so the owner knows
         // what may yet arrive — and what may not.
         $unpaid = Order::query()
-            ->with('items:id,order_id,quantity,price,chocolate_price,wrapping_price,letter_price,ar_price')
+            ->with('items:id,order_id,quantity,price,bundle_price,chocolate_price,wrapping_price,letter_price,ar_price')
             ->whereIn('status', ['awaiting_payment', 'payment_check'])
             ->when($from, fn ($q) => $q->where('created_at', '>=', $from))
             ->when($to, fn ($q) => $q->where('created_at', '<=', $to))

@@ -34,7 +34,7 @@ class CourierController extends Controller
         $mine = Order::query()
             ->where('courier_id', $me->id)
             ->whereNotIn('status', self::DONE)
-            ->with(['user:id,name,phone', 'items:id,order_id,quantity,price,chocolate_price,wrapping_price,letter_price,ar_price'])
+            ->with(['user:id,name,phone', 'items:id,order_id,quantity,price,bundle_price,chocolate_price,wrapping_price,letter_price,ar_price'])
             ->orderByRaw('CASE WHEN delivery_date IS NULL THEN 1 ELSE 0 END')
             ->orderBy('delivery_date')
             ->orderBy('id')

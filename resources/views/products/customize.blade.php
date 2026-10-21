@@ -278,6 +278,23 @@
   .wrap-preview{ border:1px solid var(--line); border-radius:.9rem; padding:.5rem .75rem 1rem; background:radial-gradient(ellipse at 50% 30%, var(--cream-2), transparent 70%); }
   .wrap-preview[hidden]{ display:none; }
   .wrap-preview{ cursor:zoom-in; }
+  /* A ready package: what is in the box, said once, instead of four
+     questions the shop has already answered for him. */
+  .bundle-card{ border:1px solid var(--gold); border-radius:1rem; padding:.9rem 1rem; margin:0 0 1rem;
+    background:linear-gradient(180deg, rgba(240,84,32,.07), transparent 70%); }
+  .bundle-head{ display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; margin-bottom:.55rem; }
+  .bundle-head b{ font-size:1.02rem; }
+  .bundle-tag{ font-size:.7rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    background:var(--flame); color:#fff; border-radius:999px; padding:.18rem .55rem; }
+  .bundle-has{ list-style:none; margin:0 0 .5rem; padding:0; display:grid; gap:.3rem; }
+  .bundle-has li{ font-size:.9rem; }
+  .bundle-card .slot-hint{ margin:0; }
+  /* The same row as a switch, but there is nothing to switch. */
+  .letter-toggle.is-set{ display:flex; align-items:center; gap:.6rem; font-weight:600; font-size:.9rem; }
+  .letter-toggle.is-set b{ margin-left:auto; font-size:.78rem; color:var(--cocoa-soft); font-weight:700;
+    text-transform:uppercase; letter-spacing:.03em; }
+  .price-sum s{ opacity:.55; font-weight:400; margin-right:.35rem; }
+
   .letter-block{ position:relative; overflow:hidden; border:1px solid var(--line); border-radius:1rem; padding:.85rem .95rem;
     background:linear-gradient(150deg, var(--paper), var(--cream-2));
     transition:border-color .25s, box-shadow .3s, transform .3s var(--ease); }
@@ -796,7 +813,31 @@
           </div>
         @endif
 
-        @if($chocolates->isNotEmpty())
+        @if($bundle)
+          {{-- A ready package. What is in it was settled by the shop, so the
+               page says so plainly instead of offering the choices again. The
+               hidden fields below are a convenience: the basket reads the
+               package itself and writes over whatever is posted. --}}
+          <input type="hidden" name="bundle_id" value="{{ $bundle->id }}">
+          <input type="hidden" name="chocolate_id" value="{{ $bundle->chocolate_id }}">
+          <input type="hidden" name="wrapping_id" value="{{ $bundle->wrapping_id }}">
+          <div class="bundle-card">
+            <div class="bundle-head">
+              <span class="bundle-tag">{{ __('Hazır paket') }}</span>
+              <b>{{ $bundle->label() }}</b>
+            </div>
+            <ul class="bundle-has">
+              <li>🎁 {{ $product->name }}</li>
+              @if($bundle->chocolate)<li>🍫 {{ $bundle->chocolate->name }}</li>@endif
+              @if($bundle->wrapping)<li>🎀 {{ $bundle->wrapping->name }}</li>@endif
+              @if($bundle->letter_on)<li>💌 {{ \App\Support\Letter::text('box_label') }}</li>@endif
+              @if($bundle->ar_on)<li>🎬 {{ __('Canlı şəkil (AR)') }}</li>@endif
+            </ul>
+            <p class="slot-hint">{{ __('Paketin tərkibi dəyişmir — qiymət bütün dəstə görədir. Şəklinizi və sözlərinizi əlavə edin, bu qədər.') }}</p>
+          </div>
+        @endif
+
+        @if($chocolates->isNotEmpty() && ! $bundle)
           {{-- The bar that goes inside the box. --}}
           {{-- One brand at a time, so the list stays short however many bars there are. The owner's
                top brands come first and glow orange; the rest follow A–Z, the unbranded last. --}}
@@ -898,7 +939,7 @@
           </div>
         @endif
 
-        @if($wrappings->isNotEmpty())
+        @if($wrappings->isNotEmpty() && ! $bundle)
           {{-- Gift wrap: swatches of paper, grouped by price. Picking one shows the box wrapped in it. --}}
           <div class="wrap-block" id="wrap-block">
             <label>{{ __('Hədiyyə qablaşdırması') }}</label>
@@ -943,15 +984,25 @@
           </div>
         @endif
 
-        @if(\App\Support\Letter::enabled())
-          {{-- A Polaroid letter inside the box: a photo, a few words, or both. --}}
-          @php $letterOn = (bool) old('letter_on'); @endphp
+        @if(\App\Support\Letter::enabled() && (! $bundle || $bundle->letter_on))
+          {{-- A Polaroid letter inside the box: a photo, a few words, or both.
+               Inside a package it is not a choice: it is in, and its fields
+               are open from the start, because the words are still his. --}}
+          @php $letterOn = $bundle ? true : (bool) old('letter_on'); @endphp
           <div class="letter-block" id="letter-block">
+            @if($bundle)
+              <input type="hidden" name="letter_on" value="1">
+              <div class="letter-toggle is-set">
+                <span>💌 {{ \App\Support\Letter::text('box_label') }}</span>
+                <b>{{ __('paketdə') }}</b>
+              </div>
+            @else
             <label class="letter-toggle">
               <input type="checkbox" name="letter_on" value="1" id="letter-on" @checked($letterOn)>
               <span>💌 {{ \App\Support\Letter::text('box_label') }}</span>
               <b>+{{ \App\Support\Price::format(\App\Support\Letter::price()) }}</b>
             </label>
+            @endif
             <div class="letter-fields" id="letter-fields" @unless($letterOn) hidden @endunless>
               <div class="letter-mini">@include('partials.polaroid', ['id' => 'letter-preview', 'text' => old('letter_text')])</div>
               <div class="letter-inputs">
@@ -967,16 +1018,24 @@
           </div>
         @endif
 
-        @if(\App\Support\LiveMaterials::enabled())
+        @if(\App\Support\LiveMaterials::enabled() && (! $bundle || $bundle->ar_on))
           {{-- A live photo: the customer's video plays over the box when a phone's camera sees it.
                The box's own design becomes the picture the camera looks for, made ready on sending. --}}
-          @php $arOn = (bool) old('ar_on'); @endphp
+          @php $arOn = $bundle ? true : (bool) old('ar_on'); @endphp
           <div class="letter-block" id="ar-block">
+            @if($bundle)
+              <input type="hidden" name="ar_on" value="1">
+              <div class="letter-toggle is-set">
+                <span>🎬 {{ __('Canlı şəkil (AR), qutu telefonda canlanır') }}</span>
+                <b>{{ __('paketdə') }}</b>
+              </div>
+            @else
             <label class="letter-toggle">
               <input type="checkbox" name="ar_on" value="1" id="ar-on" @checked($arOn)>
               <span>🎬 {{ __('Canlı şəkil (AR), qutu telefonda canlanır') }}</span>
               <b>+{{ \App\Support\Price::format(\App\Support\LiveMaterials::price()) }}</b>
             </label>
+            @endif
             <div id="ar-fields" @unless($arOn) hidden @endunless style="margin-top:.8rem;">
               <p class="slot-hint" style="margin:0 0 .6rem;">{{ __('Qutuya QR kod çap edirik. Hədiyyəni alan QR kodu oxudub telefonu qutunun şəklinə tutanda, sizin videonuz şəklin üstündə oynayır, tətbiq yükləmədən.') }}</p>
               <label class="letter-file">
@@ -1010,18 +1069,29 @@
         </div>
 
         @if($product->price || $chocolates->isNotEmpty() || $wrappings->isNotEmpty() || \App\Support\Letter::enabled())
-          <div class="price-sum" id="price-sum" data-box="{{ (float) $product->price }}">
+          <div class="price-sum" id="price-sum" data-box="{{ (float) $product->price }}"
+               data-bundle="{{ $bundle ? (float) $bundle->price : 0 }}">
+            @if($bundle)
+              <div>
+                <span class="sum-name">{{ $bundle->label() }}</span>
+                <span>
+                  @if($bundle->fullPrice())<s>{{ \App\Support\Price::format($bundle->fullPrice()) }}</s> @endif
+                  <b>{{ \App\Support\Price::format($bundle->price) }}</b>
+                </span>
+              </div>
+            @else
             <div><span>{{ __('Qutu') }}</span><span>{{ $product->price ? \App\Support\Price::format($product->price) : __('sorğu ilə') }}</span></div>
-            @if($chocolates->isNotEmpty())
+            @endif
+            @if($chocolates->isNotEmpty() && ! $bundle)
               <div><span id="sum-choc-name" class="sum-name">{{ __('Şokolad') }}</span><span id="sum-choc">{{ __('seçilməyib') }}</span></div>
             @endif
-            @if(\App\Support\LiveMaterials::enabled())
+            @if(\App\Support\LiveMaterials::enabled() && ! $bundle)
               <div id="sum-ar-row" data-price="{{ \App\Support\LiveMaterials::price() }}" hidden><span>{{ __('Canlı şəkil (AR)') }}</span><span>{{ \App\Support\Price::format(\App\Support\LiveMaterials::price()) }}</span></div>
             @endif
-            @if(\App\Support\Letter::enabled())
+            @if(\App\Support\Letter::enabled() && ! $bundle)
               <div id="sum-letter-row" data-price="{{ \App\Support\Letter::price() }}" hidden><span>{{ __('Polaroid məktub') }}</span><span id="sum-letter">{{ \App\Support\Price::format(\App\Support\Letter::price()) }}</span></div>
             @endif
-            @if($wrappings->isNotEmpty())
+            @if($wrappings->isNotEmpty() && ! $bundle)
               <div id="sum-wrap-row" hidden><span id="sum-wrap-name" class="sum-name">{{ __('Qablaşdırma') }}</span><span id="sum-wrap">—</span></div>
             @endif
             @if(\App\Support\DeliveryTime::rushFee() > 0)
@@ -3141,7 +3211,10 @@
     /* The hurry is for the whole order, so it is added once, not per box. */
     var rush = rushOn && rushOn.checked && rushRow ? parseFloat(rushRow.dataset.price) || 0 : 0;
     if (rushRow) rushRow.hidden = !(rushOn && rushOn.checked);
-    var each = box + choc + wrap + letter + ar;
+    /* A package is one price for the lot; the parts are shown above as
+       what is in the box, not as a sum to be added up again. */
+    var paket = parseFloat(sum.dataset.bundle) || 0;
+    var each = paket > 0 ? paket : (box + choc + wrap + letter + ar);
     var all = each * n + rush;
     totalOut.textContent = all > 0 ? fmt(all) + (n > 1 ? ' (' + n + ' × ' + fmt(each) + (rush ? ' + ' + fmt(rush) : '') + ')' : '') : '—';
     // The bar at the bottom of the phone carries the same figure.
