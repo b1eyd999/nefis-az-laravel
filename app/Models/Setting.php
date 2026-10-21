@@ -317,6 +317,24 @@ class Setting extends Model
      */
     public const BOOKS_FROM = 'books_from';
 
+    /**
+     * Samira, the assistant on the owner's own computer, reading the shop.
+     *
+     * Only the SHA-256 of her key is kept — the key itself is shown to the
+     * owner once, on the «Samira» page, and exists after that only on his
+     * computer. Blank means she is switched off and every call is refused.
+     * See App\Support\SamiraKey.
+     */
+    public const SAMIRA_KEY_HASH = 'samira_key_hash';
+
+    /** When the current key was made, as a unix time. */
+    public const SAMIRA_KEY_MADE = 'samira_key_made';
+
+    /** When she last read the shop with it (unix time), and from where. */
+    public const SAMIRA_SEEN = 'samira_seen';
+
+    public const SAMIRA_SEEN_IP = 'samira_seen_ip';
+
     public const DEFAULTS = [
         self::COOKIE_NOTICE => '1',
         self::AR_ENABLED => '1',
@@ -373,6 +391,11 @@ class Setting extends Model
         self::EPOINT_PRIVATE_KEY => '',
         self::MAINTENANCE_MESSAGE => 'Saytda texniki işlər aparılır. Tezliklə qayıdacağıq!',
         self::PROFIT_SHARES => '[{"name":"Sahibkar","percent":33.34},{"name":"Menecer 1","percent":33.33},{"name":"Menecer 2","percent":33.33}]',
+        // Off until the owner makes a key on the «Samira» page.
+        self::SAMIRA_KEY_HASH => '',
+        self::SAMIRA_KEY_MADE => '',
+        self::SAMIRA_SEEN => '',
+        self::SAMIRA_SEEN_IP => '',
     ];
 
     /** @return array<int, array{name: string, percent: float}> */

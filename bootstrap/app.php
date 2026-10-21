@@ -20,6 +20,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        // Samira's read-only feed, and nothing else: no session, no cookies.
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
@@ -79,6 +81,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: ['telegram/kuryer/*', 'telegram/sohbet/*', 'epoint/result', 'whatsapp/hook']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Whatever goes wrong under /api — a 404, a 405, the throttle's 429 —
+        // is answered in JSON: a program reads it, not a person.
+        $exceptions->shouldRenderJsonWhen(
+            fn (Request $request) => $request->is('api/*') || $request->expectsJson()
+        );
+
         // More than the hosting takes in one sending (a long video): a plain
         // page that says so, rather than an error — no session exists yet here.
         $exceptions->render(function (PostTooLargeException $e) {
