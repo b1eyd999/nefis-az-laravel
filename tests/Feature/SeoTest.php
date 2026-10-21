@@ -38,11 +38,17 @@ class SeoTest extends TestCase
 
     public function test_the_gift_pages_are_there_from_the_start_and_linked_everywhere(): void
     {
-        $this->assertSame(19, GiftPage::inLocale('az')->count());
-        $this->assertSame(19, GiftPage::inLocale('ru')->count());
+        /* Counted against each other rather than against a number written
+           down once: the shop adds gift pages, and a figure here only meant
+           «however many there are now». What must hold is the shape — a
+           Russian page for every Azerbaijani one, none of them orphaned —
+           with a floor so pages cannot quietly disappear either. */
+        $az = GiftPage::inLocale('az')->count();
+        $this->assertGreaterThanOrEqual(19, $az);
+        $this->assertSame($az, GiftPage::inLocale('ru')->count());
         // every Azerbaijani page has its Russian twin and the other way round
         $this->assertSame(0, GiftPage::inLocale('ru')->whereNull('alt_of')->count());
-        $this->assertSame(19, GiftPage::inLocale('az')->whereHas('alternates')->count());
+        $this->assertSame($az, GiftPage::inLocale('az')->whereHas('alternates')->count());
 
         $html = $this->get(route('home'))->assertOk()
             ->assertSee('Hər Münasibətə Fərdi Hədiyyə')
@@ -218,7 +224,12 @@ class SeoTest extends TestCase
 
         $this->get(route('gifts.show', 'yeni-il'))->assertNotFound();
         $this->get('/hediyye/yoxdur')->assertNotFound();
-        $this->get(route('gifts.index'))->assertDontSee('Yeni il hədiyyəsi');
+        /* The link is what must be gone, not the words. Another page's own
+           prose may well contain «Yeni il hədiyyəsi» — the corporate New
+           Year page says it in its first sentence — and that is not this
+           page coming back. */
+        $this->get(route('gifts.index'))
+            ->assertDontSee('href="' . route('gifts.show', 'yeni-il') . '"', false);
         $this->get(route('sitemap'))->assertDontSee('/hediyye/yeni-il');
     }
 
