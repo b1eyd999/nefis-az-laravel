@@ -22,7 +22,7 @@
           <span x-show="done" x-cloak>Kopyalandı</span>
         </x-filament::button>
       </div>
-      <div lang="ru" style="font-size:.9375rem;">Вставьте его в окно „Подключить сайты к Самире“ на компьютере.</div>
+      <div lang="ru" style="font-size:.9375rem;">Вставь его в окно „Подключить сайты к Самире“ на компьютере.</div>
       <div style="font-size:.8125rem; opacity:.75;">
         Sayt açarın özünü saxlamır, yalnız onun izini — bu səhifədən çıxandan sonra onu heç kim, siz də daxil olmaqla,
         bir daha görə bilməz. İtirsəniz, «Yeni açar yarat» basın: köhnəsi dərhal işləməyəcək.

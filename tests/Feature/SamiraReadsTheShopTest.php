@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\SamiraFeed;
 use App\Support\SamiraKey;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -379,6 +380,43 @@ class SamiraReadsTheShopTest extends TestCase
         }
     }
 
+    public function test_a_phone_or_an_e_mail_typed_as_the_name_is_never_given(): void
+    {
+        $this->assertNull(SamiraFeed::firstName('+994501234567 Aysel'));
+        $this->assertNull(SamiraFeed::firstName('aysel.m@gmail.com'));
+        $this->assertNull(SamiraFeed::firstName('0501234567'));
+        $this->assertNull(SamiraFeed::firstName('Aysel2'));
+        $this->assertNull(SamiraFeed::firstName('   '));
+        $this->assertSame('Aysel', SamiraFeed::firstName('  Aysel ' . self::SURNAME));
+
+        $key = $this->key();
+        $phone = $this->order(['payment_confirmed_at' => now()->subMinutes(5)]);
+        $phone->user->forceFill(['name' => '+994501234567 Aysel'])->save();
+        $mail = $this->order([
+            'status' => 'payment_check', 'payment_confirmed_at' => null, 'receipt_at' => now()->subMinutes(5),
+        ]);
+        $mail->user->forceFill(['name' => 'aysel.m@gmail.com'])->save();
+
+        $bodies = [
+            $this->feed($key, ['since' => now()->subHour()->getTimestamp()])->assertOk()
+                ->assertJsonPath('new_orders.0.first_name', null)
+                ->assertJsonPath('new_receipts.0.first_name', null)
+                ->getContent(),
+            $this->withHeaders(['Authorization' => 'Bearer ' . $key])
+                ->getJson('/api/samira/order/' . $phone->id)->assertOk()
+                ->assertJsonPath('order.first_name', null)->getContent(),
+            $this->withHeaders(['Authorization' => 'Bearer ' . $key])
+                ->getJson('/api/samira/order/' . $mail->id)->assertOk()
+                ->assertJsonPath('order.first_name', null)->getContent(),
+        ];
+        foreach ($bodies as $body) {
+            $text = json_encode(json_decode($body, true), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            foreach (['994501234567', '501234567', 'aysel.m', 'gmail'] as $private) {
+                $this->assertStringNotContainsString($private, $text, 'The feed gave away: ' . $private);
+            }
+        }
+    }
+
     public function test_today_and_what_is_waiting_add_up(): void
     {
         $key = $this->key();
@@ -469,7 +507,7 @@ class SamiraReadsTheShopTest extends TestCase
         $first = $page->get('freshKey');
 
         $this->assertIsString($first);
-        $page->assertSee($first)->assertSee('Вставьте его в окно');
+        $page->assertSee($first)->assertSee('Вставь его в окно');
         $this->assertTrue(SamiraKey::matches($first));
 
         // Opened again, the page has no key to show: only its hash is kept.

@@ -268,12 +268,20 @@ final class SamiraFeed
      *
      * Never `recipient_name`: that is the person the box goes to, it is
      * encrypted for a reason, and it is often the whole name.
+     *
+     * The name field is free text: a guest can type a telephone number or
+     * an e-mail into it. A first word with a digit or an "@" in it is not a
+     * name, so nothing is given (the same rule as DarkFrame's feed).
      */
     public static function firstName(?string $name): ?string
     {
         $first = preg_split('/\s+/u', trim((string) $name), 2)[0] ?? '';
 
-        return $first === '' ? null : mb_substr($first, 0, 40);
+        if ($first === '' || str_contains($first, '@') || preg_match('/\d/u', $first)) {
+            return null;
+        }
+
+        return mb_substr($first, 0, 40);
     }
 
     private static function adminUrl(Order $order): string
