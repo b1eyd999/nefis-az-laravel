@@ -91,6 +91,25 @@ class ApplePayOwnsTheDomainTest extends TestCase
         }
     }
 
+    /**
+     * The answer is never offered to a shared cache.
+     *
+     * It leaves through the web group, which stamps the session cookie
+     * onto it on the way out. «public» on that same response is how a
+     * cache sitting in front of the site learns to hand one visitor's
+     * session to the next.
+     */
+    public function test_the_answer_is_not_offered_to_shared_caches(): void
+    {
+        foreach (self::ADDRESSES as $url) {
+            $kept = (string) $this->get($url)->headers->get('Cache-Control');
+
+            $this->assertStringContainsString('private', $kept, $url);
+            $this->assertStringNotContainsString('public', $kept,
+                $url.' invites shared caches to keep a response that carries a cookie');
+        }
+    }
+
     /** A closed shop is still this shop. */
     public function test_the_ownership_files_answer_while_the_shop_is_closed(): void
     {

@@ -107,7 +107,13 @@ $appleMerchantDomain = function () {
        kilobytes. */
     return response(file_get_contents($file), 200, [
         'Content-Type' => 'text/plain; charset=utf-8',
-        'Cache-Control' => 'public, max-age=300',
+        /* `private`, not `public`: this answer leaves through the web
+           group, which stamps the session cookie onto it on the way out,
+           and a response that both carries a cookie and invites shared
+           caches to keep it is how one visitor's session ends up handed
+           to the next. Nothing sits in front of this site today, but the
+           header should not be the thing standing in the way. */
+        'Cache-Control' => 'private, max-age=300',
     ]);
 };
 
