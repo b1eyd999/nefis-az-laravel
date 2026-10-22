@@ -76,6 +76,46 @@ Route::get('/.well-known/assetlinks.json', fn () => response()->json([[
     ],
 ]], 200, [], JSON_UNESCAPED_SLASHES)->header('Cache-Control', 'public, max-age=3600'))->name('assetlinks');
 
+/*
+ * The other half of the same question, asked by Apple instead of Google.
+ *
+ * Apple Pay does not appear until Apple has fetched this file from the
+ * domain the merchant was registered under and recognised what it finds.
+ * The content is a package Apple itself issued and signed; it names this
+ * domain and the team the merchant sits in, and there is nothing in it to
+ * keep out of a public repository.
+ *
+ * Served from a route rather than from public/, because the deploy leaves
+ * no other way: `cp -R public/*` does not copy a name that begins with a
+ * dot — which is why .htaccess needs a line of its own — and public/ is
+ * then deleted from the application directory outright. resources/ is
+ * mirrored as it stands, so that is where the file lives.
+ *
+ * Both spellings answer. Apple's documentation asks for the name without
+ * an extension; the address registered for this merchant carries .txt, and
+ * a verifier that asks for the other one must not be told there is nothing
+ * there.
+ */
+$appleMerchantDomain = function () {
+    $file = resource_path('well-known/apple-developer-merchantid-domain-association.txt');
+
+    abort_unless(is_file($file), 404);
+
+    /* Sent as its own bytes rather than through response()->file(), which
+       adds an ETag and would answer a second ask with a 304. What Apple
+       makes of a 304 here is written down nowhere, and the file is six
+       kilobytes. */
+    return response(file_get_contents($file), 200, [
+        'Content-Type' => 'text/plain; charset=utf-8',
+        'Cache-Control' => 'public, max-age=300',
+    ]);
+};
+
+Route::get('/.well-known/apple-developer-merchantid-domain-association', $appleMerchantDomain)
+    ->name('apple-pay-domain');
+Route::get('/.well-known/apple-developer-merchantid-domain-association.txt', $appleMerchantDomain)
+    ->name('apple-pay-domain.txt');
+
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->middleware('data')->name('sitemap');
 // The designs as a product feed, for Google Merchant Center's free listings.
 Route::get('/feed.xml', [FeedController::class, 'index'])->middleware('data')->name('feed');

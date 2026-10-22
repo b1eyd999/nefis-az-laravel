@@ -32,6 +32,11 @@ class MaintenanceMode
     private const OPEN = ['admin', 'admin/*', 'livewire/*', 'filament/*', 'up',
         'login', 'logout', 'ru/login', 'ru/logout', 'en/login', 'en/logout',
         'kuryer', 'kuryer/*', 'canli/*', 'epoint/*', 'telegram/*',
+        /* Apple and Google decide whether this domain is ours by fetching
+           a file from here, and they do not come back often: a 503 served
+           to one of them is a verification that failed, not a request that
+           gets retried a minute later. */
+        '.well-known/*',
         /* For the same reason as the two above: a 503 to a message from a
            customer is a question nobody will ever see — the only copy was in
            the request we refused — and Meta, after enough refusals, switches

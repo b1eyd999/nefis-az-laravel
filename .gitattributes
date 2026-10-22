@@ -1,5 +1,11 @@
 * text=auto eol=lf
 
+# Apple checks a signature over what it decodes out of this file, so it is
+# served byte for byte as Apple issued it. Without this line the rule above
+# rewrites its line endings on checkout and what is served is no longer what
+# was signed.
+resources/well-known/* -text
+
 *.blade.php diff=html
 *.css diff=css
 *.html diff=html
