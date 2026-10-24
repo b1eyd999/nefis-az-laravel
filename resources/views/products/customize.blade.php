@@ -2610,6 +2610,33 @@
     return slot;
   }
 
+  /**
+   * The street map a point of the box is sitting on, if it is on one.
+   *
+   * It is held by the same two fingers as a photograph, but only pushed
+   * about: its zoom is a fresh request to the map service, and a pinch
+   * would ask for new streets sixty times a second.
+   */
+  function mapUnder(x, y){
+    var slot = slotAtPoint(toMockupCoords(x, y));
+    if (slot < 0) return -1;
+    if (typeof MAP_SLOT === 'undefined' || !MAP_SLOT[slot]) return -1;
+    /* The slide's own condition: with no place chosen yet there is no map
+       under the window and nothing to push. */
+    if (typeof spot === 'undefined' || !spot || spot.lat == null) return -1;
+
+    return slot;
+  }
+
+  /** The first of the three points that is over something holdable. */
+  function gripUnder(list, g, find){
+    var slot = find(g.x, g.y);
+    if (slot < 0) slot = find(list[0].clientX, list[0].clientY);
+    if (slot < 0) slot = find(list[1].clientX, list[1].clientY);
+
+    return slot;
+  }
+
   function startPinch(list){
     var g = twoFingers(list);
     if (!g.span) return false;
@@ -2618,17 +2645,29 @@
        looks out of a window the size of a coin and nobody puts both fingers
        inside it: one lands on the face, the other on the chocolate beside
        it, and that is plainly a pinch of the face. */
-    var slot = photoUnder(g.x, g.y);
-    if (slot < 0) slot = photoUnder(list[0].clientX, list[0].clientY);
-    if (slot < 0) slot = photoUnder(list[1].clientX, list[1].clientY);
-    if (slot < 0) return false;
+    var slot = gripUnder(list, g, photoUnder);
+    var map = slot < 0 ? gripUnder(list, g, mapUnder) : -1;
+    if (slot < 0 && map < 0) return false;
 
-    /* The one-finger slide lets go: the picture is now in two hands. Through
-       endDrag and not by hand, because a half-finished map drag is waiting
-       in mapPush and dropping dragMap on the floor would leave the preview
-       showing streets the order never hears about. */
+    /* Any slide still running lets go: what it was holding is in two hands
+       now. Through endDrag and not by hand, because a half-finished map
+       drag is waiting in mapPush, and dropping dragMap on the floor would
+       leave the preview showing streets the order never hears about. */
     endDrag();
-    pinch = { slot: slot, span: g.span, deg: g.deg, x: g.x, y: g.y, twisted: false };
+
+    /* The map is pushed about by the two hands through the very machinery
+       one finger used to drive: the point between them is the finger. */
+    if (map >= 0) {
+      dragMap = map;
+      dragSlot = -1;
+      lastX = g.x;
+      lastY = g.y;
+    }
+
+    pinch = {
+      slot: map >= 0 ? map : slot, map: map >= 0,
+      span: g.span, deg: g.deg, x: g.x, y: g.y, twisted: false
+    };
 
     return true;
   }
@@ -2644,13 +2683,30 @@
     pinch.x = g.x;
     pinch.y = g.y;
     pinch.twisted = false;
+    /* The map is pushed by the distance the middle travels, so a new grip
+       is where it travels from. Without this the next move would count the
+       whole jump from the old middle to the new one. */
+    if (pinch.map) { lastX = g.x; lastY = g.y; }
   }
 
   function movePinch(list){
     var g = twoFingers(list);
+    if (!g.span) return;
+
+    /* A map moves and does not grow: however wide the hands open, only
+       where the middle of them went is counted. */
+    if (pinch.map) {
+      moveDrag(g.x, g.y);
+      pinch.span = g.span;
+      pinch.x = g.x;
+      pinch.y = g.y;
+
+      return;
+    }
+
     var area = areaFor(pinch.slot);
     var state = photos[pinch.slot];
-    if (!g.span || !area || !state) return;
+    if (!area || !state) return;
 
     /* Where the hands are on the box. On a view that is a photograph of the
        box this is null off the design itself — a finger on the table beside
@@ -2739,54 +2795,69 @@
     if (rot) rot.value = Math.round(photos[i].rotate || 0);
   }
 
+  /* A finger never slides anything on its own — but a telephone still
+     fires a mousedown of its own after a tap that nothing refused, and a
+     single finger is now refused by nobody. Left alone, that courtesy
+     click would start the very slide two fingers were brought in to
+     replace. A real mouse on a touchscreen laptop is back a moment later. */
+  var lastFinger = 0;
+
+  function fromFinger(){
+    var since = Date.now() - lastFinger;
+
+    /* A clock just put back — an hour in autumn, a few seconds of
+       correction on waking — makes this negative, and without the floor
+       the mouse would be refused for as long as the step lasted. */
+    return since >= 0 && since < 700;
+  }
+
+  /* None of the three while two fingers are down. A street map held by two
+     fingers is pushed through dragMap, the very state a mouse drag uses:
+     on a laptop whose screen is also a touchpad, a cursor merely nudged
+     would make the pointer's own position the push and jerk the printed
+     place across town, and a button released would send that push off and
+     leave the fingers pushing nothing at all. */
   canvas.addEventListener('mousedown', function(e){
+    if (pinch || fromFinger()) return;
     if (startDrag(e.clientX, e.clientY)) e.preventDefault();
   });
-  window.addEventListener('mousemove', function(e){ moveDrag(e.clientX, e.clientY); });
-  window.addEventListener('mouseup', endDrag);
+  window.addEventListener('mousemove', function(e){ if (pinch) return; moveDrag(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', function(){ if (pinch) return; endDrag(); });
 
   canvas.addEventListener('touchstart', function(e){
-    // The second finger arrives in its own touchstart, mid-slide.
+    lastFinger = Date.now();
+    // The second finger arrives in its own touchstart, mid-gesture.
     var down = onCanvas(e);
     if (down.length >= 2) {
       if (pinch) { regrip(down); e.preventDefault(); return; }
       if (startPinch(down)) { e.preventDefault(); return; }
-      /* Two fingers on something that is not a photograph — the street map,
-         an empty window, the chocolate. Whatever one finger had begun is
-         finished properly and the gesture is left to the browser, which is
-         how the customer magnifies the design to look at it. Without this
-         the slide went on running and read the pinch as one finger moving,
-         which on a map window walked the printed place down the street. */
+      /* Two fingers on something nothing can be done with — an empty
+         window, the chocolate, the table beside the box. Anything a mouse
+         had begun is finished properly and the gesture is left to the
+         browser, which is how the customer magnifies the design to look
+         at it. */
       endDrag();
-
-      return;
     }
-    var t = down[0];
-    if (t && startDrag(t.clientX, t.clientY)) e.preventDefault();
+    /* One finger belongs to the page. He scrolls past the preview with a
+       thumb across the box and the photograph stays where he put it; to
+       move or resize it he uses two, over the window he means. */
   }, { passive: false });
 
   canvas.addEventListener('touchmove', function(e){
+    lastFinger = Date.now();
     var down = onCanvas(e);
     if (pinch && down.length >= 2) {
       movePinch(down);
       e.preventDefault();
-
-      return;
     }
-    /* One finger and one only. dragMap as well as dragSlot: with only
-       dragSlot here the ground under a street-map window moved for a mouse
-       and would not move for a finger. */
-    if (down.length === 1 && (dragSlot >= 0 || dragMap >= 0)) {
-      moveDrag(down[0].clientX, down[0].clientY);
-      e.preventDefault();
-    }
+    // One finger scrolls the page, and nothing here stands in its way.
   }, { passive: false });
 
-  canvas.addEventListener('touchend', function(e){ letGo(onCanvas(e)); });
+  canvas.addEventListener('touchend', function(e){ lastFinger = Date.now(); letGo(onCanvas(e)); });
   /* iOS takes the touch away for a call or the notification shade; without
      this the next swipe pans the photo instead of the page, by the whole
      stale distance at once. */
-  canvas.addEventListener('touchcancel', function(e){ letGo(onCanvas(e)); });
+  canvas.addEventListener('touchcancel', function(e){ lastFinger = Date.now(); letGo(onCanvas(e)); });
 
   function letGo(left){
     if (pinch) {
@@ -2795,15 +2866,10 @@
          two that are left rather than dying with no way back. */
       if (left.length >= 2) { regrip(left); return; }
       pinch = null;
-      /* One finger still down: the slide carries on from where that finger
-         is, instead of the picture sticking until he lets go and starts
-         again — and without the jump a stale lastX would give it. */
-      if (left.length === 1) {
-        startDrag(left[0].clientX, left[0].clientY);
-
-        return;
-      }
     }
+    /* Down to one finger, or none. The finger left behind inherits
+       nothing: one of them moves the page, never the box. endDrag is what
+       sends a finished map push off to the map service. */
     endDrag();
   }
 

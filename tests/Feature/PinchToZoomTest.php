@@ -49,16 +49,19 @@ class PinchToZoomTest extends TestCase
 
         $ran = Process::path(base_path())->run('node tests/Js/pinch.cjs');
 
-        $this->assertTrue($ran->successful(), $ran->output() . $ran->errorOutput());
+        $this->assertTrue($ran->successful(), $ran->output().$ran->errorOutput());
         $this->assertStringContainsString('all good', $ran->output());
     }
 
     /**
-     * One finger over a window moves the photograph; one finger anywhere
-     * else on the box is the page's, to scroll. That only holds while the
-     * canvas keeps the browser's own touch-action: with `none`, the browser
-     * decides first and the whole preview — most of a telephone screen —
-     * stops scrolling the page.
+     * One finger anywhere on the box is the page's, to scroll with. It used
+     * to slide whatever window it landed on, and the owner's thumb kept
+     * pulling the photograph out of its window while he was only trying to
+     * scroll past the preview; the box is held with two fingers now.
+     *
+     * That only holds while the canvas keeps the browser's own touch-action:
+     * with `none`, the browser decides first and the whole preview — most of
+     * a telephone screen — stops scrolling the page.
      *
      * touch-action is inherited down the tree, so it is no use looking for
      * the canvas's own id: the house already writes this as
@@ -84,8 +87,8 @@ class PinchToZoomTest extends TestCase
                    carry touch-action:none quite rightly, and both contain
                    the letters of `.stage`. */
                 foreach (['preview-canvas', '#stage', '.stage'] as $reaches) {
-                    $this->assertSame(0, preg_match('/(?<![\w-])' . preg_quote($reaches, '/') . '(?![\w-])/', $rule),
-                        'the design preview must keep the browser’s own one-finger scroll: ' . $rule);
+                    $this->assertSame(0, preg_match('/(?<![\w-])'.preg_quote($reaches, '/').'(?![\w-])/', $rule),
+                        'the design preview must keep the browser’s own one-finger scroll: '.$rule);
                 }
             }
         }

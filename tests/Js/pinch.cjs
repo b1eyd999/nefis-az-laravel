@@ -82,7 +82,12 @@ function build(world) {
     getBoundingClientRect: function(){ return { left: 0, top: 0, width: ${DESIGN.w}, height: ${DESIGN.h} }; },
     addEventListener: function(name, fn){ (ctx.listeners[name] = ctx.listeners[name] || []).push(fn); }
   };
-  var window = { addEventListener: function(){}, nefisMapMoved: function(a, b){ ctx.calls.push(['nefisMapMoved', a, b]); } };
+  var window = {
+    /* Kept, not dropped: mousemove and mouseup are hung on the window,
+       and the mouse is now the only pointer that slides on its own. */
+    addEventListener: function(name, fn){ (ctx.listeners['win:' + name] = ctx.listeners['win:' + name] || []).push(fn); },
+    nefisMapMoved: function(a, b){ ctx.calls.push(['nefisMapMoved', a, b]); }
+  };
   var document = { querySelector: function(){ return null; } };
   var photos = ctx.photos, MAP_SLOT = ctx.MAP_SLOT, spot = ctx.spot, mapPush = ctx.mapPush;
   window.NefisStreetMap = {
@@ -101,8 +106,13 @@ function build(world) {
   function toolsOf(){ return null; }
   function draw(){ ctx.draws++; }
 ${block}
-  globalThis.__T = { startPinch: startPinch, movePinch: movePinch, state: function(){
-    return { pinch: pinch, dragSlot: dragSlot, dragMap: dragMap }; } };
+  globalThis.__T = { startPinch: startPinch, movePinch: movePinch,
+    /* The guard that keeps a telephone's courtesy click out, and a way to
+       say when the last finger was — there is no other way to put the
+       clock back from a test. */
+    fromFinger: fromFinger, touchedAt: function(t){ lastFinger = t; },
+    state: function(){
+      return { pinch: pinch, dragSlot: dragSlot, dragMap: dragMap }; } };
 })();
 `;
 
@@ -123,6 +133,19 @@ ${block}
       prevented: false,
     };
     (seen[type] || []).forEach((fn) => fn(e));
+
+    return e.prevented;
+  };
+
+  /* A mouse event, to the canvas's own listeners and to the ones hung on
+     the window. */
+  ctx.mouse = (type, p) => {
+    const e = {
+      clientX: p.x, clientY: p.y,
+      preventDefault() { e.prevented = true; },
+      prevented: false,
+    };
+    (seen[type] || []).concat(seen['win:' + type] || []).forEach((fn) => fn(e));
 
     return e.prevented;
   };
@@ -268,17 +291,53 @@ console.log('\n--- the fingers: what the listeners do with them');
 const ON_PHOTO = { x: 300, y: 350 };              // inside the window
 const OFF_BOX = { x: 900, y: 900 };               // outside every window
 
-// ---- one finger on the photograph slides it; one finger elsewhere is the page's
+/* ---- one finger moves nothing anywhere on the box.
+
+   It used to slide whatever window it landed on, and the owner's thumb
+   kept dragging the photograph out of its window while he was only
+   trying to scroll past the preview. The box is held with two fingers
+   now, and one is the page's wherever it lands. */
 w = build(); st = w.photos[0];
-check('one finger on the photograph is taken', w.fire('touchstart', [ON_PHOTO]), true);
+check('one finger on the photograph is left to the page', w.fire('touchstart', [ON_PHOTO]), false);
+check('and begins no slide', w.T.state().dragSlot, -1, 0);
 w.fire('touchmove', [{ x: ON_PHOTO.x + 40, y: ON_PHOTO.y }]);
-check('and slid it', st.panX > 0, true);
+check('so a thumb dragged across the box moves nothing', st.panX, 0, 1e-12);
 w.fire('touchend', []);
 check('one finger off every window leaves the page its scroll', w.fire('touchstart', [OFF_BOX]), false);
 w.fire('touchend', []);
 check('two fingers off every window leave the browser its zoom',
   w.fire('touchstart', grip(OFF_BOX, 60, 0)), false);
 w.fire('touchend', []);
+
+// ---- the mouse is the one pointer that still slides on its own
+w = build(); st = w.photos[0];
+check('a mouse on the photograph takes it', w.mouse('mousedown', ON_PHOTO), true);
+w.mouse('mousemove', { x: ON_PHOTO.x + 60, y: ON_PHOTO.y });
+check('and slides it', st.panX > 0, true);
+w.mouse('mouseup', ON_PHOTO);
+check('and lets go', w.T.state().dragSlot, -1, 0);
+
+/* A tap is refused by nobody now, so the telephone fires a mousedown of
+   its own just after one. That courtesy click must not start the very
+   slide two fingers were brought in to replace. */
+w = build(); st = w.photos[0];
+w.fire('touchstart', [ON_PHOTO]);
+w.fire('touchend', []);
+check('the telephone own click after a tap starts nothing',
+  w.mouse('mousedown', ON_PHOTO), false);
+check('and holds nothing', w.T.state().dragSlot, -1, 0);
+w.mouse('mousemove', { x: ON_PHOTO.x + 60, y: ON_PHOTO.y });
+check('so it moved nothing either', st.panX, 0, 1e-12);
+
+/* A mouse drag already in flight, and then a finger on the glass — a
+   touchscreen laptop. One finger drives nothing, not even a slide
+   somebody else started. */
+w = build(); st = w.photos[0];
+w.mouse('mousedown', ON_PHOTO);
+check('the mouse is holding the photograph', w.T.state().dragSlot, 0, 0);
+w.fire('touchmove', [{ x: ON_PHOTO.x + 80, y: ON_PHOTO.y }]);
+check('and a lone finger does not drive it', st.panX, 0, 1e-12);
+w.mouse('mouseup', ON_PHOTO);
 
 // ---- two fingers on the photograph pinch it
 w = build(); st = w.photos[0];
@@ -295,10 +354,11 @@ check('and let go cleanly', w.T.state().pinch, null);
 w = build(); st = w.photos[0];
 const THUMB = { x: 190, y: 980 };
 check('a contact that began elsewhere is not adopted',
-  w.fire('touchstart', [ON_PHOTO], [THUMB]), true);
-check('it is a one-finger slide, not a pinch', w.T.state().pinch, null);
+  w.fire('touchstart', [ON_PHOTO], [THUMB]), false);
+check('one finger on the canvas is no pinch', w.T.state().pinch, null);
 w.fire('touchmove', [{ x: ON_PHOTO.x, y: ON_PHOTO.y - 60 }], [THUMB]);
 check('so the photograph did not grow', st.scale, 1, 1e-12);
+check('nor move', st.panY, 0, 1e-12);
 w.fire('touchend', [], [THUMB]);
 
 /* A third finger of the holding hand brushes the box and lifts again. Two
@@ -313,7 +373,7 @@ w.fire('touchmove', grip(ON_PHOTO, 200, 0));
 check('the two that are left still pinch', st.scale, 2, 1e-9);
 w.fire('touchend', [grip(ON_PHOTO, 100, 0)[0]]);
 check('down to one finger, the pinch is over', w.T.state().pinch, null);
-check('and that finger carries on sliding', w.T.state().dragSlot, 0);
+check('and the finger left behind inherits nothing', w.T.state().dragSlot, -1, 0);
 
 // ---- touchcancel puts everything down
 w = build();
@@ -329,66 +389,100 @@ const MAP = { areas: [Object.assign({}, WINDOW, { w: 820, h: 820, x: 90, y: 90 }
   spot: { lat: 40.4093, lon: 49.8671, zoom: 15 } };
 const ON_MAP = { x: 500, y: 500 };
 
-// one finger still drags the map — which is what the touchmove change was for
+// ---- the map is pushed by two fingers too, and never zoomed by them
 w = build(MAP);
-check('one finger is taken by the map', w.fire('touchstart', [ON_MAP]), true);
+check('one finger on the map is left to the page', w.fire('touchstart', [ON_MAP]), false);
+check('and begins no map drag', w.T.state().dragMap, -1, 0);
 w.fire('touchmove', [{ x: ON_MAP.x + 40, y: ON_MAP.y + 30 }]);
+check('so the printed place did not move', w.mapPush.x, 0, 1e-12);
 w.fire('touchend', []);
-check('and the move was sent to the map service',
+check('and the map service was never asked', w.calls.length, 0, 0);
+
+/* Two fingers are what moves it — otherwise a telephone could not move the
+   printed place at all, which is what taking the one-finger slide away
+   would have cost. */
+w = build(MAP);
+check('two fingers on the map are taken', w.fire('touchstart', grip(ON_MAP, 150, 0)), true);
+check('and it is the map they hold', w.T.state().dragMap, 0, 0);
+w.fire('touchmove', grip({ x: ON_MAP.x + 40, y: ON_MAP.y + 30 }, 150, 0));
+check('the push is where the middle of the hands went, x', w.mapPush.x, 40, 1e-9);
+check('and y', w.mapPush.y, 30, 1e-9);
+w.fire('touchend', []);
+check('let go, the move was sent to the map service',
   w.calls.filter((c) => c[0] === 'dragged').length, 1, 0);
 check('and the new place written down',
   w.calls.filter((c) => c[0] === 'nefisMapMoved').length, 1, 0);
+check('with nothing left waiting in it', w.mapPush.x, 0, 1e-12);
 
-/* Two fingers on a map window are a request to magnify the design, not to
-   move the address. Reading them as one finger walked the printed place
-   hundreds of metres down the road, once per pinch.
-
-   Two separate things stop it and either one would be enough, so each is
-   pinned on its own below before the fault itself is reproduced. */
+/* The zoom of a street map is a fresh request to the map service, and a
+   pinch would ask for new streets sixty times a second. So the hands may
+   open as wide as they like over one: only where their middle went counts. */
 w = build(MAP);
-w.fire('touchstart', [ON_MAP]);
-check('one finger has the map', w.T.state().dragMap, 0, 0);
 w.fire('touchstart', grip(ON_MAP, 150, 0));
-check('and lets go the moment a second finger says this is no slide',
-  w.T.state().dragMap, -1, 0);
-w.fire('touchend', []); w.fire('touchend', []);
-
-/* And the second lock: a move carrying two fingers is never a one-finger
-   slide, whatever state was left lying about. */
-w = build(MAP);
-w.fire('touchstart', [ON_MAP]);
-w.fire('touchmove', grip(ON_MAP, 400, 0));          // no touchstart in between
-check('a two-finger move is not read as a slide', w.mapPush.x, 0, 1e-12);
-w.fire('touchend', []);
-
-w = build(MAP);
-w.fire('touchstart', [ON_MAP]);                             // the first finger lands
-check('two fingers on the map are left to the browser',
-  w.fire('touchstart', grip(ON_MAP, 150, 0)), false);
-w.fire('touchmove', grip(ON_MAP, 400, 0));
 w.fire('touchmove', grip(ON_MAP, 700, 0));
-check('and the spread moved nothing', w.mapPush.x, 0, 1e-12);
+check('spreading the hands over a map moves nothing', w.mapPush.x, 0, 1e-12);
+check('and asks for no new streets', w.calls.length, 0, 0);
 w.fire('touchend', []);
-w.fire('touchend', []);
-check('so the printed place is where he put it',
-  w.calls.filter((c) => c[0] === 'nefisMapMoved').length, 0, 0);
 
-/* A map window and a photograph window on the same box: a half-finished map
-   drag must be sent off when the pinch takes the gesture over, not left in
-   mapPush where the preview keeps drawing it and the order never hears of
-   it. */
+/* A third finger brushes the box mid-push and lifts again. The change of
+   grip is not itself a push, and the two that remain carry on from where
+   they now are. */
+w = build(MAP);
+w.fire('touchstart', grip(ON_MAP, 150, 0));
+w.fire('touchmove', grip({ x: ON_MAP.x + 20, y: ON_MAP.y }, 150, 0));
+check('the middle moved twenty and so did the map', w.mapPush.x, 20, 1e-9);
+w.fire('touchstart', grip({ x: ON_MAP.x + 120, y: ON_MAP.y }, 150, 0).concat([{ x: 150, y: 150 }]));
+check('a third finger is not a hundred-pixel push', w.mapPush.x, 20, 1e-9);
+w.fire('touchend', grip({ x: ON_MAP.x + 140, y: ON_MAP.y }, 150, 0));
+check('nor is it lifting again', w.mapPush.x, 20, 1e-9);
+w.fire('touchmove', grip({ x: ON_MAP.x + 160, y: ON_MAP.y }, 150, 0));
+check('and the two that are left go on pushing', w.mapPush.x, 40, 1e-9);
+w.fire('touchend', []);
+
+/* A map slide begun with a mouse — the owner at his desk, or a touchscreen
+   laptop — is finished properly when two fingers take the gesture over, not
+   left in mapPush where the preview keeps drawing it and the order never
+   hears of it. */
 w = build({ areas: [Object.assign({}, WINDOW, { x: 20, y: 20, w: 200, h: 200 }),
                     Object.assign({}, WINDOW, { x: 500, y: 500, w: 300, h: 300 })],
   isMap: true, spot: { lat: 40.4093, lon: 49.8671, zoom: 15 },
   photo: { img: null, scale: 1, rotate: 0, flip: false, panX: 0, panY: 0, framed: false } });
 w.MAP_SLOT = [true, false];
 w.photos[1] = { img: IMG, scale: 1, rotate: 0, flip: false, panX: 0, panY: 0, framed: false };
-w.fire('touchstart', [{ x: 120, y: 120 }]);                 // a finger on the map
-w.fire('touchmove', [{ x: 180, y: 150 }]);
-w.fire('touchstart', [{ x: 120, y: 120 }, { x: 650, y: 650 }]);  // a second on the photograph
+w.mouse('mousedown', { x: 120, y: 120 });                   // the mouse takes the map
+w.mouse('mousemove', { x: 180, y: 150 });
+check('the mouse has the map', w.T.state().dragMap, 0, 0);
+w.fire('touchstart', [{ x: 620, y: 620 }, { x: 680, y: 680 }]);   // two fingers on the photograph
 check('the half-finished map drag was sent off, not stranded',
   w.calls.filter((c) => c[0] === 'dragged').length, 1, 0);
 check('and nothing is left waiting in it', w.mapPush.x, 0, 1e-12);
+check('and it is the photograph the fingers now hold', w.T.state().pinch.slot, 1, 0);
+
+/* Two fingers pushing a map, and a cursor nudged beside them — a laptop
+   whose screen is also a touchpad. The map is held through dragMap, which
+   is what a mouse drag uses too, so without a guard the pointer's own
+   position becomes the push. */
+w = build(MAP);
+w.fire('touchstart', grip(ON_MAP, 150, 0));
+w.fire('touchmove', grip({ x: ON_MAP.x + 30, y: ON_MAP.y }, 150, 0));
+w.mouse('mousemove', { x: 50, y: 900 });
+check('a stray cursor does not join the push', w.mapPush.x, 30, 1e-9);
+w.mouse('mouseup', { x: 50, y: 900 });
+check('and a button released does not end it', w.T.state().dragMap, 0, 0);
+w.fire('touchmove', grip({ x: ON_MAP.x + 60, y: ON_MAP.y }, 150, 0));
+check('so the two fingers go on pushing', w.mapPush.x, 60, 1e-9);
+w.fire('touchend', []);
+check('and the push is sent off when they lift',
+  w.calls.filter((c) => c[0] === 'dragged').length, 1, 0);
+
+// ---- the courtesy-click guard, and a clock that has been put back
+w = build();
+w.T.touchedAt(Date.now());
+check('a touch just now keeps the mouse out', w.T.fromFinger(), true);
+w.T.touchedAt(Date.now() - 5000);
+check('a touch five seconds ago does not', w.T.fromFinger(), false);
+w.T.touchedAt(Date.now() + 3600e3);
+check('nor does a clock put back an hour lock the mouse out', w.T.fromFinger(), false);
 
 console.log('\n--- a view that is a photograph of the box');
 
