@@ -85,7 +85,7 @@ class AnAddressThatMovedTest extends TestCase
         $product->update(['slug' => 'yeni-ad']);
 
         $this->get('/products/kohne-ad/customize?utm_source=instagram&x=1')
-            ->assertRedirect(url('/products/yeni-ad/customize') . '?utm_source=instagram&x=1');
+            ->assertRedirect(url('/products/yeni-ad/customize').'?utm_source=instagram&x=1');
     }
 
     public function test_a_name_taken_back_stops_being_a_forwarding_address(): void
@@ -195,5 +195,67 @@ class AnAddressThatMovedTest extends TestCase
 
         $this->get('/ru/for-companies')->assertRedirect(url('/ru/sirketler-ucun'));
         $this->get('/for-companies')->assertRedirect(url('/sirketler-ucun'));
+    }
+
+    /**
+     * The one dead address in the 404 report the owner could name a
+     * successor for: «ulduzlu-box вместо него burc-astronimiya-stars».
+     *
+     * It was renamed before the shop kept a record of such things, so the
+     * pair had to be written in by hand — in a migration, the hosting
+     * having no shell to run anything else with.
+     */
+    public function test_the_starry_box_leads_to_the_design_that_replaced_it(): void
+    {
+        $this->design('burc-astronimiya-stars');
+
+        $this->theStarryBox()->up();
+
+        $this->get('/products/ulduzlu-box/customize')
+            ->assertStatus(301)
+            ->assertRedirect(url('/products/burc-astronimiya-stars/customize'));
+
+        // The language the visitor came in, and the page he asked for.
+        $this->get('/en/products/ulduzlu-box/customize')
+            ->assertRedirect(url('/en/products/burc-astronimiya-stars/customize'));
+    }
+
+    /** It runs on every deploy, so it meets both of these. */
+    public function test_the_pair_survives_a_shop_with_no_catalogue_and_a_second_run(): void
+    {
+        $this->theStarryBox()->up();            // no such design yet
+        $this->assertSame(0, ProductSlug::count());
+
+        $this->design('burc-astronimiya-stars');
+        $this->theStarryBox()->up();
+        $this->theStarryBox()->up();
+
+        $this->assertSame(1, ProductSlug::where('slug', 'ulduzlu-box')->count());
+    }
+
+    /**
+     * And the three the owner left alone stay gone.
+     *
+     * They were withdrawn, not renamed. Forwarding them to whichever
+     * surviving design looks nearest is the soft-404 Google penalises,
+     * and it hands a customer a box he did not ask for.
+     */
+    public function test_the_withdrawn_designs_still_answer_404(): void
+    {
+        $this->design('burc-astronimiya-stars');
+        $this->design('lokasiya');
+        $this->theStarryBox()->up();
+
+        foreach (['lokasiya-home', 'alyonka-azerbaijan-style', 'klassik-qutu'] as $gone) {
+            $this->get('/products/'.$gone.'/customize')->assertNotFound();
+        }
+    }
+
+    /** The migration itself, to be run against the database of the moment. */
+    private function theStarryBox(): object
+    {
+        return require database_path(
+            'migrations/2026_10_24_090000_the_starry_box_points_at_the_design_that_replaced_it.php'
+        );
     }
 }
