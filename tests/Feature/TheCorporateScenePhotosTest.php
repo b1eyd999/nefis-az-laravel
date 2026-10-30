@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Support\CorporatePage;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
@@ -20,6 +21,8 @@ use Tests\TestCase;
  */
 class TheCorporateScenePhotosTest extends TestCase
 {
+    use RefreshDatabase;
+
     /** The shape the stylesheet gives the frame: `aspect-ratio: 20 / 21`. */
     private const RATIO = 20 / 21;
 
@@ -101,6 +104,26 @@ class TheCorporateScenePhotosTest extends TestCase
             }
 
             imagedestroy($photo);
+        }
+    }
+
+    /**
+     * The page asks for each photograph by a versioned address.
+     *
+     * These are served with a week of cache. Replacing a picture at the same
+     * address leaves everyone who visited in the last week looking at the old
+     * one — and, worse, at the old one stretched into whatever shape the
+     * frame has since been given. The stamp changes with every release.
+     */
+    public function test_each_photograph_is_asked_for_by_a_versioned_address(): void
+    {
+        $page = $this->get('/sirketler-ucun');
+
+        $page->assertOk();
+
+        foreach (CorporatePage::SCENES as $scene) {
+            $this->assertStringContainsString($scene['image'].'?v=', $page->getContent(),
+                $scene['image'].' is linked without a version, so a replacement will not reach anyone');
         }
     }
 

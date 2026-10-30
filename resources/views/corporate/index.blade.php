@@ -253,7 +253,7 @@
       @foreach($page['scenes'] as $i => $scene)
         <figure class="co-scene">
           <canvas class="co-scene-canvas" id="co-scene-{{ $i }}"
-                  data-photo="{{ asset($scene['image']) }}"
+                  data-photo="{{ \App\Support\Assets::url($scene['image']) }}"
                   data-corners="{{ json_encode($scene['corners']) }}"
                   aria-label="{{ __($scene['caption']) }}"></canvas>
           <figcaption>{{ __($scene['caption']) }}</figcaption>
@@ -368,15 +368,15 @@
         <div class="co-designer-body">
           <p>{{ __($page['designer_note']) }}</p>
           <div class="co-designer-grid">
-            <a class="co-tpl" href="{{ asset(\App\Support\CorporatePage::TEMPLATE) }}" download>
-              <img src="{{ asset(\App\Support\CorporatePage::TEMPLATE) }}" alt="" loading="lazy" decoding="async">
+            <a class="co-tpl" href="{{ \App\Support\Assets::url(\App\Support\CorporatePage::TEMPLATE) }}" download>
+              <img src="{{ \App\Support\Assets::url(\App\Support\CorporatePage::TEMPLATE) }}" alt="" loading="lazy" decoding="async">
               <span>
                 <b>{{ __($page['designer_template']) }}</b>
                 <small>{{ __($page['designer_template_note']) }}</small>
               </span>
             </a>
-            <a class="co-tpl" href="{{ asset(\App\Support\CorporatePage::BACK_SHOT) }}" target="_blank" rel="noopener">
-              <img src="{{ asset(\App\Support\CorporatePage::BACK_SHOT) }}" alt="" loading="lazy" decoding="async"
+            <a class="co-tpl" href="{{ \App\Support\Assets::url(\App\Support\CorporatePage::BACK_SHOT) }}" target="_blank" rel="noopener">
+              <img src="{{ \App\Support\Assets::url(\App\Support\CorporatePage::BACK_SHOT) }}" alt="" loading="lazy" decoding="async"
                    style="object-position:center">
               <span>
                 <b>{{ __($page['back_title']) }} — {{ __('nümunə') }}</b>
