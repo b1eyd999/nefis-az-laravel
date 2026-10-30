@@ -4,6 +4,9 @@ namespace Tests\Feature;
 
 use App\Filament\Pages\SiteSettings;
 use App\Models\Setting;
+use App\Models\User;
+use Filament\Facades\Filament;
+use Livewire\Livewire;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
@@ -247,6 +250,35 @@ class ApplePayOwnsTheDomainTest extends TestCase
         $this->assertCount(2, $kept);
         $this->assertSame($real, $kept[0]['ua'], 'a genuine Apple visit must survive');
         $this->assertSame('curl/8.0', $kept[1]['ua'], 'other visitors are not mine to delete either');
+    }
+
+    /**
+     * The admin shows the record, and saving the page does not erase it.
+     *
+     * It sits in the payment section as a placeholder, which submits no
+     * value of its own. Every setting on that page is written by name, so
+     * nothing walks over this one — but a later hand that saves the form by
+     * looping over its fields would wipe it silently, and this is the test
+     * that would stop them.
+     */
+    public function test_the_admin_shows_the_record_and_saving_does_not_erase_it(): void
+    {
+        Setting::put(Setting::APPLE_PAY_FETCHED, json_encode([
+            ['at' => '2026-10-30 11:40', 'ip' => '17.0.0.1', 'ua' => 'AppleBot/1.0'],
+        ]));
+
+        $this->actingAs(User::factory()->create(['role' => User::ADMIN]));
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        Livewire::test(SiteSettings::class)
+            ->assertSee('17.0.0.1', false)
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $kept = json_decode((string) Setting::get(Setting::APPLE_PAY_FETCHED), true);
+
+        $this->assertCount(1, $kept, 'saving the settings page emptied the visitor record');
+        $this->assertSame('17.0.0.1', $kept[0]['ip']);
     }
 
     /** A closed shop is still this shop. */
