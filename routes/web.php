@@ -10,8 +10,8 @@ use App\Http\Controllers\GiftPageController;
 use App\Http\Controllers\LivePhotoController;
 use App\Http\Controllers\MapController;
 use App\Http\Controllers\MediaController;
-use App\Http\Controllers\OrderKeyController;
 use App\Http\Controllers\OrderFileController;
+use App\Http\Controllers\OrderKeyController;
 use App\Http\Controllers\Phone\LiveController as PhoneLive;
 use App\Http\Controllers\Phone\MoneyController as PhoneMoney;
 use App\Http\Controllers\Phone\OrderController as PhoneOrders;
@@ -25,7 +25,10 @@ use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\StarMapController;
 use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\WhatsAppHookController;
+use App\Models\Setting;
 use App\Support\Locale;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
 // ---------------------------------------------------------------------------
@@ -96,10 +99,30 @@ Route::get('/.well-known/assetlinks.json', fn () => response()->json([[
  * a verifier that asks for the other one must not be told there is nothing
  * there.
  */
-$appleMerchantDomain = function () {
+$appleMerchantDomain = function (Request $request) {
     $file = resource_path('well-known/apple-developer-merchantid-domain-association.txt');
 
     abort_unless(is_file($file), 404);
+
+    /* The visit is written down, because «did Apple ever come» has already
+       been the question twice and the raw access log is the only other
+       answer — behind a cPanel sign-in and kept for a month. Throttled to
+       one line a minute: the address is public, and a write per request
+       would turn a curl loop into database traffic. */
+    if (Cache::add('apple-pay-fetch-note', 1, now()->addMinute())) {
+        $seen = array_filter((array) json_decode((string) Setting::get(Setting::APPLE_PAY_FETCHED), true), 'is_array');
+
+        array_unshift($seen, [
+            'at' => now()->format('Y-m-d H:i'),
+            'ip' => (string) $request->ip(),
+            'ua' => mb_substr((string) $request->userAgent(), 0, 180),
+        ]);
+
+        Setting::put(Setting::APPLE_PAY_FETCHED, json_encode(
+            array_slice(array_values($seen), 0, 12),
+            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
+        ));
+    }
 
     /* Sent as its own bytes rather than through response()->file(), which
        adds an ETag and would answer a second ask with a 304. What Apple

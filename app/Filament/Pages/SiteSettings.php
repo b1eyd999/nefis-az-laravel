@@ -387,6 +387,10 @@ class SiteSettings extends Page implements HasActions, HasForms
                             ->helperText('Epoint bu xidməti hesabınız üçün açandan sonra işə salın. '
                                 . 'Bağlı olanda müştəri yalnız adi kart səhifəsini görür.')
                             ->columnSpanFull(),
+                        Forms\Components\Placeholder::make('apple_pay_fetched')
+                            ->label('Apple-ın yoxlama faylı')
+                            ->content(fn () => new \Illuminate\Support\HtmlString(self::appleVisits()))
+                            ->columnSpanFull(),
                         Forms\Components\TextInput::make('epoint_public_key')
                             ->label('Public key')
                             ->autocomplete(false)
@@ -750,6 +754,47 @@ class SiteSettings extends Page implements HasActions, HasForms
     }
 
     /** The address ePoint reports payments to; the owner copies it into his cabinet. */
+    /**
+     * Who has come for the Apple Pay domain file, newest first.
+     *
+     * Apple will not show the wallet button until its own verifier has
+     * fetched that file from this domain, and when verification fails the
+     * first thing worth knowing is whether it ever arrived at all. The
+     * hosting's access log says so too, but only behind a cPanel sign-in
+     * and only for a month, so the route keeps its own short list.
+     */
+    public static function appleVisits(): string
+    {
+        $seen = array_filter((array) json_decode((string) Setting::get(Setting::APPLE_PAY_FETCHED), true), 'is_array');
+
+        if ($seen === []) {
+            return '<span style="color:#b45309; font-weight:600;">Fayl üçün hələ heç kim gəlməyib.</span>'
+                . '<br>Fayl yerindədir: <code style="user-select:all;">'
+                . e(url('/.well-known/apple-developer-merchantid-domain-association')) . '</code>'
+                . '<br>Apple-ın robotu gələndə tarix burada görünəcək.';
+        }
+
+        $lines = [];
+
+        foreach (array_slice($seen, 0, 8) as $visit) {
+            $ua = (string) ($visit['ua'] ?? '');
+
+            /* Apple's verifier names itself in its own user agent. Everything
+               else that asks is a person or a crawler, and the two are worth
+               telling apart before anyone reads this as proof. */
+            $apple = $ua !== '' && preg_match('/apple/i', $ua) === 1;
+
+            $lines[] = ($apple
+                    ? '<span style="color:#16a34a; font-weight:600;">✓ Apple</span>'
+                    : '<span style="color:#64748b;">başqası</span>')
+                . ' — ' . e((string) ($visit['at'] ?? '?'))
+                . ' · <span style="color:#64748b;">' . e((string) ($visit['ip'] ?? '?')) . '</span>'
+                . ($ua === '' ? '' : '<br><span style="color:#94a3b8; font-size:11px;">' . e($ua) . '</span>');
+        }
+
+        return 'Fayl üçün son gələnlər (yeni əvvəldə):<br>' . implode('<br>', $lines);
+    }
+
     public static function resultUrl(): string
     {
         return route('epoint.result');

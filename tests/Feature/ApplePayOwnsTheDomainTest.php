@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Pages\SiteSettings;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 /**
@@ -108,6 +110,114 @@ class ApplePayOwnsTheDomainTest extends TestCase
             $this->assertStringContainsString('private', $kept, $url);
             $this->assertStringNotContainsString('public', $kept,
                 $url.' invites shared caches to keep a response that carries a cookie');
+        }
+    }
+
+    /**
+     * The visit is written down, so «did Apple come» has an answer here.
+     *
+     * Twice now the only record of it has been the hosting's raw access log,
+     * which needs a cPanel sign-in, keeps a month, and cannot be read from a
+     * session at all once that sign-in is gone.
+     */
+    public function test_a_visit_is_written_down_and_apple_is_recognised(): void
+    {
+        $this->assertSame('[]', Setting::get(Setting::APPLE_PAY_FETCHED));
+
+        $this->withHeader('User-Agent', 'Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15 ApplePay/1.0')
+            ->get(self::ADDRESSES[0])->assertOk();
+
+        $seen = json_decode((string) Setting::get(Setting::APPLE_PAY_FETCHED), true);
+
+        $this->assertCount(1, $seen);
+        $this->assertStringContainsString('ApplePay', $seen[0]['ua']);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $seen[0]['at']);
+
+        /* And the admin line marks it as Apple rather than «somebody else».
+           The tick is what is asserted, not the word: the user agent printed
+           underneath says «ApplePay» too, so looking for «Apple» anywhere in
+           the line would pass even if nothing were ever recognised. */
+        $this->assertStringContainsString('✓ Apple', SiteSettings::appleVisits());
+        $this->assertStringNotContainsString('başqası', SiteSettings::appleVisits());
+        $this->assertStringNotContainsString('hələ heç kim gəlməyib', SiteSettings::appleVisits());
+    }
+
+    /** Anyone else who opens the address is not reported as Apple. */
+    public function test_somebody_else_is_not_passed_off_as_apple(): void
+    {
+        $this->withHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0) Chrome/130.0')
+            ->get(self::ADDRESSES[0])->assertOk();
+
+        $this->assertStringContainsString('başqası', SiteSettings::appleVisits());
+        $this->assertStringNotContainsString('✓ Apple', SiteSettings::appleVisits());
+    }
+
+    /** With nothing recorded, the admin says so instead of showing an empty list. */
+    public function test_the_admin_says_plainly_that_nobody_has_come(): void
+    {
+        $this->assertStringContainsString('hələ heç kim gəlməyib', SiteSettings::appleVisits());
+    }
+
+    /**
+     * One line a minute, and never more than a dozen.
+     *
+     * The address is public and unauthenticated: a write per request would
+     * let anyone turn a loop of fetches into database traffic, and an
+     * unbounded list would grow in a settings row read on every request.
+     */
+    public function test_the_record_is_throttled_and_bounded(): void
+    {
+        for ($i = 0; $i < 5; $i++) {
+            $this->get(self::ADDRESSES[0])->assertOk();
+        }
+
+        $this->assertCount(1, json_decode((string) Setting::get(Setting::APPLE_PAY_FETCHED), true),
+            'five fetches in the same minute wrote more than one line');
+
+        // A long enough list is cut, newest kept.
+        $long = [];
+        for ($i = 0; $i < 30; $i++) {
+            $long[] = ['at' => '2026-10-30 10:0'.($i % 10), 'ip' => '1.1.1.1', 'ua' => 'line '.$i];
+        }
+        Setting::put(Setting::APPLE_PAY_FETCHED, json_encode($long));
+
+        Cache::forget('apple-pay-fetch-note');
+        $this->get(self::ADDRESSES[0])->assertOk();
+
+        $seen = json_decode((string) Setting::get(Setting::APPLE_PAY_FETCHED), true);
+
+        $this->assertCount(12, $seen);
+        $this->assertSame('line 0', $seen[1]['ua'], 'the newest line went on top and the oldest fell off');
+    }
+
+    /**
+     * A settings row holding something other than a list of visits is survived.
+     *
+     * Plain nonsense decodes to null and casts to an empty array by itself,
+     * so the case that actually matters is valid JSON whose entries are not
+     * visits — those have to be dropped rather than kept and later read as
+     * if they had an «at» and a «ua».
+     */
+    public function test_entries_that_are_not_visits_are_dropped(): void
+    {
+        foreach (['not json at all', '[1, 2, "three"]', '{"a": 1}', 'null'] as $rubbish) {
+            Setting::put(Setting::APPLE_PAY_FETCHED, $rubbish);
+            Cache::forget('apple-pay-fetch-note');
+
+            $this->get(self::ADDRESSES[0])->assertOk();
+
+            $seen = json_decode((string) Setting::get(Setting::APPLE_PAY_FETCHED), true);
+
+            $this->assertIsArray($seen, $rubbish);
+            $this->assertNotSame([], $seen, $rubbish.': the visit itself was lost');
+
+            foreach ($seen as $visit) {
+                $this->assertIsArray($visit, $rubbish.': something that is not a visit was kept');
+                $this->assertArrayHasKey('at', $visit, $rubbish);
+            }
+
+            // And the admin can render it without reaching into a scalar.
+            $this->assertStringContainsString('son gələnlər', SiteSettings::appleVisits(), $rubbish);
         }
     }
 

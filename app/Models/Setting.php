@@ -45,6 +45,17 @@ class Setting extends Model
      */
     public const EPOINT_WALLET = 'epoint_wallet';
     public const EPOINT_PUBLIC_KEY = 'epoint_public_key';
+
+    /**
+     * When a verifier last came for the Apple Pay domain file, and who it said it was.
+     *
+     * Whether Apple ever fetched the file is the whole question when the
+     * verification fails, and the only record of it was the hosting's raw
+     * access log: behind a cPanel sign-in, kept for a month, and unreadable
+     * from here the moment that sign-in ends. The route writes its own line
+     * instead. A JSON list, newest first.
+     */
+    public const APPLE_PAY_FETCHED = 'apple_pay_fetched';
     public const EPOINT_PRIVATE_KEY = 'epoint_private_key';
 
     /**
@@ -380,6 +391,7 @@ class Setting extends Model
         self::MAIL_TELEGRAM_CHAT => '',
         self::EPOINT_ENABLED => '0',
         self::EPOINT_WALLET => '0',
+        self::APPLE_PAY_FETCHED => '[]',
         self::GEOAPIFY_KEY => '',
         self::WHATSAPP_ENABLED => '0',
         self::WHATSAPP_PHONE_ID => '',
