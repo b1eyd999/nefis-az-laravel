@@ -19,6 +19,17 @@ class HomeController extends Controller
             ->orderBy('name')
             ->get();
 
+        /* Then the owner's own front row, set in the admin under «Ana səhifə».
+           Whatever he put there leads, in his order; everything else keeps the
+           order it already had, which is what a stable sort gives us. A design
+           he picked and has since hidden simply is not in this list to begin
+           with, so it cannot pull an empty space to the front. */
+        $front = array_flip(Setting::homeFirst());
+
+        if ($front !== []) {
+            $products = $products->sortBy(fn (Product $design) => $front[$design->id] ?? PHP_INT_MAX)->values();
+        }
+
         $designCount = Product::onTheShelf()->count();
 
         // The opening banner is the owner's own: without a slide the page

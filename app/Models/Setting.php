@@ -56,6 +56,18 @@ class Setting extends Model
      * instead. A JSON list, newest first.
      */
     public const APPLE_PAY_FETCHED = 'apple_pay_fetched';
+
+    /**
+     * The designs the owner wants at the front of the home page, in his order.
+     *
+     * The catalogue opens straight under the banner, and what leads it used
+     * to be settled by `sort_order` alone — set by dragging rows in a table
+     * of fifty-odd designs, where moving one from the bottom to the top is
+     * not a thing anyone does twice. This is a short list of ids instead:
+     * everything in it comes first, in this order, and the rest keep the
+     * order they had.
+     */
+    public const HOME_FIRST = 'home_first';
     public const EPOINT_PRIVATE_KEY = 'epoint_private_key';
 
     /**
@@ -392,6 +404,7 @@ class Setting extends Model
         self::EPOINT_ENABLED => '0',
         self::EPOINT_WALLET => '0',
         self::APPLE_PAY_FETCHED => '[]',
+        self::HOME_FIRST => '[]',
         self::GEOAPIFY_KEY => '',
         self::WHATSAPP_ENABLED => '0',
         self::WHATSAPP_PHONE_ID => '',
@@ -420,6 +433,28 @@ class Setting extends Model
     public static function topBrands(): array
     {
         return array_values(array_filter((array) json_decode((string) static::get(self::TOP_BRANDS), true), 'is_string'));
+    }
+
+    /**
+     * The home page's front row, as design ids in the owner's order.
+     *
+     * @return array<int, int>
+     */
+    public static function homeFirst(): array
+    {
+        $saved = json_decode((string) static::get(self::HOME_FIRST), true);
+
+        /* A list, or nothing. An object read as «the values are the ids»
+           turns `{"a":1}` into design number one, which is a real design
+           and would quietly take the front of the shop. */
+        if (! is_array($saved) || ! array_is_list($saved)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(
+            array_map('intval', $saved),
+            fn (int $id) => $id > 0,
+        )));
     }
 
     public static function get(string $key): ?string
