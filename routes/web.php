@@ -19,6 +19,7 @@ use App\Http\Controllers\Phone\OrderController as PhoneOrders;
 use App\Http\Controllers\Phone\StockController as PhoneStock;
 use App\Http\Controllers\Phone\TaskController as PhoneTasks;
 use App\Http\Controllers\PlaceMapController;
+use App\Http\Controllers\PostController;
 use App\Http\Controllers\PlacePrintController;
 use App\Http\Controllers\PwaController;
 use App\Http\Controllers\SceneEditorController;
@@ -236,15 +237,21 @@ Route::middleware(['throttle:60,1', 'data'])->prefix('lokasiya')->name('place.')
 /** Gift pages are read in search results, so their addresses are words. */
 $giftPaths = ['az' => 'hediyye', 'ru' => 'podarki', 'en' => 'gifts'];
 
+/** And the blog, which is spelt «bloq» in Azerbaijani. */
+$blogPaths = ['az' => 'bloq', 'ru' => 'blog', 'en' => 'blog'];
+
 foreach (Locale::all() as $locale) {
     Route::prefix($locale === Locale::DEFAULT ? '' : $locale)
         ->name($locale === Locale::DEFAULT ? '' : $locale.'.')
         ->middleware('locale:'.$locale)
-        ->group(function () use ($locale, $giftPaths) {
+        ->group(function () use ($locale, $giftPaths, $blogPaths) {
             require base_path('routes/public.php');
 
             Route::get('/'.$giftPaths[$locale], [GiftPageController::class, 'index'])->name('gifts.index');
             Route::get('/'.$giftPaths[$locale].'/{giftPage:slug}', [GiftPageController::class, 'show'])->name('gifts.show');
+
+            Route::get('/'.$blogPaths[$locale], [PostController::class, 'index'])->name('blog.index');
+            Route::get('/'.$blogPaths[$locale].'/{post:slug}', [PostController::class, 'show'])->name('blog.show');
         });
 }
 

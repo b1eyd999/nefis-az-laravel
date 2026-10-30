@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\GiftPage;
+use App\Models\Post;
 use App\Models\Product;
 use App\Models\Review;
 use App\Models\Wrapping;
@@ -35,6 +36,7 @@ class SitemapController extends Controller
         $products = $this->guard(fn () => Product::onTheShelf()
             ->orderBy('sort_order')->orderBy('name')->get()->filter->isCustomizable()) ?? collect();
         $allGifts = $this->guard(fn () => GiftPage::shown()->get()) ?? collect();
+        $allPosts = $this->guard(fn () => Post::shown()->get()) ?? collect();
         $azGifts = $allGifts->where('locale', 'az');
         $newest = $this->newest($products->concat($azGifts));
         $wraps = (bool) $this->guard(fn () => Wrapping::where('is_active', true)->exists());
@@ -46,6 +48,7 @@ class SitemapController extends Controller
         foreach (Locale::published() as $locale) {
             $name = fn (string $route) => Locale::route($route, $locale);
             $gifts = $allGifts->where('locale', $locale);
+            $posts = $allPosts->where('locale', $locale);
 
             $this->add(fn () => [route($name('home')), $newest]);
             $this->add(fn () => [route($name('designs.index')), $newest]);
@@ -76,6 +79,15 @@ class SitemapController extends Controller
                 $this->add(fn () => [GiftPage::hubUrl($locale), $this->newest($gifts)]);
                 foreach ($gifts as $page) {
                     $this->add(fn () => [$page->url(), $this->changed($page)]);
+                }
+            }
+            /* The blog, once there is something in it in this language. An
+               article carries its cover into image search the way a design
+               carries its photograph. */
+            if ($posts->isNotEmpty()) {
+                $this->add(fn () => [Post::hubUrl($locale), $this->newest($posts)]);
+                foreach ($posts as $post) {
+                    $this->add(fn () => [$post->url(), $this->changed($post), Media::url($post->cover)]);
                 }
             }
             if ($wraps) {

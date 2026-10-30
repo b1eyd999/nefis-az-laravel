@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\GiftPage;
+use App\Models\Post;
 use App\Models\Setting;
 use App\Models\Wrapping;
 
@@ -68,6 +69,12 @@ class Menu
             'icon' => '🏢',
             'label' => 'Şirkətlər üçün',
             'note' => 'Loqonuzla mini şokolad',
+        ],
+        'blog' => [
+            'route' => 'blog.index',
+            'icon' => '📖',
+            'label' => 'Bloq',
+            'note' => 'Hədiyyə və şəkil haqqında yazılar',
         ],
     ];
 
@@ -189,6 +196,7 @@ class Menu
             'letters' => Letter::enabled(),
             'live' => LiveMaterials::enabled(),
             'corporate' => CorporatePage::enabled(),
+            'blog' => Post::shown()->inLocale(Locale::current())->exists(),
             default => false,
         };
     }
@@ -206,6 +214,7 @@ class Menu
             'letters' => 'Polaroid məktub satışı bağlıdır.',
             'live' => 'Canlı şəkil satışı bağlıdır.',
             'corporate' => 'Şirkətlər səhifəsi bağlıdır.',
+            'blog' => 'Göstəriləcək bloq yazısı yoxdur.',
             default => 'Hazır deyil.',
         };
     }
