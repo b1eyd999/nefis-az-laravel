@@ -33,6 +33,37 @@
   .chip:hover{ border-color:var(--gold); color:var(--cocoa); transform:translateY(-2px); }
   .chip.active{ background:var(--cocoa); color:var(--cream); border-color:var(--cocoa); }
 
+  /* Two bands of chips stood between the visitor and the first box —
+     three lines of occasions and two of categories, which on a telephone
+     is the whole screen. Folded, a band is one line that slides under a
+     finger; the button opens the lot for anyone with a mouse.
+
+     The folding is put on by script, so without one the bands wrap exactly
+     as they always did — and either way every chip stays in the page,
+     which is what a crawler reads. */
+  .roll{ display:flex; flex-direction:column; align-items:center; gap:.55rem; }
+  .roll-label{ font-size:.8125rem; color:var(--cocoa-faint); }
+  .filter-roll{ margin-bottom:3.5rem; }
+  .filter-roll .filter-bar{ margin-bottom:0; }
+
+  .strip{ max-width:100%; }
+  .strip.folded{
+    flex-wrap:nowrap; justify-content:flex-start;
+    overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none;
+    /* room for the lift a chip makes on hover, which the scroll box would
+       otherwise cut off at the top */
+    padding:.3rem .15rem;
+  }
+  .strip.folded::-webkit-scrollbar{ display:none; }
+  .strip.folded > *{ flex:0 0 auto; }
+
+  .roll-more{
+    border:0; background:none; cursor:pointer; padding:.2rem .6rem;
+    font-size:.8125rem; font-weight:600; color:var(--cocoa-faint);
+    text-decoration:underline; text-underline-offset:3px; transition:color .2s;
+  }
+  .roll-more:hover{ color:var(--cocoa); }
+
   .cat-block{ margin-bottom:4rem; }
   .cat-block:last-child{ margin-bottom:0; }
   .cat-block[hidden]{ display:none; }
@@ -104,12 +135,20 @@
       <h1>{{ __('Şəkilli şokolad qutusu dizaynları') }}</h1>
       <p class="lede">{{ __('Şokolad qutularından posterlərə qədər, bəyəndiyiniz dizaynı seçin, sonra öz şəklinizi və sözünüzü əlavə edin.') }}</p>
       @if($gifts->isNotEmpty())
-        <nav class="occ-chips" style="margin-top:1.75rem;" aria-label="{{ __('Hədiyyə fikirləri') }}">
-          <span style="width:100%; font-size:.8125rem; color:var(--cocoa-faint);">{{ __('Münasibətə görə seçin:') }}</span>
-          @foreach($gifts as $gift)
-            <a class="occ-chip" href="{{ $gift->url() }}">{{ $gift->emoji }} {{ $gift->menu_label }}</a>
-          @endforeach
-        </nav>
+        {{-- The label is its own line now rather than a full-width item
+             inside the band: the band has to be able to stop wrapping. --}}
+        <div class="roll" style="margin-top:1.75rem;">
+          <span class="roll-label">{{ __('Münasibətə görə seçin:') }}</span>
+          <nav class="occ-chips strip" id="occ-strip" aria-label="{{ __('Hədiyyə fikirləri') }}">
+            @foreach($gifts as $gift)
+              <a class="occ-chip" href="{{ $gift->url() }}">{{ $gift->emoji }} {{ $gift->menu_label }}</a>
+            @endforeach
+          </nav>
+          <button type="button" class="roll-more" hidden
+                  data-strip="occ-strip" aria-controls="occ-strip" aria-expanded="false"
+                  data-open="{{ __('Hamısını göstər') }}"
+                  data-shut="{{ __('Yığ') }}">{{ __('Hamısını göstər') }}</button>
+        </div>
       @endif
     </div>
   </section>
@@ -124,11 +163,17 @@
           <p>{{ __('Hələ dizayn əlavə olunmayıb.') }}</p>
         </div>
       @else
-        <div class="filter-bar">
-          <button type="button" class="chip active" data-filter="all">{{ __('Hamısı') }} ({{ $total }})</button>
-          @foreach($blocks as $block)
-            <button type="button" class="chip" data-filter="{{ $block['key'] }}">{{ $block['label'] }} ({{ $block['designs']->count() }})</button>
-          @endforeach
+        <div class="roll filter-roll">
+          <div class="filter-bar strip" id="cat-strip">
+            <button type="button" class="chip active" data-filter="all">{{ __('Hamısı') }} ({{ $total }})</button>
+            @foreach($blocks as $block)
+              <button type="button" class="chip" data-filter="{{ $block['key'] }}">{{ $block['label'] }} ({{ $block['designs']->count() }})</button>
+            @endforeach
+          </div>
+          <button type="button" class="roll-more" hidden
+                  data-strip="cat-strip" aria-controls="cat-strip" aria-expanded="false"
+                  data-open="{{ __('Hamısını göstər') }}"
+                  data-shut="{{ __('Yığ') }}">{{ __('Hamısını göstər') }}</button>
         </div>
 
         @foreach($blocks as $block)
@@ -232,6 +277,48 @@
 <script>
 (function(){
   "use strict";
+
+  /* A band of chips is folded to one sliding line and the button opens
+     it. When the band already fits as it is — a wide screen, few chips —
+     there is nothing to open, so the button takes itself away and the
+     band is left to wrap. */
+  document.querySelectorAll(".roll-more").forEach(function(btn){
+    var strip = document.getElementById(btn.dataset.strip);
+    if (!strip) return;
+
+    function fold(){
+      strip.classList.add("folded");
+      btn.setAttribute("aria-expanded", "false");
+      btn.textContent = btn.dataset.open;
+      /* Measured while folded, which is the only state the question means
+         anything in: nowrap makes scrollWidth the width of the whole row. */
+      btn.hidden = strip.scrollWidth <= strip.clientWidth + 1;
+      if (btn.hidden) strip.classList.remove("folded");
+    }
+
+    function open(){
+      strip.classList.remove("folded");
+      btn.setAttribute("aria-expanded", "true");
+      btn.textContent = btn.dataset.shut;
+    }
+
+    btn.addEventListener("click", function(){
+      if (btn.getAttribute("aria-expanded") === "true") fold(); else open();
+    });
+
+    fold();
+
+    /* Turning a telephone changes the answer. Waited out rather than
+       measured on every pixel of a window being dragged, and never while
+       he has it open — that was his doing, not the screen's. */
+    var later;
+    window.addEventListener("resize", function(){
+      clearTimeout(later);
+      later = setTimeout(function(){
+        if (btn.getAttribute("aria-expanded") !== "true") fold();
+      }, 150);
+    });
+  });
 
   var chips = document.querySelectorAll(".chip");
   var blocks = document.querySelectorAll(".cat-block");
