@@ -71,8 +71,11 @@
 
   .co-scenes{ display:grid; gap:1.2rem; grid-template-columns:repeat(auto-fit, minmax(15rem, 1fr)); }
   .co-scene{ margin:0; }
+  /* 20/21 is the real shape of the three photographs (1400x1470). The frame
+     used to say 3/4, which was their shape only while two of them carried a
+     black band at the foot; with that gone, 3/4 would stretch them. */
   .co-scene canvas{ display:block; width:100%; height:auto; border-radius:var(--radius-sm);
-    box-shadow:var(--shadow-sm); background:var(--cream-2); aspect-ratio:3 / 4; }
+    box-shadow:var(--shadow-sm); background:var(--cream-2); aspect-ratio:20 / 21; }
   .co-scene figcaption{ margin-top:.5rem; font-size:.82rem; color:var(--cocoa-soft); }
   .co-gallery{ display:grid; gap:1rem; grid-template-columns:repeat(auto-fit, minmax(16rem, 1fr)); }
   .co-shot{ margin:0; }

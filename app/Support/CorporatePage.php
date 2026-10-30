@@ -108,21 +108,35 @@ class CorporatePage
      * onto that face in his browser, so he sees his own mark on the counter
      * rather than ours.
      */
+    /**
+     * The three photographs the chosen logo is pasted into, and where it sits.
+     *
+     * `corners` are fractions of the photograph itself — the four points of
+     * the printed face, clockwise from its top left. They belong to that
+     * exact picture: replace the file and the box lands somewhere else, so
+     * a new photograph needs new corners measured on it.
+     *
+     * All three are 1400x1470. Two of them arrived padded to 1400x1867 with
+     * a black band at the foot — 397 pixels under the café, 220 under the
+     * reception desk — which the page drew faithfully, black and all. They
+     * are cropped to the shortest of the three so the row stays even, and
+     * these corners were moved by the same arithmetic.
+     */
     public const SCENES = [
         [
             'image' => 'images/corporate/scene-cafe.jpg',
             'caption' => 'Qəhvənin yanında, kafedə',
-            'corners' => [[0.57593, 0.44676], [0.69136, 0.40046], [0.8216, 0.58009], [0.70123, 0.62778]],
+            'corners' => [[0.57593, 0.56742], [0.69136, 0.50861], [0.8216, 0.73675], [0.70123, 0.79732]],
         ],
         [
             'image' => 'images/corporate/scene-reception.jpg',
             'caption' => 'Resepşnda, qonağın qarşısında',
-            'corners' => [[0.45455, 0.42227], [0.5697, 0.42], [0.57697, 0.59591], [0.45939, 0.59818]],
+            'corners' => [[0.45455, 0.53631], [0.5697, 0.53343], [0.57697, 0.75685], [0.45939, 0.75973]],
         ],
         [
             'image' => 'images/corporate/scene-wood.jpg',
             'caption' => 'Masada, hesabla birlikdə',
-            'corners' => [[0.70437, 0.40975], [0.85313, 0.41256], [0.84688, 0.64041], [0.695, 0.6376]],
+            'corners' => [[0.70437, 0.52013], [0.85313, 0.5237], [0.84688, 0.81293], [0.695, 0.80936]],
         ],
     ];
 
