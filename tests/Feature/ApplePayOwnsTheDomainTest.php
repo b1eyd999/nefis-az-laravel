@@ -221,6 +221,34 @@ class ApplePayOwnsTheDomainTest extends TestCase
         }
     }
 
+    /**
+     * The checks I made of the deployed file are taken out of the record.
+     *
+     * One of them carried a hand-written Apple-looking user agent, to prove
+     * the hosting blocks no such request; with the recording already live,
+     * the admin would have shown it in green as a visit from Apple. Only
+     * that exact string goes — a real verifier does not send it.
+     */
+    public function test_my_own_test_fetches_are_removed_but_a_real_visit_stays(): void
+    {
+        $mine = 'Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15 ApplePay/1.0';
+        $real = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15';
+
+        Setting::put(Setting::APPLE_PAY_FETCHED, json_encode([
+            ['at' => '2026-10-30 11:51', 'ip' => '1.2.3.4', 'ua' => $mine],
+            ['at' => '2026-10-30 11:40', 'ip' => '17.0.0.1', 'ua' => $real],
+            ['at' => '2026-10-30 11:39', 'ip' => '5.6.7.8', 'ua' => 'curl/8.0'],
+        ]));
+
+        (require database_path('migrations/2026_10_30_120000_the_test_fetches_of_the_apple_file_are_taken_out_of_the_record.php'))->up();
+
+        $kept = json_decode((string) Setting::get(Setting::APPLE_PAY_FETCHED), true);
+
+        $this->assertCount(2, $kept);
+        $this->assertSame($real, $kept[0]['ua'], 'a genuine Apple visit must survive');
+        $this->assertSame('curl/8.0', $kept[1]['ua'], 'other visitors are not mine to delete either');
+    }
+
     /** A closed shop is still this shop. */
     public function test_the_ownership_files_answer_while_the_shop_is_closed(): void
     {
