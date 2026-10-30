@@ -36,6 +36,16 @@ class Order extends Model
      */
     public const OFF_THE_BOOKS = ['cancelled', 'refunded'];
 
+    /**
+     * An order nobody in the shop has dealt with yet.
+     *
+     * The sidebar's badge counts these, and so does the desktop app, which
+     * is the point of naming them once: two lists of statuses kept in step
+     * by hand drift, and the app would then announce a number the panel
+     * does not show.
+     */
+    public const WAITING = ['pending', 'awaiting_payment', 'payment_check'];
+
     protected $fillable = [
         'user_id',
         'status',

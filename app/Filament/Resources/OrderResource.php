@@ -521,6 +521,6 @@ class OrderResource extends Resource
         // 'pending' is what an order gets only when there is no way to pay at
         // all; with the card on, a new order waits for money instead, and the
         // badge had been dark ever since.
-        return static::getModel()::whereIn('status', ['pending', 'awaiting_payment', 'payment_check'])->count() ?: null;
+        return static::getModel()::whereIn('status', Order::WAITING)->count() ?: null;
     }
 }

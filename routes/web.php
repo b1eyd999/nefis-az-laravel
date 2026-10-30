@@ -4,6 +4,7 @@ use App\Http\Controllers\BoxEditorController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CourierController;
 use App\Http\Controllers\CoverController;
+use App\Http\Controllers\DesktopController;
 use App\Http\Controllers\EpointController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\GiftPageController;
@@ -278,6 +279,12 @@ Route::get('/admin-lokasiya/{item}', [PlacePrintController::class, 'show'])
 Route::get('/admin-fayl/{item}/{which}', [OrderFileController::class, 'show'])
     ->where('which', 'mektub|[0-9]{1,2}')
     ->middleware(['auth', 'staff'])->name('order.file');
+
+/* What the desktop app asks every minute: is there anything new? It carries
+   the owner's own session, so it needs no key of its own — one more long-lived
+   key on a laptop is one more thing to lose. */
+Route::get('/admin-masaustu', [DesktopController::class, 'state'])
+    ->middleware(['auth', 'staff'])->name('desktop.state');
 
 Route::middleware(['auth', 'locale', 'staff'])->prefix('admin-phone')->name('phone.')->group(function () {
     Route::get('/', [PhoneOrders::class, 'index'])->name('orders.index');
