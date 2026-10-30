@@ -44,7 +44,11 @@ class DesktopController extends Controller
                A count alone would stay silent when one order is dealt with
                and another arrives between two questions. */
             'newest_order' => (int) $newest?->id,
-            'newest_total' => $newest ? $newest->total() : 0.0,
+            /* A string, already rounded, because this hosting prints a
+               float to its full binary length: 10.30 left the shop as
+               10.300000000000007105427357601001858711242675781250. Money is
+               not a thing to hand over and hope the reader rounds it back. */
+            'newest_total' => number_format($newest ? $newest->total() : 0, 2, '.', ''),
             'messages' => (int) ContactMessageResource::getNavigationBadge(),
             'corporate' => (int) CorporateRequestResource::getNavigationBadge(),
             'reviews' => (int) ReviewResource::getNavigationBadge(),

@@ -127,7 +127,34 @@ class TheDesktopAppAsksWhatIsNewTest extends TestCase
         $this->get(self::URL)
             ->assertOk()
             ->assertJsonPath('newest_order', $newest->id)
-            ->assertJsonPath('newest_total', 35.50);
+            ->assertJsonPath('newest_total', '35.50');
+    }
+
+    /**
+     * The total leaves as «10.30», not as a float printed in full.
+     *
+     * This hosting prints floats to their whole binary length, so an order
+     * of 10.30 ₼ went out as 10.300000000000007105427357601001858711242675781250.
+     * Asserted against the text of the answer, quotation marks and all,
+     * because a raw float survives a decoded comparison on any machine whose
+     * PHP happens to print it short.
+     */
+    public function test_the_total_is_a_plain_two_decimal_string(): void
+    {
+        /* Three lines that no float adds up to exactly — the same shape as
+           the order that showed the fault. */
+        $order = $this->order('pending', 3.1);
+        $order->items()->create(['product_name' => 'B', 'price' => 3.1, 'quantity' => 1]);
+        $order->items()->create(['product_name' => 'C', 'price' => 4.1, 'quantity' => 1]);
+
+        $this->asStaff();
+
+        $answer = $this->get(self::URL)->assertOk();
+
+        $this->assertMatchesRegularExpression('/"newest_total":"\d+\.\d{2}"/', $answer->getContent(),
+            'the total was handed over as a number, so its full binary length can leak out');
+        $this->assertIsString($answer->json('newest_total'));
+        $this->assertSame('10.30', $answer->json('newest_total'));
     }
 
     /** With nothing waiting, the app is told so plainly rather than guessing. */
@@ -140,7 +167,7 @@ class TheDesktopAppAsksWhatIsNewTest extends TestCase
             ->assertOk()
             ->assertJsonPath('orders', 0)
             ->assertJsonPath('newest_order', 0)
-            ->assertJsonPath('newest_total', 0);
+            ->assertJsonPath('newest_total', '0.00');
     }
 
     /** An order dealt with and a new one arriving must not look like no change. */
