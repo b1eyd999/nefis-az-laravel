@@ -36,8 +36,9 @@ class ApplePayOwnsTheDomainTest extends TestCase
 
     private const FILE = 'well-known/apple-developer-merchantid-domain-association.txt';
 
-    /** The file ePoint sent on 2026-10-22, untouched. */
-    private const FINGERPRINT = 'b29994f86c188c8536b6d156c0c7bc86';
+    /** The file ePoint sent on 2026-10-30, untouched. The 19 October one was
+     *  replaced when they re-registered the domain; Apple looks for the newest. */
+    private const FINGERPRINT = 'b22a797e00f82150132e0d04bbaf0bb4';
 
     private const BYTES = 5736;
 
