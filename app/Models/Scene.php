@@ -30,7 +30,7 @@ class Scene extends Model
 
     protected $fillable = [
         'name', 'background', 'background_color', 'width', 'height',
-        'elements', 'preview_image', 'is_active', 'sort_order',
+        'elements', 'preview_image', 'is_active', 'sort_order', 'on_corporate',
     ];
 
     protected function casts(): array
@@ -38,6 +38,7 @@ class Scene extends Model
         return [
             'elements' => 'array',
             'is_active' => 'boolean',
+            'on_corporate' => 'boolean',
         ];
     }
 

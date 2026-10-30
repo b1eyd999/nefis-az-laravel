@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Scene;
 use App\Models\Setting;
 
 /**
@@ -190,12 +191,92 @@ class CorporatePage
         // Photographs have no sensible default: an empty gallery simply does
         // not show, rather than promising pictures that are not there.
         $page['gallery'] = self::rows($saved['gallery'] ?? null, [], ['image']);
-        $page['scenes'] = self::SCENES;
+        $page['scenes'] = self::scenes();
 
         return $page;
     }
 
+    /**
+     * The photographs the company's logo is pasted into.
+     *
+     * The owner's own, when he has marked any in the scene editor — the same
+     * editor he builds product mockups in, where a photograph is uploaded and
+     * the design's place is dragged onto it. Only the background and the
+     * first design quad are taken: the company's logo is what gets drawn
+     * there, so a box render belonging to the scene would sit under it.
+     *
+     * With nothing marked, the three that have always been here. A scene
+     * without a background or without a place for the design is passed over
+     * rather than drawn as an empty frame.
+     *
+     * @return array<int, array{url: string, caption: string, corners: array, ratio: string}>
+     */
+    public static function scenes(): array
+    {
+        $chosen = Scene::query()
+            ->where('on_corporate', true)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Scene $scene) => self::fromScene($scene))
+            ->filter()
+            ->values()
+            ->all();
+
+        return $chosen ?: self::builtInScenes();
+    }
+
+    /** @return array{url: string, caption: string, corners: array, ratio: string}|null */
+    private static function fromScene(Scene $scene): ?array
+    {
+        $face = collect($scene->elements ?? [])->firstWhere('type', 'design');
+        $width = (int) $scene->width;
+        $height = (int) $scene->height;
+
+        if (blank($scene->background) || ! $width || ! $height || count($face['corners'] ?? []) !== 4) {
+            return null;
+        }
+
+        return [
+            'url' => self::stamped((string) Media::url($scene->background), (int) $scene->updated_at?->getTimestamp()),
+            'caption' => (string) $scene->name,
+            // The editor keeps corners in the scene's own pixels; the page
+            // wants them as fractions, so one photograph's numbers mean the
+            // same thing whatever size it is drawn at.
+            'corners' => array_map(
+                fn (array $point) => [$point[0] / $width, $point[1] / $height],
+                $face['corners'],
+            ),
+            'ratio' => $width . ' / ' . $height,
+        ];
+    }
+
+    /** @return array<int, array{url: string, caption: string, corners: array, ratio: string}> */
+    private static function builtInScenes(): array
+    {
+        return array_map(fn (array $scene) => $scene + [
+            'url' => Assets::url($scene['image']),
+            // All three are 1400x1470; see the note on SCENES.
+            'ratio' => '20 / 21',
+        ], self::SCENES);
+    }
+
+    /**
+     * An address with a stamp on it.
+     *
+     * These photographs are served with a week of cache, so a replacement at
+     * the same address reaches nobody who has been here lately. Media::url
+     * may already carry a query of its own, which is why this is not a plain
+     * «?v=».
+     */
+    private static function stamped(string $url, int $stamp): string
+    {
+        return $url . (str_contains($url, '?') ? '&' : '?') . 'v=' . $stamp;
+    }
+
     /** One line of the page, in the language the visitor is reading. */
+
     public static function text(string $key): string
     {
         $value = self::all()[$key] ?? '';

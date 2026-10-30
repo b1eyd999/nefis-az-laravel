@@ -69,11 +69,15 @@
   .co-card b{ display:block; margin-bottom:.25rem; }
   .co-card p{ margin:0; font-size:.88rem; color:var(--cocoa-soft); }
 
-  .co-scenes{ display:grid; gap:1.2rem; grid-template-columns:repeat(auto-fit, minmax(15rem, 1fr)); }
+  /* Top-aligned: the owner chooses these photographs himself now, and two
+     of different shapes must not stretch to match each other. */
+  .co-scenes{ display:grid; gap:1.2rem; align-items:start;
+    grid-template-columns:repeat(auto-fit, minmax(15rem, 1fr)); }
   .co-scene{ margin:0; }
-  /* 20/21 is the real shape of the three photographs (1400x1470). The frame
-     used to say 3/4, which was their shape only while two of them carried a
-     black band at the foot; with that gone, 3/4 would stretch them. */
+  /* Each canvas is told its own photograph's shape inline, because a frame
+     with a shape of its own does not letterbox a picture — it stretches it,
+     and says nothing. 20/21 is only the fallback: the shape of the three
+     built-in photographs (1400x1470). */
   .co-scene canvas{ display:block; width:100%; height:auto; border-radius:var(--radius-sm);
     box-shadow:var(--shadow-sm); background:var(--cream-2); aspect-ratio:20 / 21; }
   .co-scene figcaption{ margin-top:.5rem; font-size:.82rem; color:var(--cocoa-soft); }
@@ -253,7 +257,8 @@
       @foreach($page['scenes'] as $i => $scene)
         <figure class="co-scene">
           <canvas class="co-scene-canvas" id="co-scene-{{ $i }}"
-                  data-photo="{{ \App\Support\Assets::url($scene['image']) }}"
+                  style="aspect-ratio:{{ $scene['ratio'] }};"
+                  data-photo="{{ $scene['url'] }}"
                   data-corners="{{ json_encode($scene['corners']) }}"
                   aria-label="{{ __($scene['caption']) }}"></canvas>
           <figcaption>{{ __($scene['caption']) }}</figcaption>

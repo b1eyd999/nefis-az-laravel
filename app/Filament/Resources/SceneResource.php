@@ -47,6 +47,13 @@ class SceneResource extends Resource
                         Forms\Components\Toggle::make('is_active')
                             ->label('Saytda göstər')
                             ->default(true),
+                        Forms\Components\Toggle::make('on_corporate')
+                            ->label('Şirkətlər səhifəsində göstər')
+                            ->helperText('«Şirkətlər üçün» səhifəsindəki «Necə görünür» bölməsi. O səhifə '
+                                . 'səhnədən yalnız fonu və dizaynın yerini götürür — qutu renderi və digər '
+                                . 'şəkillər oraya düşmür, çünki orada şirkətin öz loqosu çəkilir. Heç bir '
+                                . 'səhnə seçilməyibsə, səhifə həmişəki üç şəklini göstərir.')
+                            ->columnSpanFull(),
                     ])->columns(2),
             ]);
     }
@@ -70,6 +77,8 @@ class SceneResource extends Resource
                     ->color(fn ($state) => $state ? 'success' : 'danger'),
                 Tables\Columns\ToggleColumn::make('is_active')
                     ->label('Saytda'),
+                Tables\Columns\ToggleColumn::make('on_corporate')
+                    ->label('Şirkətlər'),
                 Tables\Columns\TextColumn::make('sort_order')
                     ->label('Sıra')
                     ->numeric()
