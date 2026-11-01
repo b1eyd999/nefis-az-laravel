@@ -86,12 +86,18 @@ class TheBlogTest extends TestCase
         $this->get('/bloq/gizli')->assertNotFound();
     }
 
+    /**
+     * Newest first, oldest last — not the order they were written into the
+     * database. Naming the article that happens to be newest today would
+     * make this fail every time one is added, which is not the contract.
+     */
     public function test_the_newest_article_stands_first(): void
     {
-        $slugs = Post::shown()->inLocale('az')->pluck('slug')->all();
+        $dates = Post::shown()->inLocale('az')->pluck('published_at');
 
-        $this->assertSame('qutuya-hansi-sekli-secmek', $slugs[0]);
-        $this->assertSame('uzaqdan-hediyye-gondermek', end($slugs));
+        $this->assertGreaterThan(1, $dates->count());
+        $this->assertSame($dates->sortDesc()->values()->all(), $dates->values()->all());
+        $this->assertSame('uzaqdan-hediyye-gondermek', Post::shown()->inLocale('az')->get()->last()->slug);
     }
 
     // ------------------------------------------------------- across tongues
@@ -314,6 +320,50 @@ class TheBlogTest extends TestCase
         }
     }
 
+    // ------------------------------------------------------- the New Year
+
+    /**
+     * The New Year article really picks up the New Year designs.
+     *
+     * It names them by slug prefix, and a prefix that matches nothing
+     * attaches nothing — silently, with the article still looking fine.
+     * The test catalogue has none of them, so it builds the five the shop's
+     * «YENİ İL» category holds and runs the migration against them.
+     */
+    public function test_the_new_year_article_takes_the_new_year_designs(): void
+    {
+        $slugs = ['kinder-yeni-il', 'kinder-yeni-il-vol-2', 'kinder-yeni-il-vol-3',
+            'alyonka-yn', 'alyonka-yn-2'];
+
+        foreach ($slugs as $slug) {
+            $this->box($slug);
+        }
+
+        // The article is already there from the first run of the migration,
+        // which had no such designs to attach; take it out and say it again.
+        Post::whereIn('slug', ['yeni-il-dizaynlari', 'novogodnie-dizayny', 'new-year-designs'])->delete();
+        (require database_path('migrations/2026_11_01_090000_the_new_year_article.php'))->up();
+
+        $az = Post::where('slug', 'yeni-il-dizaynlari')->firstOrFail();
+
+        $this->assertEqualsCanonicalizing($slugs, $az->shownProducts()->pluck('slug')->all());
+
+        // And the translations show the same five through their twin.
+        $this->assertCount(5, Post::where('slug', 'novogodnie-dizayny')->firstOrFail()->shownProducts());
+
+        $this->get('/bloq/yeni-il-dizaynlari')->assertOk()->assertSee('Bu yazıda danışdığımız dizaynlar');
+    }
+
+    /** Said twice — a second deploy — it adds nothing and changes nothing. */
+    public function test_the_new_year_migration_can_be_run_again(): void
+    {
+        $before = Post::count();
+
+        (require database_path('migrations/2026_11_01_090000_the_new_year_article.php'))->up();
+
+        $this->assertSame($before, Post::count());
+    }
+
     // ----------------------------------------------------------- the admin
 
     public function test_the_owner_edits_the_blog_in_the_admin(): void
@@ -331,9 +381,9 @@ class TheBlogTest extends TestCase
         $this->get('/admin/blog')->assertForbidden();
     }
 
-    private function box(): Product
+    private function box(string $slug = 'sinaq-qutusu'): Product
     {
-        $box = Product::create(['name' => 'Sınaq qutusu', 'slug' => 'sinaq-qutusu', 'is_active' => true,
+        $box = Product::create(['name' => 'Sınaq qutusu', 'slug' => $slug, 'is_active' => true,
             'price' => 10, 'template_width' => 3508, 'template_height' => 2480]);
         $box->photoSlots()->create(['label' => 'Şəkil', 'x' => 700, 'y' => 700, 'width' => 400, 'height' => 400,
             'rotation' => 0, 'shape' => 'rectangle', 'cutout' => false, 'sort_order' => 0]);
