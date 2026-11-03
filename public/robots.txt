@@ -6,6 +6,12 @@ Disallow: /sehne-redaktoru/
 Disallow: /qapaq-yarat
 Disallow: /xerite/
 Disallow: /sohbet/
+# The streets behind a map box, and the search that finds a place.
+# Data routes like the two above, and left out of this list by
+# oversight: Google was crawling /lokasiya/axtar?q= and reading a 422
+# of JSON as a page of the shop. /lokasiya/kafel/… is worse — a map
+# tile proxy, one address per tile, with no end to them.
+Disallow: /lokasiya/
 
 # Laravel's own health page. It answers 200, carries the shop's name in its
 # title and says «Application up» — a page of this shop as far as Google is
