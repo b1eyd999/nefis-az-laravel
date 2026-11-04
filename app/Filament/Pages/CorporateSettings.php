@@ -2,8 +2,13 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Resources\BoxSizeResource;
+use App\Models\BoxSize;
 use App\Models\Setting;
 use App\Support\CorporatePage;
+use Filament\Actions;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -19,8 +24,9 @@ use Filament\Pages\Page;
  * Nothing here is code the owner has to wait for — he rewrites the page and
  * saves it.
  */
-class CorporateSettings extends Page implements HasForms
+class CorporateSettings extends Page implements HasActions, HasForms
 {
+    use InteractsWithActions;
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-building-office-2';
@@ -45,6 +51,24 @@ class CorporateSettings extends Page implements HasForms
     public function mount(): void
     {
         $this->form->fill(CorporatePage::all() + ['enabled' => CorporatePage::enabled()]);
+    }
+
+    /**
+     * The way across to the sizes.
+     *
+     * They are a screen of their own, further down a long menu, and the
+     * owner looking for «where do I change a size» looks here first — this
+     * is the page that carries every other word on /sirketler-ucun.
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\Action::make('sizes')
+                ->label('Qutu ölçüləri')
+                ->icon('heroicon-o-square-3-stack-3d')
+                ->color('gray')
+                ->url(fn () => BoxSizeResource::getUrl('index')),
+        ];
     }
 
     public function form(Form $form): Form
@@ -76,7 +100,22 @@ class CorporateSettings extends Page implements HasForms
                     ->description('Səhifənin yuxarısındakı üç rəqəm və onların altındakı izah.')
                     ->schema([
                         $text('size_label', 'Ölçünün adı', 40),
-                        $text('size', 'Ölçü', 80),
+                        /* Once a single size exists in «Qutu ölçüləri», the
+                           chip on the page is that size's own wording and
+                           this line is no longer read. Said here, on the
+                           field, because the owner's first move is to come
+                           back to this form and retype it — and nothing
+                           would happen. */
+                        $text('size', 'Ölçü', 80)
+                            ->helperText(fn () => BoxSize::offered()->exists()
+                                ? new \Illuminate\Support\HtmlString(
+                                    'Bu yazı artıq işlənmir: ölçülər <b>Qutu ölçüləri</b> bölməsindən gəlir. '
+                                    . '<a href="' . BoxSizeResource::getUrl('index')
+                                    . '" style="text-decoration:underline">Oraya keç</a> — '
+                                    . 'adını, ölçüsünü və qiymətini orada dəyişirsiniz.'
+                                )
+                                : 'Yalnız bir ölçü satdığınız müddətdə. «Qutu ölçüləri» bölməsinə bir ölçü '
+                                    . 'əlavə etsəniz, səhifə onu göstərir və bu yazını oxumur.'),
                         $text('min_qty_label', 'Minimumun adı', 40),
                         Forms\Components\TextInput::make('min_qty')->label('Minimum sifariş, ədəd')
                             ->numeric()->minValue(1)->maxValue(100000)->required()

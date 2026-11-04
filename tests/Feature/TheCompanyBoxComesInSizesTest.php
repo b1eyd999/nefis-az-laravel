@@ -256,6 +256,30 @@ class TheCompanyBoxComesInSizesTest extends TestCase
         $this->get('/admin/box-sizes/create')->assertOk();
     }
 
+    /**
+     * The corporate page's own settings say where a size is really changed.
+     *
+     * «Ölçü» sits on that form and was the size for as long as there were no
+     * sizes. The moment one exists the field is no longer read, and an owner
+     * retyping it there would watch the page not change — so the field says
+     * so, and the page carries a button across.
+     */
+    public function test_the_corporate_settings_point_at_the_sizes(): void
+    {
+        $this->actingAs(\App\Models\User::factory()->create(['is_admin' => true]));
+
+        // With none, the field is still the size and says only what is next.
+        $this->get('/admin/corporate')->assertOk()
+            ->assertSee('Qutu ölçüləri')
+            ->assertDontSee('Bu yazı artıq işlənmir');
+
+        $this->made();
+
+        $this->get('/admin/corporate')->assertOk()
+            ->assertSee('Bu yazı artıq işlənmir', false)
+            ->assertSee('/admin/box-sizes', false);
+    }
+
     public function test_a_manager_does_not_get_into_the_sizes(): void
     {
         $this->actingAs(\App\Models\User::factory()->create([

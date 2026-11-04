@@ -35,7 +35,11 @@ class BoxSizeResource extends Resource
 
     protected static ?string $slug = 'box-sizes';
 
-    protected static ?int $navigationSort = 89;
+    /* Beside «Şirkətlər üçün», which is the only page these sizes belong to.
+       Left at the far end of the menu it was findable only by somebody who
+       already knew it existed, and the owner — looking for where a size is
+       changed — went to the corporate page's own settings instead. */
+    protected static ?int $navigationSort = 6;
 
     public static function form(Form $form): Form
     {
