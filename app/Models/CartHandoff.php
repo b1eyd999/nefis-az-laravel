@@ -136,6 +136,74 @@ class CartHandoff extends Model
         };
     }
 
+    /**
+     * The lines, each with the design it names and what it comes to.
+     *
+     * A design taken off the shelf since the basket was made comes back with
+     * `product` null — the same thing the basket itself does when it is
+     * opened, where the line is simply not counted. The admin shows it
+     * rather than hiding it, so the owner can see why a total is short.
+     *
+     * @return array<int, array{item: array, product: ?Product, quantity: int, unit: float, sum: float, gone: bool}>
+     */
+    public function lines(): array
+    {
+        $out = [];
+
+        foreach ($this->items ?? [] as $item) {
+            $product = isset($item['product_id']) ? Product::find($item['product_id']) : null;
+            $quantity = max(1, (int) ($item['quantity'] ?? 1));
+            $gone = $product === null && ! Cart::isExtra($item);
+            $unit = $gone ? 0.0 : Cart::unitPrice($item, $product);
+
+            $out[] = [
+                'item' => $item,
+                'product' => $product,
+                'quantity' => $quantity,
+                'unit' => $unit,
+                'sum' => $unit * $quantity,
+                'gone' => $gone,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Put one more line in, shaped exactly as the cart shapes its own.
+     *
+     * Built from Cart::add's own keys rather than a shorter array of our
+     * own: this basket is handed to a customer and from that moment the
+     * shop's ordinary cart is what reads it, so a line missing a key the
+     * cart expects would break somewhere far from here.
+     */
+    public function addItem(int $productId, int $quantity = 1, array $photoPaths = [], array $customTexts = [],
+        array $photoLabels = [], array $textLabels = []): void
+    {
+        $items = $this->items ?? [];
+
+        $items[] = [
+            'id' => Str::uuid()->toString(),
+            'product_id' => $productId,
+            'photo_paths' => array_values($photoPaths),
+            'custom_texts' => array_values($customTexts),
+            'quantity' => max(1, $quantity),
+            'photo_labels' => array_values($photoLabels),
+            'text_labels' => array_values($textLabels),
+            'photo_frames' => [],
+            'star' => null,
+            'spot' => null,
+            'chocolate' => null,
+            'wrapping' => null,
+            'letter' => null,
+            'ar' => null,
+            'spotify' => null,
+            'bundle' => null,
+        ];
+
+        $this->update(['items' => array_values($items)]);
+    }
+
     /** How many pieces are in it, the way the cart counts them. */
     public function pieces(): int
     {

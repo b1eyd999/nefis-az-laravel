@@ -16,10 +16,12 @@ use Illuminate\Support\HtmlString;
 /**
  * The baskets the shop has filled for customers who could not fill them.
  *
- * Nothing is edited here: a basket is built on the site, in the same design
- * page a customer would use, and turned into a link from the basket page.
- * This is the list of those links — who each was for, whether it was opened,
- * and which of them became an order.
+ * A basket is still built on the site, in the same design page a customer
+ * would use, and turned into a link from the basket page — that is the only
+ * way a box with a photograph and words on it can be made. What this screen
+ * adds is everything afterwards: opening a basket to see what is in it,
+ * changing how many of a line, taking a line out, and putting in a design
+ * that needs no photograph.
  */
 class CartHandoffResource extends Resource
 {
@@ -47,6 +49,108 @@ class CartHandoffResource extends Resource
             ->count();
 
         return $waiting > 0 ? (string) $waiting : null;
+    }
+
+    public static function form(Forms\Form $form): Forms\Form
+    {
+        return $form->schema([
+            Forms\Components\Section::make('Səbətin içi')
+                ->description('Sətri silə və sayını dəyişə bilərsiniz. Yeni sətir yuxarıdakı '
+                    . '«Məhsul əlavə et» düyməsi ilə qoyulur.')
+                ->schema([
+                    Forms\Components\Repeater::make('items')
+                        ->label('')
+                        ->addable(false)
+                        ->reorderable(false)
+                        ->deletable()
+                        ->deleteAction(fn (Forms\Components\Actions\Action $action) => $action->label('Sətri sil'))
+                        ->itemLabel(fn (array $state) => self::lineTitle($state))
+                        ->schema([
+                            Forms\Components\Hidden::make('id'),
+                            Forms\Components\Placeholder::make('what')
+                                ->label('')
+                                ->content(fn (Forms\Get $get) => self::lineDetail((string) $get('id'), $get('../../items'))),
+                            Forms\Components\TextInput::make('quantity')
+                                ->label('Ədəd')
+                                ->numeric()->minValue(1)->maxValue(999)->required(),
+                        ])
+                        ->columns(1),
+                ]),
+
+            Forms\Components\Section::make('Səbət haqqında')
+                ->schema([
+                    Forms\Components\TextInput::make('note')
+                        ->label('Kimin üçün')
+                        ->helperText('Yalnız sizin üçün — müştəri bunu görmür.')
+                        ->maxLength(120),
+                    Forms\Components\Toggle::make('rush')
+                        ->label('Təcili hazırlansın')
+                        ->helperText('Müştəri səbəti açanda bu seçim onda da qalır.'),
+                    Forms\Components\DateTimePicker::make('expires_at')
+                        ->label('Nə vaxta qədər açıqdır')
+                        ->seconds(false)
+                        ->helperText('Bu tarixdən sonra link açılmır.'),
+                ])->columns(2),
+        ]);
+    }
+
+    /** The one line of a basket, as the repeater's closed row says it. */
+    public static function lineTitle(array $item): string
+    {
+        $name = isset($item['product_id']) ? \App\Models\Product::find($item['product_id'])?->name : null;
+
+        if ($name === null) {
+            $name = match (true) {
+                \App\Support\Cart::isLetter($item) => 'Polaroid məktub',
+                \App\Support\Cart::isLive($item) => 'Canlı şəkil',
+                default => 'Silinmiş dizayn',
+            };
+        }
+
+        return $name . ' × ' . max(1, (int) ($item['quantity'] ?? 1));
+    }
+
+    /**
+     * What is actually on that line: the pictures the customer's box carries
+     * and the words printed on it. Read from the record rather than from the
+     * row's own state, because the state holds only the two fields the form
+     * edits — everything else would be lost to the placeholder.
+     */
+    public static function lineDetail(string $id, mixed $items): HtmlString
+    {
+        $item = collect(is_array($items) ? $items : [])->firstWhere('id', $id) ?: [];
+
+        $bits = [];
+
+        foreach (array_filter((array) ($item['custom_texts'] ?? [])) as $i => $text) {
+            $label = ((array) ($item['text_labels'] ?? []))[$i] ?? 'Yazı';
+            $bits[] = '<div><b>' . e($label) . ':</b> ' . e($text) . '</div>';
+        }
+
+        $shots = '';
+        foreach (array_filter((array) ($item['photo_paths'] ?? [])) as $path) {
+            $url = \App\Support\Media::url($path);
+            if ($url) {
+                $shots .= '<img src="' . e($url) . '" alt="" style="height:88px;border-radius:.5rem;'
+                    . 'object-fit:cover;border:1px solid rgba(0,0,0,.1)">';
+            }
+        }
+        if ($shots !== '') {
+            $bits[] = '<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.4rem">' . $shots . '</div>';
+        }
+
+        foreach (['chocolate' => 'Şokolad', 'wrapping' => 'Qablaşdırma', 'letter' => 'Məktub',
+            'ar' => 'Canlı şəkil', 'spotify' => 'Mahnı'] as $key => $label) {
+            if (filled($item[$key] ?? null)) {
+                $bits[] = '<div><b>' . $label . ':</b> ' . __('var') . '</div>';
+            }
+        }
+
+        if ($bits === []) {
+            $bits[] = '<div style="opacity:.6">' . __('Şəkil və yazı yoxdur.') . '</div>';
+        }
+
+        return new HtmlString('<div style="font-size:.85rem;line-height:1.6">' . implode('', $bits) . '</div>');
     }
 
     public static function table(Table $table): Table
@@ -139,6 +243,7 @@ class CartHandoffResource extends Resource
                     }),
                 /* The link itself, to copy out of the panel and paste into
                    whichever conversation it belongs to. */
+                Tables\Actions\EditAction::make()->label('Bax')->icon('heroicon-o-eye'),
                 Tables\Actions\Action::make('link')
                     ->label('Link')
                     ->icon('heroicon-o-clipboard')
@@ -164,7 +269,10 @@ class CartHandoffResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => Pages\ListCartHandoffs::route('/')];
+        return [
+            'index' => Pages\ListCartHandoffs::route('/'),
+            'edit' => Pages\EditCartHandoff::route('/{record}/edit'),
+        ];
     }
 
     public static function canCreate(): bool
