@@ -105,7 +105,19 @@ class EditCartHandoff extends EditRecord
                     ->orderBy('sort_order')->orderBy('name')->pluck('name', 'id'))
                 ->searchable()
                 ->required()
-                ->live(),
+                ->live()
+                /* The rows are put there the moment a design is chosen, and
+                   not left to the repeaters' own defaults: a default is read
+                   once, when the form is first filled, and at that moment no
+                   design has been picked — so the fields stayed empty and the
+                   box could not be given its photograph at all. */
+                ->afterStateUpdated(function (mixed $state, Forms\Set $set): void {
+                    $set('photos', array_map(
+                        fn (array $row) => ['label' => $row['label'], 'file' => null],
+                        $this->photoRows($state)
+                    ));
+                    $set('texts', array_fill(0, $this->textCount($state), ''));
+                }),
 
             Forms\Components\TextInput::make('quantity')
                 ->label('Ədəd')->numeric()->default(1)->minValue(1)->maxValue(999)->required(),
@@ -120,8 +132,15 @@ class EditCartHandoff extends EditRecord
                 ->label('Şəkillər')
                 ->visible(fn (Forms\Get $get) => $this->slotCount($get('product_id')) > 0)
                 ->schema([
+                    /* The slot's own name — «Üz şəkli», «Arxa şəkli» — rides
+                       along as a field of the row rather than as a loose key
+                       beside it, so that the row's head, the upload's own
+                       label and the line written into the basket all read it
+                       from something the form actually declares. */
+                    Forms\Components\Hidden::make('label'),
                     Forms\Components\FileUpload::make('file')
-                        ->label('')->image()->disk('public')->directory('cart-photos')->maxSize(8192)
+                        ->label(fn (Forms\Get $get) => $get('label') ?: 'Şəkil')
+                        ->image()->disk('public')->directory('cart-photos')->maxSize(8192)
                         /* Required, because nothing downstream can mend it:
                            the customer's basket page offers no way to open a
                            line and put a picture in, so a box added blank
@@ -129,15 +148,13 @@ class EditCartHandoff extends EditRecord
                         ->required(),
                 ])
                 ->addable(false)->deletable(false)->reorderable(false)
-                ->itemLabel(fn (array $state) => $state['label'] ?? null)
-                ->default(fn (Forms\Get $get) => $this->photoRows($get('product_id'))),
+                ->itemLabel(fn (array $state) => $state['label'] ?? null),
 
             Forms\Components\Repeater::make('texts')
                 ->label('Yazılar')
                 ->visible(fn (Forms\Get $get) => $this->textCount($get('product_id')) > 0)
                 ->simple(Forms\Components\TextInput::make('text')->label('')->maxLength(200))
-                ->addable(false)->deletable(false)->reorderable(false)
-                ->default(fn (Forms\Get $get) => array_fill(0, $this->textCount($get('product_id')), '')),
+                ->addable(false)->deletable(false)->reorderable(false),
         ];
     }
 
@@ -183,7 +200,9 @@ class EditCartHandoff extends EditRecord
         $paths = [];
         $labels = [];
 
-        foreach ((array) ($data['photos'] ?? []) as $i => $row) {
+        $named = $this->photoRows($product->id);
+
+        foreach (array_values((array) ($data['photos'] ?? [])) as $i => $row) {
             $file = $row['file'] ?? null;
 
             if (blank($file)) {
@@ -193,7 +212,7 @@ class EditCartHandoff extends EditRecord
             /* Filament has already put the file on the disk and hands back
                its path; nothing is moved, only recorded. */
             $paths[] = is_array($file) ? (string) reset($file) : (string) $file;
-            $labels[] = $this->photoRows($product->id)[$i]['label'] ?? 'Şəkil';
+            $labels[] = $row['label'] ?? ($named[$i]['label'] ?? 'Şəkil');
         }
 
         return [$paths, $labels];

@@ -185,6 +185,46 @@ class TheReadyBasketCanBeOpenedTest extends TestCase
 
     // --------------------------------------------------------- adding one
 
+    /**
+     * Choosing a design puts its photograph fields on the form.
+     *
+     * Left to the repeater's own `default()` this looked right and did
+     * nothing: a default is read once, when the form is first filled, and at
+     * that moment no design has been chosen. The owner picked a design that
+     * needs a picture, saw no field to put one in, and the guard below then
+     * refused the line — the design simply could not be added.
+     */
+    public function test_choosing_a_design_puts_its_photograph_fields_there(): void
+    {
+        $basket = $this->basket($this->design());
+        $box = $this->design('İki pəncərə', withSlot: true);
+        $box->photoSlots()->create(['label' => 'Arxa şəkli', 'x' => 1400, 'y' => 700, 'width' => 400,
+            'height' => 400, 'rotation' => 0, 'shape' => 'rectangle', 'cutout' => false, 'sort_order' => 1]);
+
+        $page = Livewire::test(EditCartHandoff::class, ['record' => $basket->getKey()])
+            ->mountAction('add');
+
+        // Set through Livewire, the way the browser does, so the design's
+        // own `afterStateUpdated` runs.
+        $page->set('mountedActionsData.0.product_id', $box->id);
+
+        $data = $page->get('mountedActionsData')[0];
+
+        $this->assertSame(['Üz şəkli', 'Arxa şəkli'], array_column($data['photos'], 'label'));
+        $this->assertCount(1, $data['texts']);
+
+        /* And they are still named after the next thing he touches. The name
+           of a slot is not a field the owner fills in, so unless the form
+           carries it as one of its own it is dropped the next time the page
+           talks to the server — and both upload boxes end up called «Şəkil». */
+        $page->set('mountedActionsData.0.quantity', 3);
+
+        $this->assertSame(
+            ['Üz şəkli', 'Arxa şəkli'],
+            array_column($page->get('mountedActionsData')[0]['photos'], 'label')
+        );
+    }
+
     public function test_a_design_is_added_to_the_basket(): void
     {
         $basket = $this->basket($this->design());
@@ -215,7 +255,32 @@ class TheReadyBasketCanBeOpenedTest extends TestCase
         $needsPhoto = $this->design('Lokasiya HOME', withSlot: true);
 
         Livewire::test(EditCartHandoff::class, ['record' => $basket->getKey()])
-            ->callAction('add', ['product_id' => $needsPhoto->id, 'quantity' => 1]);
+            ->callAction('add', ['product_id' => $needsPhoto->id, 'quantity' => 1])
+            ->assertHasActionErrors(['photos.0.file']);
+
+        $this->assertCount(1, $basket->refresh()->items);
+    }
+
+    /**
+     * And not even when the upload field was never on the form.
+     *
+     * The field only exists once a design has been chosen, so a submission
+     * that reached the action without it — a hand-made request, or a form
+     * whose rows were set rather than typed — would otherwise walk past the
+     * required field and put a blank box in. The same check stands in the
+     * action itself.
+     */
+    public function test_the_guard_also_stands_where_the_field_never_appeared(): void
+    {
+        $basket = $this->basket($this->design());
+        $needsPhoto = $this->design('Lokasiya EV', withSlot: true);
+
+        Livewire::test(EditCartHandoff::class, ['record' => $basket->getKey()])
+            ->mountAction('add')
+            // Set, not chosen: the design's own hook never runs, so no
+            // upload row is ever put on the form.
+            ->setActionData(['product_id' => $needsPhoto->id, 'quantity' => 1, 'photos' => [], 'texts' => []])
+            ->callMountedAction();
 
         \Filament\Notifications\Notification::assertNotified('Şəkil lazımdır');
         $this->assertCount(1, $basket->refresh()->items);
