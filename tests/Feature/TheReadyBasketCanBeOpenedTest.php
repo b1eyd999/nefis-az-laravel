@@ -62,8 +62,11 @@ class TheReadyBasketCanBeOpenedTest extends TestCase
                 'photo_paths' => ['cart-photos/one.webp'],
                 'custom_texts' => ['Ad günün mübarək'],
                 'quantity' => 2,
-                'photo_labels' => ['Üz şəkli'],
-                'text_labels' => ['Ad'],
+                'photo_labels' => ['1. Üz şəkli'],
+                /* Shaped the way the design page writes it, not as a list of
+                   names. A fixture that said `['Ad']` is why this screen went
+                   live able to open only the baskets a test had made. */
+                'text_labels' => [['label' => 'Ad', 'fixed' => false, 'repeat' => false]],
                 'photo_frames' => ['circle'],
                 'star' => ['date' => '2020-08-14', 'place' => 'Bakı'],
                 'spot' => null,
@@ -89,6 +92,55 @@ class TheReadyBasketCanBeOpenedTest extends TestCase
             ->assertSee('Ulduz xəritəsi')
             ->assertSee('Ad günün mübarək')
             ->assertSee('Bayram bəy');
+    }
+
+    /**
+     * A basket the shop itself made opens, not only one a test wrote.
+     *
+     * The names of the lines of writing are kept as
+     * `['label' => …, 'fixed' => …, 'repeat' => …]` — that is what the design
+     * page writes and what the order screen reads. Printed straight, the
+     * page answered «500 Server Error» for every real basket in the shop,
+     * and the test suite said nothing because its own fixture held a list of
+     * plain names that the shop has never written.
+     */
+    public function test_a_basket_built_the_way_the_shop_builds_them_opens(): void
+    {
+        $box = $this->design('Ulduz xəritəsi', withSlot: true);
+        $box->textSlots()->create(['label' => 'Tarix', 'x' => 700, 'y' => 1400, 'width' => 400,
+            'height' => 80, 'rotation' => 0, 'size' => 40, 'color' => '#000000',
+            'align' => 'center', 'sort_order' => 1]);
+
+        $basket = CartHandoff::create([
+            'token' => \Illuminate\Support\Str::random(40),
+            'items' => [[
+                'id' => 'line-1',
+                'product_id' => $box->id,
+                'photo_paths' => [],
+                'custom_texts' => ['Bakı', '14 avqust 2020'],
+                'quantity' => 1,
+                'photo_labels' => \App\Models\OrderItem::photoLabelsFor($box),
+                'text_labels' => \App\Models\OrderItem::textLabelsFor($box),
+                'photo_frames' => [],
+                'star' => null, 'spot' => null, 'chocolate' => null, 'wrapping' => null,
+                'letter' => null, 'ar' => null, 'spotify' => null, 'bundle' => null,
+            ]],
+            'rush' => false,
+        ]);
+
+        $this->get(CartHandoffResource::getUrl('edit', ['record' => $basket]))
+            ->assertOk()
+            ->assertSee('Bakı');
+
+        /* And each caption is under its own name. Read on the page itself
+           this proves nothing: «Ad» is a part of half the words on an
+           Azerbaijani admin screen, so a line that had quietly fallen back
+           to «Yazı» would still have passed. */
+        $html = (string) CartHandoffResource::lineDetail('line-1', $basket->items);
+
+        $this->assertStringContainsString('<b>Ad:</b> Bakı', $html);
+        $this->assertStringContainsString('<b>Tarix:</b> 14 avqust 2020', $html);
+        $this->assertStringNotContainsString('Yazı', $html);
     }
 
     public function test_the_list_offers_a_way_in(): void
@@ -210,8 +262,8 @@ class TheReadyBasketCanBeOpenedTest extends TestCase
 
         $data = $page->get('mountedActionsData')[0];
 
-        $this->assertSame(['Üz şəkli', 'Arxa şəkli'], array_column($data['photos'], 'label'));
-        $this->assertCount(1, $data['texts']);
+        $this->assertSame(['1. Üz şəkli', '2. Arxa şəkli'], array_column($data['photos'], 'label'));
+        $this->assertSame(['Ad'], array_column($data['texts'], 'label'));
 
         /* And they are still named after the next thing he touches. The name
            of a slot is not a field the owner fills in, so unless the form
@@ -220,9 +272,93 @@ class TheReadyBasketCanBeOpenedTest extends TestCase
         $page->set('mountedActionsData.0.quantity', 3);
 
         $this->assertSame(
-            ['Üz şəkli', 'Arxa şəkli'],
+            ['1. Üz şəkli', '2. Arxa şəkli'],
             array_column($page->get('mountedActionsData')[0]['photos'], 'label')
         );
+    }
+
+    /**
+     * A window the night sky fills is not a window to upload into.
+     *
+     * It asks the customer for nothing, so it is not on the shop's list of
+     * photographs either. Counted here it would both demand a picture that
+     * does not exist and push every name one place along the line.
+     */
+    public function test_a_window_filled_by_the_sky_is_not_asked_for(): void
+    {
+        $basket = $this->basket($this->design());
+        $box = $this->design('Göy üzü', withSlot: true);
+        $box->photoSlots()->create(['label' => 'Ulduzlar', 'x' => 1400, 'y' => 700, 'width' => 400,
+            'height' => 400, 'rotation' => 0, 'shape' => 'rectangle', 'cutout' => false,
+            'sort_order' => 1, 'fill' => 'sky']);
+
+        $page = Livewire::test(EditCartHandoff::class, ['record' => $basket->getKey()])
+            ->mountAction('add');
+        $page->set('mountedActionsData.0.product_id', $box->id);
+
+        $this->assertSame(
+            ['1. Üz şəkli'],
+            array_column($page->get('mountedActionsData')[0]['photos'], 'label')
+        );
+    }
+
+    /**
+     * The line's own names are written the way the rest of the shop reads
+     * them.
+     *
+     * The basket is handed to a customer, becomes an order, and is read from
+     * then on by the checkout and the order screen — both of which take
+     * `text_labels` apart as `['label' => …, 'fixed' => …, 'repeat' => …]`.
+     * A list of plain names there is a fault that only shows up later, in a
+     * place far from this screen.
+     */
+    public function test_the_added_line_names_its_fields_the_way_the_shop_does(): void
+    {
+        $basket = $this->basket($this->design());
+        $box = $this->design('Adlı qutu', withSlot: true);
+
+        Livewire::test(EditCartHandoff::class, ['record' => $basket->getKey()])
+            ->callAction('add', [
+                'product_id' => $box->id,
+                'quantity' => 1,
+                'photos' => [['label' => '1. Üz şəkli', 'file' => ['k' => 'cart-photos/x.webp']]],
+                'texts' => [['label' => 'Ad', 'fixed' => false, 'value' => 'Leyla']],
+            ]);
+
+        $line = $basket->refresh()->items[1];
+
+        $this->assertSame(\App\Models\OrderItem::textLabelsFor($box), $line['text_labels']);
+        $this->assertSame(\App\Models\OrderItem::photoLabelsFor($box), $line['photo_labels']);
+        $this->assertSame(['Leyla'], $line['custom_texts']);
+    }
+
+    /**
+     * A caption left empty keeps its place in the line.
+     *
+     * The words and the names beside them are two lists read by position.
+     * Drop the blank one and every caption after it is printed under the
+     * name of the one before.
+     */
+    public function test_an_empty_caption_keeps_its_place(): void
+    {
+        $basket = $this->basket($this->design());
+        $box = $this->design('İki yazı', withSlot: true);
+        $box->textSlots()->create(['label' => 'Tarix', 'x' => 700, 'y' => 1400, 'width' => 400,
+            'height' => 80, 'rotation' => 0, 'size' => 40, 'color' => '#000000',
+            'align' => 'center', 'sort_order' => 1]);
+
+        Livewire::test(EditCartHandoff::class, ['record' => $basket->getKey()])
+            ->callAction('add', [
+                'product_id' => $box->id,
+                'quantity' => 1,
+                'photos' => [['label' => '1. Üz şəkli', 'file' => ['k' => 'cart-photos/x.webp']]],
+                'texts' => [
+                    ['label' => 'Ad', 'fixed' => false, 'value' => ''],
+                    ['label' => 'Tarix', 'fixed' => false, 'value' => '14.08.2020'],
+                ],
+            ]);
+
+        $this->assertSame(['', '14.08.2020'], $basket->refresh()->items[1]['custom_texts']);
     }
 
     public function test_a_design_is_added_to_the_basket(): void

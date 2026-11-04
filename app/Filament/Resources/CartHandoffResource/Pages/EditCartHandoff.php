@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CartHandoffResource\Pages;
 
 use App\Filament\Resources\CartHandoffResource;
+use App\Models\OrderItem;
 use App\Models\Product;
 use Filament\Actions;
 use Filament\Forms;
@@ -41,7 +42,7 @@ class EditCartHandoff extends EditRecord
                         return;
                     }
 
-                    [$paths, $labels] = $this->storePhotos($product, $data);
+                    $paths = $this->storePhotos($data);
 
                     /* Checked here and not only on the upload field: that
                        field only exists once a design has been chosen, so a
@@ -49,7 +50,7 @@ class EditCartHandoff extends EditRecord
                        a blank box in the basket. Nothing downstream can mend
                        one — the customer's basket page offers no way to open
                        a line and add a picture. */
-                    if ($paths === [] && $product->photoSlots()->exists()) {
+                    if ($paths === [] && $this->photoRows($product->id) !== []) {
                         Notification::make()->danger()
                             ->title('Şəkil lazımdır')
                             ->body('«' . $product->name . '» şəkilsiz hazırlanmır. Şəkli yükləyin.')
@@ -62,9 +63,21 @@ class EditCartHandoff extends EditRecord
                         productId: $product->id,
                         quantity: (int) ($data['quantity'] ?? 1),
                         photoPaths: $paths,
-                        customTexts: array_values(array_filter((array) ($data['texts'] ?? []), 'strlen')),
-                        photoLabels: $labels,
-                        textLabels: $this->textLabels($product),
+                        /* Every slot keeps its place, empty ones included.
+                           The names beside them are a list of their own, read
+                           by position — drop the blanks and the second
+                           caption is printed under the first one's name. */
+                        customTexts: array_map(
+                            fn ($row) => (string) ($row['value'] ?? ''),
+                            array_values((array) ($data['texts'] ?? []))
+                        ),
+                        /* The shop's own two lists, not names made up here:
+                           the basket is handed to a customer and read from
+                           then on by the ordinary cart, the checkout and the
+                           order screen, each of which expects these exactly
+                           as the design page writes them. */
+                        photoLabels: OrderItem::photoLabelsFor($product),
+                        textLabels: OrderItem::textLabelsFor($product),
                     );
 
                     Notification::make()->success()->title('Səbətə əlavə olundu')->send();
@@ -112,11 +125,8 @@ class EditCartHandoff extends EditRecord
                    design has been picked — so the fields stayed empty and the
                    box could not be given its photograph at all. */
                 ->afterStateUpdated(function (mixed $state, Forms\Set $set): void {
-                    $set('photos', array_map(
-                        fn (array $row) => ['label' => $row['label'], 'file' => null],
-                        $this->photoRows($state)
-                    ));
-                    $set('texts', array_fill(0, $this->textCount($state), ''));
+                    $set('photos', $this->photoRows($state));
+                    $set('texts', $this->textRows($state));
                 }),
 
             Forms\Components\TextInput::make('quantity')
@@ -124,13 +134,13 @@ class EditCartHandoff extends EditRecord
 
             Forms\Components\Placeholder::make('hint')
                 ->label('')
-                ->visible(fn (Forms\Get $get) => $this->slotCount($get('product_id')) > 0)
+                ->visible(fn (Forms\Get $get) => $this->photoRows($get('product_id')) !== [])
                 ->content('Bu dizayn şəkil istəyir. Şəkli burada yükləyin — boş qutu səbətə düşməsin.'),
 
             // One upload and one line of text per slot the design really has.
             Forms\Components\Repeater::make('photos')
                 ->label('Şəkillər')
-                ->visible(fn (Forms\Get $get) => $this->slotCount($get('product_id')) > 0)
+                ->visible(fn (Forms\Get $get) => $this->photoRows($get('product_id')) !== [])
                 ->schema([
                     /* The slot's own name — «Üz şəkli», «Arxa şəkli» — rides
                        along as a field of the row rather than as a loose key
@@ -152,38 +162,77 @@ class EditCartHandoff extends EditRecord
 
             Forms\Components\Repeater::make('texts')
                 ->label('Yazılar')
-                ->visible(fn (Forms\Get $get) => $this->textCount($get('product_id')) > 0)
-                ->simple(Forms\Components\TextInput::make('text')->label('')->maxLength(200))
-                ->addable(false)->deletable(false)->reorderable(false),
+                ->visible(fn (Forms\Get $get) => $this->textRows($get('product_id')) !== [])
+                ->schema([
+                    Forms\Components\Hidden::make('label'),
+                    Forms\Components\Hidden::make('fixed'),
+                    Forms\Components\TextInput::make('value')
+                        ->label(fn (Forms\Get $get) => $get('label') ?: 'Yazı')
+                        ->maxLength(200)
+                        /* A line the design writes itself, or one the night
+                           sky fills in, is shown but not typed over — and
+                           read-only rather than disabled, because a disabled
+                           field comes back empty and the slot beneath it
+                           would be printed blank. */
+                        ->readOnly(fn (Forms\Get $get) => (bool) $get('fixed'))
+                        ->helperText(fn (Forms\Get $get) => $get('fixed')
+                            ? 'Dizaynın öz yazısı — dəyişmir.'
+                            : null),
+                ])
+                ->addable(false)->deletable(false)->reorderable(false)
+                ->itemLabel(fn (array $state) => $state['label'] ?? null),
         ];
     }
 
-    private function slotCount(mixed $productId): int
-    {
-        return $productId ? (int) Product::find($productId)?->photoSlots()->count() : 0;
-    }
-
-    private function textCount(mixed $productId): int
-    {
-        return $productId ? (int) Product::find($productId)?->textSlots()->count() : 0;
-    }
-
-    /** @return array<int, array{label: string}> */
+    /**
+     * One upload row per window the customer would be asked to fill.
+     *
+     * Named by the shop's own list rather than by the slots' labels: a window
+     * the night sky or a street map fills asks for nothing, and counting it
+     * here would both demand a photograph that does not exist and push every
+     * name one place along the line written into the basket.
+     *
+     * @return array<int, array{label: string, file: null}>
+     */
     private function photoRows(mixed $productId): array
     {
-        if (! $productId) {
+        $product = $productId ? Product::find($productId) : null;
+
+        if (! $product) {
             return [];
         }
 
-        return Product::find($productId)?->photoSlots()->orderBy('sort_order')->get()
-            ->map(fn ($slot) => ['label' => $slot->label ?: 'Şəkil'])->all() ?? [];
+        return array_map(
+            fn (string $label) => ['label' => $label, 'file' => null],
+            OrderItem::photoLabelsFor($product)
+        );
     }
 
-    /** @return array<int, string> */
-    private function textLabels(Product $product): array
+    /**
+     * One row per line of writing on the box, in the design's own order.
+     *
+     * Every slot gets a row, the design's own wording included, because the
+     * values are read back by position: leave one out and the next caption
+     * is printed in its place.
+     *
+     * @return array<int, array{label: string, fixed: bool, value: string}>
+     */
+    private function textRows(mixed $productId): array
     {
-        return $product->textSlots()->orderBy('sort_order')->get()
-            ->map(fn ($slot) => (string) ($slot->label ?: 'Yazı'))->all();
+        $product = $productId ? Product::find($productId) : null;
+
+        if (! $product) {
+            return [];
+        }
+
+        return $product->textSlots->values()->map(fn ($slot) => [
+            'label' => (string) ($slot->label ?: 'Mətn'),
+            'fixed' => $slot->isGiven(),
+            /* The design's own wording is carried over; a caption the sky
+               writes is left empty, because there is no sky on a line put in
+               from here — no date and no place were ever asked for. */
+            'value' => $slot->fixed ? (string) $slot->default_value : '',
+        ])->all();
     }
 
     /**
@@ -193,16 +242,13 @@ class EditCartHandoff extends EditRecord
      * a customer and the checkout reads these paths exactly as it reads his,
      * and the sweeper that clears stray photographs already knows the folder.
      *
-     * @return array{0: array<int, string>, 1: array<int, string>}
+     * @return array<int, string>
      */
-    private function storePhotos(Product $product, array $data): array
+    private function storePhotos(array $data): array
     {
         $paths = [];
-        $labels = [];
 
-        $named = $this->photoRows($product->id);
-
-        foreach (array_values((array) ($data['photos'] ?? [])) as $i => $row) {
+        foreach (array_values((array) ($data['photos'] ?? [])) as $row) {
             $file = $row['file'] ?? null;
 
             if (blank($file)) {
@@ -212,10 +258,9 @@ class EditCartHandoff extends EditRecord
             /* Filament has already put the file on the disk and hands back
                its path; nothing is moved, only recorded. */
             $paths[] = is_array($file) ? (string) reset($file) : (string) $file;
-            $labels[] = $row['label'] ?? ($named[$i]['label'] ?? 'Şəkil');
         }
 
-        return [$paths, $labels];
+        return $paths;
     }
 
     /**

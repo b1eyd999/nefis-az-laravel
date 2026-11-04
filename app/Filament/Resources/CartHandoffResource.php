@@ -123,12 +123,16 @@ class CartHandoffResource extends Resource
         $bits = [];
 
         foreach (array_filter((array) ($item['custom_texts'] ?? [])) as $i => $text) {
-            $label = ((array) ($item['text_labels'] ?? []))[$i] ?? 'Yazı';
-            $bits[] = '<div><b>' . e($label) . ':</b> ' . e($text) . '</div>';
+            $bits[] = '<div><b>' . e(self::textLabel($item, $i)) . ':</b> '
+                . e(is_scalar($text) ? (string) $text : '') . '</div>';
         }
 
         $shots = '';
         foreach (array_filter((array) ($item['photo_paths'] ?? [])) as $path) {
+            if (! is_string($path)) {
+                continue;
+            }
+
             $url = \App\Support\Media::url($path);
             if ($url) {
                 $shots .= '<img src="' . e($url) . '" alt="" style="height:88px;border-radius:.5rem;'
@@ -151,6 +155,30 @@ class CartHandoffResource extends Resource
         }
 
         return new HtmlString('<div style="font-size:.85rem;line-height:1.6">' . implode('', $bits) . '</div>');
+    }
+
+    /**
+     * What the shop calls the n-th line of writing on a box.
+     *
+     * A line's `text_labels` is not a list of names. It is a list of
+     * `['label' => …, 'fixed' => …, 'repeat' => …]`, which is what the design
+     * page writes and what the order screen reads — and printing one of them
+     * straight is what turned this whole page into a «500 Server Error» the
+     * first time the owner opened a real basket.
+     *
+     * A plain string is still accepted: baskets written before the shop kept
+     * the names at all, and the shorter shape this screen itself wrote for a
+     * day, both have one.
+     */
+    private static function textLabel(array $item, int $i): string
+    {
+        $label = ((array) ($item['text_labels'] ?? []))[$i] ?? null;
+
+        if (is_array($label)) {
+            $label = $label['label'] ?? null;
+        }
+
+        return is_scalar($label) && (string) $label !== '' ? (string) $label : 'Yazı';
     }
 
     public static function table(Table $table): Table
