@@ -208,6 +208,41 @@ class TheErrorLogIsReadableTest extends TestCase
         $this->get('/admin/error-log')->assertOk()->assertSee('Xəta yoxdur');
     }
 
+    /**
+     * The folder is not Laravel's alone.
+     *
+     * The deployment writes its own log in there, and it is the file most
+     * recently touched — every deploy ends by writing it. Picked by date
+     * alone it won, and the page said «no faults» with the faults sitting in
+     * laravel.log beside it.
+     */
+    public function test_another_programs_log_in_the_same_folder_is_not_read(): void
+    {
+        $this->owner();
+        $this->wrote("[2026-11-05 09:00:00] production.ERROR: əsl xəta\n");
+
+        // Written after, so it is the newer of the two.
+        touch($this->storage . '/logs/laravel.log', time() - 60);
+        file_put_contents($this->storage . '/logs/deploy.log',
+            "[2026-11-05 10:00:00] deploy.ERROR: başqa proqram\n");
+
+        $entries = $this->page()->entries();
+
+        $this->assertSame('laravel.log', basename((string) $this->page()->file()));
+        $this->assertSame(['əsl xəta'], array_column($entries, 'headline'));
+    }
+
+    /** A host writing a file per day is read as the day's file. */
+    public function test_a_daily_log_counts_as_ours(): void
+    {
+        $this->owner();
+        file_put_contents($this->storage . '/logs/laravel-2026-11-05.log',
+            "[2026-11-05 09:00:00] production.ERROR: günün xətası\n");
+
+        $this->assertSame('laravel-2026-11-05.log', basename((string) $this->page()->file()));
+        $this->assertSame('günün xətası', $this->page()->entries()[0]['headline']);
+    }
+
     public function test_no_log_file_at_all_is_not_an_error_either(): void
     {
         $this->owner();

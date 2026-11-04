@@ -88,16 +88,24 @@ class ErrorLog extends Page implements HasActions
     {
         $files = glob(storage_path('logs') . DIRECTORY_SEPARATOR . '*.log') ?: [];
 
-        if ($files === []) {
+        /* Laravel's own log and nothing else. The folder is not only its:
+           the deployment writes its own log in there too, and being the file
+           most recently touched — every deploy ends by writing it — it was
+           the one picked, so the page answered «no faults» while the faults
+           sat in laravel.log beside it. */
+        $ours = array_values(array_filter(
+            $files,
+            fn (string $path) => (bool) preg_match('/^laravel(-\d{4}-\d{2}-\d{2})?\.log$/', basename($path))
+        ));
+
+        if ($ours === []) {
             return null;
         }
 
-        /* The newest by when it was last written rather than by name: the
-           shop writes one laravel.log, but a host switched to daily files
-           leaves a row of dated ones beside it. */
-        usort($files, fn ($a, $b) => filemtime($b) <=> filemtime($a));
+        // Newest first, so a host switched to a file per day reads today's.
+        usort($ours, fn ($a, $b) => filemtime($b) <=> filemtime($a));
 
-        return $files[0];
+        return $ours[0];
     }
 
     public function fileSize(): int
