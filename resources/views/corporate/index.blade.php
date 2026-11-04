@@ -13,6 +13,12 @@
 @section('page_style')
   .co-hero{ display:grid; gap:2rem; align-items:center; }
   @media (min-width:900px){ .co-hero{ grid-template-columns:1.05fr .95fr; gap:3.5rem; } }
+  .co-sizes{ display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:1rem; }
+  .co-size{ padding:.5rem 1rem; border-radius:999px; border:1px solid var(--line); background:var(--paper);
+    font-size:.9rem; font-weight:600; color:var(--cocoa-soft); cursor:pointer;
+    transition:border-color .2s, color .2s, background .2s; }
+  .co-size:hover{ border-color:var(--gold); color:var(--cocoa); }
+  .co-size.is-on{ border-color:var(--gold-deep); background:var(--cream-2); color:var(--cocoa); }
   .co-facts{ display:flex; flex-wrap:wrap; gap:.6rem; margin-top:1.4rem; }
   .co-fact{ border:1px solid var(--line); border-radius:.9rem; padding:.55rem .85rem; background:var(--paper); }
   .co-fact b{ display:block; font-size:1.05rem; letter-spacing:-.02em; }
@@ -127,6 +133,20 @@
     border-radius:var(--radius-sm); padding:1rem 1.2rem; font-weight:600; }
 @endsection
 
+@php
+  /* Worked out here rather than inside @json() and @if(): Blade counts the
+     brackets in a directive's argument, and an arrow function returning an
+     array closes it early — the compiled view then stops parsing halfway
+     down the page. */
+  $sizesForScript = array_map(fn ($s) => [
+      'id' => $s['id'], 'w' => $s['w'], 'h' => $s['h'],
+      'front' => $s['front'], 'back' => $s['back'],
+      'face' => $s['face'], 'dimensions' => $s['dimensions'],
+  ], $page['sizes']);
+  $laddersForScript = array_map(fn ($s) => $s['ladder'], $page['sizes']);
+  $anyLadder = (bool) array_filter($laddersForScript);
+@endphp
+
 @section('content')
 <section>
   <div class="wrap">
@@ -136,8 +156,23 @@
         <h1>{{ __($page['title']) }}</h1>
         <p class="lede">{{ __($page['lede']) }}</p>
 
+        {{-- The sizes, when there is more than one to pick from. Everything
+             below that depends on the size carries data-size-* and is swapped
+             by the script; with no script the first size stands, which is the
+             one the page shows anyway. --}}
+        @if(count($page['sizes']) > 1)
+          <div class="co-sizes" id="co-sizes" role="group" aria-label="{{ __($page['size_label']) }}">
+            @foreach($page['sizes'] as $i => $size)
+              <button type="button" class="co-size @if($i === 0) is-on @endif"
+                      data-size="{{ $i }}" aria-pressed="{{ $i === 0 ? 'true' : 'false' }}">
+                {{ $size['title'] }}
+              </button>
+            @endforeach
+          </div>
+        @endif
+
         <div class="co-facts">
-          <div class="co-fact"><span>{{ __($page['size_label']) }}</span><b>{{ __($page['size']) }}</b></div>
+          <div class="co-fact"><span>{{ __($page['size_label']) }}</span><b id="co-size-text">{{ $page['sizes'][0]['dimensions'] }}</b></div>
           <div class="co-fact"><span>{{ __($page['min_qty_label']) }}</span><b>{{ $page['min_qty'] }} {{ __('ədəd') }}</b></div>
           <div class="co-fact"><span>{{ __($page['lead_label']) }}</span><b>{{ __($page['lead']) }}</b></div>
         </div>
@@ -148,21 +183,26 @@
              order costs less each and then name no figure at all, so every
              enquiry began with somebody asking what it costs. Shown only once
              the owner has written his own steps. --}}
-        @if($page['ladder'])
-          <div class="co-ladder">
-            <b>{{ __($page['ladder_title']) }}</b>
-            <div class="co-steps">
-              @foreach($page['ladder'] as $step)
-                <div class="co-step">
-                  <span>{{ $step['from'] }}+ {{ __('ədəd') }}</span>
-                  <b>{{ \App\Support\Price::format($step['price']) }}</b>
-                  <i>/ {{ __($page['ladder_per_label']) }}</i>
-                </div>
-              @endforeach
+        {{-- One ladder per size, drawn here rather than built in the script:
+             the prices are the shop's own figures and belong in the HTML a
+             crawler and a reader without JavaScript are handed. --}}
+        @foreach($page['sizes'] as $i => $size)
+          @if($size['ladder'])
+            <div class="co-ladder" data-ladder="{{ $i }}" @if($i > 0) hidden @endif>
+              <b>{{ __($page['ladder_title']) }}</b>
+              <div class="co-steps">
+                @foreach($size['ladder'] as $step)
+                  <div class="co-step">
+                    <span>{{ $step['from'] }}+ {{ __('ədəd') }}</span>
+                    <b>{{ \App\Support\Price::format($step['price']) }}</b>
+                    <i>/ {{ __($page['ladder_per_label']) }}</i>
+                  </div>
+                @endforeach
+              </div>
+              <p class="slot-hint">{{ __($page['ladder_note']) }}</p>
             </div>
-            <p class="slot-hint">{{ __($page['ladder_note']) }}</p>
-          </div>
-        @endif
+          @endif
+        @endforeach
 
         <a class="btn btn-primary" href="#muraciet" style="margin-top:1.4rem;">{{ __($page['form_button']) }}</a>
       </div>
@@ -349,7 +389,7 @@
         {{-- What that number costs, worked out as he types it. The figures
              come from the owner's own ladder and the server quotes the same
              ones back in the Telegram notice. --}}
-        @if($page['ladder'])
+        @if($anyLadder)
           <small class="co-quote" id="co-quote" aria-live="polite"></small>
         @endif
       </label>
@@ -398,6 +438,9 @@
       {{-- Filled in by the try-on above, so the request carries the colour
            they were actually looking at when they decided to write. --}}
       <input type="hidden" name="box_color" id="co-color-field" value="{{ old('box_color', $page['colors'][0]['hex'] ?? '#1B3A6B') }}">
+      {{-- Which size was asked for. Empty while the shop offers only the one
+           it always has, which is a size with no row behind it. --}}
+      <input type="hidden" name="box_size_id" id="co-size-field" value="{{ old('box_size_id', $page['sizes'][0]['id']) }}">
 
       <div class="full">
         <button type="submit" class="btn btn-primary">{{ __($page['form_button']) }}</button>
@@ -408,18 +451,24 @@
 @endsection
 
 @section('page_script')
-@if($page['ladder'])
+@if($anyLadder)
 <script>
 /* What the number he has typed costs, worked out as he types it.
    The steps are the owner's own, and the server quotes the same ones back in
    the notice it sends itself — this only saves him asking. */
 (function () {
-  var steps = @json($page['ladder']);
+  var ladders = @json($laddersForScript);
+  var steps = ladders[0] || [];
   var box = document.getElementById('co-qty');
   var out = document.getElementById('co-quote');
-  if (!box || !out || !steps.length) return;
+  if (!box || !out || !ladders.length) return;
 
-  var least = steps[0].from;
+  /* The sizes may be priced differently, so the quote follows whichever is
+     picked above rather than quoting the first one at everybody. */
+  document.addEventListener('nefis:size', function (event) {
+    steps = ladders[event.detail.index] || [];
+    show();
+  });
 
   function money(value) {
     // The shop writes 7 ₼ and 7.50 ₼, never 7.00 ₼.
@@ -428,6 +477,8 @@
   }
 
   function show() {
+    if (!steps.length) { out.textContent = ''; return; }
+    var least = steps[0].from;
     var many = parseInt(box.value, 10);
     if (!many || many < least) {
       // Below the first step there is no price to name, so the line says
@@ -461,9 +512,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var QR = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js';
   var first = @json($page['colors'][0]['hex'] ?? '#1B3A6B');
+  var sizes = @json($sizesForScript);
 
   /* The pair at the top is a still life: it shows the product, nobody edits it. */
-  var shown = window.NefisCorporate.init({ front: 'co-front', back: 'co-back', color: first, qrScript: QR });
+  var shown = window.NefisCorporate.init({ front: 'co-front', back: 'co-back', color: first, qrScript: QR,
+    size: sizes[0] });
   shown.set('slogan', @json(__($page['eyebrow'])));
   shown.set('qr', @json(url('/')));
 
@@ -476,6 +529,28 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   var warpCache = {};
   var faceForScenes = null;
+  var chosen = sizes[0];
+
+  /* The quads on the photographs were measured against a 45 x 90 box. A
+     wider size warped into the same quad comes out squeezed, so each quad is
+     widened to the shape of the size instead: the two horizontal edges are
+     scaled about their own midpoints, which keeps the box standing where it
+     stood and keeps the photograph's perspective. */
+  var BASE_RATIO = 45 / 90;
+
+  function quadFor(corners) {
+    var ratio = chosen.w / chosen.h;
+    var k = ratio / BASE_RATIO;
+    if (!isFinite(k) || k <= 0 || Math.abs(k - 1) < 0.001) return corners;
+
+    return [[0, 1], [3, 2]].reduce(function (out, edge) {
+      var a = corners[edge[0]], b = corners[edge[1]];
+      var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+      out[edge[0]] = [mx + (a[0] - mx) * k, my + (a[1] - my) * k];
+      out[edge[1]] = [mx + (b[0] - mx) * k, my + (b[1] - my) * k];
+      return out;
+    }, corners.slice());
+  }
 
   function paintScenes() {
     if (!window.NefisScene || !faceForScenes) return;
@@ -487,13 +562,50 @@ document.addEventListener('DOMContentLoaded', function () {
       window.NefisScene.drawScene(s.cv.getContext('2d'), {
         w: w, h: h, bg: s.photo.src,
         elements: [{ type: 'design', id: 'face', opacity: 100,
-          corners: s.corners.map(function (p) { return [p[0] * w, p[1] * h]; }) }],
+          corners: quadFor(s.corners).map(function (p) { return [p[0] * w, p[1] * h]; }) }],
       }, faceForScenes, function () { return s.photo; }, warpCache, {});
     });
   }
 
   var box = window.NefisCorporate.init({ front: 'co-try-front', back: 'co-try-back', color: first, qrScript: QR,
+    size: sizes[0],
     onDraw: function (front) { faceForScenes = front; paintScenes(); } });
+
+  /* The size the visitor picked. Everything that follows it is already on the
+     page — the measurements, one price ladder per size — so this shows the
+     right one rather than building any of it. */
+  var sizeField = document.getElementById('co-size-field');
+  var sizeText = document.getElementById('co-size-text');
+
+  function pickSize(i) {
+    var size = sizes[i];
+    if (!size) return;
+
+    chosen = size;
+    shown.setSize(size);
+    box.setSize(size);
+
+    if (sizeText) sizeText.textContent = size.dimensions;
+    if (sizeField) sizeField.value = size.id === null ? '' : size.id;
+
+    document.querySelectorAll('[data-ladder]').forEach(function (block) {
+      block.hidden = Number(block.dataset.ladder) !== i;
+    });
+    document.querySelectorAll('.co-size').forEach(function (button) {
+      var on = Number(button.dataset.size) === i;
+      button.classList.toggle('is-on', on);
+      button.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+
+    /* The price-at-a-number box below reads the ladder of the chosen size. */
+    document.dispatchEvent(new CustomEvent('nefis:size', { detail: { index: i } }));
+  }
+
+  document.querySelectorAll('.co-size').forEach(function (button) {
+    button.addEventListener('click', function () { pickSize(Number(button.dataset.size)); });
+  });
+
+  if (sizeField) sizeField.value = sizes[0] && sizes[0].id !== null ? sizes[0].id : '';
 
   var field = document.getElementById('co-color-field');
 

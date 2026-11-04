@@ -260,11 +260,15 @@ class Telegram
             '🏢 <b>Şirkət müraciəti</b>',
             '',
             '<b>' . e($request->company) . '</b>',
-            // What that number comes to on the owner's own ladder, so he
-            // knows the figure the page quoted before he rings back.
+            /* What that number comes to on the owner's own ladder, so he
+               knows the figure the page quoted before he rings back — and on
+               the ladder of the size that was asked for, because the sizes
+               may be priced differently. */
             '📦 ' . $request->quantity . ' ədəd'
-                . (($total = CorporatePage::totalFor((int) $request->quantity)) !== null
-                    ? ' — ' . \App\Support\Price::format(CorporatePage::unitPriceFor((int) $request->quantity))
+                . ($request->boxSize ? ' · ' . e($request->boxSize->name) : '')
+                . (($total = CorporatePage::totalFor((int) $request->quantity, $request->boxSize)) !== null
+                    ? ' — ' . \App\Support\Price::format(
+                        CorporatePage::unitPriceFor((int) $request->quantity, $request->boxSize))
                         . '/əd, cəmi ' . \App\Support\Price::format($total)
                     : ''),
             '📞 ' . e($request->phone) . ($request->person ? ' · ' . e($request->person) : ''),

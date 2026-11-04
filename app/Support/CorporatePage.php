@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\BoxSize;
 use App\Models\Scene;
 use App\Models\Setting;
 
@@ -192,6 +193,7 @@ class CorporatePage
         // not show, rather than promising pictures that are not there.
         $page['gallery'] = self::rows($saved['gallery'] ?? null, [], ['image']);
         $page['scenes'] = self::scenes();
+        $page['sizes'] = self::sizes();
 
         return $page;
     }
@@ -307,10 +309,16 @@ class CorporatePage
      * 100, 300 and 500 is priced at the 100 step, not at the 300 one. The
      * other reading would quote a discount nobody has earned.
      */
-    public static function unitPriceFor(int $quantity): ?float
+    public static function unitPriceFor(int $quantity, ?BoxSize $size = null): ?float
     {
+        /* A size with its own ladder is priced by it; one without, and the
+           page while no size exists at all, by the shop's own. Passing the
+           size rather than reading a «current» one keeps this answerable
+           from a Telegram card, where there is no page and no session. */
+        $ladder = $size?->ladderRows() ?? self::ladder();
+
         $price = null;
-        foreach (self::ladder() as $step) {
+        foreach ($ladder as $step) {
             if ($quantity >= $step['from']) {
                 $price = $step['price'];
             }
@@ -320,11 +328,64 @@ class CorporatePage
     }
 
     /** What the whole order comes to at that number, or null. */
-    public static function totalFor(int $quantity): ?float
+    public static function totalFor(int $quantity, ?BoxSize $size = null): ?float
     {
-        $unit = self::unitPriceFor($quantity);
+        $unit = self::unitPriceFor($quantity, $size);
 
         return $unit === null ? null : round($unit * $quantity, 2);
+    }
+
+    /**
+     * The shop's own ladder, read straight from the setting.
+     *
+     * Not through all(), which builds the sizes, each of which asks for this
+     * when it has no ladder of its own: page -> sizes -> size -> page, and
+     * the request never returns. Written once, here, where the loop would
+     * otherwise be closed.
+     *
+     * @return array<int, array{from: int, price: float}>
+     */
+    public static function sharedLadder(): array
+    {
+        $saved = json_decode((string) Setting::get(Setting::CORPORATE), true);
+
+        return self::ladderRows(is_array($saved) ? ($saved['ladder'] ?? null) : null);
+    }
+
+    /**
+     * The sizes a company may pick from.
+     *
+     * With none entered the page keeps its one size: the sentence the owner
+     * already typed into the settings, and the 45 x 90 face the script has
+     * always drawn. So the page never loses its measurements because a
+     * feature was added and nobody has used it yet, and the picker simply
+     * does not appear until there is more than one thing to pick.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function sizes(): array
+    {
+        $rows = BoxSize::offered()->get()->map->forPage()->all();
+
+        if ($rows !== []) {
+            return $rows;
+        }
+
+        $saved = json_decode((string) Setting::get(Setting::CORPORATE), true);
+        $saved = is_array($saved) ? $saved : [];
+        $text = filled($saved['size'] ?? null) ? $saved['size'] : self::DEFAULTS['size'];
+
+        return [[
+            'id' => null,
+            'title' => __($text),
+            'dimensions' => __($text),
+            'w' => 45,
+            'h' => 90,
+            'front' => null,
+            'back' => null,
+            'face' => ['l' => 0.0, 't' => 0.0, 'r' => 1.0, 'b' => 1.0],
+            'ladder' => self::ladderRows($saved['ladder'] ?? null),
+        ]];
     }
 
     /**

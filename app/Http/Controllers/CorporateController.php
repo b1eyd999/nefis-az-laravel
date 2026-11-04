@@ -7,6 +7,7 @@ use App\Support\CorporatePage;
 use App\Support\Telegram;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
@@ -50,6 +51,10 @@ class CorporateController extends Controller
                 'image/x-eps', 'application/eps', 'application/x-eps',
                 'application/zip', 'application/x-zip-compressed', 'multipart/x-zip',
             ])],
+            /* Which size was asked for. Checked against the sizes actually
+               on sale, so a number typed into the hidden field cannot attach
+               the enquiry to one the shop has switched off. */
+            'box_size_id' => ['nullable', 'integer', Rule::exists('box_sizes', 'id')->where('is_active', true)],
             'box_color' => ['nullable', 'string', 'max:30'],
             'slogan' => ['nullable', 'string', 'max:120'],
             'qr_target' => ['nullable', 'string', 'max:300'],

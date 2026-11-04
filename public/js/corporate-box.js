@@ -16,6 +16,9 @@ window.NefisCorporate = (function () {
   'use strict';
 
   /* The real box: 45 × 90 mm on the face it is printed on. */
+  /* The face the box has had since the page was written, and the one every
+     instance keeps until a size says otherwise. A size is millimetres, not a
+     ratio, because that is what the owner measures and types. */
   var FACE = { w: 45, h: 90 };
   var SCALE = 12;                      // px per mm — enough to read on a laptop
   var PAD = 5;                         // mm of quiet margin inside the face
@@ -99,7 +102,19 @@ window.NefisCorporate = (function () {
       slogan: '',
       phone: '',
       qr: '',
+      /* The printed face, in millimetres, and where it sits inside the
+         owner's render. Both come from the size the visitor picked. */
+      face: { w: FACE.w, h: FACE.h },
+      shots: { front: null, back: null },
+      rect: { l: 0, t: 0, r: 1, b: 1 },
     };
+
+    /* The face is drawn off screen and then shown — on its own when there is
+       no render, inside the render when there is. Two reasons to keep it
+       apart: the photographs of a counter want the printed face alone, not
+       the render's shadow warped along with it; and the render's own shape
+       has nothing to do with the face's. */
+    var faces = { front: document.createElement('canvas'), back: document.createElement('canvas') };
 
     /* Ink that can be read on whatever colour the box is dyed. */
     function ink() {
@@ -108,38 +123,72 @@ window.NefisCorporate = (function () {
 
     function prepare(canvas) {
       var dpr = Math.min(2, window.devicePixelRatio || 1);
-      canvas.width = FACE.w * SCALE * dpr;
-      canvas.height = FACE.h * SCALE * dpr;
-      canvas.style.aspectRatio = FACE.w + ' / ' + FACE.h;
+      canvas.width = Math.round(state.face.w * SCALE * dpr);
+      canvas.height = Math.round(state.face.h * SCALE * dpr);
       var c = canvas.getContext('2d');
       c.setTransform(dpr * SCALE, 0, 0, dpr * SCALE, 0, 0);   // now drawing in mm
       return c;
     }
 
+    /**
+     * Put the finished face on the canvas the page shows.
+     *
+     * With no render that is the face itself. With one, the render is laid
+     * down first and the face painted into the rectangle the owner marked —
+     * so the edges, the shadow and the depth are his, and the colour and the
+     * logo are still the visitor's.
+     */
+    function present(canvas, faceCv, shot) {
+      if (!canvas) return;
+
+      if (!shot || !shot.naturalWidth) {
+        canvas.width = faceCv.width;
+        canvas.height = faceCv.height;
+        canvas.style.aspectRatio = state.face.w + ' / ' + state.face.h;
+        canvas.getContext('2d').drawImage(faceCv, 0, 0);
+        return;
+      }
+
+      var dpr = Math.min(2, window.devicePixelRatio || 1);
+      var w = Math.min(1200, shot.naturalWidth);
+      var h = Math.round(w * shot.naturalHeight / shot.naturalWidth);
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.aspectRatio = shot.naturalWidth + ' / ' + shot.naturalHeight;
+
+      var c = canvas.getContext('2d');
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      c.clearRect(0, 0, w, h);
+      c.drawImage(shot, 0, 0, w, h);
+      c.drawImage(faceCv,
+        state.rect.l * w, state.rect.t * h,
+        (state.rect.r - state.rect.l) * w, (state.rect.b - state.rect.t) * h);
+    }
+
     /* The card itself: the colour, a soft sheen down one side, a thin edge. */
     function base(c) {
-      c.clearRect(0, 0, FACE.w, FACE.h);
+      c.clearRect(0, 0, state.face.w, state.face.h);
       c.fillStyle = state.color;
-      c.fillRect(0, 0, FACE.w, FACE.h);
+      c.fillRect(0, 0, state.face.w, state.face.h);
 
-      var sheen = c.createLinearGradient(0, 0, FACE.w, FACE.h);
+      var sheen = c.createLinearGradient(0, 0, state.face.w, state.face.h);
       sheen.addColorStop(0, 'rgba(255,255,255,.14)');
       sheen.addColorStop(0.45, 'rgba(255,255,255,0)');
       sheen.addColorStop(1, 'rgba(0,0,0,.10)');
       c.fillStyle = sheen;
-      c.fillRect(0, 0, FACE.w, FACE.h);
+      c.fillRect(0, 0, state.face.w, state.face.h);
 
       c.strokeStyle = 'rgba(0,0,0,.18)';
       c.lineWidth = 0.3;
-      c.strokeRect(0.15, 0.15, FACE.w - 0.3, FACE.h - 0.3);
+      c.strokeRect(0.15, 0.15, state.face.w - 0.3, state.face.h - 0.3);
     }
 
     function drawFront() {
       if (!front) return;
-      var c = prepare(front);
+      var c = prepare(faces.front);
       base(c);
 
-      var room = FACE.w - PAD * 2;
+      var room = state.face.w - PAD * 2;
       c.fillStyle = ink();
       c.textAlign = 'center';
 
@@ -155,31 +204,33 @@ window.NefisCorporate = (function () {
         c.strokeRect(PAD, PAD + 4, room, 26);
         c.globalAlpha = 0.7;
         c.font = '600 3.2px ' + FONT;
-        c.fillText('LOQONUZ', FACE.w / 2, PAD + 18.5);
+        c.fillText('LOQONUZ', state.face.w / 2, PAD + 18.5);
         c.restore();
       }
 
       if (state.slogan) {
         c.font = '600 3.6px ' + FONT;
-        wrap(c, state.slogan.toUpperCase(), FACE.w / 2, FACE.h - 26, room, 4.6, 3);
+        wrap(c, state.slogan.toUpperCase(), state.face.w / 2, state.face.h - 26, room, 4.6, 3);
       }
 
       if (state.phone) {
         c.globalAlpha = 0.85;
         c.font = '500 3.2px ' + FONT;
-        c.fillText(state.phone, FACE.w / 2, FACE.h - PAD - 2);
+        c.fillText(state.phone, state.face.w / 2, state.face.h - PAD - 2);
         c.globalAlpha = 1;
       }
+
+      present(front, faces.front, state.shots.front);
     }
 
     function drawBack() {
       if (!back) return;
-      var c = prepare(back);
+      var c = prepare(faces.back);
       base(c);
 
       var side = 26;
-      var x = (FACE.w - side) / 2;
-      var y = (FACE.h - side) / 2 - 4;
+      var x = (state.face.w - side) / 2;
+      var y = (state.face.h - side) / 2 - 4;
 
       var code = state.qr ? makeQr(state.qr) : null;
       if (code) {
@@ -209,8 +260,10 @@ window.NefisCorporate = (function () {
       c.textAlign = 'center';
       c.globalAlpha = 0.85;
       c.font = '500 3px ' + FONT;
-      c.fillText(state.qr ? 'Kodu oxudun' : 'QR kod', FACE.w / 2, y + side + 8);
+      c.fillText(state.qr ? 'Kodu oxudun' : 'QR kod', state.face.w / 2, y + side + 8);
       c.globalAlpha = 1;
+
+      present(back, faces.back, state.shots.back);
     }
 
     function draw() {
@@ -218,7 +271,7 @@ window.NefisCorporate = (function () {
       drawBack();
       /* Whoever is showing this box somewhere else — the photographs of a
          counter, say — is told it has changed. */
-      if (options.onDraw) options.onDraw(front, back, state);
+      if (options.onDraw) options.onDraw(faces.front, faces.back, state);
     }
 
     /** The logo the company chose, read straight from their own machine. */
@@ -234,16 +287,42 @@ window.NefisCorporate = (function () {
       });
     }
 
+    /**
+     * The size the visitor picked: its proportions at once, its renders when
+     * they arrive. A render that fails to load leaves the box drawn plainly
+     * rather than leaving an empty frame on the page.
+     */
+    function setSize(size) {
+      if (!size) return;
+
+      state.face = { w: Number(size.w) || FACE.w, h: Number(size.h) || FACE.h };
+      state.shots = { front: null, back: null };
+      state.rect = size.face
+        ? { l: Number(size.face.l) || 0, t: Number(size.face.t) || 0,
+            r: Number(size.face.r) || 1, b: Number(size.face.b) || 1 }
+        : { l: 0, t: 0, r: 1, b: 1 };
+      draw();
+
+      ['front', 'back'].forEach(function (which) {
+        if (!size[which]) return;
+        var img = new Image();
+        img.onload = function () { state.shots[which] = img; draw(); };
+        img.src = size[which];
+      });
+    }
+
     function set(key, value) {
       if (key === 'color' && !/^#[0-9a-fA-F]{6}$/.test(String(value))) return;
       state[key] = value;
       draw();
     }
 
+    if (options.size) setSize(options.size);
+
     draw();
     whenQr(draw, options.qrScript);
 
-    return { set: set, setLogo: setLogo, state: state, redraw: draw };
+    return { set: set, setSize: setSize, setLogo: setLogo, state: state, redraw: draw };
   }
 
   return { init: init };

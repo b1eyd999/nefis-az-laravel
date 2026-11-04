@@ -25,9 +25,14 @@ class CorporateRequest extends Model
     ];
 
     protected $fillable = [
-        'company', 'person', 'phone', 'email', 'quantity',
+        'company', 'person', 'phone', 'email', 'quantity', 'box_size_id',
         'logo', 'design', 'box_color', 'slogan', 'qr_target', 'note', 'status',
     ];
+
+    public function boxSize(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(BoxSize::class, 'box_size_id');
+    }
 
     protected function casts(): array
     {
