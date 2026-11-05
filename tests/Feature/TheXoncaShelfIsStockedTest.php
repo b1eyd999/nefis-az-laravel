@@ -101,6 +101,24 @@ class TheXoncaShelfIsStockedTest extends TestCase
         }
     }
 
+    /**
+     * The shelf shows boxes, not the blanks they are printed from.
+     *
+     * The artwork has the writing left out, so half the cards came out as
+     * empty cream rectangles; each design carries a photograph of the
+     * finished box for the catalogue instead.
+     */
+    public function test_every_card_shows_a_photograph_of_the_box(): void
+    {
+        foreach (Xonca::designs() as $design) {
+            $card = (string) $design->catalogImage();
+
+            $this->assertStringStartsWith('images/xonca/numune/', $card, $design->slug);
+            $this->assertFileExists(public_path($card), $design->slug . ' has no card photograph');
+            $this->assertNotSame($design->template_image, $card, $design->slug . ' shows its blank');
+        }
+    }
+
     /** The one design that asks for a photograph is the one that says so. */
     public function test_only_the_photograph_design_asks_for_a_photograph(): void
     {
