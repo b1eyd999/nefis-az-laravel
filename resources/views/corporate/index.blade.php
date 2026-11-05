@@ -22,6 +22,9 @@
   .co-facts{ display:flex; flex-wrap:wrap; gap:.6rem; margin-top:1.4rem; }
   .co-fact{ border:1px solid var(--line); border-radius:.9rem; padding:.55rem .85rem; background:var(--paper); }
   .co-fact b{ display:block; font-size:1.05rem; letter-spacing:-.02em; }
+  /* display:block above would otherwise beat the browser's own [hidden]
+     rule, and all three sizes' measurements would stand in the chip at once. */
+  .co-fact b[hidden]{ display:none; }
   .co-fact span{ font-size:.75rem; color:var(--cocoa-soft); text-transform:uppercase; letter-spacing:.05em; }
 
   /* what it costs, by the number */
@@ -172,7 +175,16 @@
         @endif
 
         <div class="co-facts">
-          <div class="co-fact"><span>{{ __($page['size_label']) }}</span><b id="co-size-text">{{ $page['sizes'][0]['dimensions'] }}</b></div>
+          {{-- One line per size, the chosen one shown, the way the price
+               ladders below are done. Written out rather than swapped into
+               place by the script, so a reader without JavaScript and a
+               crawler are handed the measurements of all three sizes and not
+               only of the first. --}}
+          <div class="co-fact"><span>{{ __($page['size_label']) }}</span>
+            @foreach($page['sizes'] as $i => $size)
+              <b data-size-text="{{ $i }}"{{ $i > 0 ? ' hidden' : '' }}>{{ $size['dimensions'] }}</b>
+            @endforeach
+          </div>
           <div class="co-fact"><span>{{ __($page['min_qty_label']) }}</span><b>{{ $page['min_qty'] }} {{ __('ədəd') }}</b></div>
           <div class="co-fact"><span>{{ __($page['lead_label']) }}</span><b>{{ __($page['lead']) }}</b></div>
         </div>
@@ -575,7 +587,6 @@ document.addEventListener('DOMContentLoaded', function () {
      page — the measurements, one price ladder per size — so this shows the
      right one rather than building any of it. */
   var sizeField = document.getElementById('co-size-field');
-  var sizeText = document.getElementById('co-size-text');
 
   function pickSize(i) {
     var size = sizes[i];
@@ -585,9 +596,11 @@ document.addEventListener('DOMContentLoaded', function () {
     shown.setSize(size);
     box.setSize(size);
 
-    if (sizeText) sizeText.textContent = size.dimensions;
     if (sizeField) sizeField.value = size.id === null ? '' : size.id;
 
+    document.querySelectorAll('[data-size-text]').forEach(function (line) {
+      line.hidden = Number(line.dataset.sizeText) !== i;
+    });
     document.querySelectorAll('[data-ladder]').forEach(function (block) {
       block.hidden = Number(block.dataset.ladder) !== i;
     });

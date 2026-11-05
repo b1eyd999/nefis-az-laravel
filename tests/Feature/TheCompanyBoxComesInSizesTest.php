@@ -29,6 +29,13 @@ class TheCompanyBoxComesInSizesTest extends TestCase
     {
         parent::setUp();
         Setting::put(Setting::CORPORATE_ENABLED, '1');
+
+        /* The owner's own three sizes are put in by a migration, so a fresh
+           database already has them. This class is about the feature and not
+           about his list - including the day before any size exists at all -
+           so it starts from none. The list itself is checked in
+           TheThreeSizesTheOwnerGaveTest. */
+        BoxSize::query()->delete();
     }
 
     private function made(array $extra = []): BoxSize
@@ -107,7 +114,9 @@ class TheCompanyBoxComesInSizesTest extends TestCase
 
         $page = $this->get('/sirketler-ucun')->assertOk();
 
-        $page->assertSee('id="co-size-text">BİRİNCİ ÖLÇÜ', false);
+        // Both sizes' measurements are in the HTML; the chosen one is shown.
+        $page->assertSee('<b data-size-text="0">BİRİNCİ ÖLÇÜ', false);
+        $page->assertSee('<b data-size-text="1" hidden>İKİNCİ ÖLÇÜ', false);
         $page->assertSee('name="box_size_id" id="co-size-field" value="' . $first->id . '"', false);
     }
 

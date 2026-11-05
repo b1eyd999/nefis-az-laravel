@@ -23,6 +23,13 @@ window.NefisCorporate = (function () {
   var SCALE = 12;                      // px per mm — enough to read on a laptop
   var PAD = 5;                         // mm of quiet margin inside the face
 
+  /* The longest side the face is ever drawn at, before the screen's own
+     doubling. At 12 px/mm the 160 mm size would be 1920 px tall and, doubled,
+     nearly eight megapixels - four of those on one page is a phone's whole
+     memory for a picture shown 200 px wide. The face is shown at about a
+     fifth of this, so nothing visible is lost. */
+  var MAX_PX = 1080;
+
   /* The phone this is looked at on draws San Francisco; the rest stand in. */
   var FONT = '-apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, "Segoe UI", sans-serif';
 
@@ -121,12 +128,40 @@ window.NefisCorporate = (function () {
       return luminance(state.color) > 0.62 ? '#15130F' : '#FFFFFF';
     }
 
+    /**
+     * The same layout, on a face of another shape.
+     *
+     * The box was drawn for one size, 45 x 90, and the arrangement on it -
+     * where the logo sits, how much quiet margin it has, where the line and
+     * the number go - was measured in millimetres against that face. Three
+     * sizes later those millimetres mean something else: on 40 x 60 the
+     * logo's band and the slogan beneath it would have met in the middle,
+     * and on 85 x 160 the whole of it would have huddled at the top of a
+     * tall empty card.
+     *
+     * So the layout is stretched with the face rather than kept: `kv` and
+     * `kh` scale every length along their own axis, which is an affine
+     * stretch of an arrangement that already works and therefore cannot
+     * collide at any shape. Type and the thin lines take the smaller of the
+     * two, so a letter is never wider, relative to the room it has, than it
+     * is on the size this was all measured on.
+     *
+     * At 45 x 90 all three are 1 and every number below is what it was.
+     */
+    function metrics() {
+      var kv = state.face.h / FACE.h;
+      var kh = state.face.w / FACE.w;
+
+      return { kv: kv, kh: kh, type: Math.min(kv, kh) };
+    }
+
     function prepare(canvas) {
       var dpr = Math.min(2, window.devicePixelRatio || 1);
-      canvas.width = Math.round(state.face.w * SCALE * dpr);
-      canvas.height = Math.round(state.face.h * SCALE * dpr);
+      var scale = Math.min(SCALE, MAX_PX / Math.max(state.face.w, state.face.h));
+      canvas.width = Math.round(state.face.w * scale * dpr);
+      canvas.height = Math.round(state.face.h * scale * dpr);
       var c = canvas.getContext('2d');
-      c.setTransform(dpr * SCALE, 0, 0, dpr * SCALE, 0, 0);   // now drawing in mm
+      c.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);   // now drawing in mm
       return c;
     }
 
@@ -167,6 +202,8 @@ window.NefisCorporate = (function () {
 
     /* The card itself: the colour, a soft sheen down one side, a thin edge. */
     function base(c) {
+      var m = metrics();
+
       c.clearRect(0, 0, state.face.w, state.face.h);
       c.fillStyle = state.color;
       c.fillRect(0, 0, state.face.w, state.face.h);
@@ -179,8 +216,9 @@ window.NefisCorporate = (function () {
       c.fillRect(0, 0, state.face.w, state.face.h);
 
       c.strokeStyle = 'rgba(0,0,0,.18)';
-      c.lineWidth = 0.3;
-      c.strokeRect(0.15, 0.15, state.face.w - 0.3, state.face.h - 0.3);
+      c.lineWidth = 0.3 * m.type;
+      c.strokeRect(0.15 * m.kh, 0.15 * m.kv,
+        state.face.w - 0.3 * m.kh, state.face.h - 0.3 * m.kv);
     }
 
     function drawFront() {
@@ -188,35 +226,40 @@ window.NefisCorporate = (function () {
       var c = prepare(faces.front);
       base(c);
 
-      var room = state.face.w - PAD * 2;
+      var m = metrics();
+      var padH = PAD * m.kh;
+      var padV = PAD * m.kv;
+      var room = state.face.w - padH * 2;
+      var band = 26 * m.kv;            // the logo's own height
       c.fillStyle = ink();
       c.textAlign = 'center';
 
       if (state.logo) {
-        var at = contain(state.logo, PAD, PAD + 4, room, 26);
+        var at = contain(state.logo, padH, padV + 4 * m.kv, room, band);
         if (at) c.drawImage(state.logo, at.x, at.y, at.w, at.h);
       } else {
         c.save();
-        c.setLineDash([1.6, 1.4]);
+        c.setLineDash([1.6 * m.type, 1.4 * m.type]);
         c.strokeStyle = ink();
         c.globalAlpha = 0.45;
-        c.lineWidth = 0.4;
-        c.strokeRect(PAD, PAD + 4, room, 26);
+        c.lineWidth = 0.4 * m.type;
+        c.strokeRect(padH, padV + 4 * m.kv, room, band);
         c.globalAlpha = 0.7;
-        c.font = '600 3.2px ' + FONT;
-        c.fillText('LOQONUZ', state.face.w / 2, PAD + 18.5);
+        c.font = '600 ' + (3.2 * m.type) + 'px ' + FONT;
+        c.fillText('LOQONUZ', state.face.w / 2, padV + 18.5 * m.kv);
         c.restore();
       }
 
       if (state.slogan) {
-        c.font = '600 3.6px ' + FONT;
-        wrap(c, state.slogan.toUpperCase(), state.face.w / 2, state.face.h - 26, room, 4.6, 3);
+        c.font = '600 ' + (3.6 * m.type) + 'px ' + FONT;
+        wrap(c, state.slogan.toUpperCase(), state.face.w / 2,
+          state.face.h - band, room, 4.6 * m.kv, 3);
       }
 
       if (state.phone) {
         c.globalAlpha = 0.85;
-        c.font = '500 3.2px ' + FONT;
-        c.fillText(state.phone, state.face.w / 2, state.face.h - PAD - 2);
+        c.font = '500 ' + (3.2 * m.type) + 'px ' + FONT;
+        c.fillText(state.phone, state.face.w / 2, state.face.h - padV - 2 * m.kv);
         c.globalAlpha = 1;
       }
 
@@ -228,16 +271,20 @@ window.NefisCorporate = (function () {
       var c = prepare(faces.back);
       base(c);
 
-      var side = 26;
+      var m = metrics();
+      /* The code is square whatever the face is, so it takes the smaller of
+         the two scales - a QR stretched along one axis does not read. */
+      var side = 26 * m.type;
+      var quiet = 2 * m.type;
       var x = (state.face.w - side) / 2;
-      var y = (state.face.h - side) / 2 - 4;
+      var y = (state.face.h - side) / 2 - 4 * m.kv;
 
       var code = state.qr ? makeQr(state.qr) : null;
       if (code) {
         /* The code is printed on white whatever the box is dyed: a scanner
            wants that contrast, and a dark code on a dark box does not read. */
         c.fillStyle = '#FFFFFF';
-        c.fillRect(x - 2, y - 2, side + 4, side + 4);
+        c.fillRect(x - quiet, y - quiet, side + quiet * 2, side + quiet * 2);
         var n = code.getModuleCount();
         var cell = side / n;
         c.fillStyle = '#000000';
@@ -248,19 +295,19 @@ window.NefisCorporate = (function () {
         }
       } else {
         c.save();
-        c.setLineDash([1.6, 1.4]);
+        c.setLineDash([1.6 * m.type, 1.4 * m.type]);
         c.strokeStyle = ink();
         c.globalAlpha = 0.45;
-        c.lineWidth = 0.4;
-        c.strokeRect(x - 2, y - 2, side + 4, side + 4);
+        c.lineWidth = 0.4 * m.type;
+        c.strokeRect(x - quiet, y - quiet, side + quiet * 2, side + quiet * 2);
         c.restore();
       }
 
       c.fillStyle = ink();
       c.textAlign = 'center';
       c.globalAlpha = 0.85;
-      c.font = '500 3px ' + FONT;
-      c.fillText(state.qr ? 'Kodu oxudun' : 'QR kod', state.face.w / 2, y + side + 8);
+      c.font = '500 ' + (3 * m.type) + 'px ' + FONT;
+      c.fillText(state.qr ? 'Kodu oxudun' : 'QR kod', state.face.w / 2, y + side + 8 * m.kv);
       c.globalAlpha = 1;
 
       present(back, faces.back, state.shots.back);

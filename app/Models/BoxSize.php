@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\Translatable;
+use App\Support\Assets;
 use App\Support\CorporatePage;
 use App\Support\Media;
 use Illuminate\Database\Eloquent\Builder;
@@ -64,12 +65,34 @@ class BoxSize extends Model
 
     public function frontUrl(): ?string
     {
-        return Media::url($this->front_image);
+        return self::pictureUrl($this->front_image);
     }
 
     public function backUrl(): ?string
     {
-        return Media::url($this->back_image);
+        return self::pictureUrl($this->back_image);
+    }
+
+    /**
+     * Where a render is served from.
+     *
+     * Two kinds of file reach these columns. One is uploaded through the
+     * admin and lands on the hosting's own disk, which is what Media
+     * answers for. The other travels with the site, under public/images,
+     * the way the three photographs of the counter already do — there is no
+     * SSH on this host, so a render prepared from this side reaches the
+     * server by being in the repository, and the deploy copies public/ into
+     * the web root. Those are asked of Assets, which stamps the address, so
+     * a re-render at the same name is picked up at once instead of after
+     * the week of cache these pictures are served with.
+     */
+    private static function pictureUrl(?string $path): ?string
+    {
+        if (blank($path)) {
+            return null;
+        }
+
+        return str_starts_with($path, 'images/') ? Assets::url($path) : Media::url($path);
     }
 
     /**
