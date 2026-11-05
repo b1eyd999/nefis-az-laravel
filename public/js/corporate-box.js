@@ -114,7 +114,14 @@ window.NefisCorporate = (function () {
       face: { w: FACE.w, h: FACE.h },
       shots: { front: null, back: null },
       rect: { l: 0, t: 0, r: 1, b: 1 },
+      /* The same face as four corners, which is what it really is on a
+         render of a box standing at an angle. The rectangle above is the
+         fallback for a browser without the warper. */
+      quad: null,
     };
+
+    /* The warper keeps its working canvases here; one bag per box. */
+    var warpCache = {};
 
     /* The face is drawn off screen and then shown — on its own when there is
        no render, inside the render when there is. Two reasons to keep it
@@ -194,6 +201,23 @@ window.NefisCorporate = (function () {
       var c = canvas.getContext('2d');
       c.setTransform(dpr, 0, 0, dpr, 0, 0);
       c.clearRect(0, 0, w, h);
+
+      /* Four corners and the warper that draws a logo onto a photograph of
+         a counter: the face follows the box however it is standing. */
+      if (state.quad && window.NefisScene) {
+        window.NefisScene.drawScene(c, {
+          w: w, h: h, bg: 'render',
+          elements: [{
+            type: 'design', id: 'face', opacity: 100,
+            corners: state.quad.map(function (point) { return [point[0] * w, point[1] * h]; }),
+          }],
+        }, faceCv, function () { return shot; }, warpCache, {});
+        return;
+      }
+
+      /* No warper on this browser: the render with the face laid flat into
+         the rectangle the corners fit inside. Square on it is exact; on a
+         turned box it is close enough to be worth more than nothing. */
       c.drawImage(shot, 0, 0, w, h);
       c.drawImage(faceCv,
         state.rect.l * w, state.rect.t * h,
@@ -348,6 +372,7 @@ window.NefisCorporate = (function () {
         ? { l: Number(size.face.l) || 0, t: Number(size.face.t) || 0,
             r: Number(size.face.r) || 1, b: Number(size.face.b) || 1 }
         : { l: 0, t: 0, r: 1, b: 1 };
+      state.quad = Array.isArray(size.quad) && size.quad.length === 4 ? size.quad : null;
       draw();
 
       ['front', 'back'].forEach(function (which) {

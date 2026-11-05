@@ -384,6 +384,8 @@ class CorporatePage
             'front' => null,
             'back' => null,
             'face' => ['l' => 0.0, 't' => 0.0, 'r' => 1.0, 'b' => 1.0],
+            // The same, as the four corners the drawing wants.
+            'quad' => [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]],
             'ladder' => self::ladderRows($saved['ladder'] ?? null),
         ]];
     }

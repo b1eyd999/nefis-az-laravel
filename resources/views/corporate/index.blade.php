@@ -144,7 +144,7 @@
   $sizesForScript = array_map(fn ($s) => [
       'id' => $s['id'], 'w' => $s['w'], 'h' => $s['h'],
       'front' => $s['front'], 'back' => $s['back'],
-      'face' => $s['face'], 'dimensions' => $s['dimensions'],
+      'face' => $s['face'], 'quad' => $s['quad'], 'dimensions' => $s['dimensions'],
   ], $page['sizes']);
   $laddersForScript = array_map(fn ($s) => $s['ladder'], $page['sizes']);
   $anyLadder = (bool) array_filter($laddersForScript);

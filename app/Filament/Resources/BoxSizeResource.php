@@ -97,31 +97,28 @@ class BoxSizeResource extends Resource
                             ->live(),
                     ])->columns(2),
 
-                /* Where the printed face sits inside the render. It is four
-                   percentages in the table, and it was four boxes to type
-                   here - which is a measurement off a picture by eye, and
-                   the owner said as much. The frame above is dragged onto
-                   the face instead and writes the numbers itself; they stay
-                   below it, both to be read back and because a number typed
-                   by hand is sometimes the quickest correction. */
+                /* Where the printed face sits inside the render. It was four
+                   percentages typed into four boxes, which is a measurement
+                   taken off a picture by eye - and it could only ever
+                   describe a box standing dead square on, which is the one
+                   render that is no use at all here: the drawn face covers
+                   the whole of it. Four corners dragged onto the face
+                   instead, so a box photographed turned or tilted works,
+                   and the old four percentages stay in the table as what a
+                   size falls back to until its corners are placed. */
                 Forms\Components\Section::make('Çap olunan üzün yeri')
                     ->description('Loqo, şüar və QR kod şəklin məhz bu yerinə düşür. '
-                        . 'Çərçivəni mausla qutunun çap olunan üzünün üstünə qoyun. '
-                        . 'Render yalnız üzün özüdürsə, «Bütün şəkil» deyin.')
+                        . 'Üzün dörd küncünü mausla göstərin — qutu şəkildə əyri dayansa da olar. '
+                        . 'Render düz öndən çəkilibsə, «Bütün şəkil» deyin.')
                     ->schema([
-                        Forms\Components\ViewField::make('face_picker')
+                        Forms\Components\ViewField::make('face_quad')
                             ->view('filament.box-face-picker')
-                            ->dehydrated(false)
+                            // Null until he drags them; the size's own
+                            // fallback answers for the shape meanwhile.
+                            ->formatStateUsing(fn (?BoxSize $record) => $record?->faceCorners()
+                                ?? [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]])
                             ->columnSpanFull(),
-                        Forms\Components\TextInput::make('face_left')->label('Soldan, %')
-                            ->numeric()->default(0)->minValue(0)->maxValue(100)->live(onBlur: true),
-                        Forms\Components\TextInput::make('face_top')->label('Yuxarıdan, %')
-                            ->numeric()->default(0)->minValue(0)->maxValue(100)->live(onBlur: true),
-                        Forms\Components\TextInput::make('face_right')->label('Sağ kənarı, %')
-                            ->numeric()->default(100)->minValue(0)->maxValue(100)->live(onBlur: true),
-                        Forms\Components\TextInput::make('face_bottom')->label('Alt kənarı, %')
-                            ->numeric()->default(100)->minValue(0)->maxValue(100)->live(onBlur: true),
-                    ])->columns(4),
+                    ]),
 
                 Forms\Components\Section::make('Qiymət — sayına görə')
                     ->description('Bu ölçü üçün. Boş qalsa, «Şirkətlər üçün» səhifəsindəki ümumi qiymət '
