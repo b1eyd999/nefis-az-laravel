@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="az">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<!-- Nefis: bu, dostun hazirladigi prototipdir, isleyen /xonca sehifesi deyil.
+     Sebete elave etmek hele isləmir, ona gore axtaris sistemlerine baglidir. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Xonça şokoladı | Nefis</title>
+<meta name="description" content="Xonça üçün kiçik şokolad qutusu: mərasimin adı, adlarınız və tarix çap olunur. Bakıda pulsuz çatdırılma.">
+<!--
+  Mini qutu sifariş şablonu. Bir səhifə bütün dizaynlar üçün işləyir, məzmun xonca-data.js faylından gəlir.
+  Nümunə: xonca.html?x=ag-klassik, ?x=monoqram, ?x=sekilli
+  Saytda yol təklifi: /xonca/{id}
+-->
+<link rel="stylesheet" href="xonca.css">
+<script>
+  (function(){var t=null;try{t=localStorage.getItem('nefis-theme')}catch(e){}
+  if(!t&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)t='dark';
+  if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
+</script>
+</head>
+<body class="has-sbar">
+<a class="skip" href="#main">Əsas məzmuna keç</a>
+
+<header class="hdr">
+  <div class="wrap hdr-in">
+    <a class="logo" href="https://nefis.az" aria-label="Nefis, ana səhifə"><img src="https://nefis.az/images/logo.svg" alt="Nefis" height="32"></a>
+    <nav class="nav" aria-label="Əsas menyu">
+      <a href="https://nefis.az/dizaynlar">Məhsullar</a>
+      <a href="index.html" aria-current="page">Xonça şokoladı</a>
+      <a href="https://nefis.az/nece-isleyir">Necə işləyir</a>
+      <a href="https://nefis.az/suallar">Suallar</a>
+      <a href="https://nefis.az/elaqe">Əlaqə</a>
+    </nav>
+    <div class="hdr-act">
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="Qaranlıq rejimə keç">
+        <svg class="ic" viewBox="0 0 24 24" id="themeIc" aria-hidden="true"></svg>
+      </button>
+      <a class="icon-btn" href="https://nefis.az/cart" aria-label="Səbət" id="cartLink">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2L5 8z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/></svg>
+        <span class="badge" id="cartCount" hidden>0</span>
+      </a>
+      <a class="btn btn-ghost hide-sm" href="https://nefis.az/login">Giriş</a>
+      <a class="btn btn-primary hide-sm" href="https://nefis.az/register">Qeydiyyat</a>
+      <button class="icon-btn show-sm" id="menuBtn" type="button" aria-expanded="false" aria-controls="mnav" aria-label="Menyunu aç">
+        <svg class="ic" viewBox="0 0 24 24" id="menuIc" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="mnav" id="mnav" aria-label="Mobil menyu" hidden>
+    <a class="lnk" href="https://nefis.az/dizaynlar">Məhsullar</a>
+    <a class="lnk" href="index.html" aria-current="page">Xonça şokoladı</a>
+    <a class="lnk" href="https://nefis.az/nece-isleyir">Necə işləyir</a>
+    <a class="lnk" href="https://nefis.az/suallar">Suallar</a>
+    <a class="lnk" href="https://nefis.az/elaqe">Əlaqə</a>
+    <div class="row">
+      <a class="btn btn-ghost" href="https://nefis.az/login">Giriş</a>
+      <a class="btn btn-primary" href="https://nefis.az/register">Qeydiyyat</a>
+    </div>
+  </nav>
+</header>
+
+<main id="main">
+  <div class="wrap">
+    <nav class="crumbs" aria-label="Səhifə yolu">
+      <a href="https://nefis.az">Ana səhifə</a><span aria-hidden="true">›</span>
+      <a href="index.html">Xonça şokoladı</a><span aria-hidden="true">›</span>
+      <span aria-current="page" id="crumbName"></span>
+    </nav>
+
+    <section class="product" aria-labelledby="title">
+      <div class="gallery">
+        <div class="g-main" id="gMain"></div>
+        <div class="g-thumbs" id="gThumbs" role="group" aria-label="Şəkillər"></div>
+      </div>
+
+      <form class="buy" id="buy" novalidate>
+        <p class="eyebrow" id="eyebrow"></p>
+        <h1 id="title"></h1>
+        <p class="price-from" id="priceFrom"></p>
+        <p class="lead" id="desc"></p>
+        <div class="notice">
+          <span aria-hidden="true">🍫</span>
+          <span><b>Bu, xonça deyil.</b> Sifarişə yalnız şokolad qutuları daxildir. Xonçanı özünüz və ya xonçaçınız yığır. Xonça lazımdırsa, <a href="https://xoncaci.az" target="_blank" rel="noopener">xoncaci.az-da sifariş edin<span class="sr"> (yeni pəncərədə açılır)</span></a>.</span>
+        </div>
+
+        <fieldset class="opt">
+          <legend>Mərasim</legend>
+          <div class="swatches" id="occasions"></div>
+        </fieldset>
+
+        <fieldset class="opt">
+          <legend>Qutunun rəngi <span class="muted" id="colorName"></span></legend>
+          <div class="swatches" id="colors"></div>
+        </fieldset>
+
+        <fieldset class="opt">
+          <legend>Qutudakı yazı <span class="muted">(* məcburi)</span></legend>
+          <div class="grid2" id="nameFields"></div>
+          <div class="field">
+            <label for="printDate">Qutuda yazılacaq tarix <span class="muted">(istəyə bağlı)</span></label>
+            <input id="printDate" class="input" type="date" aria-describedby="h-print">
+            <p class="hint" id="h-print">Adətən mərasimin tarixi yazılır. Boş qalsa, qutuda tarix olmur.</p>
+          </div>
+          <div class="field" id="photoField" hidden>
+            <span class="lbl" id="photoLbl">Qutuda olacaq şəkil <span class="req" aria-hidden="true">*</span></span>
+            <div class="upload">
+              <div class="up-thumb" id="upThumb" aria-hidden="true">📷</div>
+              <div class="up-txt"><b id="upName">Şəkil seçilməyib</b><small id="upHint">Şəkil bütün qutulara çap olunur. JPG, PNG və ya HEIC, 10 MB-a qədər.</small></div>
+              <label class="btn btn-ghost btn-sm" for="photo">Şəkil seç</label>
+              <button type="button" class="btn-text" id="upClear" aria-label="Seçilmiş şəkli sil" hidden>Sil</button>
+              <input id="photo" class="sr" type="file" accept="image/*" aria-labelledby="photoLbl" aria-describedby="upHint e-photo">
+            </div>
+            <p class="err" id="e-photo" role="alert" hidden></p>
+          </div>
+          <div class="field">
+            <label for="note">Əlavə qeyd <span class="muted">(istəyə bağlı)</span></label>
+            <textarea id="note" class="input" rows="3" maxlength="200" placeholder="Məsələn, 10 qutuda başqa adlar olsun: Ləman və Tural" aria-describedby="noteCount"></textarea>
+            <span class="count" id="noteCount">0 / 200</span>
+          </div>
+        </fieldset>
+
+        <fieldset class="opt">
+          <legend>Qutu sayı</legend>
+          <div class="presets" id="presets" role="group" aria-label="Tez seçim"></div>
+          <div class="field qty-field">
+            <label for="qty">Neçə qutu lazımdır? <span class="req" aria-hidden="true">*</span></label>
+            <div class="qty-row">
+              <div class="stepper">
+                <button type="button" id="qMinus" aria-label="Bir qutu azalt"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+                <input id="qty" class="qty-input" type="number" inputmode="numeric" step="1" aria-describedby="h-qty e-qty">
+                <button type="button" id="qPlus" aria-label="Bir qutu artır"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+              </div>
+              <a class="link" href="#guide">Xonçaya neçə qutu gedir?</a>
+            </div>
+            <p class="hint" id="h-qty"></p>
+            <p class="err" id="e-qty" hidden></p>
+          </div>
+        </fieldset>
+
+        <fieldset class="opt">
+          <legend>Çatdırılma</legend>
+          <div class="swatches" id="places">
+            <label class="sw"><input class="sr" type="radio" name="place" value="baki" checked><span class="sw-body txt">Bakı, pulsuz</span></label>
+            <label class="sw"><input class="sr" type="radio" name="place" value="rayon"><span class="sw-body txt">Rayonlar, poçtla</span></label>
+          </div>
+          <div class="grid2 gap-top">
+            <div class="field">
+              <label for="date">Çatdırılma tarixi <span class="req" aria-hidden="true">*</span></label>
+              <input id="date" class="input" type="date" required aria-required="true" aria-describedby="h-date e-date">
+              <p class="hint" id="h-date"></p>
+              <p class="err" id="e-date" hidden></p>
+            </div>
+            <div class="field" id="slotField">
+              <label for="slot">Çatdırılma vaxtı</label>
+              <div class="select-wrap">
+                <select id="slot" class="input">
+                  <option>10:00 - 13:00</option>
+                  <option>13:00 - 16:00</option>
+                  <option>16:00 - 19:00</option>
+                </select>
+                <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="summary">
+          <div id="sumLines"></div>
+          <div class="sum-total"><span>Cəmi</span><strong id="sumTotal" aria-live="polite"></strong></div>
+          <p class="hint" id="sumHint"></p>
+        </div>
+
+        <div class="cta-row" id="ctaRow">
+          <button type="submit" class="btn btn-primary btn-lg" id="addBtn"><span class="spin" aria-hidden="true"></span><span class="lbl-btn">Səbətə əlavə et</span></button>
+          <a class="btn btn-ghost btn-lg" href="https://nefis.az/elaqe">Bizə yaz</a>
+        </div>
+
+        <ul class="trust">
+          <li><span aria-hidden="true">🚚</span>Bakıda pulsuz çatdırılma, rayonlara poçtla</li>
+          <li><span aria-hidden="true">🍫</span>Şokoladlar sifarişdən sonra hazırlanır</li>
+          <li><span aria-hidden="true">💳</span>Saytda kartla ödəniş</li>
+        </ul>
+      </form>
+    </section>
+  </div>
+
+  <section class="section alt" id="guide" aria-labelledby="guideTitle">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">Say</p>
+        <h2 id="guideTitle">Xonçaya neçə qutu lazımdır?</h2>
+        <p>Say xonçanın ölçüsündən asılıdır. Saylar təxminidir, dəqiq sayı xonçaçınızdan soruşun. Ən az sifariş 20 qutudur.</p>
+      </div>
+      <div class="contents" id="guideList"></div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="factsTitle">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">Sifarişdən əvvəl</p>
+        <h2 id="factsTitle">Bilməli olduqlarınız</h2>
+      </div>
+      <div class="facts">
+        <div class="fact"><span class="ico" aria-hidden="true">💐</span><div><h3>Xonça sifarişə daxil deyil</h3><p>Biz yalnız şokolad qutularını hazırlayırıq. Xonçanı özünüz və ya xonçaçınız yığır, xonçanı <a href="https://xoncaci.az" target="_blank" rel="noopener">xoncaci.az-da<span class="sr"> (yeni pəncərədə açılır)</span></a> sifariş edə bilərsiniz.</p></div></div>
+        <div class="fact"><span class="ico" aria-hidden="true">⏱</span><div><h3>Hazırlanma</h3><p>Sifariş adətən 1-3 iş günü hazırlanır. Şokoladlar xonça yığılmamış çatsın deyə, günü xonçaçınızla razılaşdırın.</p></div></div>
+        <div class="fact"><span class="ico" aria-hidden="true">🚚</span><div><h3>Çatdırılma</h3><p>Bakıda çatdırılma pulsuzdur, seçdiyiniz saat aralığında gətiririk. Rayonlara poçtla göndəririk.</p></div></div>
+        <div class="fact"><span class="ico" aria-hidden="true">✏️</span><div><h3>Dəyişiklik</h3><p>Adları və tarixi çap başlayana qədər dəyişə bilərsiniz. Bunun üçün bizə yazın.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section alt" aria-labelledby="moreTitle">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">Kataloq</p>
+        <h2 id="moreTitle">Digər qutular</h2>
+      </div>
+      <div class="cards" id="related"></div>
+      <div class="sec-more"><a class="btn btn-ghost btn-lg" href="index.html#katalog">Bütün qutular</a></div>
+    </div>
+  </section>
+</main>
+
+<footer class="ftr">
+  <div class="wrap ftr-in">
+    <div>
+      <p class="brand">Nefis</p>
+      <p>Şəkilli şokolad qutuları, xonça üçün adlı şokoladlar və fərdi hədiyyələr.</p>
+    </div>
+    <nav aria-label="Alt menyu">
+      <a href="https://nefis.az/dizaynlar">Dizaynlar</a>
+      <a href="https://nefis.az/hediyye">Hədiyyə fikirləri</a>
+      <a href="https://nefis.az/suallar">Suallar</a>
+      <a href="https://nefis.az/elaqe">Əlaqə</a>
+    </nav>
+  </div>
+</footer>
+
+<div class="sbar" id="sbar" aria-hidden="true">
+  <div class="t"><small id="sbarMeta"></small><strong id="sbarTotal"></strong></div>
+  <button type="button" class="btn btn-primary" id="sbarBtn" tabindex="-1">Səbətə əlavə et</button>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="xonca-data.js"></script>
+<script src="xonca-common.js"></script>
+<script>
+(function(){
+var X = window.XONCA, NF = window.NF, $ = NF.$, esc = NF.esc, money = NF.money, fmtDate = NF.fmtDate;
+
+var IT = X.get(new URLSearchParams(location.search).get("x")) || X.ITEMS[0];
+var minDate = NF.addDays(X.LEAD);
+var SAMPLE_DATE = fmtDate(NF.addDays(30));
+
+var S = {
+  occ: X.OCCASIONS[0].id, color: IT.colors[0], qty: 20, place: "baki",
+  names: {}, printDate: null, photo: null, view: 0
+};
+function OCC() { return X.occ(S.occ); }
+function FIELDS() {
+  return OCC().two
+    ? [{ id: "ad1", label: "Qızın adı", ph: "Məsələn, Aynur" }, { id: "ad2", label: "Oğlanın adı", ph: "Məsələn, Elvin" }]
+    : [{ id: "ad1", label: "Ad günü olanın adı", ph: "Məsələn, Aysel" }];
+}
+
+// Qalereya: əvvəl qutunun real fotosu, sonra sizin qutunuz (redaktə önizləməsi), sonra nümunə xonçalar.
+// Ad yazanda, rəng və ya mərasim seçəndə qalereya önizləməyə keçir.
+var VIEWS = (IT.photos || []).map(function (src) { return { kind: "photo", src: src, label: "Nümunə qutu" }; })
+  .concat([{ kind: "preview", label: "Sizin qutunuz" }])
+  .concat(IT.examples.map(function (src) { return { kind: "img", src: src, label: "Xonçada nümunə" }; }));
+var PV = (IT.photos || []).length;
+
+function typed() { return FIELDS().map(function (f) { return (S.names[f.id] || "").trim(); }).filter(Boolean); }
+function previewText() {
+  var names = typed();
+  return {
+    names: names, sampleNames: OCC().two ? ["Aynur", "Elvin"] : ["Aysel"], sample: !names.length,
+    date: S.printDate ? fmtDate(S.printDate) : (names.length ? "" : SAMPLE_DATE),
+    label: OCC().label, color: S.color, photo: S.photo
+  };
+}
+
+/* ---------- Qalereya ---------- */
+function viewHTML(i, big) {
+  var v = VIEWS[i];
+  if (v.kind === "photo") return NF.photoHTML(v.src, big ? "Nümunə: " + IT.name + " dizaynında şokolad qutuları" : "", !big);
+  if (v.kind === "img") return '<img src="' + v.src + '" alt="' + (big ? "Nümunə xonça. Xonça satılmır, yalnız içindəki şokolad qutuları" : "") + '">';
+  var t = previewText();
+  return NF.preview(IT, t, big ? "Qutunun önizləməsi: " + t.label + ", " + (t.names.length ? t.names : t.sampleNames).join(" və ") : "");
+}
+function renderMain() {
+  $("#gMain").innerHTML = viewHTML(S.view, true) + (IT.badge && S.view === 0 ? '<span class="tag">' + esc(IT.badge) + '</span>' : '') +
+    '<span class="g-view" aria-hidden="true">' + VIEWS[S.view].label + '</span>';
+}
+function renderThumbs() {
+  var g = $("#gThumbs");
+  if (VIEWS.length < 2) { g.hidden = true; return; }
+  g.innerHTML = VIEWS.map(function (v, i) {
+    return '<button type="button" class="g-thumb" data-i="' + i + '" aria-pressed="' + (i === S.view) + '" aria-label="' + v.label + '">' + viewHTML(i, false) + '</button>';
+  }).join("");
+}
+function setView(i) {
+  S.view = i; renderMain();
+  Array.prototype.forEach.call(document.querySelectorAll(".g-thumb"), function (b) { b.setAttribute("aria-pressed", String(+b.dataset.i === i)); });
+}
+function refreshPreview() { if (S.view === PV) renderMain(); else setView(PV); renderThumbs(); }
+
+/* ---------- Qiymət ---------- */
+function validQty() { return S.qty >= X.MIN && S.qty <= X.MAX; }
+function renderSummary() {
+  var q = validQty() ? S.qty : 0, total = q * IT.price;
+  $("#sumLines").innerHTML =
+    '<div class="sum-line"><span>' + (q || "-") + ' qutu × ' + money(IT.price) + '</span><span>' + money(total) + '</span></div>' +
+    '<div class="sum-line"><span>Çatdırılma</span><span>' + (S.place === "baki" ? "Pulsuz" : "Səbətdə hesablanır") + '</span></div>';
+  $("#sumTotal").textContent = money(total);
+  $("#sbarTotal").textContent = money(total);
+  $("#sbarMeta").textContent = IT.name + ", " + (q || "-") + " qutu";
+  $("#sumHint").textContent = S.place === "baki" ? "Bakıda çatdırılma pulsuzdur." : "Rayonlara poçtla göndəririk, poçtun qiyməti səbətdə görünür.";
+  $("#qMinus").disabled = S.qty <= X.MIN;
+  $("#qPlus").disabled = S.qty >= X.MAX;
+  Array.prototype.forEach.call(document.querySelectorAll(".preset"), function (b) { b.setAttribute("aria-pressed", String(+b.dataset.n === S.qty)); });
+}
+function setQty(n, fromInput) {
+  S.qty = isNaN(n) ? 0 : n;
+  if (!fromInput) $("#qty").value = S.qty;
+  setErr($("#qty"), "");
+  renderSummary();
+}
+
+/* ---------- Səhifənin məzmunu ---------- */
+function renderNames() {
+  $("#nameFields").classList.toggle("one", !OCC().two);
+  $("#nameFields").innerHTML = FIELDS().map(function (f) {
+    return '<div class="field"><label for="f-' + f.id + '">' + esc(f.label) + ' <span class="req" aria-hidden="true">*</span></label>' +
+      '<input id="f-' + f.id + '" class="input" type="text" maxlength="20" autocomplete="off" placeholder="' + esc(f.ph) + '" required aria-required="true" aria-describedby="e-' + f.id + '" data-name="' + f.id + '" value="' + esc(S.names[f.id] || "") + '">' +
+      '<p class="err" id="e-' + f.id + '" hidden></p></div>';
+  }).join("");
+}
+function renderStatic() {
+  document.title = IT.name + ", xonça üçün şokolad qutusu | Nefis";
+  $("#crumbName").textContent = IT.name;
+  $("#eyebrow").textContent = X.CATS[IT.cat] + ", xonça şokoladı";
+  $("#title").textContent = IT.name + " şokolad qutusu";
+  $("#priceFrom").innerHTML = money(IT.price) + ' <small class="muted">/ qutu</small>';
+  $("#desc").textContent = IT.desc;
+
+  $("#occasions").innerHTML = X.OCCASIONS.map(function (o) {
+    return '<label class="sw"><input class="sr" type="radio" name="occ" value="' + o.id + '"' + (o.id === S.occ ? ' checked' : '') + '><span class="sw-body txt">' + esc(o.name) + '</span></label>';
+  }).join("");
+
+  $("#colorName").textContent = X.COLORS[S.color].name;
+  $("#colors").innerHTML = IT.colors.map(function (k) {
+    var c = X.COLORS[k];
+    return '<label class="sw"><input class="sr" type="radio" name="color" value="' + k + '"' + (k === S.color ? ' checked' : '') + '>' +
+      '<span class="sw-body"><span class="dot" style="--c:' + c.c + '" aria-hidden="true"></span>' + esc(c.name) + '</span></label>';
+  }).join("");
+
+  renderNames();
+  $("#photoField").hidden = !IT.photo;
+
+  $("#presets").innerHTML = X.PRESETS.map(function (n) {
+    return '<button type="button" class="preset" data-n="' + n + '" aria-pressed="false">' + n + '</button>';
+  }).join("");
+  var q = $("#qty"); q.min = X.MIN; q.max = X.MAX; q.value = S.qty;
+  $("#h-qty").textContent = "Ən az " + X.MIN + " qutu. Bir qutu " + money(IT.price) + ".";
+
+  $("#date").min = NF.isoDate(minDate);
+  $("#h-date").textContent = "Sifariş 1-3 iş günü hazırlanır. Ən tez " + fmtDate(minDate) + " ola bilər.";
+
+  $("#guideList").innerHTML = X.GUIDE.map(function (g) {
+    return '<div class="item"><span class="ico" aria-hidden="true">' + g.icon + '</span><b>' + esc(g.name) + '</b><span class="q">' + esc(g.n) + '</span></div>';
+  }).join("");
+
+  var others = X.ITEMS.filter(function (it) { return it.id !== IT.id; });
+  others.sort(function (a, b) { return (b.cat === IT.cat) - (a.cat === IT.cat); });
+  $("#related").innerHTML = others.slice(0, 3).map(NF.cardHTML).join("");
+}
+
+/* ---------- Xətalar ---------- */
+function setErr(el, msg) {
+  var f = el.closest(".field"), e = f.querySelector(".err");
+  f.classList.toggle("invalid", !!msg);
+  el.setAttribute("aria-invalid", msg ? "true" : "false");
+  e.hidden = !msg; e.textContent = msg || "";
+}
+function checkDate() {
+  var d = $("#date");
+  if (!d.value) return "Tarix seçilməyib. Ən tez " + fmtDate(minDate) + " tarixini seçə bilərsiniz.";
+  var day = new Date(d.value + "T00:00");
+  if (day < minDate) return "Bu tarixə hazırlaya bilmirik. " + fmtDate(minDate) + " və ya sonrakı günü seçin.";
+  if (S.printDate && day > S.printDate) return "Şokoladlar mərasimdən sonra çatır. " + fmtDate(S.printDate) + " və ya daha tez tarix seçin.";
+  return "";
+}
+function checkQty() {
+  if (!S.qty) return "Qutu sayı yazılmayıb. Ən az " + X.MIN + " qutu yazın.";
+  if (S.qty < X.MIN) return "Ən az " + X.MIN + " qutu sifariş etmək olar. Sayı artırın.";
+  if (S.qty > X.MAX) return X.MAX + "-dən çox qutu üçün bizə yazın, ayrıca hazırlayaq.";
+  return "";
+}
+function validate() {
+  var first = null;
+  FIELDS().forEach(function (f) {
+    var el = $("#f-" + f.id), ok = el.value.trim().length > 0;
+    setErr(el, ok ? "" : f.label + " yazılmayıb. Qutuda olacaq adı yazın.");
+    if (!ok && !first) first = el;
+  });
+  if (IT.photo) {
+    var pe = $("#e-photo");
+    if (!S.photo) { pe.textContent = "Şəkil seçilməyib. Qutuda olacaq şəkli yükləyin."; pe.hidden = false; if (!first) first = $("#photo"); }
+  }
+  var qm = checkQty(); setErr($("#qty"), qm); if (qm && !first) first = $("#qty");
+  var dm = checkDate(); setErr($("#date"), dm); if (dm && !first) first = $("#date");
+  return first;
+}
+
+/* ---------- Hadisələr ---------- */
+var form = $("#buy");
+form.addEventListener("change", function (e) {
+  var el = e.target;
+  if (el.name === "occ") { S.occ = el.value; renderNames(); refreshPreview(); }
+  else if (el.name === "color") { S.color = el.value; $("#colorName").textContent = X.COLORS[S.color].name; refreshPreview(); }
+  else if (el.name === "place") { S.place = el.value; $("#slotField").hidden = S.place !== "baki"; renderSummary(); }
+  else if (el.id === "printDate") {
+    S.printDate = el.value ? new Date(el.value + "T00:00") : null;
+    refreshPreview();
+    if ($("#date").value) setErr($("#date"), checkDate());
+  }
+  else if (el.id === "date") setErr(el, checkDate());
+  else if (el.id === "qty") setErr(el, checkQty());
+});
+form.addEventListener("input", function (e) {
+  var el = e.target;
+  if (el.dataset.name) {
+    S.names[el.dataset.name] = el.value;
+    if (el.value.trim()) setErr(el, "");
+    if (S.view !== PV) setView(PV); else renderMain();
+  } else if (el.id === "qty") {
+    setQty(parseInt(el.value, 10), true);
+  } else if (el.id === "note") {
+    $("#noteCount").textContent = el.value.length + " / 200";
+  }
+});
+form.addEventListener("focusout", function (e) { if (e.target.dataset && e.target.dataset.name) renderThumbs(); });
+
+$("#gThumbs").addEventListener("click", function (e) { var b = e.target.closest(".g-thumb"); if (b) setView(+b.dataset.i); });
+$("#presets").addEventListener("click", function (e) { var b = e.target.closest(".preset"); if (b) setQty(+b.dataset.n); });
+$("#qMinus").addEventListener("click", function () { setQty(Math.max(X.MIN, (S.qty || X.MIN) - 1)); });
+$("#qPlus").addEventListener("click", function () { setQty(Math.min(X.MAX, (S.qty || 0) + 1)); });
+
+var photo = $("#photo");
+photo.addEventListener("change", function () {
+  var f = photo.files && photo.files[0], err = $("#e-photo");
+  err.hidden = true;
+  if (!f) return;
+  if (!/^image\//.test(f.type)) { err.textContent = "Bu fayl şəkil deyil. JPG, PNG və ya HEIC seçin."; err.hidden = false; photo.value = ""; return; }
+  if (f.size > 10 * 1024 * 1024) { err.textContent = "Şəkil çox böyükdür. 10 MB-dan kiçik şəkil seçin."; err.hidden = false; photo.value = ""; return; }
+  if (S.photo) URL.revokeObjectURL(S.photo);
+  S.photo = URL.createObjectURL(f);
+  $("#upThumb").innerHTML = '<img src="' + S.photo + '" alt="">';
+  $("#upName").textContent = f.name;
+  $("#upClear").hidden = false;
+  refreshPreview();
+});
+$("#upClear").addEventListener("click", function () {
+  photo.value = ""; if (S.photo) { URL.revokeObjectURL(S.photo); S.photo = null; }
+  $("#upThumb").textContent = "📷"; $("#upName").textContent = "Şəkil seçilməyib"; $("#upClear").hidden = true;
+  refreshPreview(); photo.focus();
+});
+
+form.addEventListener("submit", function (e) {
+  e.preventDefault();
+  var bad = validate();
+  if (bad) {
+    var target = bad.id === "photo" ? $("#photoField") : bad;
+    if (bad.id !== "photo") bad.focus({ preventScroll: true });
+    target.scrollIntoView({ block: "center", behavior: NF.reduced ? "auto" : "smooth" });
+    return;
+  }
+  var btn = $("#addBtn"), lbl = btn.querySelector(".lbl-btn");
+  btn.classList.add("loading"); btn.disabled = true; lbl.textContent = "Əlavə olunur";
+  // Burada səbət API-si çağırılır
+  setTimeout(function () {
+    btn.classList.remove("loading"); btn.disabled = false; lbl.textContent = "Səbətə əlavə et";
+    var cc = $("#cartCount"); cc.textContent = (+cc.textContent || 0) + 1; cc.hidden = false;
+    $("#cartLink").setAttribute("aria-label", "Səbət, " + cc.textContent + " məhsul");
+    NF.toast(S.qty + " şokolad qutusu səbətə əlavə olundu");
+  }, 700);
+});
+$("#sbarBtn").addEventListener("click", function () { if (form.requestSubmit) form.requestSubmit(); else $("#addBtn").click(); });
+
+// Mobil alt panel: əsas düymə görünməyəndə çıxır
+if ("IntersectionObserver" in window) {
+  var bar = $("#sbar");
+  new IntersectionObserver(function (en) {
+    var hide = en[0].isIntersecting;
+    bar.classList.toggle("show", !hide);
+    bar.setAttribute("aria-hidden", String(hide));
+    $("#sbarBtn").tabIndex = hide ? -1 : 0;
+  }, { rootMargin: "0px 0px -40px 0px" }).observe($("#ctaRow"));
+}
+
+NF.initHeader();
+renderStatic(); renderMain(); renderThumbs(); renderSummary();
+})();
+</script>
+</body>
+</html>
