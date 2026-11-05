@@ -36,6 +36,10 @@ class FreeStackTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // The shop's own xonça shelf is seeded by a migration; this
+        // test counts the catalogue it builds itself.
+        $this->clearSeededDesigns();
         Storage::fake('public');
         $this->admin = User::factory()->create(['is_admin' => true]);
         $this->box = Product::create(['name' => 'Təklif', 'slug' => 'teklif', 'is_active' => true]);

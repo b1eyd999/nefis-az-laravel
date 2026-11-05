@@ -18,6 +18,15 @@ class CategoryTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // The shop's own xonça shelf is seeded by a migration; this
+        // test counts the catalogue it builds itself.
+        $this->clearSeededDesigns();
+    }
+
     private function design(string $name, string $slug, ?string $category): Product
     {
         $product = Product::create([
@@ -34,13 +43,14 @@ class CategoryTest extends TestCase
     public function test_the_shop_starts_with_the_shelves_it_had(): void
     {
         $this->assertSame(
-            // "xonca" comes last and switched off: the shelf has to exist
-            // before a xonça design can be filed under it, but an empty one
-            // on the catalogue page would read as a mistake.
+            // "xonca" comes last. It was switched off for as long as it was
+            // empty - the shelf had to exist before a design could be filed
+            // under it, but an empty one on the catalogue page reads as a
+            // mistake. It has thirteen designs on it now, so it is on.
             ['sokolad', 'poster', 'love-is', 'xerite', 'spotify', 'xonca'],
             ProductCategory::inOrder()->pluck('slug')->all()
         );
-        $this->assertFalse((bool) ProductCategory::where('slug', 'xonca')->value('is_active'));
+        $this->assertTrue((bool) ProductCategory::where('slug', 'xonca')->value('is_active'));
     }
 
     public function test_the_catalogue_is_arranged_the_way_the_owner_arranged_it(): void

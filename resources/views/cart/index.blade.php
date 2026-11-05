@@ -102,13 +102,18 @@
               <form method="POST" action="{{ lroute('cart.quantity', $item['id']) }}" class="qty">
                 @csrf
                 @method('PATCH')
-                <button type="submit" name="quantity" value="{{ max(1, $item['quantity'] - 1) }}"
+                @php
+                  // This line's own design decides, where it says so.
+                  $lineLeast = \App\Support\Cart::least($item['product'] ?? null);
+                  $lineMost = \App\Support\Cart::most(null, $item['product'] ?? null);
+                @endphp
+                <button type="submit" name="quantity" value="{{ max($lineLeast, $item['quantity'] - 1) }}"
                         aria-label="{{ __('Bir az') }}"
-                        @disabled($item['quantity'] <= 1)>&minus;</button>
+                        @disabled($item['quantity'] <= $lineLeast)>&minus;</button>
                 <span aria-live="polite">{{ $item['quantity'] }}</span>
-                <button type="submit" name="quantity" value="{{ min(\App\Support\Cart::most(), $item['quantity'] + 1) }}"
+                <button type="submit" name="quantity" value="{{ min($lineMost, $item['quantity'] + 1) }}"
                         aria-label="{{ __('Bir çox') }}"
-                        @disabled($item['quantity'] >= \App\Support\Cart::most())>+</button>
+                        @disabled($item['quantity'] >= $lineMost)>+</button>
               </form>
               @php $paket = $item['bundle'] ?? null; @endphp
               @if($paket)

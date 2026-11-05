@@ -42,6 +42,17 @@ class Media
             return null;
         }
 
+        /* Artwork that travels with the site rather than being uploaded.
+           There is no SSH on this host, so a file prepared from the
+           developer's side reaches the server by riding in the repository,
+           and the deploy copies public/ into the web root. Nothing is ever
+           uploaded under «images/» — the admin writes to products/,
+           box-sizes/, cart-photos/ and the like — so the prefix is free to
+           mean exactly this. */
+        if (str_starts_with($path, 'images/')) {
+            return asset($path);
+        }
+
         return self::isRemote($path)
             ? route('media', ['path' => $path])
             : asset('storage/' . $path);

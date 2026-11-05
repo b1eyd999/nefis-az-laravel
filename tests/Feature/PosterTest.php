@@ -23,6 +23,10 @@ class PosterTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // The shop's own xonça shelf is seeded by a migration; this
+        // test counts the catalogue it builds itself.
+        $this->clearSeededDesigns();
         Storage::fake('public');
         $this->actingAs(User::factory()->create(['is_admin' => true]));
         Filament::setCurrentPanel(Filament::getPanel('admin'));

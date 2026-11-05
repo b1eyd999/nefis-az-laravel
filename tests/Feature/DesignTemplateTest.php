@@ -26,6 +26,10 @@ class DesignTemplateTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // The shop's own xonça shelf is seeded by a migration; this
+        // test counts the catalogue it builds itself.
+        $this->clearSeededDesigns();
         Storage::fake('public');
         $this->admin = User::factory()->create(['is_admin' => true]);
         $this->done = Product::create(['name' => 'Qara Spotify', 'slug' => 'qara-spotify', 'is_active' => true]);

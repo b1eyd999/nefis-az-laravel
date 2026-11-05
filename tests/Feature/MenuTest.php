@@ -21,6 +21,15 @@ class MenuTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // The shop's own xonça shelf is seeded by a migration; this
+        // test counts the catalogue it builds itself.
+        $this->clearSeededDesigns();
+    }
+
     public function test_the_menu_shows_every_ready_line_until_the_owner_says_otherwise(): void
     {
         $keys = array_column(Menu::shown(), 'key');

@@ -38,6 +38,9 @@ class Product extends Model
         'cover_scene_id',
         'price',
         'template_image',
+        'min_quantity',
+        'max_quantity',
+        'needs_chocolate',
         'overlay_image',
         'background_image',
         'background_width',
@@ -213,10 +216,27 @@ class Product extends Model
             return null;
         }
 
+        /* A xonça box has no shop-bought bar in it, so the card must not
+           quote one: the owner says 1.50 ₼, and 1.50 ₼ is what it costs. */
+        if (! $this->needsChocolate()) {
+            return round((float) $this->price, 2);
+        }
+
         static $bar = null;
         $bar ??= (float) (Chocolate::shown()->get()->map->toCustomer()->pluck('price')->filter(fn ($p) => $p > 0)->min() ?? 0);
 
         return round((float) $this->price + $bar, 2);
+    }
+
+    /**
+     * Whether a bar from the shelf goes inside this box.
+     *
+     * True for every design the shop has sold until now. False for a xonça
+     * chocolate, which is a small sweet of its own in a printed box.
+     */
+    public function needsChocolate(): bool
+    {
+        return (bool) ($this->needs_chocolate ?? true);
     }
 
     /**

@@ -47,6 +47,10 @@ class TheSevenDescriptionsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // The shop's own xonça shelf is seeded by a migration; this
+        // test counts the catalogue it builds itself.
+        $this->clearSeededDesigns();
         ProductCategory::create(['slug' => 'qutular', 'name' => 'Qutular', 'is_active' => true, 'sort_order' => 0]);
     }
 

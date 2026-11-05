@@ -36,6 +36,10 @@ class TheDesignsPageFoldsItsChipsTest extends TestCase
     {
         parent::setUp();
 
+        // The shop's own xonça shelf is seeded by a migration; this
+        // test counts the catalogue it builds itself.
+        $this->clearSeededDesigns();
+
         ProductCategory::create(['slug' => 'qutular', 'name' => 'Qutular', 'is_active' => true, 'sort_order' => 0]);
         Product::create(['name' => 'Qutu', 'slug' => 'qutu', 'category' => 'qutular',
             'is_active' => true, 'price' => 12, 'sort_order' => 0]);

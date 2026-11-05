@@ -17,6 +17,15 @@ class SeoTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // The shop's own xonça shelf is seeded by a migration; this
+        // test counts the catalogue it builds itself.
+        $this->clearSeededDesigns();
+    }
+
     /** A design a customer can open: a box built in the editor. */
     private function box(string $name, string $slug, float $price = 4.9, bool $active = true): Product
     {

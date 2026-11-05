@@ -47,12 +47,47 @@ class Cart
      */
     public const MOST_BUSINESS = 500;
 
-    /** The most of one design this person may order. */
-    public static function most(?\App\Models\User $who = null): int
+    /**
+     * The most of one design this person may order.
+     *
+     * A design may say so itself, and then it says so for everybody: the
+     * figure is about what the shop can make of that design, not about who
+     * is buying. Without one, the account decides as it always has.
+     */
+    public static function most(?\App\Models\User $who = null, ?\App\Models\Product $design = null): int
     {
+        $own = (int) ($design?->max_quantity ?? 0);
+        if ($own > 0) {
+            return $own;
+        }
+
         $who ??= auth()->user();
 
         return $who?->buysBusinessDesigns() ? self::MOST_BUSINESS : self::MOST;
+    }
+
+    /**
+     * The fewest of one design that may be ordered.
+     *
+     * One, for everything the shop has ever sold. A xonça design says
+     * twenty, because a tray with five chocolates on it is not a xonça and
+     * the shop would rather say so before the money than after.
+     */
+    public static function least(?\App\Models\Product $design = null): int
+    {
+        return max(1, (int) ($design?->min_quantity ?? 1));
+    }
+
+    /** The design on one line of the basket, where the line has one. */
+    public static function designOf(string $id): ?\App\Models\Product
+    {
+        foreach (self::raw() as $item) {
+            if (($item['id'] ?? null) === $id) {
+                return \App\Models\Product::find($item['product_id'] ?? 0);
+            }
+        }
+
+        return null;
     }
 
     /** Whether the customer asked for his order to be made before the others. */
@@ -204,7 +239,11 @@ class Cart
      */
     public static function setQuantity(string $id, int $quantity): void
     {
-        $quantity = max(1, min(self::most(), $quantity));
+        /* Read against the design on this very line, not against the
+           shop's own figures: a xonça line that fell back to one would be
+           an order the shop will not make. */
+        $design = self::designOf($id);
+        $quantity = max(self::least($design), min(self::most(null, $design), $quantity));
         $items = self::raw();
         foreach ($items as $i => $item) {
             if (($item['id'] ?? null) === $id) {

@@ -25,6 +25,15 @@ class XoncaOpensCleanlyTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // The shop's own xonça shelf is seeded by a migration; this
+        // test counts the catalogue it builds itself.
+        $this->clearSeededDesigns();
+    }
+
     private function xoncaBox(string $slug = 'nisan-xoncasi'): Product
     {
         $box = Product::create([

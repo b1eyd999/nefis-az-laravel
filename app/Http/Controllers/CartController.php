@@ -80,12 +80,14 @@ class CartController extends Controller
         }
 
         $rules = [
-            'quantity' => ['nullable', 'integer', 'min:1', 'max:' . Cart::most()],
+            'quantity' => ['nullable', 'integer',
+                'min:' . Cart::least($product), 'max:' . Cart::most(null, $product)],
             'rush' => ['nullable', 'boolean'],
         ];
 
-        // A bar has to be picked whenever there are bars to pick from.
-        if (Chocolate::where('is_active', true)->exists()) {
+        // A bar has to be picked whenever there are bars to pick from —
+        // and whenever this design is a box that holds one at all.
+        if ($product->needsChocolate() && Chocolate::where('is_active', true)->exists()) {
             $rules['chocolate_id'] = [
                 /* Unless a package says there is no bar in it: then there is
                    nothing for the customer to pick and nothing to require. */
@@ -305,11 +307,18 @@ class CartController extends Controller
      */
     public function quantity(Request $request, string $id): RedirectResponse
     {
+        // The design on this line sets its own floor and ceiling where it
+        // has them; a xonça starts at twenty and goes far past the usual.
+        $design = Cart::designOf($id);
+        $least = Cart::least($design);
+        $most = Cart::most(null, $design);
+
         $data = $request->validate([
-            'quantity' => ['required', 'integer', 'min:1', 'max:' . Cart::most()],
+            'quantity' => ['required', 'integer', 'min:' . $least, 'max:' . $most],
         ], [
             'quantity.max' => __('Bir dizayndan ən çox :most ədəd sifariş etmək olar. Daha çoxu üçün bizə yazın.',
-                ['most' => Cart::most()]),
+                ['most' => $most]),
+            'quantity.min' => __('Bu dizayndan ən az :least ədəd sifariş etmək olar.', ['least' => $least]),
         ]);
 
         Cart::setQuantity($id, (int) $data['quantity']);

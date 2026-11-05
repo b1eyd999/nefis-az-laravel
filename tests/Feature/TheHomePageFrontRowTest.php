@@ -24,6 +24,15 @@ class TheHomePageFrontRowTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // The shop's own xonça shelf is seeded by a migration; this
+        // test counts the catalogue it builds itself.
+        $this->clearSeededDesigns();
+    }
+
     private function design(string $name, int $order = 0, array $extra = []): Product
     {
         return Product::create($extra + [

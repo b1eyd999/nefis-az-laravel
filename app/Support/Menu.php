@@ -6,6 +6,7 @@ use App\Models\GiftPage;
 use App\Models\Post;
 use App\Models\Setting;
 use App\Models\Wrapping;
+use App\Support\Xonca;
 
 /**
  * What stands in the shop's "Məhsullar" menu, and in what order.
@@ -101,16 +102,17 @@ class Menu
         foreach (array_keys(self::ENTRIES) as $key) {
             $out[$key] = [
                 'on' => true,
-                // Until the designs are drawn the line says so itself.
-                'badge' => $key === 'xonca' ? 'Tezliklə' : '',
+                /* Until the designs are drawn the line says so itself —
+                   and stops saying it the day they are on the shelf. */
+                'badge' => $key === 'xonca' && ! Xonca::ready() ? 'Tezliklə' : '',
                 /* Xonça stands on the bar. A tray is ordered for a date that
                    is already fixed, and the family buying one is not browsing
                    a list of products — they are looking for that word. */
                 'place' => $key === 'xonca' ? 'top' : 'drop',
-                /* And it is a word, not a door: the designs are not drawn,
-                   so the line says «Tezliklə» and goes nowhere. The owner
-                   opens it in the admin when there is something behind it. */
-                'link' => $key !== 'xonca',
+                /* And while nothing is behind it, it is a word rather than
+                   a door. It becomes a door by itself once a design is
+                   filed under «Xonça»; the owner can still close it. */
+                'link' => $key !== 'xonca' || Xonca::ready(),
                 'order' => $at++,
             ];
         }

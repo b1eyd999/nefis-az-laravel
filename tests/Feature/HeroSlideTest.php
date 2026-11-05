@@ -20,6 +20,15 @@ class HeroSlideTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // The shop's own xonça shelf is seeded by a migration; this
+        // test counts the catalogue it builds itself.
+        $this->clearSeededDesigns();
+    }
+
     public function test_the_banner_starts_as_it_was_one_slide_and_no_slider(): void
     {
         $this->assertSame(1, HeroSlide::count(), 'the original wording became the first slide');

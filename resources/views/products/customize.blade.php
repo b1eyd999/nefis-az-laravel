@@ -16,8 +16,12 @@
 
   // What a box actually costs: the box plus the cheapest bar that has to go
   // in it. The offer says the same, so the marked-up price is one a customer
-  // can really pay.
-  $chocFrom = $chocolates->pluck('price')->filter(fn ($p) => $p > 0);
+  // can really pay. A xonça box holds no bar from the shelf, so for one of
+  // those the box is the whole price - and the offer Google reads must say
+  // so too, or the shop advertises a figure nobody is charged.
+  $chocFrom = $product->needsChocolate()
+      ? $chocolates->pluck('price')->filter(fn ($p) => $p > 0)
+      : collect();
   $priceFrom = $product->price ? (float) $product->price + (float) ($chocFrom->min() ?? 0) : null;
   $priceTo = $product->price ? (float) $product->price + (float) ($chocFrom->max() ?? 0) : null;
 @endphp
@@ -837,8 +841,8 @@
           </div>
         @endif
 
-        @if($chocolates->isNotEmpty() && ! $bundle)
-          {{-- The bar that goes inside the box. --}}
+        @if($chocolates->isNotEmpty() && ! $bundle && $product->needsChocolate())
+          {{-- The bar that goes inside the box. A xonça box holds none. --}}
           {{-- One brand at a time, so the list stays short however many bars there are. The owner's
                top brands come first and glow orange; the rest follow A–Z, the unbranded last. --}}
           @php
@@ -1052,7 +1056,17 @@
         <div class="qty-row">
           <div>
             <label for="quantity">{{ __('Say') }}</label>
-            <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ \App\Support\Cart::most() }}">
+            @php
+              $least = \App\Support\Cart::least($product);
+              $most = \App\Support\Cart::most(null, $product);
+            @endphp
+            <input type="number" id="quantity" name="quantity" value="{{ old('quantity', $least) }}"
+                   min="{{ $least }}" max="{{ $most }}">
+            {{-- A xonça is not sold by the box, and the page says so before
+                 the customer types a number the basket will refuse. --}}
+            @if($least > 1)
+              <p class="slot-hint" style="margin:.4rem 0 0;">{{ __('Ən az :least ədəd.', ['least' => $least]) }}</p>
+            @endif
           </div>
           @if(\App\Support\DeliveryTime::rushFee() > 0)
             {{-- Made before the others: chosen here, paid once for the order. --}}
