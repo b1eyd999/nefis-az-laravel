@@ -114,8 +114,15 @@ class TheXoncaShelfIsStockedTest extends TestCase
             $card = (string) $design->catalogImage();
 
             $this->assertStringStartsWith('images/xonca/numune/', $card, $design->slug);
-            $this->assertFileExists(public_path($card), $design->slug . ' has no card photograph');
             $this->assertNotSame($design->template_image, $card, $design->slug . ' shows its blank');
+
+            /* The file is checked against the repository, not public_path():
+               on the hosting the deploy copies public/ into the web root and
+               deletes it from the application directory, so asking the disk
+               there answers «no» for every file the site actually serves -
+               which is how the first attempt at these cards set none of
+               them at all. */
+            $this->assertFileExists(base_path('public/' . $card), $design->slug . ' has no card photograph');
         }
     }
 
