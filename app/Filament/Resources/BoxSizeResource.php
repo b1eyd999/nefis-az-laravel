@@ -89,27 +89,38 @@ class BoxSizeResource extends Resource
                     ->schema([
                         Forms\Components\FileUpload::make('front_image')
                             ->label('Ön tərəf')
-                            ->image()->disk('public')->directory('box-sizes')->maxSize(4096),
+                            ->image()->disk('public')->directory('box-sizes')->maxSize(4096)
+                            ->live(),
                         Forms\Components\FileUpload::make('back_image')
                             ->label('Arxa tərəf')
-                            ->image()->disk('public')->directory('box-sizes')->maxSize(4096),
+                            ->image()->disk('public')->directory('box-sizes')->maxSize(4096)
+                            ->live(),
                     ])->columns(2),
 
+                /* Where the printed face sits inside the render. It is four
+                   percentages in the table, and it was four boxes to type
+                   here - which is a measurement off a picture by eye, and
+                   the owner said as much. The frame above is dragged onto
+                   the face instead and writes the numbers itself; they stay
+                   below it, both to be read back and because a number typed
+                   by hand is sometimes the quickest correction. */
                 Forms\Components\Section::make('Çap olunan üzün yeri')
-                    ->description('Şəkildə çap olunan üz harada başlayır və harada bitir — şəklin eninin və '
-                        . 'hündürlüyünün faizi ilə. Render yalnız üzün özüdürsə, 0 / 0 / 100 / 100 qalsın. '
-                        . 'Kənarda kölgə və ya qutunun yan tərəfi varsa, rəqəmləri ona görə daraldın və '
-                        . 'saytda yoxlayın.')
-                    ->collapsed()
+                    ->description('Loqo, şüar və QR kod şəklin məhz bu yerinə düşür. '
+                        . 'Çərçivəni mausla qutunun çap olunan üzünün üstünə qoyun. '
+                        . 'Render yalnız üzün özüdürsə, «Bütün şəkil» deyin.')
                     ->schema([
+                        Forms\Components\ViewField::make('face_picker')
+                            ->view('filament.box-face-picker')
+                            ->dehydrated(false)
+                            ->columnSpanFull(),
                         Forms\Components\TextInput::make('face_left')->label('Soldan, %')
-                            ->numeric()->default(0)->minValue(0)->maxValue(100),
+                            ->numeric()->default(0)->minValue(0)->maxValue(100)->live(onBlur: true),
                         Forms\Components\TextInput::make('face_top')->label('Yuxarıdan, %')
-                            ->numeric()->default(0)->minValue(0)->maxValue(100),
+                            ->numeric()->default(0)->minValue(0)->maxValue(100)->live(onBlur: true),
                         Forms\Components\TextInput::make('face_right')->label('Sağ kənarı, %')
-                            ->numeric()->default(100)->minValue(0)->maxValue(100),
+                            ->numeric()->default(100)->minValue(0)->maxValue(100)->live(onBlur: true),
                         Forms\Components\TextInput::make('face_bottom')->label('Alt kənarı, %')
-                            ->numeric()->default(100)->minValue(0)->maxValue(100),
+                            ->numeric()->default(100)->minValue(0)->maxValue(100)->live(onBlur: true),
                     ])->columns(4),
 
                 Forms\Components\Section::make('Qiymət — sayına görə')
