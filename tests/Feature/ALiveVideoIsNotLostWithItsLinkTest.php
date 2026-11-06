@@ -41,6 +41,9 @@ class ALiveVideoIsNotLostWithItsLinkTest extends TestCase
     /** Whether Yandex is answering for the public link this moment. */
     private bool $serves = true;
 
+    /** What Yandex says is wrong, when it is not answering. */
+    private string $reason = 'DiskNotFoundError';
+
     /** How many messages had gone out when we last looked. */
     private int $seen = 0;
 
@@ -71,6 +74,13 @@ class ALiveVideoIsNotLostWithItsLinkTest extends TestCase
                 return $this->serves
                     ? Http::response(['href' => 'https://downloader.disk.yandex.ru/clip.mp4'])
                     : Http::response(['error' => 'DiskNotFoundError'], 404);
+            }
+            /* The metadata endpoint beside it, which is the one that tells
+               the truth when the download allowance is spent. */
+            if (str_contains($url, 'public/resources')) {
+                return $this->serves
+                    ? Http::response(['name' => 'clip.mp4', 'size' => $size])
+                    : Http::response(['error' => $this->reason], 404);
             }
             if (str_contains($url, '/disk/resources/upload')) {
                 return Http::response(['href' => 'https://uploader.disk.yandex.ru/put']);
@@ -238,6 +248,47 @@ class ALiveVideoIsNotLostWithItsLinkTest extends TestCase
         $this->yandexServes(true);
         $this->artisan('live:check')->assertSuccessful();
         $this->assertSame(1, $this->messagesSent(), 'nobody was told it came back');
+    }
+
+    /**
+     * The message says what Yandex says, not what it looks like.
+     *
+     * With the account's download allowance spent, every link answers
+     * «not found» on the download endpoint - and reading that literally
+     * sent the owner hunting for files that were on his Disk the whole
+     * time. The metadata endpoint beside it names the real reason.
+     */
+    public function test_a_spent_download_allowance_is_not_reported_as_a_missing_file(): void
+    {
+        Setting::put(Setting::TELEGRAM_TOKEN, Crypt::encryptString('bot-token'));
+        Setting::put(Setting::TELEGRAM_CHAT, '-100500');
+
+        $live = $this->live();
+        $live->forceFill(['video_url' => self::LINK])->saveQuietly();
+
+        $this->reason = 'DiskResourceDownloadLimitExceededError';
+        $this->yandexServes(false);
+        $this->artisan('live:check')->assertSuccessful();
+
+        $said = $this->lastMessage();
+        $this->assertStringContainsString('limiti dolub', $said);
+        $this->assertStringNotContainsString('silinib', $said);
+    }
+
+    /** A link that really is gone still says so. */
+    public function test_a_missing_file_is_still_reported_as_missing(): void
+    {
+        Setting::put(Setting::TELEGRAM_TOKEN, Crypt::encryptString('bot-token'));
+        Setting::put(Setting::TELEGRAM_CHAT, '-100500');
+
+        $live = $this->live();
+        $live->forceFill(['video_url' => self::LINK])->saveQuietly();
+
+        $this->reason = 'DiskNotFoundError';
+        $this->yandexServes(false);
+        $this->artisan('live:check')->assertSuccessful();
+
+        $this->assertStringContainsString('tapılmadı', $this->lastMessage());
     }
 
     /** What the message says is what he has to do about it. */

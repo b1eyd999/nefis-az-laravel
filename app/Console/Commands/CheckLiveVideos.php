@@ -71,6 +71,26 @@ class CheckLiveVideos extends Command
     }
 
     /**
+     * What Yandex says about the first broken one, where it says anything.
+     *
+     * One question for the lot: they share an account, so they share the
+     * reason - and a question per video would spend the very allowance
+     * that is usually the trouble.
+     *
+     * @param  array<int, LivePhoto>  $broke
+     */
+    private function why(array $broke): ?string
+    {
+        foreach ($broke as $live) {
+            if (filled($live->video_url)) {
+                return \App\Support\YandexDisk::reason($live->video_url);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @param  array<int, LivePhoto>  $broke
      * @param  array<int, LivePhoto>  $mended
      */
@@ -95,11 +115,17 @@ class CheckLiveVideos extends Command
                 $lines[] = '• ' . $name . $also . ' — ' . $live->url();
             }
             $lines[] = '';
-            /* Said plainly, because the natural guess is the token - and the
-               token has nothing to do with playing a video. */
-            $lines[] = 'Yandex Diskdə fayl silinib, köçürülüb, adı dəyişib və ya "Paylaş" sönüb.';
-            $lines[] = 'Diskdə tapın, yenidən paylaşın və yeni linki admin paneldə yapışdırın:';
-            $lines[] = route('filament.admin.resources.live-photos.index');
+            /* Yandex's own reason, asked for once. Guessing it cost a whole
+               evening: with the download allowance spent, every link
+               answers «not found», and the obvious reading - the files are
+               gone - sent the owner looking for files that were there. */
+            $why = $this->why($broke);
+            if ($why !== null) {
+                $lines[] = $why;
+            } else {
+                $lines[] = 'Yandex Diskdə fayl silinib, köçürülüb, adı dəyişib və ya "Paylaş" sönüb.';
+            }
+            $lines[] = 'Admin panel: ' . route('filament.admin.resources.live-photos.index');
         }
 
         if ($mended !== []) {

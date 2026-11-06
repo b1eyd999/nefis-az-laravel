@@ -100,6 +100,39 @@ class YandexDisk
      * A download address for the file behind a public link, good for a while,
      * so a browser can stream it from Yandex without this site carrying it.
      */
+    /**
+     * Why a public link would not give a download address.
+     *
+     * Asked only when one has just failed, because the answer costs a
+     * request. The download endpoint itself is no use here: with the
+     * account's download allowance spent it answers «DiskNotFoundError»,
+     * which sent the shop's owner hunting through his Disk for files that
+     * were sitting there the whole time. The metadata endpoint beside it
+     * says what is actually wrong.
+     */
+    public static function reason(string $link): ?string
+    {
+        try {
+            $response = \Illuminate\Support\Facades\Http::timeout(15)->acceptJson()
+                ->get(self::API, ['public_key' => trim($link), 'fields' => 'name,size']);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if ($response->successful()) {
+            // The file is there and readable; whatever failed was passing.
+            return null;
+        }
+
+        return match ((string) ($response->json()['error'] ?? '')) {
+            'DiskResourceDownloadLimitExceededError' =>
+                'Yandex Diskin yükləmə limiti dolub. Fayl yerindədir — limit adətən 24 saat ərzində açılır.',
+            'DiskNotFoundError' =>
+                'Yandex Diskdə fayl tapılmadı: silinib, köçürülüb, adı dəyişib və ya «Paylaş» sönüb.',
+            default => 'Yandex Disk cavab vermədi (' . $response->status() . ').',
+        };
+    }
+
     public static function href(string $link): ?string
     {
         return \Illuminate\Support\Facades\Cache::remember('ydx:href:' . sha1($link), now()->addMinutes(30), function () use ($link) {
