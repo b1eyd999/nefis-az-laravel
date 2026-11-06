@@ -48,3 +48,10 @@ Schedule::command('db:backup')->dailyAt('03:40');
    so it is swept, but only after a month and only when no order, basket or
    link mentions it anywhere. */
 Schedule::command('uploads:sweep')->dailyAt('04:20');
+
+/* Every printed box carries a code, and behind it a video on the owner's own
+   Yandex Disk — which he tidies like any other folder, and a public link does
+   not survive being moved or renamed. All six went at once and nobody knew
+   until a customer pointed a telephone at a box. Asked daily now, and he is
+   told on Telegram the moment one stops answering. */
+Schedule::command('live:check')->dailyAt('05:10');

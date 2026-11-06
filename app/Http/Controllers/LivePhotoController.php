@@ -10,6 +10,7 @@ use App\Support\YandexDisk;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -68,14 +69,24 @@ class LivePhotoController extends Controller
 
         if (filled($live->video_url)) {
             $href = YandexDisk::href($live->video_url);
-            abort_if($href === null, 503, __('Video hazırda əlçatan deyil.'));
 
-            return redirect()->away($href, 302, ['Cache-Control' => 'private, max-age=600']);
+            if ($href !== null) {
+                return redirect()->away($href, 302, ['Cache-Control' => 'private, max-age=600']);
+            }
+
+            /* The link has stopped serving. If this site still holds its own
+               copy - one not let go yet - the box keeps working while the
+               owner sorts the Disk out, rather than going black on him. */
+            Log::error('Live photo video link does not serve', [
+                'live_photo' => $live->id, 'code' => $live->code,
+            ]);
         }
 
-        abort_unless($live->video_path && Storage::disk('public')->exists($live->video_path), 404);
+        if ($live->video_path && Storage::disk('public')->exists($live->video_path)) {
+            return redirect()->away(Media::url($live->video_path), 302, ['Cache-Control' => 'private, max-age=60']);
+        }
 
-        return redirect()->away(Media::url($live->video_path), 302, ['Cache-Control' => 'private, max-age=60']);
+        abort(filled($live->video_url) ? 503 : 404, __('Video hazırda əlçatan deyil.'));
     }
 
     /** The tracking data (.mind) compiled in the admin's browser from the picture. */

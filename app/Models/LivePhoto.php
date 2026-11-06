@@ -20,7 +20,11 @@ class LivePhoto extends Model
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return [
+            'is_active' => 'boolean',
+            'video_broken_at' => 'datetime',
+            'video_checked_at' => 'datetime',
+        ];
     }
 
     protected static function booted(): void
@@ -118,11 +122,55 @@ class LivePhoto extends Model
             return false;
         }
 
+        /* The hosting's copy is the only other one there is, so it is not
+           let go on the word of the upload alone: the link is asked for the
+           way a customer's telephone will ask for it, and only an answer
+           frees the file. A link that is not serving yet leaves `video_url`
+           unset, so `live:push` comes back to it - the upload itself is
+           idempotent, a second try re-shares rather than re-sends. */
+        if (YandexDisk::href($link) === null) {
+            Log::error('Live photo video is on Yandex Disk but its link does not serve', [
+                'live_photo' => $this->id, 'link' => $link,
+            ]);
+            $this->pushError = 'Yandex Disk linki hələ cavab vermir — video hostinqdə saxlanıldı, sonra yenidən yoxlanacaq.';
+
+            return false;
+        }
+
         $local = $this->video_path;
-        $this->forceFill(['video_url' => $link, 'video_path' => null])->saveQuietly();
+        $this->forceFill([
+            'video_url' => $link,
+            'video_path' => null,
+            'video_broken_at' => null,
+            'video_checked_at' => now(),
+        ])->saveQuietly();
         $disk->delete($local);
 
         return true;
+    }
+
+    /**
+     * Whether the video can actually be played right now.
+     *
+     * Asked of Yandex for a published one, of the disk for one still here.
+     * The answer is written down, so the admin can show which boxes are
+     * carrying a dead code and the owner is told once rather than daily.
+     */
+    public function checkVideo(): bool
+    {
+        $ok = match (true) {
+            filled($this->video_url) => YandexDisk::href($this->video_url) !== null,
+            filled($this->video_path) => Storage::disk('public')->exists($this->video_path),
+            default => false,
+        };
+
+        $this->forceFill([
+            'video_checked_at' => now(),
+            // Kept, not overwritten: the first time it broke is the useful one.
+            'video_broken_at' => $ok ? null : ($this->video_broken_at ?? now()),
+        ])->saveQuietly();
+
+        return $ok;
     }
 
     /** Where the video is now: 'yandex', 'hosting' (waiting to be moved) or null. */

@@ -48,6 +48,7 @@
   h1 .spark{ display:inline-block; animation:twinkle 1.8s ease-in-out infinite; }
   p{ margin:0; opacity:.85; line-height:1.55; max-width:22rem; }
   .err{ color:#f2a39a; opacity:1; font-weight:600; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
 
   /* the demonstration: a phone comes over the picture, looks, and it plays */
   .demo{ position:relative; width:17rem; height:15rem; flex:none; }
@@ -197,6 +198,11 @@
       <button type="button" class="btn" id="go">📷 {{ __('Kameranı aç') }}</button>
       <p class="note">🔒 {!! __('Brauzer kameraya icazə soruşacaq, <b>«İcazə ver»</b> basın. Heç nə yazılmır və saxlanmır.') !!}</p>
       <p class="err" id="err" hidden></p>
+      {{-- The video sits on the owner's own Yandex Disk, and a link there can
+           stop serving — a file moved or a folder renamed is enough. Better
+           to say so before somebody opens the camera, holds the box up and
+           watches nothing happen. --}}
+      <p class="err" id="gone" hidden>{{ __('Bu qutunun videosu hazırda açılmır. Sahibinə xəbər getdi — bir azdan yenidən yoxlayın.') }}</p>
     </div>
 
     <div class="screen" id="loading" hidden>
@@ -221,6 +227,21 @@
     </div>
     <div class="toast" id="toast">✨ {{ __('Şəkil tapıldı!') }}</div>
     <button type="button" class="sound muted" id="sound" hidden>🔇 Səsi aç</button>
+
+    {{-- Asked of the video itself, in plain script with no module and no
+         CDN behind it: whatever else fails, this line still gets shown. --}}
+    <script>
+      (function () {
+        var clip = document.getElementById('clip'),
+            gone = document.getElementById('gone'),
+            go = document.getElementById('go');
+        if (!clip || !gone) return;
+        clip.addEventListener('error', function () {
+          gone.hidden = false;
+          if (go) go.disabled = true;
+        });
+      })();
+    </script>
 
     {{-- Import maps arrived in iOS 16.4; older phones get them from this
          polyfill, and it steps aside where the browser has its own. --}}
