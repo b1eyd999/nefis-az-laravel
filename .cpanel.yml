@@ -58,3 +58,6 @@ deployment:
     - /bin/chmod 755 $APPPATH/mailpipe
     # Customers' live-photo videos that could not reach Yandex Disk yet.
     - cd $APPPATH && $PHPBIN artisan live:push 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
+    # And whether the boxes already printed still have a video behind
+    # them. Says nothing unless one has just broken or just come back.
+    - cd $APPPATH && $PHPBIN artisan live:check 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
