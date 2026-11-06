@@ -92,9 +92,24 @@ class LivePhotoResource extends Resource
                     ->description(fn (LivePhoto $l) => $l->url()),
                 Tables\Columns\IconColumn::make('ready')->label('Hazır')->boolean()
                     ->getStateUsing(fn (LivePhoto $l) => filled($l->target_mind)),
+                /* Where the video is, and whether it is actually there:
+                   `live:check` asks Yandex once a day, and a link that has
+                   stopped answering says so here as well as on Telegram. */
                 Tables\Columns\TextColumn::make('video_place')->label('Video')
-                    ->getStateUsing(fn (LivePhoto $l) => match ($l->videoPlace()) { 'yandex' => 'Yandex Disk', 'hosting' => 'Hostinqdə', default => '—' })
-                    ->badge()->color(fn (string $state) => $state === 'Yandex Disk' ? 'success' : 'warning'),
+                    ->getStateUsing(fn (LivePhoto $l) => match (true) {
+                        $l->video_broken_at !== null => 'Link işləmir',
+                        $l->videoPlace() === 'yandex' => 'Yandex Disk',
+                        $l->videoPlace() === 'hosting' => 'Hostinqdə',
+                        default => '—',
+                    })
+                    ->description(fn (LivePhoto $l) => $l->video_broken_at
+                        ? $l->video_broken_at->format('d.m.Y H:i') . '-dan bəri'
+                        : null)
+                    ->badge()->color(fn (string $state) => match ($state) {
+                        'Yandex Disk' => 'success',
+                        'Link işləmir' => 'danger',
+                        default => 'warning',
+                    }),
                 Tables\Columns\TextColumn::make('views')->label('Baxış')->sortable(),
                 Tables\Columns\TextColumn::make('orderItem.order_id')->label('Sifariş')
                     ->formatStateUsing(fn ($state) => $state ? '#' . $state : null)->placeholder('—'),

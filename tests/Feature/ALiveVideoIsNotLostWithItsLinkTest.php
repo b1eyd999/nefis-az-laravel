@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\LivePhoto;
 use App\Models\Setting;
+use App\Models\User;
 use App\Support\Telegram;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -254,6 +256,23 @@ class ALiveVideoIsNotLostWithItsLinkTest extends TestCase
         $this->assertStringContainsString('/admin/live-photos', $said);
         // The natural guess is the token, and the token has nothing to do with it.
         $this->assertStringContainsString('Paylaş', $said);
+    }
+
+    /** And the owner sees which box is carrying a dead code, where he works. */
+    public function test_the_admin_list_marks_a_broken_one(): void
+    {
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $live = $this->live();
+        $live->forceFill(['video_url' => self::LINK])->saveQuietly();
+
+        $this->get('/admin/live-photos')->assertOk()->assertDontSee('Link işləmir');
+
+        $this->yandexServes(false);
+        $live->checkVideo();
+
+        $this->get('/admin/live-photos')->assertOk()->assertSee('Link işləmir');
     }
 
     // ------------------------------------------------------------ the viewer
