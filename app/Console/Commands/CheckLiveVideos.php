@@ -86,9 +86,13 @@ class CheckLiveVideos extends Command
             $lines[] = '⚠️ Canlı şəkil: ' . count($broke) . ' videonun linki cavab vermir.';
             $lines[] = '';
             foreach ($broke as $live) {
-                $lines[] = '• ' . ($live->title ?: 'Canlı şəkil #' . $live->id)
-                    . ($live->orderItem?->order_id ? ' (sifariş #' . $live->orderItem->order_id . ')' : '')
-                    . ' — ' . $live->url();
+                $name = $live->title ?: 'Canlı şəkil #' . $live->id;
+                $order = $live->orderItem?->order_id;
+                /* The order number only where the name does not already
+                   carry it: a live photo made with an order is titled
+                   «Sifariş #17, …», and saying it twice reads as a fault. */
+                $also = $order && ! str_contains($name, '#' . $order) ? ' (sifariş #' . $order . ')' : '';
+                $lines[] = '• ' . $name . $also . ' — ' . $live->url();
             }
             $lines[] = '';
             /* Said plainly, because the natural guess is the token - and the

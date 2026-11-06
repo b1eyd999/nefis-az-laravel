@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\LivePhoto;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Setting;
 use App\Models\User;
 use App\Support\Telegram;
@@ -273,6 +275,33 @@ class ALiveVideoIsNotLostWithItsLinkTest extends TestCase
         $live->checkVideo();
 
         $this->get('/admin/live-photos')->assertOk()->assertSee('Link işləmir');
+    }
+
+    /**
+     * The order number is said once.
+     *
+     * A live photo made with an order is already titled «Sifariş #17, …»,
+     * and the message added «(sifariş #17)» after it - which reads as the
+     * machine having lost count.
+     */
+    public function test_the_order_number_is_not_printed_twice(): void
+    {
+        Setting::put(Setting::TELEGRAM_TOKEN, Crypt::encryptString('bot-token'));
+        Setting::put(Setting::TELEGRAM_CHAT, '-100500');
+
+        $order = Order::create(['user_id' => User::factory()->create()->id, 'status' => 'confirmed',
+            'locale' => 'az', 'contact_phone' => '1', 'delivery_address' => 'x']);
+        $item = $order->items()->create(['product_name' => 'Test', 'customer_photos' => [],
+            'custom_texts' => [], 'quantity' => 1]);
+
+        $live = $this->live(['title' => 'Sifaris #' . $order->id . ', Cici bebe sari']);
+        $live->forceFill(['video_url' => self::LINK, 'order_item_id' => $item->id])->saveQuietly();
+
+        $this->yandexServes(false);
+        $this->artisan('live:check')->assertSuccessful();
+
+        $said = $this->lastMessage();
+        $this->assertSame(1, substr_count($said, '#' . $order->id), $said);
     }
 
     // ------------------------------------------------------------ the viewer
