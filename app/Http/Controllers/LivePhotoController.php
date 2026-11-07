@@ -67,6 +67,14 @@ class LivePhotoController extends Controller
     {
         $live = LivePhoto::where('code', $code)->where('is_active', true)->firstOrFail();
 
+        /* This site's own copy first, where there is one. A public Yandex
+           link is rationed - every scan of every printed box is a download
+           off that ration, and when it runs out the boxes stop working all
+           at once. The Disk is the archive; the hosting is what answers. */
+        if ($live->video_path && Storage::disk('public')->exists($live->video_path)) {
+            return redirect()->away(Media::url($live->video_path), 302, ['Cache-Control' => 'private, max-age=600']);
+        }
+
         if (filled($live->video_url)) {
             $href = YandexDisk::href($live->video_url);
 
@@ -74,16 +82,9 @@ class LivePhotoController extends Controller
                 return redirect()->away($href, 302, ['Cache-Control' => 'private, max-age=600']);
             }
 
-            /* The link has stopped serving. If this site still holds its own
-               copy - one not let go yet - the box keeps working while the
-               owner sorts the Disk out, rather than going black on him. */
             Log::error('Live photo video link does not serve', [
                 'live_photo' => $live->id, 'code' => $live->code,
             ]);
-        }
-
-        if ($live->video_path && Storage::disk('public')->exists($live->video_path)) {
-            return redirect()->away(Media::url($live->video_path), 302, ['Cache-Control' => 'private, max-age=60']);
         }
 
         abort(filled($live->video_url) ? 503 : 404, __('Video hazırda əlçatan deyil.'));

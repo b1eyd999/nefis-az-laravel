@@ -196,6 +196,87 @@ class YandexDisk
      *
      * @throws RuntimeException with a message for the owner
      */
+    /**
+     * The owner's own published files, by the link each one is published at.
+     *
+     * Asked with his token, so none of it goes through the public side and
+     * none of it is counted against the allowance that public links have.
+     *
+     * @return array<string, string>  public link => path on the Disk
+     */
+    public static function published(int $limit = 200): array
+    {
+        $out = [];
+
+        foreach (self::disk('get', '/resources/public', [
+            'type' => 'file', 'limit' => $limit, 'fields' => 'items.path,items.public_url',
+        ])['items'] ?? [] as $item) {
+            $link = trim((string) ($item['public_url'] ?? ''));
+            if ($link !== '' && filled($item['path'] ?? null)) {
+                $out[self::linkKey($link)] = (string) $item['path'];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Two spellings of one published link.
+     *
+     * The same file is handed out as `yadi.sk/i/XXXX` and as
+     * `disk.yandex.ru/i/XXXX` depending on when it was shared, so the part
+     * after `/i/` is what one is actually known by.
+     */
+    public static function linkKey(string $link): string
+    {
+        return preg_match('#/(?:i|d)/([\w-]+)#', trim($link), $m) ? $m[1] : trim($link);
+    }
+
+    /**
+     * Brings one of the owner's own files down onto this machine.
+     *
+     * With his token, which is the point: a public link stops serving once
+     * its download allowance is spent - Yandex itself then says «save it to
+     * your Disk and download it from there» - while the owner reading his
+     * own Disk is not rationed at all.
+     *
+     * @throws RuntimeException with a message for the owner
+     */
+    public static function fetch(string $diskPath, string $localPath): void
+    {
+        $href = self::disk('get', '/resources/download', ['path' => $diskPath])['href'] ?? null;
+        if (! $href) {
+            throw new RuntimeException('Yandex Disk bu faylı vermədi: ' . $diskPath);
+        }
+
+        $handle = @fopen($localPath, 'wb');
+        if (! $handle) {
+            throw new RuntimeException('Fayl hostinqdə yaradıla bilmədi: ' . $localPath);
+        }
+
+        try {
+            /* Streamed rather than held: these are telephone videos of
+               fifteen megabytes and more, and a shared host does not have
+               that much memory to spare per request. */
+            $response = Http::timeout(180)->withOptions(['sink' => $handle])
+                ->withHeaders(['Authorization' => 'OAuth ' . self::token()])
+                ->get($href);
+        } catch (\Throwable $e) {
+            @fclose($handle);
+            @unlink($localPath);
+            throw new RuntimeException('Yandex Diskdən endirmək alınmadı: ' . $e->getMessage());
+        }
+
+        if (is_resource($handle)) {
+            @fclose($handle);
+        }
+
+        if (! $response->successful() || ! is_file($localPath) || filesize($localPath) === 0) {
+            @unlink($localPath);
+            throw new RuntimeException('Yandex Disk faylı boş qaytardı (' . $response->status() . ').');
+        }
+    }
+
     public static function upload(string $localPath, string $name): string
     {
         if (! is_file($localPath)) {

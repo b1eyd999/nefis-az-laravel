@@ -318,8 +318,12 @@ class LivePhotoTest extends TestCase
         $live = $this->waitingLive();
 
         $this->assertTrue($live->pushVideo());
-        $this->assertSame(['https://yadi.sk/i/customerVid1', null, 1], [$live->video_url, $live->video_path, $this->disk['uploads']]);
-        Storage::disk('public')->assertMissing('live/9/film.mp4');
+        /* The Disk gets the archive copy and this site keeps its own: a
+           public link is rationed by Yandex, and when the shop's ran out
+           six printed boxes went dark with the files safe on the Disk. */
+        $this->assertSame(['https://yadi.sk/i/customerVid1', 'live/9/film.mp4', 1],
+            [$live->video_url, $live->video_path, $this->disk['uploads']]);
+        Storage::disk('public')->assertExists('live/9/film.mp4');
         Sleep::assertSleptTimes(3);
     }
 
@@ -394,14 +398,21 @@ class LivePhotoTest extends TestCase
         $this->assertStringStartsWith('live/' . $live->id . '/', $live->target_mind);
         Storage::disk('public')->assertExists([$live->target_image, $live->target_mind]);
         $this->assertSame(1.3333, $live->aspect());
-        $this->assertSame(['https://yadi.sk/i/customerVid1', null, 'yandex'], [$live->video_url, $live->video_path, $live->videoPlace()]);
+        // On the Disk, and still here: the hosting is what answers a telephone.
+        $this->assertSame('https://yadi.sk/i/customerVid1', $live->video_url);
+        $this->assertNotNull($live->video_path);
+        Storage::disk('public')->assertExists($live->video_path);
         $this->assertSame([], Storage::disk('public')->allFiles('cart-videos'));
         $this->assertTrue($live->isReady());
         Http::assertSent(fn ($r) => str_starts_with($r->url(), 'https://uploader1.disk.yandex.net') && $r->hasHeader('Content-Type', 'application/octet-stream'));
         Http::assertSent(fn ($r) => $r->hasHeader('Authorization', 'OAuth y0_owner_token'));
 
         $this->get('/canli/' . $live->code)->assertOk()->assertSee('Kameranı aç');
-        $this->get(route('live.video', $live->code))->assertRedirect('https://downloader.disk.yandex.ru/disk/customer.mp4');
+        /* Served from here, not from the Disk: the link is the archive. A
+           Yandex public link is rationed by the download, and a box printed
+           last spring has to still work next spring. */
+        $this->get(route('live.video', $live->code))
+            ->assertRedirectContains($live->video_path);
 
         // The customer's own link shows once the order is paid for.
         $this->actingAs($user)->get(route('orders.index'))->assertSee('Canlı şəklə bax')->assertSee($live->url());

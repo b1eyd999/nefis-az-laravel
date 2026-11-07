@@ -85,6 +85,18 @@ class ALiveVideoIsNotLostWithItsLinkTest extends TestCase
             if (str_contains($url, '/disk/resources/upload')) {
                 return Http::response(['href' => 'https://uploader.disk.yandex.ru/put']);
             }
+            // The owner's own side: what he has published, and reading one back.
+            if (str_contains($url, '/disk/resources/public')) {
+                return Http::response(['items' => [
+                    ['path' => 'disk:/Nefis/clip.mp4', 'public_url' => self::LINK],
+                ]]);
+            }
+            if (str_contains($url, '/disk/resources/download')) {
+                return Http::response(['href' => 'https://downloader.disk.yandex.ru/own/clip.mp4']);
+            }
+            if (str_contains($url, 'downloader.disk.yandex.ru/own')) {
+                return Http::response(self::CLIP);
+            }
             if (str_contains($url, '/disk/resources/publish')) {
                 return Http::response([], 200);
             }
@@ -148,8 +160,15 @@ class ALiveVideoIsNotLostWithItsLinkTest extends TestCase
         $this->assertNotNull($live->pushError);
     }
 
-    /** Once the link answers, the copy may go. */
-    public function test_the_copy_goes_only_after_the_link_answers(): void
+    /**
+     * The Disk gets a copy; this site keeps its own.
+     *
+     * A public Yandex link is rationed - every telephone pointed at a
+     * printed box spends some of it - and when the shop's ran out, six
+     * boxes went dark at once while the files sat safe on the Disk. The
+     * Disk is the archive; the hosting is what answers.
+     */
+    public function test_the_disk_gets_a_copy_and_the_hosting_keeps_one(): void
     {
         Setting::put(Setting::YANDEX_TOKEN, Crypt::encryptString('token'));
         $live = $this->onTheHosting();
@@ -159,9 +178,61 @@ class ALiveVideoIsNotLostWithItsLinkTest extends TestCase
 
         $live->refresh();
         $this->assertSame(self::LINK, $live->video_url);
-        $this->assertNull($live->video_path);
-        $this->assertFalse(Storage::disk('public')->exists('live/clip.mp4'));
+        $this->assertSame('live/clip.mp4', $live->video_path);
+        $this->assertTrue(Storage::disk('public')->exists('live/clip.mp4'));
         $this->assertNull($live->video_broken_at);
+    }
+
+    /** With both to hand, the box is served from here and not from Yandex. */
+    public function test_the_hosting_copy_is_preferred_over_the_link(): void
+    {
+        $live = $this->onTheHosting();
+        $live->forceFill(['video_url' => self::LINK])->saveQuietly();
+        $this->yandexServes(true);
+
+        $this->get('/canli/' . $live->code . '/video')
+            ->assertRedirect()
+            ->assertRedirectContains('live/clip.mp4');
+    }
+
+    /**
+     * A video left only on the Disk is brought back with the owner's token.
+     *
+     * This is the repair for the six that were already stranded: the public
+     * side was refusing everything, while the owner reading his own Disk
+     * was never rationed at all.
+     */
+    public function test_a_stranded_video_is_pulled_back_onto_the_hosting(): void
+    {
+        Setting::put(Setting::YANDEX_TOKEN, Crypt::encryptString('token'));
+
+        $live = $this->live();
+        $live->forceFill(['video_url' => self::LINK, 'video_broken_at' => now()])->saveQuietly();
+
+        $this->artisan('live:pull')->assertSuccessful();
+
+        $live->refresh();
+        $this->assertSame('live/' . $live->code . '.mp4', $live->video_path);
+        $this->assertTrue(Storage::disk('public')->exists($live->video_path));
+        $this->assertSame(self::CLIP, Storage::disk('public')->get($live->video_path));
+        // Still the archive, and no longer counted as broken.
+        $this->assertSame(self::LINK, $live->video_url);
+        $this->assertNull($live->video_broken_at);
+
+        // And now the box plays even with the public side still refusing.
+        $this->yandexServes(false);
+        $this->get('/canli/' . $live->code . '/video')
+            ->assertRedirect()
+            ->assertRedirectContains($live->video_path);
+    }
+
+    /** An old yadi.sk link names the same file as its disk.yandex.ru twin. */
+    public function test_both_spellings_of_a_link_find_the_same_file(): void
+    {
+        $this->assertSame(
+            \App\Support\YandexDisk::linkKey('https://yadi.sk/i/M7DpNGtcJvtU8Q'),
+            \App\Support\YandexDisk::linkKey('https://disk.yandex.ru/i/M7DpNGtcJvtU8Q'),
+        );
     }
 
     // ------------------------------------------------------- the box still works
@@ -178,10 +249,10 @@ class ALiveVideoIsNotLostWithItsLinkTest extends TestCase
             ->assertRedirectContains('live/clip.mp4');
     }
 
-    /** The link works: that is what is played, not the local copy. */
-    public function test_a_live_link_is_what_is_played(): void
+    /** With no copy here, a working link is still what plays. */
+    public function test_a_live_link_plays_where_there_is_no_copy(): void
     {
-        $live = $this->onTheHosting();
+        $live = $this->live();
         $live->forceFill(['video_url' => self::LINK])->saveQuietly();
         $this->yandexServes(true);
 

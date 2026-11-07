@@ -137,14 +137,16 @@ class LivePhoto extends Model
             return false;
         }
 
-        $local = $this->video_path;
+        /* The copy stays. A public Yandex link is rationed - every scan of
+           every printed box spends some of it - and when the shop's ran
+           out, six boxes went dark at once with the files safe on the Disk
+           and nothing to serve them from. The Disk is the archive now; the
+           hosting is what answers a telephone. */
         $this->forceFill([
             'video_url' => $link,
-            'video_path' => null,
             'video_broken_at' => null,
             'video_checked_at' => now(),
         ])->saveQuietly();
-        $disk->delete($local);
 
         return true;
     }

@@ -60,4 +60,7 @@ deployment:
     - cd $APPPATH && $PHPBIN artisan live:push 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
     # And whether the boxes already printed still have a video behind
     # them. Says nothing unless one has just broken or just come back.
+    # Videos that exist only as a Yandex link are brought back here: a
+    # public link is rationed, and a printed box has to outlive it.
+    - cd $APPPATH && $PHPBIN artisan live:pull 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
     - cd $APPPATH && $PHPBIN artisan live:check 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
