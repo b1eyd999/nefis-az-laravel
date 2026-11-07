@@ -34,6 +34,9 @@ class TheVideosMoveToCloudflareTest extends TestCase
     {
         parent::setUp();
         Storage::fake('public');
+        /* Settings are remembered for ever, and these tests write them:
+           without this one test's keys answer the next one's questions. */
+        \Illuminate\Support\Facades\Cache::flush();
     }
 
     private function connected(): void
@@ -87,6 +90,29 @@ class TheVideosMoveToCloudflareTest extends TestCase
 
         $this->assertSame('', R2::secret());
         $this->assertFalse(R2::configured());
+    }
+
+    /**
+     * The wrong value off the same screen is named, not blamed on the code.
+     *
+     * Cloudflare shows three values when a token is made and the eye goes
+     * to the first — «Token value», which begins cfat_. Pasted here the key
+     * id is still accepted, so S3 answers «SignatureDoesNotMatch»: it reads
+     * as a broken signature and sends everybody looking at the code.
+     */
+    public function test_the_token_value_pasted_as_the_secret_is_recognised(): void
+    {
+        R2::saveSecret('cfat_' . str_repeat('x', 46));
+        $this->assertStringContainsString('Token value', (string) R2::secretLooksWrong());
+
+        R2::saveSecret(str_repeat('a1b2', 16));          // 64 hex characters
+        $this->assertNull(R2::secretLooksWrong(), 'a real-looking key was called wrong');
+
+        R2::saveSecret('qisa');
+        $this->assertStringContainsString('64', (string) R2::secretLooksWrong());
+
+        R2::saveSecret(null);
+        $this->assertStringContainsString('boşdur', (string) R2::secretLooksWrong());
     }
 
     // --------------------------------------------------------- the signing

@@ -71,6 +71,35 @@ class R2
         }
     }
 
+    /**
+     * Whether what was pasted even looks like a secret access key.
+     *
+     * Cloudflare shows three values on one screen when a token is made,
+     * and the eye goes to the first: «Token value», beginning cfat_. Paste
+     * that and the key id is still accepted, so S3 answers
+     * «SignatureDoesNotMatch» — which reads as a broken signature and
+     * sends everybody looking in the wrong place. The shape is checked
+     * before the blame is.
+     *
+     * Says nothing about the secret itself beyond its shape.
+     */
+    public static function secretLooksWrong(): ?string
+    {
+        $secret = self::secret();
+
+        if ($secret === '') {
+            return 'Secret Access Key boşdur.';
+        }
+        if (str_starts_with($secret, 'cfat_')) {
+            return 'Bura «Token value» yapışdırılıb. Lazım olan aşağıdakı «Secret Access Key»dir.';
+        }
+        if (! preg_match('/^[0-9a-f]{64}$/i', $secret)) {
+            return 'Secret Access Key 64 onaltılıq simvol olmalıdır, indi ' . strlen($secret) . ' simvoldur.';
+        }
+
+        return null;
+    }
+
     public static function saveSecret(?string $secret): void
     {
         Setting::put(Setting::R2_SECRET, filled($secret) ? Crypt::encryptString(trim($secret)) : '');
@@ -117,7 +146,16 @@ class R2
         /* Content-Length is deliberately not signed. The client sets it
            from the stream, and a signature that promised a header the
            request then carries differently is refused with a bare 403. */
-        $response = self::send('PUT', $key, $hash, ['Content-Type' => $type], Utils::streamFor($handle));
+        $stream = Utils::streamFor($handle);
+
+        try {
+            $response = self::send('PUT', $key, $hash, ['Content-Type' => $type], $stream);
+        } finally {
+            /* Closed here and not left to whoever read it: a handle the
+               client keeps is a file the machine still holds open, and a
+               command that uploads a dozen of them holds a dozen. */
+            $stream->close();
+        }
 
         if (! $response->successful()) {
             throw new RuntimeException('Cloudflare R2 faylı qəbul etmədi: ' . self::why($response));

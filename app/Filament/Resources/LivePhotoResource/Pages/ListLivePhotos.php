@@ -102,8 +102,13 @@ class ListLivePhotos extends ListRecords
                         @unlink($probe);
                         R2::delete('yoxlama.txt');
                     } catch (\RuntimeException $e) {
+                        /* The shape first: a «SignatureDoesNotMatch» from a
+                           pasted «Token value» looks exactly like a broken
+                           signature, and that is a long way to go wrong. */
+                        $shape = R2::secretLooksWrong();
                         Notification::make()->danger()->title('R2 açarları işləmədi')
-                            ->body($e->getMessage())->persistent()->send();
+                            ->body(($shape !== null ? $shape . ' ' : '') . $e->getMessage())
+                            ->persistent()->send();
                         $action->halt();
                     }
 
