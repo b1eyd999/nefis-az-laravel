@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Support\LiveMaterials;
 use App\Support\LivePage;
 use App\Support\Price;
+use App\Support\R2;
 use App\Support\YandexDisk;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\HtmlString;
@@ -27,6 +28,84 @@ class ListLivePhotos extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            /* Cloudflare R2, where the videos live now. The keys are his and
+               he pastes them himself - the shop never types a password for
+               its owner, and one that has travelled through a chat has to be
+               replaced anyway. */
+            Actions\Action::make('r2')
+                ->label(fn () => R2::configured() ? 'Cloudflare R2: qoşulub' : 'Cloudflare R2-ni qoşun')
+                ->icon('heroicon-o-cloud')
+                ->color(fn () => R2::configured() ? 'gray' : 'warning')
+                ->modalHeading('Cloudflare R2')
+                ->modalDescription('Videolar burada saxlanılır və buradan oxunur. Yandex Disk ehtiyat nüsxə olaraq qalır.')
+                ->fillForm(fn () => [
+                    'account' => Setting::get(Setting::R2_ACCOUNT),
+                    'bucket' => Setting::get(Setting::R2_BUCKET),
+                    'public' => Setting::get(Setting::R2_PUBLIC),
+                    'key' => Setting::get(Setting::R2_KEY),
+                ])
+                ->form([
+                    Forms\Components\TextInput::make('account')->label('Account ID')->maxLength(64)
+                        ->helperText('Cloudflare paneldə, ünvan sətrində dash.cloudflare.com/ sözündən sonrakı hissə.'),
+                    Forms\Components\TextInput::make('bucket')->label('Bucket')->maxLength(64)
+                        ->placeholder('nefis-video'),
+                    Forms\Components\TextInput::make('public')->label('Publik ünvan')->maxLength(200)
+                        ->placeholder('https://pub-….r2.dev')
+                        ->helperText('R2 → bucket → Settings → Public Development URL.'),
+                    Forms\Components\TextInput::make('key')->label('Access Key ID')->maxLength(128),
+                    Forms\Components\TextInput::make('secret')->label('Secret Access Key')->password()->revealable()
+                        ->maxLength(200)
+                        ->placeholder(fn () => R2::secret() !== '' ? 'Saxlanıb — dəyişmək üçün yenisini yazın' : '')
+                        ->helperText(new HtmlString('Almaq üçün: <b>R2 → Manage R2 API Tokens → Create API Token</b>, '
+                            . 'icazə <b>Object Read &amp; Write</b>, yalnız bu bucket. '
+                            . 'Secret yalnız bir dəfə göstərilir — pəncərəni bağlamadan bura yapışdırın.')),
+                    Forms\Components\Toggle::make('forget')->label('Açarları sil (R2-ni ayır)')
+                        ->visible(fn () => R2::configured()),
+                ])
+                ->action(function (array $data, Actions\Action $action) {
+                    if (! empty($data['forget'])) {
+                        foreach ([Setting::R2_ACCOUNT, Setting::R2_BUCKET, Setting::R2_KEY, Setting::R2_PUBLIC] as $key) {
+                            Setting::put($key, '');
+                        }
+                        R2::saveSecret(null);
+                        Notification::make()->success()->title('Cloudflare R2 ayrıldı')->send();
+
+                        return;
+                    }
+
+                    Setting::put(Setting::R2_ACCOUNT, trim((string) ($data['account'] ?? '')));
+                    Setting::put(Setting::R2_BUCKET, trim((string) ($data['bucket'] ?? '')));
+                    Setting::put(Setting::R2_PUBLIC, rtrim(trim((string) ($data['public'] ?? '')), '/'));
+                    Setting::put(Setting::R2_KEY, trim((string) ($data['key'] ?? '')));
+                    if (filled($data['secret'] ?? null)) {
+                        R2::saveSecret($data['secret']);
+                    }
+
+                    if (! R2::configured()) {
+                        Notification::make()->warning()->title('Hələ tam deyil')
+                            ->body('Account ID, bucket, Access Key ID və Secret — dördü də lazımdır.')->send();
+
+                        return;
+                    }
+
+                    /* Tried at once, with a small file written and read back:
+                       a key that is wrong should say so here and not three
+                       days later, in the middle of somebody's order. */
+                    try {
+                        $probe = tempnam(sys_get_temp_dir(), 'r2');
+                        file_put_contents($probe, 'nefis');
+                        R2::put($probe, 'yoxlama.txt', 'text/plain');
+                        @unlink($probe);
+                        R2::delete('yoxlama.txt');
+                    } catch (\RuntimeException $e) {
+                        Notification::make()->danger()->title('R2 açarları işləmədi')
+                            ->body($e->getMessage())->persistent()->send();
+                        $action->halt();
+                    }
+
+                    Notification::make()->success()->title('Cloudflare R2 qoşuldu')
+                        ->body('Videolar buraya yüklənəcək və buradan oxunacaq.')->send();
+                }),
             // The owner's own Yandex Disk, where customers' videos go. He types the token himself.
             Actions\Action::make('yandex')
                 ->label(fn () => YandexDisk::hasToken() ? 'Yandex Disk: qoşulub' : 'Yandex Diski qoşun')

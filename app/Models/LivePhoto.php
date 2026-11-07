@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\Media;
+use App\Support\R2;
 use App\Support\YandexDisk;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,7 +17,7 @@ use Illuminate\Support\Str;
  */
 class LivePhoto extends Model
 {
-    protected $fillable = ['title', 'target_image', 'target_mind', 'video_url', 'video_path', 'order_item_id', 'is_active'];
+    protected $fillable = ['title', 'target_image', 'target_mind', 'video_url', 'video_path', 'video_r2', 'order_item_id', 'is_active'];
 
     protected function casts(): array
     {
@@ -161,8 +162,10 @@ class LivePhoto extends Model
     public function checkVideo(): bool
     {
         $ok = match (true) {
-            filled($this->video_url) => YandexDisk::href($this->video_url) !== null,
+            // Read in the order the page reads them.
+            filled($this->video_r2) => R2::configured() && R2::has($this->video_r2),
             filled($this->video_path) => Storage::disk('public')->exists($this->video_path),
+            filled($this->video_url) => YandexDisk::href($this->video_url) !== null,
             default => false,
         };
 
@@ -175,12 +178,13 @@ class LivePhoto extends Model
         return $ok;
     }
 
-    /** Where the video is now: 'yandex', 'hosting' (waiting to be moved) or null. */
+    /** Where the video is read from: 'r2', 'hosting', 'yandex' or null. */
     public function videoPlace(): ?string
     {
         return match (true) {
-            filled($this->video_url) => 'yandex',
+            filled($this->video_r2) => 'r2',
             filled($this->video_path) => 'hosting',
+            filled($this->video_url) => 'yandex',
             default => null,
         };
     }

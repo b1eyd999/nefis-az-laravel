@@ -422,7 +422,7 @@ class LivePhotoTest extends TestCase
         // The admin sees it on the order line, ready to print.
         $this->admin();
         Livewire::test(ItemsRelationManager::class, ['ownerRecord' => $order, 'pageClass' => EditOrder::class])
-            ->assertSee('Canlı şəkil (AR) — ayrıca')->assertSee('Kamera üçün hazırdır')->assertSee('Video Yandex Diskdə')->assertSee('QR kod və ayarlar')
+            ->assertSee('Canlı şəkil (AR) — ayrıca')->assertSee('Kamera üçün hazırdır')->assertSee('Video saytda')->assertSee('QR kod və ayarlar')
             ->assertDontSee('AR yarat');
     }
 
@@ -457,7 +457,10 @@ class LivePhotoTest extends TestCase
 
         $this->artisan('live:push')->expectsOutputToContain('moved to Yandex Disk: 1 of 1')->assertSuccessful();
         $live->refresh();
-        $this->assertSame(['yandex', 'https://yadi.sk/i/customerVid1'], [$live->videoPlace(), $live->video_url]);
+        /* On the Disk and still here: the hosting is what answers, and the
+           Disk is the archive. Reading from Yandex is what cost the shop
+           every printed box when the owner's quota ran out. */
+        $this->assertSame(['hosting', 'https://yadi.sk/i/customerVid1'], [$live->videoPlace(), $live->video_url]);
         Http::assertSent(fn ($r) => str_contains(urldecode($r->url()), 'disk:/Canlı videolar/sifaris-'));
     }
 
@@ -513,8 +516,8 @@ class LivePhotoTest extends TestCase
 
         $this->admin();
         Livewire::test(ItemsRelationManager::class, ['ownerRecord' => $order, 'pageClass' => EditOrder::class])
-            ->assertSee('qutunun üzərində')->assertSee('Video hostinqdə');
-        $this->get('/admin/live-photos')->assertOk()->assertSee('Hostinqdə')->assertSee('Yandex Diski qoşun');
+            ->assertSee('qutunun üzərində')->assertSee('Video saytda');
+        $this->get('/admin/live-photos')->assertOk()->assertSee('Saytda')->assertSee('Yandex Diski qoşun');
     }
 
     public function test_the_owner_still_makes_one_for_an_old_order_line(): void

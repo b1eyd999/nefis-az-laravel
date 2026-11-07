@@ -63,4 +63,6 @@ deployment:
     # Videos that exist only as a Yandex link are brought back here: a
     # public link is rationed, and a printed box has to outlive it.
     - cd $APPPATH && $PHPBIN artisan live:pull 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
+    # And on into Cloudflare, which charges nothing for being read.
+    - cd $APPPATH && $PHPBIN artisan live:r2 2>&1 | tee -a $APPPATH/storage/logs/deploy.log
     - cd $APPPATH && $PHPBIN artisan live:check 2>&1 | tee -a $APPPATH/storage/logs/deploy.log

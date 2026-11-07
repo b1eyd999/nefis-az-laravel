@@ -46,7 +46,7 @@ class LivePhotoResource extends Resource
                             ->label('Video — Yandex Disk linki')
                             ->placeholder('https://disk.yandex.ru/i/…')
                             ->helperText(fn (?LivePhoto $record) => $record?->videoPlace() === 'hosting'
-                                ? 'Müştərinin videosu hələ hostinqdədir — Yandex Disk qoşulanda özü köçəcək.'
+                                ? 'Video saytda saxlanılır. Yandex Disk və Cloudflare ehtiyat nüsxədir.'
                                 : 'Videonu Yandex Diskə yükləyin, "Paylaş" edin və linki bura yapışdırın. Video hostinqdə saxlanmır.')
                             ->required(fn (?LivePhoto $record) => blank($record?->video_path))
                             ->maxLength(500)
@@ -98,16 +98,18 @@ class LivePhotoResource extends Resource
                 Tables\Columns\TextColumn::make('video_place')->label('Video')
                     ->getStateUsing(fn (LivePhoto $l) => match (true) {
                         $l->video_broken_at !== null => 'Link işləmir',
+                        $l->videoPlace() === 'r2' => 'Cloudflare',
+                        $l->videoPlace() === 'hosting' => 'Saytda',
                         $l->videoPlace() === 'yandex' => 'Yandex Disk',
-                        $l->videoPlace() === 'hosting' => 'Hostinqdə',
                         default => '—',
                     })
                     ->description(fn (LivePhoto $l) => $l->video_broken_at
                         ? $l->video_broken_at->format('d.m.Y H:i') . '-dan bəri'
                         : null)
                     ->badge()->color(fn (string $state) => match ($state) {
-                        'Yandex Disk' => 'success',
+                        'Cloudflare', 'Saytda' => 'success',
                         'Link işləmir' => 'danger',
+                        // Yandex alone is where the last outage came from.
                         default => 'warning',
                     }),
                 Tables\Columns\TextColumn::make('views')->label('Baxış')->sortable(),

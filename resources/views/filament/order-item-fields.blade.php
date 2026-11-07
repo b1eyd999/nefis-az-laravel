@@ -263,7 +263,14 @@
           @endif
           <div style="display:flex; flex-direction:column; gap:.3rem; font-size:.8rem;">
             <span>{{ filled($live->target_mind) ? '✓ Kamera üçün hazırdır' : '⚠ Kamera üçün hazırlanmayıb' }}</span>
-            <span>{{ match ($live->videoPlace()) { 'yandex' => '✓ Video Yandex Diskdə', 'hosting' => '⏳ Video hostinqdə — Yandex-ə köçməyib', default => '⚠ Video yoxdur' } }}</span>
+            {{-- Cloudflare, then the site's own copy, then Yandex - which is
+                 the archive now and the weakest place to be read from. --}}
+            <span>{{ match ($live->videoPlace()) {
+                'r2' => '✓ Video Cloudflare-də',
+                'hosting' => '✓ Video saytda',
+                'yandex' => '⏳ Video yalnız Yandex Diskdə',
+                default => '⚠ Video yoxdur',
+            } }}</span>
             <a href="{{ \App\Filament\Resources\LivePhotoResource::getUrl('edit', ['record' => $live]) }}" style="font-weight:600; text-decoration:underline;">QR kod və ayarlar →</a>
           </div>
         </div>

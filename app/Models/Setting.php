@@ -175,6 +175,19 @@ class Setting extends Model
 
     public const YANDEX_FOLDER = 'yandex_folder';
 
+    /* Cloudflare R2, where customers' live-photo videos are kept now. The
+       owner pastes these in «Canlı şəkillər»; the secret is encrypted. */
+    public const R2_ACCOUNT = 'r2_account';
+
+    public const R2_BUCKET = 'r2_bucket';
+
+    public const R2_KEY = 'r2_key';
+
+    public const R2_SECRET = 'r2_secret';
+
+    /** Where the world reads the bucket: the r2.dev address or his domain. */
+    public const R2_PUBLIC = 'r2_public';
+
     /** Ownership codes from Google Search Console, Yandex Webmaster and Bing Webmaster Tools. */
     public const SEO_GOOGLE = 'seo_google_verification';
 
@@ -364,6 +377,11 @@ class Setting extends Model
         self::AR_PRICE => '5',
         self::AR_VIDEO_MB => '18',
         self::YANDEX_FOLDER => 'Nefis canlı şəkillər',
+        self::R2_ACCOUNT => '',
+        self::R2_BUCKET => '',
+        self::R2_KEY => '',
+        self::R2_SECRET => '',
+        self::R2_PUBLIC => '',
         self::LETTER_ENABLED => '1',
         self::CORPORATE_ENABLED => '1',
         self::LETTER_PRICE => '3',

@@ -67,10 +67,14 @@ class LivePhotoController extends Controller
     {
         $live = LivePhoto::where('code', $code)->where('is_active', true)->firstOrFail();
 
-        /* This site's own copy first, where there is one. A public Yandex
-           link is rationed - every scan of every printed box is a download
-           off that ration, and when it runs out the boxes stop working all
-           at once. The Disk is the archive; the hosting is what answers. */
+        /* Cloudflare first, this site second, Yandex last. Yandex is the
+           one that failed: a public link there is somebody else's
+           allowance, and when the owner's Disk filled up every printed box
+           went dark at once. It keeps the archive and answers nothing. */
+        if (filled($live->video_r2) && ($at = \App\Support\R2::url($live->video_r2))) {
+            return redirect()->away($at, 302, ['Cache-Control' => 'private, max-age=600']);
+        }
+
         if ($live->video_path && Storage::disk('public')->exists($live->video_path)) {
             return redirect()->away(Media::url($live->video_path), 302, ['Cache-Control' => 'private, max-age=600']);
         }
