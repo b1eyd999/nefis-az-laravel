@@ -114,13 +114,13 @@ class R2
             throw new RuntimeException('Fayl oxuna bilmədi: ' . $localPath);
         }
 
-        $response = self::send('PUT', $key, $hash, [
-            'Content-Type' => $type,
-            'Content-Length' => (string) filesize($localPath),
-        ], Utils::streamFor($handle));
+        /* Content-Length is deliberately not signed. The client sets it
+           from the stream, and a signature that promised a header the
+           request then carries differently is refused with a bare 403. */
+        $response = self::send('PUT', $key, $hash, ['Content-Type' => $type], Utils::streamFor($handle));
 
         if (! $response->successful()) {
-            throw new RuntimeException('Cloudflare R2 faylı qəbul etmədi (' . $response->status() . ').');
+            throw new RuntimeException('Cloudflare R2 faylı qəbul etmədi: ' . self::why($response));
         }
 
         return self::url($key) ?? '';
@@ -201,6 +201,24 @@ class R2
         }
 
         return $request->send($method, 'https://' . $host . $path);
+    }
+
+    /**
+     * What R2 said, in a line.
+     *
+     * S3 answers a refused signature and a wrong key with the same 403 and
+     * tells the difference only in the XML underneath - «SignatureDoesNotMatch»
+     * against «InvalidAccessKeyId» - which is the one thing worth knowing
+     * when a key will not take.
+     */
+    private static function why($response): string
+    {
+        $body = (string) $response->body();
+        $code = preg_match('#<Code>([^<]+)</Code>#', $body, $m) ? $m[1] : '';
+        $said = preg_match('#<Message>([^<]+)</Message>#', $body, $m) ? $m[1] : '';
+
+        return trim($response->status() . ($code !== '' ? ' ' . $code : '')
+            . ($said !== '' ? ' — ' . $said : ''));
     }
 
     /**

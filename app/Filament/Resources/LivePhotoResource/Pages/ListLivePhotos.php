@@ -58,7 +58,11 @@ class ListLivePhotos extends ListRecords
                         ->placeholder(fn () => R2::secret() !== '' ? 'Saxlanıb — dəyişmək üçün yenisini yazın' : '')
                         ->helperText(new HtmlString('Almaq üçün: <b>R2 → Manage R2 API Tokens → Create API Token</b>, '
                             . 'icazə <b>Object Read &amp; Write</b>, yalnız bu bucket. '
-                            . 'Secret yalnız bir dəfə göstərilir — pəncərəni bağlamadan bura yapışdırın.')),
+                            . 'Secret yalnız bir dəfə göstərilir — pəncərəni bağlamadan bura yapışdırın.<br>'
+                            // Three values are shown at once and the wrong one
+                            // looks just as much like a key as the right one.
+                            . '⚠️ Yuxarıdakı <b>«Token value»</b> (cfat_… ilə başlayan) DEYİL. '
+                            . 'Aşağıdakı, <b>«Secret Access Key»</b> başlığı altındakı uzun sətir.')),
                     Forms\Components\Toggle::make('forget')->label('Açarları sil (R2-ni ayır)')
                         ->visible(fn () => R2::configured()),
                 ])
