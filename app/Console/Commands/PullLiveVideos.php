@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\LivePhoto;
 use App\Support\YandexDisk;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -51,10 +52,20 @@ class PullLiveVideos extends Command
             // One listing for the lot, rather than a lookup per video.
             $published = YandexDisk::published();
         } catch (\RuntimeException $e) {
+            /* At error level so it reaches «Xəta jurnalı»: this runs in the
+               deploy, whose own log nobody here can read. */
+            Log::error('live:pull could not list the published files', ['error' => $e->getMessage()]);
             $this->error('Yandex Disk did not list the published files: ' . $e->getMessage());
 
             return self::FAILURE;
         }
+
+        Log::error('live:pull listing', [
+            'published' => count($published),
+            'wanted' => $wanted->count(),
+            'keys' => array_slice(array_keys($published), 0, 10),
+            'looking_for' => $wanted->map(fn ($l) => YandexDisk::linkKey((string) $l->video_url))->all(),
+        ]);
 
         @set_time_limit(0);
         $disk = Storage::disk('public');
@@ -64,6 +75,9 @@ class PullLiveVideos extends Command
             $path = $published[YandexDisk::linkKey((string) $live->video_url)] ?? null;
 
             if ($path === null) {
+                Log::error('live:pull: link not among the published files', [
+                    'live_photo' => $live->id, 'link' => $live->video_url,
+                ]);
                 $this->warn("Live photo #{$live->id} ({$live->code}): its link is not among the published files.");
 
                 continue;
@@ -75,6 +89,9 @@ class PullLiveVideos extends Command
             try {
                 YandexDisk::fetch($path, $disk->path($name));
             } catch (\RuntimeException $e) {
+                Log::error('live:pull could not fetch a video', [
+                    'live_photo' => $live->id, 'path' => $path, 'error' => $e->getMessage(),
+                ]);
                 $this->warn("Live photo #{$live->id} ({$live->code}): " . $e->getMessage());
 
                 continue;
