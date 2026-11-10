@@ -44,12 +44,14 @@ class SafetyHeaders
            which page he was on — an order page's address is nobody's business. */
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-        /* Nothing here asks for a microphone or a camera through the browser.
-           The live photo is recorded by the phone's own camera app and sent as
-           a file, so there is nothing to allow. */
+        /* The camera is allowed for this site's own pages and nobody else's:
+           the live photo page (/canli/…) opens the phone's camera through the
+           browser (getUserMedia) to find the picture on the box. With camera=()
+           the browser refuses before it even asks, and the visitor sees
+           "The camera did not open". The microphone stays off. */
         $response->headers->set(
             'Permissions-Policy',
-            'camera=(), microphone=(), geolocation=(self), payment=(), usb=(), interest-cohort=()'
+            'camera=(self), microphone=(), geolocation=(self), payment=(), usb=(), interest-cohort=()'
         );
 
         return $response;
