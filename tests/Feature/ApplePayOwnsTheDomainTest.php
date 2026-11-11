@@ -41,9 +41,13 @@ class ApplePayOwnsTheDomainTest extends TestCase
 
     private const FILE = 'well-known/apple-developer-merchantid-domain-association.txt';
 
-    /** The file ePoint sent on 2026-10-30, untouched. The 19 October one was
-     *  replaced when they re-registered the domain; Apple looks for the newest. */
-    private const FINGERPRINT = 'b22a797e00f82150132e0d04bbaf0bb4';
+    /** The file ePoint sent on 2026-11-11, untouched. It replaces the 30 October
+     *  one, which replaced the 19 October one: each re-registration of the domain
+     *  issues a fresh signature, and Apple checks the newest against what is
+     *  registered — so an older file on the domain fails verification even though
+     *  it decodes to the same team and the same domain. The size has not moved
+     *  across any of them; only these bytes tell them apart. */
+    private const FINGERPRINT = 'c9658ba7c5523bc9c221f01264777ffd';
 
     private const BYTES = 5736;
 
