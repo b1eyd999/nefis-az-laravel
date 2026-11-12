@@ -266,6 +266,12 @@ class CheckoutController extends Controller
             defer(fn () => Telegram::order($order));
         }
 
+        // The customer's own WhatsApp: «your order is in» — unless it was
+        // confirmed a moment ago, and Order::booted() already says «paid».
+        if (! $nothingToPay) {
+            defer(fn () => \App\Support\Gonderish::placed($order->fresh()));
+        }
+
         /* If this basket was one the shop filled and sent, the two are
            tied together now — so the owner's list says which of his links
            turned into an order, and the same link cannot be ordered twice. */

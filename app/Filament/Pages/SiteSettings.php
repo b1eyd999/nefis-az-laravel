@@ -70,6 +70,9 @@ class SiteSettings extends Page implements HasActions, HasForms
             'whatsapp_token' => \App\Support\WhatsApp::token(),
             'whatsapp_verify' => \App\Support\WhatsApp::verifyWord(),
             'whatsapp_app_secret' => \App\Support\WhatsApp::appSecret(),
+            'gonderish_key' => \App\Support\Gonderish::key(),
+            'gonderish_placed' => Setting::get(Setting::GONDERISH_PLACED) === '1',
+            'gonderish_paid' => Setting::get(Setting::GONDERISH_PAID) === '1',
             'epoint_public_key' => Epoint::publicKey(),
             'epoint_private_key' => Epoint::privateKey(),
             'geoapify_key' => \App\Support\MapImage::key(),
@@ -119,6 +122,16 @@ class SiteSettings extends Page implements HasActions, HasForms
             // Whether the keys in the admin are the ones the gateway knows,
             // answered by the gateway itself. Nothing is charged: it only
             // offers a payment page, and we throw the address away.
+            // The Göndəriş key, asked of Göndəriş itself: nothing is sent.
+            Actions\Action::make('gonderishCheck')
+                ->label('Göndəriş: yoxla')
+                ->icon('heroicon-o-chat-bubble-left-right')
+                ->color('gray')
+                ->action(function () {
+                    $answer = \App\Support\Gonderish::check($this->data['gonderish_key'] ?? null);
+                    Notification::make()->{str_starts_with($answer, 'Hazırdır') ? 'success' : 'danger'}()
+                        ->title($answer)->persistent()->send();
+                }),
             Actions\Action::make('epointCheck')
                 ->label('Kart: açarları yoxla')
                 ->icon('heroicon-o-credit-card')
@@ -601,6 +614,28 @@ class SiteSettings extends Page implements HasActions, HasForms
                             ->helperText('Sağ aşağı küncdə son sifarişlər növbə ilə göstərilir: ad və soyadın ilk hərfi, '
                                 . 'neçə qutu və hansı dizayn. Səbət və ödəniş səhifələrində görünmür.'),
                     ]),
+                Forms\Components\Section::make('Müştəriyə WhatsApp (Göndəriş)')
+                    ->description('Sifariş veriləndə və ödəniş təsdiqlənəndə müştəriyə WhatsApp mesajı özü gedir: '
+                        . 'sifarişin nömrəsi, statusu, çatdırılma günü, məbləğ və link. Mesaj Göndəriş-də (gonderish.az) '
+                        . 'qoşulmuş nömrədən, fasilələrlə və limitlə gedir. Açarı Göndəriş kabinetində «API» bölməsində yaradın. '
+                        . 'Yuxarıdakı «Göndəriş: yoxla» düyməsi açarın işlədiyini və hansı nömrədən yazılacağını göstərir.')
+                    ->schema([
+                        Forms\Components\TextInput::make('gonderish_key')
+                            ->label('Göndəriş API açarı')
+                            ->password()->revealable()->autocomplete(false)
+                            ->placeholder('gnd_…')
+                            ->helperText('Şifrələnmiş saxlanılır.')
+                            ->maxLength(190)
+                            ->columnSpanFull(),
+                        Forms\Components\Toggle::make('gonderish_placed')
+                            ->label('Sifariş veriləndə yaz')
+                            ->helperText('«Sifarişiniz qeydə alındı» + ödəniş linki.'),
+                        Forms\Components\Toggle::make('gonderish_paid')
+                            ->label('Ödəniş təsdiqlənəndə yaz')
+                            ->helperText('«Ödəniş təsdiqləndi, sifarişiniz hazırlanır».'),
+                    ])
+                    ->columns(2)
+                    ->collapsible(),
                 Forms\Components\Section::make('Özü gedən məktublar')
                     ->description('İki məktub, heç kim heç nə basmadan. Hər ikisi hər sifariş üçün yalnız bir dəfə gedir. '
                         . 'Bunların işləməsi üçün "Avtomatik işlər" (cron) qurulmalıdır — aşağıda yazılıb.')
@@ -819,6 +854,9 @@ class SiteSettings extends Page implements HasActions, HasForms
         \App\Support\WhatsApp::saveToken($data['whatsapp_token'] ?? '');
         \App\Support\WhatsApp::saveVerifyWord($data['whatsapp_verify'] ?? '');
         \App\Support\WhatsApp::saveAppSecret($data['whatsapp_app_secret'] ?? '');
+        \App\Support\Gonderish::saveKey($data['gonderish_key'] ?? '');
+        Setting::put(Setting::GONDERISH_PLACED, ! empty($data['gonderish_placed']));
+        Setting::put(Setting::GONDERISH_PAID, ! empty($data['gonderish_paid']));
         Setting::put(Setting::EPOINT_PUBLIC_KEY, trim((string) ($data['epoint_public_key'] ?? '')));
         Epoint::savePrivateKey($data['epoint_private_key'] ?? '');
         \App\Support\MapImage::saveKey($data['geoapify_key'] ?? '');

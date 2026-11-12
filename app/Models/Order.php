@@ -313,6 +313,9 @@ class Order extends Model
                is only a hope — the gateway's own word, the owner's button and
                the phone admin all come through here. */
             Telegram::order($order);
+
+            // …and the customer hears it on WhatsApp, if the owner switched it on.
+            \App\Support\Gonderish::paid($order);
         });
 
         // Cancelling puts the boxes' materials back in stock; bringing an

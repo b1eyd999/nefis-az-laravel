@@ -100,6 +100,16 @@ class Setting extends Model
     public const MAINTENANCE_MESSAGE = 'maintenance_message';
 
     /**
+     * The customer's WhatsApp through Göndəriş (gonderish.az): the API key
+     * (encrypted) and the two moments a message goes out on its own.
+     */
+    public const GONDERISH_KEY = 'gonderish_key';
+
+    public const GONDERISH_PLACED = 'gonderish_placed';
+
+    public const GONDERISH_PAID = 'gonderish_paid';
+
+    /**
      * The key that fetches the streets for a map box. Kept encrypted, like the
      * other keys here: it is the shop's own and never reaches the browser.
      */
