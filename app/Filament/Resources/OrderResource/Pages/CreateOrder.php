@@ -4,13 +4,20 @@ namespace App\Filament\Resources\OrderResource\Pages;
 
 use App\Filament\Resources\OrderResource;
 use App\Models\Product;
+use App\Models\Wrapping;
 use App\Support\Contact;
 use App\Support\DeliveryTime;
+use App\Support\Letter;
+use App\Support\LiveMaterials;
 use App\Support\PhoneOrder;
+use App\Support\Price;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Actions\Action as NotificationAction;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\HtmlString;
 
 /**
  * An order the owner writes down for a customer who sent it on WhatsApp:
@@ -67,6 +74,50 @@ class CreateOrder extends CreateRecord
                         ->label('Qeyd')->rows(2)->maxLength(500)->columnSpanFull(),
                 ])->columns(3),
 
+            // What goes with the box: the paper round it, the Polaroid inside
+            // it, the live photo on it. Each is priced as the shop prices it,
+            // and the price can be changed for what was agreed.
+            Forms\Components\Section::make('Əlavələr')
+                ->schema([
+                    Forms\Components\Select::make('wrapping_id')
+                        ->label('Qablaşdırma (bükmə)')
+                        ->options(fn () => Wrapping::shown()->pluck('name', 'id'))
+                        ->placeholder('Yoxdur')
+                        ->live()
+                        ->afterStateUpdated(fn ($state, Forms\Set $set) => $set(
+                            'wrapping_price', $state ? Wrapping::find($state)?->price : null)),
+                    Forms\Components\TextInput::make('wrapping_price')
+                        ->label('Qablaşdırma, ₼')->numeric()->step(0.01)->minValue(0)
+                        ->visible(fn (Forms\Get $get) => filled($get('wrapping_id'))),
+
+                    Forms\Components\Toggle::make('letter_on')
+                        ->label('Polaroid məktub')->live()->columnSpanFull()
+                        ->afterStateUpdated(fn ($state, Forms\Set $set) => $set('letter_price', $state ? Letter::price() : null)),
+                    Forms\Components\Group::make([
+                        Forms\Components\FileUpload::make('letter_photo')
+                            ->label('Polaroid şəkli')->image()->disk('public')->directory(PhoneOrder::PHOTO_DIR)
+                            ->maxSize(25 * 1024),
+                        Forms\Components\Textarea::make('letter_text')
+                            ->label('Məktubun mətni')->rows(3)->maxLength(Letter::maxLength())
+                            ->helperText('Şəkil, mətn və ya hər ikisi.'),
+                        Forms\Components\TextInput::make('letter_price')
+                            ->label('Məktub, ₼')->numeric()->step(0.01)->minValue(0),
+                    ])->visible(fn (Forms\Get $get) => (bool) $get('letter_on'))->columns(3)->columnSpanFull(),
+
+                    Forms\Components\Toggle::make('live_on')
+                        ->label('Canlı şəkil (video ilə oyanma)')->live()->columnSpanFull()
+                        ->afterStateUpdated(fn ($state, Forms\Set $set) => $set('live_price', $state ? LiveMaterials::price() : null)),
+                    Forms\Components\Group::make([
+                        Forms\Components\FileUpload::make('live_video')
+                            ->label('Video')->disk('public')->directory('cart-videos')
+                            ->acceptedFileTypes(['video/mp4', 'video/quicktime', 'video/webm', 'video/x-m4v'])
+                            ->maxSize(LiveMaterials::videoMb() * 1024)
+                            ->helperText('Hələ gəlməyibsə, boş qoyun: sonra «Canlı şəkillər» bölməsində əlavə edilir. Şəkil olaraq qutudakı birinci şəkil götürülür.'),
+                        Forms\Components\TextInput::make('live_price')
+                            ->label('Canlı şəkil, ₼')->numeric()->step(0.01)->minValue(0),
+                    ])->visible(fn (Forms\Get $get) => (bool) $get('live_on'))->columns(2)->columnSpanFull(),
+                ])->columns(2),
+
             Forms\Components\Section::make('Çatdırılma və status')
                 ->schema([
                     Forms\Components\TextInput::make('recipient_name')->label('Alan şəxs')->maxLength(120),
@@ -81,11 +132,13 @@ class CreateOrder extends CreateRecord
                         ->label('Status')
                         ->options([
                             'confirmed' => 'Təsdiqləndi (ödəniş alınıb)',
-                            'awaiting_payment' => 'Ödəniş gözlənilir',
+                            'awaiting_payment' => 'Ödəniş gözlənilir (ödəniş linki yaradılsın)',
                         ])
                         ->default('confirmed')
                         ->required()
-                        ->helperText('«Təsdiqləndi» — Telegram-a kart gedir və sifariş işə düşür.'),
+                        ->helperText('«Təsdiqləndi» — Telegram-a kart gedir və sifariş işə düşür. '
+                            .'«Ödəniş gözlənilir» — sifariş yaranır və müştəriyə göndərmək üçün ödəniş linki verilir; '
+                            .'pul gələndə sifarişdə «Ödənişi təsdiqlə» basın.'),
                 ])->columns(2),
         ]);
     }
@@ -142,6 +195,35 @@ class CreateOrder extends CreateRecord
         }
 
         return PhoneOrder::create($data + ['photos' => $photos, 'texts' => $texts]);
+    }
+
+    /**
+     * Not paid yet: the link the customer pays through, ready to copy or to
+     * send on WhatsApp. It is shown once here and stays on the order's page.
+     */
+    protected function afterCreate(): void
+    {
+        $order = $this->getRecord();
+
+        if (! $order->awaitsPayment()) {
+            return;
+        }
+
+        Notification::make()
+            ->success()
+            ->title('Ödəniş linki hazırdır — '.Price::format($order->total()))
+            ->body(new HtmlString('<input type="text" readonly value="'.e(PhoneOrder::payLink($order))
+                .'" onclick="this.select();navigator.clipboard&&navigator.clipboard.writeText(this.value)" '
+                .'style="width:100%;margin-top:.4rem;padding:.4rem;border:1px solid #888;border-radius:.4rem;font-size:.75rem">'
+                .'<div style="margin-top:.3rem;font-size:.75rem">Toxunun — köçürülür. Link '.PhoneOrder::LINK_HOURS.' saat işləyir.</div>'))
+            ->actions(array_filter([
+                PhoneOrder::payWhatsApp($order)
+                    ? NotificationAction::make('wa')->label('WhatsApp-da göndər')
+                        ->url(PhoneOrder::payWhatsApp($order), shouldOpenInNewTab: true)->button()
+                    : null,
+            ]))
+            ->persistent()
+            ->send();
     }
 
     protected function getRedirectUrl(): string

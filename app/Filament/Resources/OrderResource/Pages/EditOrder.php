@@ -22,6 +22,26 @@ class EditOrder extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            // The link the customer pays through, for an order still waiting for money.
+            Actions\Action::make('pay_link')
+                ->label('Ödəniş linki')
+                ->icon('heroicon-o-link')
+                ->color('warning')
+                ->visible(fn (Order $record) => $record->awaitsPayment())
+                ->modalHeading('Ödəniş linki')
+                ->modalDescription('Müştəri linkə toxunur, parolsuz öz hesabına düşür və ödəniş səhifəsini görür. Link '
+                    .\App\Support\PhoneOrder::LINK_HOURS.' saat işləyir; hər açanda yenisi yaranır.')
+                ->modalSubmitAction(false)
+                ->modalCancelActionLabel('Bağla')
+                ->modalContent(fn (Order $record) => new \Illuminate\Support\HtmlString(
+                    '<input type="text" readonly onclick="this.select()" value="'.e(\App\Support\PhoneOrder::payLink($record))
+                    .'" style="width:100%;padding:.5rem;border:1px solid #888;border-radius:.4rem;font-size:.8rem">')),
+            Actions\Action::make('pay_link_wa')
+                ->label('Linki WhatsApp-da göndər')
+                ->icon('heroicon-o-chat-bubble-left-right')
+                ->color('success')
+                ->visible(fn (Order $record) => $record->awaitsPayment() && \App\Support\PhoneOrder::payWhatsApp($record))
+                ->url(fn (Order $record) => \App\Support\PhoneOrder::payWhatsApp($record), shouldOpenInNewTab: true),
             // Writing to the customer without copying his number out by hand.
             Actions\Action::make('whatsapp')
                 ->label('WhatsApp-a yaz')

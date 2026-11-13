@@ -91,4 +91,75 @@ class AnOrderFromWhatsAppTest extends TestCase
 
         $this->assertSame(0, Order::count());
     }
+
+    public function test_the_wrap_the_letter_and_the_live_photo_are_on_the_line_and_priced(): void
+    {
+        Storage::fake('public');
+        $box = $this->box();
+        $wrap = \App\Models\Wrapping::create(['name' => 'Qırmızı', 'pattern' => 'plain', 'price' => 4, 'is_active' => true]);
+        \App\Models\Setting::put(\App\Models\Setting::LETTER_PRICE, 3);
+        \App\Models\Setting::put(\App\Models\Setting::AR_PRICE, 5);
+
+        $order = PhoneOrder::create([
+            'name' => 'Aydan', 'phone' => '0551234567', 'product_id' => $box->id, 'quantity' => 1,
+            'photos' => ['cart-photos/a.jpg'], 'texts' => ['Aydan'],
+            'wrapping_id' => $wrap->id,
+            'letter_on' => true, 'letter_text' => 'Səni sevirəm',
+            'live_on' => true,
+        ]);
+
+        $line = $order->items->first();
+        $this->assertSame('Qırmızı', $line->wrapping_name);
+        $this->assertSame(4.0, $line->wrapping_price);
+        $this->assertSame('Səni sevirəm', $line->letter_text);
+        $this->assertSame(3.0, $line->letter_price);
+        $this->assertSame(5.0, $line->ar_price);
+        $this->assertSame(12.0 + 4 + 3 + 5, $order->total());
+        $this->assertSame(1, \App\Models\LivePhoto::where('order_item_id', $line->id)->count());
+    }
+
+    public function test_an_unpaid_order_gets_a_payment_link_that_opens_the_payment_page(): void
+    {
+        $box = $this->box();
+
+        $order = PhoneOrder::create([
+            'name' => 'Aydan', 'phone' => '0551234567', 'product_id' => $box->id,
+            'photos' => ['cart-photos/a.jpg'], 'texts' => ['Aydan'], 'status' => 'awaiting_payment',
+        ]);
+
+        $this->assertSame('awaiting_payment', $order->status);
+        $this->assertNull($order->payment_confirmed_at);
+
+        $link = PhoneOrder::payLink($order);
+        $this->assertStringContainsString('signature=', $link);
+        $this->assertStringContainsString('wa.me/994551234567', (string) PhoneOrder::payWhatsApp($order));
+
+        // The customer opens it with no password and lands where he can pay.
+        $this->get($link)->assertRedirect();
+        $this->assertAuthenticatedAs($order->user);
+    }
+
+    public function test_the_form_takes_the_extras_and_shows_the_link_for_an_unpaid_order(): void
+    {
+        Storage::fake('public');
+        $box = $this->box();
+        $wrap = \App\Models\Wrapping::create(['name' => 'Qırmızı', 'pattern' => 'plain', 'price' => 4, 'is_active' => true]);
+
+        Livewire::actingAs($owner = $this->owner())
+            ->test(CreateOrder::class)
+            ->fillForm(['name' => 'Aydan', 'phone' => '055 123 45 67', 'product_id' => $box->id,
+                'wrapping_id' => $wrap->id, 'letter_on' => true, 'letter_text' => 'Salam', 'live_on' => true,
+                'status' => 'awaiting_payment'])
+            ->set('data.photo_0', [UploadedFile::fake()->image('face.jpg')])
+            ->fillForm(['text_0' => 'Aydan'])
+            ->call('create')
+            ->assertHasNoFormErrors()
+            ->assertNotified('Ödəniş linki hazırdır — ' . \App\Support\Price::format(12 + 4 + 3 + 5));
+
+        $order = Order::firstOrFail();
+        $this->assertSame('awaiting_payment', $order->status);
+
+        $this->actingAs($owner)->get('/admin/orders/' . $order->id . '/edit')
+            ->assertOk()->assertSee('Ödəniş linki');
+    }
 }
