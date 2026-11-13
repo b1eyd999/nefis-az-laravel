@@ -16,7 +16,7 @@ class ListOrders extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()->label('WhatsApp sifarişi')->icon('heroicon-o-chat-bubble-left-right'),
         ];
     }
 

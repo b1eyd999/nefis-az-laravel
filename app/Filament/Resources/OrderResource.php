@@ -507,13 +507,16 @@ class OrderResource extends Resource
     {
         return [
             'index' => Pages\ListOrders::route('/'),
+            'create' => Pages\CreateOrder::route('/create'),
             'edit' => Pages\EditOrder::route('/{record}/edit'),
         ];
     }
 
+    /* The owner writes down the orders that reach him on WhatsApp
+       (Pages\CreateOrder), so the list has its «new» button. */
     public static function canCreate(): bool
     {
-        return false;
+        return (bool) auth()->user()?->isStaff();
     }
 
     public static function getNavigationBadge(): ?string

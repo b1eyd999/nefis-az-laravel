@@ -143,7 +143,8 @@ class CustomerNotice
         $order = $adjustment->order;
         $to = trim((string) $order->user?->email);
 
-        if (! self::emailOn() || ! filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        // An account made by the owner from a number has a placeholder address, not a mailbox.
+        if (! self::emailOn() || ! filter_var($to, FILTER_VALIDATE_EMAIL) || PhoneOrder::isPlaceholder($to)) {
             return self::$sent = false;
         }
 
@@ -211,7 +212,8 @@ class CustomerNotice
     {
         $to = trim((string) $order->user?->email);
 
-        if (! self::emailOn() || ! filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        // An account made by the owner from a number has a placeholder address, not a mailbox.
+        if (! self::emailOn() || ! filter_var($to, FILTER_VALIDATE_EMAIL) || PhoneOrder::isPlaceholder($to)) {
             return self::$sent = false;
         }
 
