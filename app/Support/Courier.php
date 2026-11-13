@@ -62,12 +62,17 @@ class Courier
     public static function tellCustomer(Order $order): ?string
     {
         $failed = CustomerNotice::onTheWay($order);
+        $whatsapp = Gonderish::onTheWay($order);
 
-        if ($failed === null && ! $order->isOnTheWay()) {
+        /* Either road reaching him is enough to call him told. This matters
+           for a guest order: it carries a phone and no e-mail at all, so the
+           letter refuses, and before WhatsApp there was no way to mark such
+           an order as gone out. */
+        if (($failed === null || $whatsapp) && ! $order->isOnTheWay()) {
             $order->forceFill(['on_the_way_at' => now()])->saveQuietly();
         }
 
-        return $failed;
+        return $whatsapp ? null : $failed;
     }
 
     /** A plain letter to the courier: the address, the hour, the way in. */

@@ -337,6 +337,12 @@ class Order extends Model
             // page, the payment flow — the customer hears about it here.
             CustomerNotice::email($order);
 
+            /* …and on WhatsApp, for the statuses the owner ticked. The same
+               words as the letter, and keyed by the status, so confirming a
+               payment — which stamps the hour and moves the status in one
+               save — still reaches him once. */
+            \App\Support\Gonderish::status($order);
+
             // Made and waiting: the courier gets the address and the phone.
             if ($order->status === 'ready' && $was !== 'ready') {
                 Telegram::courier($order);

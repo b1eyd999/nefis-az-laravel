@@ -101,13 +101,20 @@ class Setting extends Model
 
     /**
      * The customer's WhatsApp through Göndəriş (gonderish.az): the API key
-     * (encrypted) and the two moments a message goes out on its own.
+     * (encrypted) and the moments a message goes out on its own — the order
+     * written down, the money in, the courier gone, and whichever status
+     * changes the owner ticked.
      */
     public const GONDERISH_KEY = 'gonderish_key';
 
     public const GONDERISH_PLACED = 'gonderish_placed';
 
     public const GONDERISH_PAID = 'gonderish_paid';
+
+    public const GONDERISH_ON_THE_WAY = 'gonderish_on_the_way';
+
+    /** Order statuses to announce, comma-joined; empty means none. */
+    public const GONDERISH_STATUSES = 'gonderish_statuses';
 
     /**
      * The key that fetches the streets for a map box. Kept encrypted, like the

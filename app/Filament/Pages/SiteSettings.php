@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\DeliveryMethod;
+use App\Models\Order;
 use App\Models\Setting;
 use App\Models\User;
 use App\Support\ChatBot;
@@ -10,6 +11,7 @@ use App\Support\Contact;
 use App\Support\CustomerNotice;
 use App\Support\DeliveryTime;
 use App\Support\Epoint;
+use App\Support\Gonderish;
 use App\Support\Scheduler;
 use App\Support\MailToTelegram;
 use App\Support\Telegram;
@@ -70,9 +72,11 @@ class SiteSettings extends Page implements HasActions, HasForms
             'whatsapp_token' => \App\Support\WhatsApp::token(),
             'whatsapp_verify' => \App\Support\WhatsApp::verifyWord(),
             'whatsapp_app_secret' => \App\Support\WhatsApp::appSecret(),
-            'gonderish_key' => \App\Support\Gonderish::key(),
+            'gonderish_key' => Gonderish::key(),
             'gonderish_placed' => Setting::get(Setting::GONDERISH_PLACED) === '1',
             'gonderish_paid' => Setting::get(Setting::GONDERISH_PAID) === '1',
+            'gonderish_on_the_way' => Setting::get(Setting::GONDERISH_ON_THE_WAY) === '1',
+            'gonderish_statuses' => Gonderish::statuses(),
             'epoint_public_key' => Epoint::publicKey(),
             'epoint_private_key' => Epoint::privateKey(),
             'geoapify_key' => \App\Support\MapImage::key(),
@@ -128,8 +132,32 @@ class SiteSettings extends Page implements HasActions, HasForms
                 ->icon('heroicon-o-chat-bubble-left-right')
                 ->color('gray')
                 ->action(function () {
-                    $answer = \App\Support\Gonderish::check($this->data['gonderish_key'] ?? null);
-                    Notification::make()->{str_starts_with($answer, 'Hazırdır') ? 'success' : 'danger'}()
+                    [$ok, $answer] = Gonderish::check($this->data['gonderish_key'] ?? null);
+                    Notification::make()->{$ok ? 'success' : 'danger'}()
+                        ->title($answer)->persistent()->send();
+                }),
+            /*
+             * The only check that goes the whole way. «yoxla» above asks
+             * Göndəriş about the key and gets an answer even when sending is
+             * barred — the terms were never accepted in the cabinet, or the
+             * number's queue is paused there — because those refusals belong
+             * to the send, not to the key. So one real message.
+             */
+            Actions\Action::make('gonderishTest')
+                ->label('Göndəriş: sınaq mesajı')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('gray')
+                ->form([
+                    Forms\Components\TextInput::make('phone')
+                        ->label('Hansı nömrəyə')
+                        ->tel()
+                        ->placeholder('0501234567')
+                        ->helperText('Öz nömrənizi yazın — ora bir yoxlama mesajı gedəcək.')
+                        ->required(),
+                ])
+                ->action(function (array $data) {
+                    [$ok, $answer] = Gonderish::test((string) ($data['phone'] ?? ''));
+                    Notification::make()->{$ok ? 'success' : 'danger'}()
                         ->title($answer)->persistent()->send();
                 }),
             Actions\Action::make('epointCheck')
@@ -615,10 +643,12 @@ class SiteSettings extends Page implements HasActions, HasForms
                                 . 'neçə qutu və hansı dizayn. Səbət və ödəniş səhifələrində görünmür.'),
                     ]),
                 Forms\Components\Section::make('Müştəriyə WhatsApp (Göndəriş)')
-                    ->description('Sifariş veriləndə və ödəniş təsdiqlənəndə müştəriyə WhatsApp mesajı özü gedir: '
-                        . 'sifarişin nömrəsi, statusu, çatdırılma günü, məbləğ və link. Mesaj Göndəriş-də (gonderish.az) '
-                        . 'qoşulmuş nömrədən, fasilələrlə və limitlə gedir. Açarı Göndəriş kabinetində «API» bölməsində yaradın. '
-                        . 'Yuxarıdakı «Göndəriş: yoxla» düyməsi açarın işlədiyini və hansı nömrədən yazılacağını göstərir.')
+                    ->description('Müştəriyə WhatsApp mesajı özü gedir: sifarişin nömrəsi, statusu, çatdırılma günü, '
+                        . 'məbləğ və link — məktubdakı eyni sözlər, sifarişin verildiyi dildə. Mesaj Göndəriş-də '
+                        . '(gonderish.az) qoşulmuş nömrədən, fasilələrlə və limitlə gedir. Açarı Göndəriş kabinetində '
+                        . '«API» bölməsində yaradın. Yuxarıdakı «Göndəriş: yoxla» açarı və nömrəni yoxlayır, '
+                        . '«Göndəriş: sınaq mesajı» isə həqiqətən bir mesaj göndərir — şərtlər qəbul edilməyibsə '
+                        . 'yalnız bu görünür.')
                     ->schema([
                         Forms\Components\TextInput::make('gonderish_key')
                             ->label('Göndəriş API açarı')
@@ -633,6 +663,17 @@ class SiteSettings extends Page implements HasActions, HasForms
                         Forms\Components\Toggle::make('gonderish_paid')
                             ->label('Ödəniş təsdiqlənəndə yaz')
                             ->helperText('«Ödəniş təsdiqləndi, sifarişiniz hazırlanır».'),
+                        Forms\Components\Toggle::make('gonderish_on_the_way')
+                            ->label('Kuryer yola düşəndə yaz')
+                            ->helperText('Sifarişin səhifəsindəki «Kuryer yoldadır» düyməsi ilə: kuryerin adı, '
+                                . 'nömrəsi və qapıda ödəniləcək məbləğ.'),
+                        Forms\Components\CheckboxList::make('gonderish_statuses')
+                            ->label('Status dəyişəndə yaz')
+                            ->options(Order::STATUSES)
+                            ->helperText('Sifarişin statusu bu siyahıdakı birinə keçəndə müştəriyə mesaj gedir. '
+                                . 'Hər status üçün bir dəfə — eyni statusa ikinci dəfə keçsə, təkrar getmir.')
+                            ->columns(2)
+                            ->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->collapsible(),
@@ -854,9 +895,11 @@ class SiteSettings extends Page implements HasActions, HasForms
         \App\Support\WhatsApp::saveToken($data['whatsapp_token'] ?? '');
         \App\Support\WhatsApp::saveVerifyWord($data['whatsapp_verify'] ?? '');
         \App\Support\WhatsApp::saveAppSecret($data['whatsapp_app_secret'] ?? '');
-        \App\Support\Gonderish::saveKey($data['gonderish_key'] ?? '');
+        Gonderish::saveKey($data['gonderish_key'] ?? '');
         Setting::put(Setting::GONDERISH_PLACED, ! empty($data['gonderish_placed']));
         Setting::put(Setting::GONDERISH_PAID, ! empty($data['gonderish_paid']));
+        Setting::put(Setting::GONDERISH_ON_THE_WAY, ! empty($data['gonderish_on_the_way']));
+        Gonderish::saveStatuses($data['gonderish_statuses'] ?? []);
         Setting::put(Setting::EPOINT_PUBLIC_KEY, trim((string) ($data['epoint_public_key'] ?? '')));
         Epoint::savePrivateKey($data['epoint_private_key'] ?? '');
         \App\Support\MapImage::saveKey($data['geoapify_key'] ?? '');
